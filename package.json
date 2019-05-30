@@ -1,0 +1,51 @@
+{
+    "name": "react-state-link",
+    "version": "0.9.0",
+    "description": "Complex state management and global store reducer over plain useState / useContext routines",
+    "main": "dist/index.js",
+    "module": "dist/index.es.js",
+    "jsnext:main": "dist/index.es.js",
+    "engines": {
+        "node": ">=8",
+        "npm": ">=5"
+    },
+    "scripts": {
+        "start": "rollup -c -w",
+        "build": "rollup -c",
+        "build:watch": "yarn run start",
+        "lint": "tslint --project .",
+        "clean": "rimraf dist",
+        "test": "cross-env CI=1 react-scripts test --env=jsdom",
+        "test:watch": "react-scripts test --env=jsdom",
+        "check-updates": "ncu",
+        "apply-updates": "ncu -u",
+        "prepare": "yarn build"
+    },
+    "dependencies": {
+     },
+    "peerDependencies": {
+        "react": "^16.8.6"
+    },
+    "devDependencies": {
+        "@types/jest": "24.0.12",
+        "@types/react": "16.8.14",
+        "babel-core": "6.26.3",
+        "babel-runtime": "6.26.0",
+        "rimraf": "2.6.3",
+        "rollup": "1.10.1",
+        "rollup-plugin-babel": "4.3.2",
+        "rollup-plugin-commonjs": "9.3.4",
+        "rollup-plugin-node-resolve": "4.2.3",
+        "rollup-plugin-peer-deps-external": "2.2.0",
+        "rollup-plugin-postcss": "2.0.3",
+        "rollup-plugin-typescript2": "0.21.0",
+        "rollup-plugin-url": "2.2.1",
+        "tslint": "5.16.0",
+        "tslint-config-airbnb": "5.11.1",
+        "tslint-react": "4.0.0",
+        "typescript": "3.4.5"
+    },
+    "files": [
+        "dist"
+    ]
+}
