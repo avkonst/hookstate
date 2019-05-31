@@ -39,16 +39,16 @@ yarn add react-use-state-x
 
 ## Documentation
 
-- [Array state](./#array-state) - `useState` for arrays
-- [Object state](./#array-state) - `useState` for objects
-- [Complex state](./#complex-state) - `useState` for complex data
-    - [Form state](./#form-state) - two-way data binding, valuelink pattern
-    - [Input validation](./#input-validation) - automated validation of complex data in easy way
-    - [Modification detection](./modification-detection) - automated detection if the current state and initial state are different
-    - [Preset hook](./preset-hook) - reject or alter state mutations
-    - [Cached state](./#cached-state) - optimise updates of deeply nested complex state data
-- [Global state](./#global-state) - `useState` for complex data stored globally
-    - [Global state reducer](./global-state-reducer) - build your custom global type-safe stores and reduce actions, replace Redux or Mobx
+- [Array state](#array-state) - `useState` for arrays
+- [Object state](#array-state) - `useState` for objects
+- [Complex state](#complex-state) - `useState` for complex data
+    - [Form state](#form-state) - two-way data binding, valuelink pattern
+    - [Input validation](#input-validation) - automated validation of complex data in easy way
+    - [Modification detection](modification-detection) - automated detection if the current state and initial state are different
+    - [Preset hook](preset-hook) - reject or alter state mutations
+    - [Cached state](#cached-state) - optimise updates of deeply nested complex state data
+- [Global state](#global-state) - `useState` for complex data stored globally
+    - [Global state reducer](global-state-reducer) - build your custom global type-safe stores and reduce actions, replace Redux or Mobx
 
 ### Array state
 
@@ -111,7 +111,7 @@ There the following object mutation actions available:
 
 ### Complex state
 
-When the state data contains a mix of nested objects, arrays and primitive variables of different types, [`useStateArray`](./#array-state) or [`useStateObject`](./#object-state) are not sufficient anymore. We need something what can provide set-state-like actions for nested data and something what is aware of the types of these nested objects and arrays.
+When the state data contains a mix of nested objects, arrays and primitive variables of different types, [`useStateArray`](#array-state) or [`useStateObject`](#object-state) are not sufficient anymore. We need something what can provide set-state-like actions for nested data and something what is aware of the types of these nested objects and arrays.
 
 `useStateLink` is used in this case.
 
