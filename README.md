@@ -3,7 +3,9 @@ Complex state management and global store done in type-safe, high-performance wa
 
 ## Features
 
-- Concise, pragmatic but flexible API. Very simple to learn.
+- Concise, pragmatic but flexible API
+  - very easy to learn
+  - no boilerplate, just plain predictable state management
 - First-class typescript support
   - completely written in typescript
   - compiles to javascript module and typescript definitions
@@ -16,7 +18,7 @@ Complex state management and global store done in type-safe, high-performance wa
   - tracking of modifications
   - valuelink-like pattern for two-way data binding and form state management
 - Global data state management using the same API
-  - Allows to drop Mobx / Redux completely and simplify the source code a lot
+  - allows to drop Mobx / Redux completely and simplify the source code a lot
 - Performance tuned:
   - offers component-level cache state management to minimise re-rendering when necessary
   - efficient global state observer using only `React.useContext` and `React.useState`
