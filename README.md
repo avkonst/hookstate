@@ -44,15 +44,15 @@ yarn add react-use-state-x
 ## Documentation
 
 - [Array state](#array-state) - `useState` for arrays
-- [Object state](#array-state) - `useState` for objects
+- [Object state](#object-state) - `useState` for objects
 - [Complex state](#complex-state) - `useState` for complex data
     - [Form state](#form-state) - two-way data binding, valuelink pattern
     - [Input validation](#input-validation) - automated validation of complex data in easy way
-    - [Modification detection](modification-detection) - automated detection if the current state and initial state are different
-    - [Preset hook](preset-hook) - reject or alter state mutations
+    - [Modification detection](#modification-detection) - automated detection if the current state and initial state are different
+    - [Preset hook](#preset-hook) - reject or alter state mutations
     - [Cached state](#cached-state) - optimise updates of deeply nested complex state data
 - [Global state](#global-state) - `useState` for complex data stored globally
-    - [Global state reducer](global-state-reducer) - build your custom global type-safe stores and reduce actions, replace Redux or Mobx
+    - [Global state reducer](#global-state-reducer) - build your custom global type-safe stores and reduce actions, replace Redux or Mobx
 
 ### Array state
 
