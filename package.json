@@ -1,7 +1,12 @@
 {
     "name": "react-state-link",
+    "license": "MIT",
+    "author": {"name": "Andrey Konstantinov"},
+    "repository": {"url": "https://github.com/avkonst/react-use-state-x"},
+    "bugs": {"url": "https://github.com/avkonst/react-use-state-x/issues"},
+    "homepage": "https://github.com/avkonst/react-use-state-x",
     "version": "0.9.0",
-    "description": "Complex state management and global store reducer over plain useState / useContext routines",
+    "description": "Complex state management and global store done in type-safe, high-performance way using react useState/useContext hooks.",
     "main": "dist/index.js",
     "module": "dist/index.es.js",
     "jsnext:main": "dist/index.es.js",
