@@ -3,17 +3,20 @@ Complex state management and global store done in type-safe, high-performance wa
 
 ## Features
 
-- Concise, pragmatic but flexible API with automated typescript type inferrence for any type of managed data.
-- State management for complex state data, including:
+- Concise, pragmatic but flexible API. Very simple to learn.
+- First-class typescript support
+  - completely written in typescript
+  - compiles to javascript module and typescript definitions
+  - correct and complete type inferrence for any type / complexity of managed data
+- Tiny footprint. No external dependencies, except React.
+- State management for complex data state, including:
   - arrays and objects
   - deeply nested combinations on arrays and objects
   - validation of input data
   - tracking of modifications
   - valuelink-like pattern for two-way data binding and form state management
 - Global data state management using the same API
-  - Allows to drop Mobx / Redux completely and simplify the source code a lot.
-- Small bundle size. No external dependencies, except React.
-- Written in typescript. Compiles to javascript module and typescript declarations.
+  - Allows to drop Mobx / Redux completely and simplify the source code a lot
 - Performance tuned:
   - offers component-level cache state management to minimise re-rendering when necessary
   - efficient global state observer using only `React.useContext` and `React.useState`
@@ -418,7 +421,7 @@ If we would like to put preset hook for every property, we can use `globalHooks`
 
 One of the problems with massive objects participating in React state lifecycle is performance of rendering of all of the components relying on the state data. This problem is not specific to this library, it is true in general: frequent massive data updates are hard in performance.
 
-Returning to the Catalog example above, an application could render many books from the single [complex state](#complex-state) and [book forms](#form-state) per every book to allow editing capabilities for the catalog. If a user decides to update a title of a single book, it can cause re-rendering for entire catalog on every key stroke. The solution to this problem is to use temporary local to form component state, while capturing user's input, and update parent's state once editing is completed. For example:
+Returning to the `Catalog` example above, an application could render views / edit-forms for all books from the single [complex state](#complex-state) of the `Catalog`. It could use [form state](#form-state) per every book to allow editing capabilities for the catalog. If a user decides to update a title of a single book, it would cause re-rendering for entire catalog on every key stroke, because update of nested data results in the update of the root state. The solution to this problem is to use temporary local to form component state, while capturing user's input, and update parent's state once editing is completed. For example:
 
 ```tsx
 const BookEditorExample = (props: { link: ValueLink<Book> }) => {
@@ -458,6 +461,7 @@ const BookEditorExample = (props: { link: ValueLink<Book> }) => {
     // notice we dropped .value from props.link.value as an input for the initial local state
     const link = useStateLink(props.link);
     // the rest is the same
+    ...
 };
 ```
 The created local `link` inherited validation rules from the parent link.
