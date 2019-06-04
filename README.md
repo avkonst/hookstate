@@ -1,5 +1,170 @@
 # React-use-state-x
-Complex state management and global store done in type-safe, high-performance way using react useState/useContext hooks.
+Tiny, type-safe, feature-rich useState-like React hook to manage complex state (objects, arrays, nested data, forms) and global stores (alternative to Redux/Mobx)
+
+- [Quick start](#quick-start) - tiny demos in very short code samples
+- [Features](#features) - why react-use-state-x?
+
+API guide table of contents:
+
+- [Array state](#array-state) - `useState` for arrays
+- [Object state](#object-state) - `useState` for objects
+- [Complex state](#complex-state) - `useState` for complex data
+    - [Form state](#form-state) - two-way data binding, valuelink pattern
+    - [Input validation](#input-validation) - automated validation of complex data in easy way
+    - [Modification detection](#modification-detection) - automated detection if the current state and initial state are different
+    - [Preset hook](#preset-hook) - reject or alter state mutations
+    - [Cached state](#cached-state) - optimise updates of deeply nested complex state data
+- [Global state](#global-state) - `useState` for complex data stored globally
+    - [Global state reducer](#global-state-reducer) - build your custom global type-safe stores and reduce actions, replace Redux or Mobx
+
+## Quick start
+
+[Array state](#array-state) - `useState` for arrays ([read more...](#array-state)):
+```tsx
+import { useStateArray } from 'react-use-state-x';
+
+const UseStateArrayExample = () => {
+    // there are other actions available in addition to push and remove
+    const [array, { push, remove }] = useStateArray([1, 2]);
+    return (
+        <div>
+            {array.map((elem, index) =>
+                <span>
+                    Element {elem} (<button onClick={() => remove(index)}>Remove</button>)
+                </span>
+            )}
+            <button onClick={() => push(array.length)}>Add</button>
+        </div>
+    );
+};
+```
+
+[Object state](#object-state) - `useState` for objects ([read more...](#object-state)):
+```tsx
+import { useStateObject } from 'react-use-state-x';
+
+const UseStateObjectExample = () => {
+    // there are other actions available in addition to merge and remove
+    const [instance, { merge, update }] = useStateObject({ a: 1, b: 'two', c: false });
+    return (
+        <div>
+            Current object state: {JSON.stringify(instance)}
+            <button onClick={() => update('a', 2)}>Update A field</button>
+            <button onClick={() => merge({ b: 'Three', c: true })}>Update B and C fields</button>
+        </div>
+    );
+};
+```
+
+[Complex state](#complex-state) and [Form state](#form-state) - `useState` for complex data and two-way ащкьы data binding via valuelink pattern ([read more...](#complex-state)):
+
+```tsx
+import { useStateLink, ValueLink } from 'react-use-state-x';
+
+interface Book {
+    title: string;
+    popularity: number;
+}
+const BookEditorForm = (props: { valuelink: ValueLink<Book> }) => {
+    const links = props.valuelink.nested; // get valuelinks to nested fields
+    return <div>
+        <label>Title</label>
+        <input value={links.title.value} onChange={e => links.title.set(e.target.value)} />
+        <label>Popularity</label>
+        <input value={links.popularity.value} onChange={e => links.popularity.set(Number(e.target.value))} />
+        {props.valuelink.valid ? 'The input is valid' : props.valuelink.errors.join(',')}
+    </div>;
+};
+const UseStateLinkExample = () => {
+    // type annotations are for documentation purposes,
+    // it is inferred by the compiler automatically
+    const stateLink: ValueLink<Book[]> = useStateLink([{ 
+        title: 'Code Complete',
+        popularity: 1
+    }] as Book[], {
+        targetHooks: {
+            '*': { // inject validation callback for each element in the array
+                popularity: {
+                    __validate: v => !Number.isFinite(v) ? 'Popularity should be a number' : undefined
+                }
+            }            
+        }
+    });
+    stateLink.nested // get valuelinks to all nested array elements
+        .map((bookLink, i) => <BookEditorForm key={i} valuelink={bookLink} />);
+};
+```
+
+[Global state](#global-state) and [Global state reducer](#global-state-reducer) - `useState` for complex data stored globally wrapped to strict type-safe API (alternative to Redux/Mobx, [read more...](#global-state)):
+
+```tsx
+//
+// file: Store.tsx - implementation of type-safe, strict API for global store
+//
+import { useStateLink, createStateLink } from 'react-use-state-link';
+
+export interface Book {
+    title: string;
+    popularity: number;
+}
+
+const Store = createStateLink<Book[]>([{
+    title: 'Code complete',
+    popularity: 1,
+}]);
+
+export const StoreObserver = Store.Observer;
+
+export function useStore() {
+    const link = useStateLink(Store);
+    return {
+        addBook(book: Book) {
+            link.inferred.push(book);
+        },
+        updateTitle(bookIndex: number, title: string) {
+            link.nested[bookIndex].nested.title.set(title);
+        },
+        getBooks(): Book[] {
+            return link.value;
+        }
+    };
+}
+
+//
+// file: OtherComponent.tsx - demonstrates how to use the global store in a component
+//
+import { useStore } from './Store'
+const UseGlobalStoreExample = () => {
+    const store = useStore();
+    return (
+        <div>
+            {store.getBooks().map((book, index) => 
+                // show the title in the editable input box for each book
+                <input key={index} value={book.title} onChange={e => store.updateTitle(index, e.target.value)} />
+            )}
+            <button onClick={() => store.addBook({ title: 'Code complete', popularity: 1 })} >
+                Add another book
+            </button>
+        </div>
+    );
+};
+
+//
+// file: App.tsx - activates the usage of the global store for the entire app
+//
+import { StoreObserver } from './Store';
+const App = () => {
+    return (
+        <StoreObserver>
+            {
+                // nested components, which use the Store will re-render
+                // when the Store state is changed
+            }
+            <UseGlobalStoreExample />
+        </StoreObserver>
+    );
+};
+```
 
 ## Features
 
@@ -27,13 +192,6 @@ Complex state management and global store done in type-safe, high-performance wa
 
 Use github ticketing system to ask questions, report bugs or request features. Feel free to submit pull requests.
 
-## Alternatives
-
-  - [valuelink](https://www.npmjs.com/package/valuelink) for complex local state management and two-way data binding. 
-    - This work was initially inspired by the implementation of [valuelink](https://www.npmjs.com/package/valuelink), but I wanted greater type-safety of the API and some other features to handle greater variety of usecases in concise and simple way.
-  - [react-use](https://github.com/streamich/react-use) `useList` and `useMap` libraries for local state management of arrays and objects
-  - [mobx-react-lite](https://www.npmjs.com/package/mobx-react-lite) for global state management
-
 ## Installation
 
 Using NPM:
@@ -46,18 +204,7 @@ Using yarn:
 yarn add react-use-state-x
 ```
 
-## Documentation
-
-- [Array state](#array-state) - `useState` for arrays
-- [Object state](#object-state) - `useState` for objects
-- [Complex state](#complex-state) - `useState` for complex data
-    - [Form state](#form-state) - two-way data binding, valuelink pattern
-    - [Input validation](#input-validation) - automated validation of complex data in easy way
-    - [Modification detection](#modification-detection) - automated detection if the current state and initial state are different
-    - [Preset hook](#preset-hook) - reject or alter state mutations
-    - [Cached state](#cached-state) - optimise updates of deeply nested complex state data
-- [Global state](#global-state) - `useState` for complex data stored globally
-    - [Global state reducer](#global-state-reducer) - build your custom global type-safe stores and reduce actions, replace Redux or Mobx
+## API guide
 
 ### Array state
 
@@ -598,7 +745,13 @@ Hope you enjoy using it. Feel free to contact me via github tickets or contribut
 
 Write unit tests. The library is tested severely in scope of other projects, as some of these seriously rely on this library. However, it should not be an excuse not to write unit tests for this library. It has not been done because of lack of time.
 
+## Alternatives
+
+  - [valuelink](https://www.npmjs.com/package/valuelink) for complex local state management and two-way data binding. 
+    - This work was initially inspired by the implementation of [valuelink](https://www.npmjs.com/package/valuelink), but I wanted greater type-safety of the API and some other features to handle greater variety of usecases in concise and simple way.
+  - [react-use](https://github.com/streamich/react-use) `useList` and `useMap` libraries for local state management of arrays and objects
+  - [mobx-react-lite](https://www.npmjs.com/package/mobx-react-lite) for global state management
+
 ## License
 
 MIT
-
