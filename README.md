@@ -86,7 +86,7 @@ const UseStateLinkExample = () => {
 };
 ```
 
-[Global state](#global-state) and [Global state reducer](#global-state-reducer) - `useState` for complex data stored globally wrapped to strict type-safe reducer API (alternative to Redux/Mobx, [read more...](#global-state)):
+[Global state](#global-state) and [Global state reducer](#global-state-reducer) - `useState` for complex data stored globally wrapped by strict type-safe action reducer API (alternative to Redux/Mobx, [read more...](#global-state)):
 
 ```tsx
 //
