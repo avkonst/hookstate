@@ -56,46 +56,37 @@ const UseStateObjectExample = () => {
 };
 ```
 
-[Complex state](#complex-state) and [Form state](#form-state) - `useState` for complex data and two-way ащкьы data binding via valuelink pattern ([read more...](#complex-state)):
+[Complex state](#complex-state) and [Form state](#form-state) - `useState` for complex data and two-way form data binding via valuelink pattern ([read more...](#complex-state)):
 
 ```tsx
-import { useStateLink, ValueLink } from 'react-use-state-x';
+import { useStateLink } from 'react-use-state-x';
 
-interface Book {
-    title: string;
-    popularity: number;
-}
-const BookEditorForm = (props: { valuelink: ValueLink<Book> }) => {
-    const links = props.valuelink.nested; // get valuelinks to nested fields
-    return <div>
-        <label>Title</label>
-        <input value={links.title.value} onChange={e => links.title.set(e.target.value)} />
-        <label>Popularity</label>
-        <input value={links.popularity.value} onChange={e => links.popularity.set(Number(e.target.value))} />
-        {props.valuelink.valid ? 'The input is valid' : props.valuelink.errors.join(',')}
-    </div>;
-};
 const UseStateLinkExample = () => {
-    // type annotations are for documentation purposes,
-    // it is inferred by the compiler automatically
-    const stateLink: ValueLink<Book[]> = useStateLink([{ 
+    const stateLink = useStateLink({
         title: 'Code Complete',
         popularity: 1
-    }] as Book[], {
+    }, {
         targetHooks: {
-            '*': { // inject validation callback for each element in the array
-                popularity: {
-                    __validate: v => !Number.isFinite(v) ? 'Popularity should be a number' : undefined
-                }
-            }            
+            popularity: {
+                __validate: (v) => !Number.isFinite(v) ? 'Popularity should be a number' : undefined
+            }
         }
     });
-    stateLink.nested // get valuelinks to all nested array elements
-        .map((bookLink, i) => <BookEditorForm key={i} valuelink={bookLink} />);
+
+    const links = stateLink.nested; // obtain valuelinks to nested fields
+    return (
+        <div>
+            <label>Title</label>
+            <input value={links.title.value} onChange={e => links.title.set(e.target.value)} />
+            <label>Popularity</label>
+            <input value={links.popularity.value} onChange={e => links.popularity.set(Number(e.target.value))} />
+            {stateLink.valid ? 'The input is valid' : stateLink.errors.join(',')}
+        </div>
+    );
 };
 ```
 
-[Global state](#global-state) and [Global state reducer](#global-state-reducer) - `useState` for complex data stored globally wrapped to strict type-safe API (alternative to Redux/Mobx, [read more...](#global-state)):
+[Global state](#global-state) and [Global state reducer](#global-state-reducer) - `useState` for complex data stored globally wrapped to strict type-safe reducer API (alternative to Redux/Mobx, [read more...](#global-state)):
 
 ```tsx
 //
