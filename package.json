@@ -3,9 +3,15 @@
     "version": "0.9.1",
     "description": "Complex state management and global store done in type-safe, high-performance way using react useState/useContext hooks.",
     "license": "MIT",
-    "author": {"name": "Andrey Konstantinov"},
-    "repository": {"url": "https://github.com/avkonst/react-use-state-x"},
-    "bugs": {"url": "https://github.com/avkonst/react-use-state-x/issues"},
+    "author": {
+        "name": "Andrey Konstantinov"
+    },
+    "repository": {
+        "url": "https://github.com/avkonst/react-use-state-x"
+    },
+    "bugs": {
+        "url": "https://github.com/avkonst/react-use-state-x/issues"
+    },
     "homepage": "https://github.com/avkonst/react-use-state-x",
     "main": "dist/index.js",
     "module": "dist/index.es.js",
@@ -26,16 +32,23 @@
         "apply-updates": "ncu -u",
         "prepare": "yarn build"
     },
-    "dependencies": {
-     },
+    "dependencies": {},
     "peerDependencies": {
         "react": "^16.8.6"
     },
     "devDependencies": {
+        "@testing-library/react": "8.0.4",
+        "@testing-library/react-hooks": "1.1.0",
         "@types/jest": "24.0.12",
         "@types/react": "16.8.14",
+        "@types/react-dom": "16.8.4",
         "babel-core": "6.26.3",
         "babel-runtime": "6.26.0",
+        "cross-env": "5.2.0",
+        "react": "16.8.6",
+        "react-dom": "16.8.6",
+        "react-scripts": "3.0.1",
+        "react-test-renderer": "16.8.6",
         "rimraf": "2.6.3",
         "rollup": "1.10.1",
         "rollup-plugin-babel": "4.3.2",

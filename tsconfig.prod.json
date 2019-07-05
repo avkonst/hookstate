@@ -7,5 +7,8 @@
         "jsx": "react",
         "allowJs": false,
         "declaration": true
-    }
+    },
+    "exclude": [
+        "src/*.test.tsx"
+    ]
 }
