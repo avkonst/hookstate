@@ -23,26 +23,22 @@ export interface ValidationError extends ValidationErrorMessage {
     readonly path: Path;
 }
 
+// TODO add support for Map and Set
 export type NestedInferredLink<S> =
-    S extends (infer Y)[] ? NestedArrayLink<Y> :
-    S extends ReadonlyArray<(infer U)> ? undefined :
+    S extends ReadonlyArray<(infer U)> ? NestedArrayLink<U> :
     S extends null ? undefined :
     S extends object ? NestedObjectLink<S> :
     undefined;
 
-export type NestedArrayLink<U> = ReadonlyArray<ValueLink<U>> & {
-    at(k: number): ValueLink<U>;
-};
+export type NestedArrayLink<U> = ReadonlyArray<ValueLink<U>>;
 
 export type NestedObjectLink<S extends object> = {
-    readonly [K in keyof S]: ValueLink<S[K]>;
-} & {
-    at<K extends keyof S>(k: K): ValueLink<S[K]>;
+    readonly [K in keyof Required<S>]: ValueLink<S[K]>;
 };
 
+// TODO add support for Map and Set
 export type InferredLink<S> =
-    S extends (infer Y)[] ? ArrayLink<Y> :
-    S extends ReadonlyArray<(infer U)> ? undefined :
+    S extends ReadonlyArray<(infer U)> ? ArrayLink<U> :
     S extends null ? undefined :
     S extends object ? ObjectLink<S> :
     undefined;
@@ -483,7 +479,7 @@ class ValueLinkImpl<S> implements ValueLink<S> {
 class ProxyLink<S> implements ValueLink<S> {
     constructor(readonly origin: ValueLink<S>) {
         if (origin instanceof ProxyLink) {
-            origin = origin.origin;
+            origin = origin.origin as ValueLink<S>;
         }
     }
 
@@ -522,8 +518,14 @@ class ProxyLink<S> implements ValueLink<S> {
     }
 }
 
+class ValueLinkInvalidUsageError extends Error {
+    constructor(op: string, path: Path) {
+        super(`ValueLink is used incorrectly. Attempted '${op}' at '/${path.join('/')}'`)
+    }
+}
+
 class ArrayLinkImpl<U> extends ProxyLink<U[]> implements ArrayLink<U> {
-    private nestedCache: ValueLink<U>[] | undefined = undefined;
+    private nestedCache: NestedArrayLink<U> | undefined = undefined;
     private nestedCacheEdition = -1;
 
     private arrayMutation: ArrayStateMutation<U>;
@@ -572,21 +574,75 @@ class ArrayLinkImpl<U> extends ProxyLink<U[]> implements ArrayLink<U> {
     get nestedImpl(): NestedArrayLink<U> {
         if (this.nestedCacheEdition < this.originImpl.state.edition) {
             this.nestedCacheEdition = this.originImpl.state.edition;
-            const result: ValueLink<U>[] = [];
-            this.value.forEach((_, index) => {
-                result[index] = this.atImpl(index);
-            });
-            Object.assign(result, {
-                at: (k: number) => {
-                    if (result[k] === undefined) {
-                        result[k] = this.atImpl(k);
-                    }
-                    return result[k];
+
+            const getter = (target: U[], key: PropertyKey) => {
+                if (key === 'length') {
+                    return target.length;
                 }
-            });
-            this.nestedCache = result;
+                if (key in Array.prototype) {
+                    return Array.prototype[key];
+                }
+                // in contrast to object link,
+                // do not allow to return value links
+                // pointing to out of array bounds
+                if (key in target) {
+                    return this.atImpl(Number(key))
+                }
+                return undefined;
+            };
+            const proxy = new Proxy(this.value, {
+                getPrototypeOf: (target) => {
+                    return Object.getPrototypeOf(target);
+                },
+                setPrototypeOf: (target, v) => {
+                    throw new ValueLinkInvalidUsageError('setPrototypeOf', this.path)
+                },
+                isExtensible: (target) => {
+                    return false;
+                },
+                preventExtensions: (target) => {
+                    throw new ValueLinkInvalidUsageError('preventExtensions', this.path)
+                },
+                getOwnPropertyDescriptor: (target, p) => {
+                    const origin = Object.getOwnPropertyDescriptor(target, p);
+                    return origin && {
+                        configurable: false,
+                        enumerable: origin.enumerable,
+                        value: undefined,
+                        writable: false,
+                        get: () => getter(target, p),
+                        set: undefined
+                    };
+                },
+                has: (target, p) => {
+                    return p in target;
+                },
+                get: getter,
+                set: (target, p, value, receiver) => {
+                    throw new ValueLinkInvalidUsageError('set', this.path)
+                },
+                deleteProperty: (target, p) => {
+                    throw new ValueLinkInvalidUsageError('deleteProperty', this.path)
+                },
+                defineProperty: (target, p, attributes) => {
+                    throw new ValueLinkInvalidUsageError('defineProperty', this.path)
+                },
+                enumerate: (target) => {
+                    return Object.keys(target);
+                },
+                ownKeys: (target) => {
+                    return Object.keys(target);
+                },
+                apply: (target, thisArg, argArray?) => {
+                    throw new ValueLinkInvalidUsageError('apply', this.path)
+                },
+                construct: (target, argArray, newTarget?) => {
+                    throw new ValueLinkInvalidUsageError('construct', this.path)
+                }
+            })
+            this.nestedCache = proxy as unknown as NestedArrayLink<U>;
         }
-        return this.nestedCache as unknown as NestedArrayLink<U>;
+        return this.nestedCache!;
     }
 
     private atImpl(k: number) {
@@ -598,7 +654,7 @@ class ArrayLinkImpl<U> extends ProxyLink<U[]> implements ArrayLink<U> {
 }
 
 class ObjectLinkImpl<S extends object> extends ProxyLink<S> implements ObjectLink<S> {
-    private nestedCache: Partial<{ [K in keyof S]: ValueLink<S[K]>; }> | undefined = undefined;
+    private nestedCache: NestedObjectLink<S> | undefined = undefined;
     private nestedCacheEdition = -1;
     private objectMutation: ObjectStateMutation<S>;
 
@@ -622,22 +678,75 @@ class ObjectLinkImpl<S extends object> extends ProxyLink<S> implements ObjectLin
     get nestedImpl(): NestedObjectLink<S> {
         if (this.nestedCacheEdition < this.originImpl.state.edition) {
             this.nestedCacheEdition = this.originImpl.state.edition;
-            const result = {};
-            Object.keys(this.value).forEach((k) => {
-                result[k] = this.atImpl(k as keyof S);
-            });
-            Object.assign(result, {
-                // tslint:disable-next-line:no-any
-                at: (k: any) => {
-                    if (result[k] === undefined) {
-                        result[k] = this.atImpl(k);
-                    }
-                    return result[k];
+
+            const getter = (target: S, key: PropertyKey) => {
+                if (typeof key === 'symbol') {
+                    return undefined;
                 }
-            });
-            this.nestedCache = result;
+                // in cotrast to array link,
+                // return for any key
+                return this.atImpl(key as keyof S);
+            };
+            const proxy = new Proxy(this.value, {
+                getPrototypeOf: (target) => {
+                    return Object.getPrototypeOf(target);
+                },
+                setPrototypeOf: (target, v) => {
+                    throw new ValueLinkInvalidUsageError('setPrototypeOf', this.path)
+                },
+                isExtensible: (target) => {
+                    return false;
+                },
+                preventExtensions: (target) => {
+                    throw new ValueLinkInvalidUsageError('preventExtensions', this.path)
+                },
+                getOwnPropertyDescriptor: (target, p) => {
+                    const origin = Object.getOwnPropertyDescriptor(target, p);
+                    return origin && {
+                        configurable: false,
+                        enumerable: origin.enumerable,
+                        value: undefined,
+                        writable: false,
+                        get: () => getter(target, p),
+                        set: undefined
+                    };
+                },
+                has: (target, p) => {
+                    if (typeof p === 'symbol') {
+                        return false;
+                    }
+                    return true;
+                },
+                get: getter,
+                set: (target, p, value, receiver) => {
+                    throw new ValueLinkInvalidUsageError('set', this.path)
+                },
+                deleteProperty: (target, p) => {
+                    throw new ValueLinkInvalidUsageError('deleteProperty', this.path)
+                },
+                defineProperty: (target, p, attributes) => {
+                    throw new ValueLinkInvalidUsageError('defineProperty', this.path)
+                },
+                enumerate: (target) => {
+                    // because object value link returns nested value link for any property key
+                    // it is impossible to know all of the available keys in advance
+                    throw new ValueLinkInvalidUsageError('enumerate', this.path)
+                },
+                ownKeys: (target) => {
+                    // because object value link returns nested value link for any property key
+                    // it is impossible to know all of the available keys in advance
+                    throw new ValueLinkInvalidUsageError('ownKeys', this.path)
+                },
+                apply: (target, thisArg, argArray?) => {
+                    throw new ValueLinkInvalidUsageError('apply', this.path)
+                },
+                construct: (target, argArray, newTarget?) => {
+                    throw new ValueLinkInvalidUsageError('construct', this.path)
+                }
+            })
+            this.nestedCache = proxy as unknown as NestedObjectLink<S>;
         }
-        return this.nestedCache as unknown as NestedObjectLink<S>;
+        return this.nestedCache!;
     }
 
     private atImpl<K extends keyof S>(k: K): ValueLink<S[K]> {
@@ -797,16 +906,16 @@ export function useStateLink<S>(
 ): ValueLink<S> {
     if (initialState instanceof ValueLinkImpl) {
         // eslint-disable-next-line react-hooks/rules-of-hooks
-        return useProxyStateLink(initialState);
+        return useProxyStateLink(initialState) as ValueLink<S>;
     }
     if (initialState instanceof ProxyLink &&
         initialState.origin instanceof ValueLinkImpl) {
         // eslint-disable-next-line react-hooks/rules-of-hooks
-        return useProxyStateLink(initialState.origin);
+        return useProxyStateLink(initialState.origin) as ValueLink<S>;
     }
     if (initialState instanceof StateLinkImpl) {
         // eslint-disable-next-line react-hooks/rules-of-hooks
-        return useContextStateLink(initialState);
+        return useContextStateLink(initialState) as ValueLink<S>;
     }
 
     // eslint-disable-next-line react-hooks/rules-of-hooks
