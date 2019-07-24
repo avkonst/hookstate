@@ -527,6 +527,7 @@ class ValueLinkInvalidUsageError extends Error {
 class ArrayLinkImpl<U> extends ProxyLink<U[]> implements ArrayLink<U> {
     private nestedCache: NestedArrayLink<U> | undefined = undefined;
     private nestedCacheEdition = -1;
+    private nestedLinksCache: { [k: number]: ValueLink<U> } = {};
 
     private arrayMutation: ArrayStateMutation<U>;
 
@@ -575,6 +576,7 @@ class ArrayLinkImpl<U> extends ProxyLink<U[]> implements ArrayLink<U> {
         if (this.nestedCacheEdition < this.originImpl.state.edition) {
             this.nestedCacheEdition = this.originImpl.state.edition;
 
+            const proxyGetterCache = {};
             const getter = (target: U[], key: PropertyKey) => {
                 if (key === 'length') {
                     return target.length;
@@ -585,8 +587,14 @@ class ArrayLinkImpl<U> extends ProxyLink<U[]> implements ArrayLink<U> {
                 // in contrast to object link,
                 // do not allow to return value links
                 // pointing to out of array bounds
+                const cachehit = proxyGetterCache[key];
+                if (cachehit) {
+                    return cachehit;
+                }
                 if (key in target) {
-                    return this.atImpl(Number(key))
+                    const r = this.atImpl(Number(key))
+                    proxyGetterCache[key] = r;
+                    return r;
                 }
                 return undefined;
             };
@@ -640,6 +648,8 @@ class ArrayLinkImpl<U> extends ProxyLink<U[]> implements ArrayLink<U> {
                     throw new ValueLinkInvalidUsageError('construct', this.path)
                 }
             })
+
+            this.nestedLinksCache = proxyGetterCache;
             this.nestedCache = proxy as unknown as NestedArrayLink<U>;
         }
         return this.nestedCache!;
@@ -656,6 +666,8 @@ class ArrayLinkImpl<U> extends ProxyLink<U[]> implements ArrayLink<U> {
 class ObjectLinkImpl<S extends object> extends ProxyLink<S> implements ObjectLink<S> {
     private nestedCache: NestedObjectLink<S> | undefined = undefined;
     private nestedCacheEdition = -1;
+    private nestedLinksCache: Partial<NestedObjectLink<S>> = {};
+
     private objectMutation: ObjectStateMutation<S>;
 
     constructor(private originImpl: ValueLinkImpl<S>) {
@@ -679,13 +691,20 @@ class ObjectLinkImpl<S extends object> extends ProxyLink<S> implements ObjectLin
         if (this.nestedCacheEdition < this.originImpl.state.edition) {
             this.nestedCacheEdition = this.originImpl.state.edition;
 
+            const proxyGetterCache = {}
             const getter = (target: S, key: PropertyKey) => {
                 if (typeof key === 'symbol') {
                     return undefined;
                 }
                 // in cotrast to array link,
                 // return for any key
-                return this.atImpl(key as keyof S);
+                const cachehit = proxyGetterCache[key];
+                if (cachehit) {
+                    return cachehit;
+                }
+                const r = this.atImpl(key as keyof S);
+                proxyGetterCache[key] = r;
+                return r;
             };
             const proxy = new Proxy(this.value, {
                 getPrototypeOf: (target) => {
@@ -744,6 +763,8 @@ class ObjectLinkImpl<S extends object> extends ProxyLink<S> implements ObjectLin
                     throw new ValueLinkInvalidUsageError('construct', this.path)
                 }
             })
+
+            this.nestedLinksCache = proxyGetterCache;
             this.nestedCache = proxy as unknown as NestedObjectLink<S>;
         }
         return this.nestedCache!;
