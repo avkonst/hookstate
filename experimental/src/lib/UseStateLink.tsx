@@ -226,7 +226,11 @@ class ValueLinkImpl<S> implements ValueLink<S> {
     private inferredCache: InferredLink<S> | undefined = undefined;
     private inferredCacheEdition = -1;
 
-    private valueCache!: S;
+    private nestedCache: NestedInferredLink<S> | undefined = undefined;
+    private nestedCacheEdition = -1;
+    private nestedLinksCache: Record<string | number, ValueLink<S[keyof S]>> = {};
+
+    private valueCache: S | undefined;
     private valueCacheEdition = -1;
 
     private initialValueCache: S | undefined;
@@ -253,7 +257,7 @@ class ValueLinkImpl<S> implements ValueLink<S> {
             this.valueCacheEdition = this.state.edition;
             this.valueCache = this.state.getCurrent(this.path) as S;
         }
-        return this.valueCache;
+        return this.valueCache!;
     }
 
     get initialValue(): S | undefined {
@@ -466,13 +470,197 @@ class ValueLinkImpl<S> implements ValueLink<S> {
     }
 
     get nested(): NestedInferredLink<S> {
-        const inferred = this.inferred;
-        if (inferred instanceof ArrayLinkImpl) {
-            return inferred.nestedImpl as NestedInferredLink<S>;
-        } else if (inferred instanceof ObjectLinkImpl) {
-            return inferred.nestedImpl as NestedInferredLink<S>;
+        if (this.nestedCacheEdition < this.state.edition) {
+            this.nestedCacheEdition = this.state.edition;
+            if (Array.isArray(this.value)) {
+                this.nestedCache = this.nestedArrayImpl;
+            } else if (typeof this.value === 'object' && this.value !== null) {
+                this.nestedCache = this.nestedObjectImpl;
+            } else {
+                this.nestedCache = undefined;
+            }
         }
-        return undefined as NestedInferredLink<S>;
+        return this.nestedCache as NestedInferredLink<S>;
+    }
+
+    get nestedArrayImpl(): NestedInferredLink<S> {
+        const proxyGetterCache = {};
+        this.nestedLinksCache = proxyGetterCache;
+
+        const getter = (target: any[], key: PropertyKey) => {
+            if (key === 'length') {
+                return target.length;
+            }
+            if (key in Array.prototype) {
+                return Array.prototype[key];
+            }
+            // in contrast to object link,
+            // do not allow to return value links
+            // pointing to out of array bounds
+            const cachehit = proxyGetterCache[key];
+            if (cachehit) {
+                return cachehit;
+            }
+            if (key in target) {
+                const r = this.atArrayImpl(Number(key))
+                proxyGetterCache[key] = r;
+                return r;
+            }
+            return undefined;
+        };
+        const proxy = new Proxy(this.value as unknown as object, {
+            getPrototypeOf: (target) => {
+                return Object.getPrototypeOf(target);
+            },
+            setPrototypeOf: (target, v) => {
+                throw new ValueLinkInvalidUsageError('setPrototypeOf', this.path)
+            },
+            isExtensible: (target) => {
+                return false;
+            },
+            preventExtensions: (target) => {
+                throw new ValueLinkInvalidUsageError('preventExtensions', this.path)
+            },
+            getOwnPropertyDescriptor: (target, p) => {
+                const origin = Object.getOwnPropertyDescriptor(target, p);
+                return origin && {
+                    configurable: false,
+                    enumerable: origin.enumerable,
+                    value: undefined,
+                    writable: false,
+                    get: () => getter(target as any[], p),
+                    set: undefined
+                };
+            },
+            has: (target, p) => {
+                return p in target;
+            },
+            get: getter,
+            set: (target, p, value, receiver) => {
+                throw new ValueLinkInvalidUsageError('set', this.path)
+            },
+            deleteProperty: (target, p) => {
+                throw new ValueLinkInvalidUsageError('deleteProperty', this.path)
+            },
+            defineProperty: (target, p, attributes) => {
+                throw new ValueLinkInvalidUsageError('defineProperty', this.path)
+            },
+            enumerate: (target) => {
+                return Object.keys(target);
+            },
+            ownKeys: (target) => {
+                return Object.keys(target);
+            },
+            apply: (target, thisArg, argArray?) => {
+                throw new ValueLinkInvalidUsageError('apply', this.path)
+            },
+            construct: (target, argArray, newTarget?) => {
+                throw new ValueLinkInvalidUsageError('construct', this.path)
+            }
+        })
+        return proxy as unknown as NestedInferredLink<S>;
+    }
+
+    private atArrayImpl(k: number) {
+        return new ValueLinkImpl(
+            this.state,
+            this.path.slice().concat(k),
+            (newValue) => this.set((prevValue) => {
+                const copy = (prevValue as unknown as unknown[]).slice();
+                copy[k] = newValue;
+                return copy as unknown as S;
+            })
+        );
+    }
+
+    get nestedObjectImpl(): NestedInferredLink<S> {
+        const proxyGetterCache = {}
+        this.nestedLinksCache = proxyGetterCache;
+
+        const getter = (target: object, key: PropertyKey) => {
+            if (typeof key === 'symbol') {
+                return undefined;
+            }
+            // in cotrast to array link,
+            // return for any key
+            const cachehit = proxyGetterCache[key];
+            if (cachehit) {
+                return cachehit;
+            }
+            const r = this.atObjectImpl(key as keyof S);
+            proxyGetterCache[key] = r;
+            return r;
+        };
+        const proxy = new Proxy(this.value as unknown as object, {
+            getPrototypeOf: (target) => {
+                return Object.getPrototypeOf(target);
+            },
+            setPrototypeOf: (target, v) => {
+                throw new ValueLinkInvalidUsageError('setPrototypeOf', this.path)
+            },
+            isExtensible: (target) => {
+                return false;
+            },
+            preventExtensions: (target) => {
+                throw new ValueLinkInvalidUsageError('preventExtensions', this.path)
+            },
+            getOwnPropertyDescriptor: (target, p) => {
+                const origin = Object.getOwnPropertyDescriptor(target, p);
+                return origin && {
+                    configurable: false,
+                    enumerable: origin.enumerable,
+                    value: undefined,
+                    writable: false,
+                    get: () => getter(target as object, p),
+                    set: undefined
+                };
+            },
+            has: (target, p) => {
+                if (typeof p === 'symbol') {
+                    return false;
+                }
+                return true;
+            },
+            get: getter,
+            set: (target, p, value, receiver) => {
+                throw new ValueLinkInvalidUsageError('set', this.path)
+            },
+            deleteProperty: (target, p) => {
+                throw new ValueLinkInvalidUsageError('deleteProperty', this.path)
+            },
+            defineProperty: (target, p, attributes) => {
+                throw new ValueLinkInvalidUsageError('defineProperty', this.path)
+            },
+            enumerate: (target) => {
+                // because object value link returns nested value link for any property key
+                // it is impossible to know all of the available keys in advance
+                throw new ValueLinkInvalidUsageError('enumerate', this.path)
+            },
+            ownKeys: (target) => {
+                // because object value link returns nested value link for any property key
+                // it is impossible to know all of the available keys in advance
+                throw new ValueLinkInvalidUsageError('ownKeys', this.path)
+            },
+            apply: (target, thisArg, argArray?) => {
+                throw new ValueLinkInvalidUsageError('apply', this.path)
+            },
+            construct: (target, argArray, newTarget?) => {
+                throw new ValueLinkInvalidUsageError('construct', this.path)
+            }
+        })
+        return proxy as unknown as NestedInferredLink<S>;
+    }
+
+    private atObjectImpl<K extends keyof S>(k: K): ValueLink<S[K]> {
+        return new ValueLinkImpl(
+            this.state,
+            this.path.slice().concat(k.toString()),
+            (newValue: S[K]) => this.set((prevValue: S) => {
+                const copy: S = { ...prevValue };
+                copy[k] = newValue;
+                return copy;
+            })
+        );
     }
 }
 
@@ -525,10 +713,6 @@ class ValueLinkInvalidUsageError extends Error {
 }
 
 class ArrayLinkImpl<U> extends ProxyLink<U[]> implements ArrayLink<U> {
-    private nestedCache: NestedArrayLink<U> | undefined = undefined;
-    private nestedCacheEdition = -1;
-    private nestedLinksCache: { [k: number]: ValueLink<U> } = {};
-
     private arrayMutation: ArrayStateMutation<U>;
 
     constructor(private originImpl: ValueLinkImpl<U[]>) {
@@ -571,103 +755,9 @@ class ArrayLinkImpl<U> extends ProxyLink<U[]> implements ArrayLink<U> {
     swap(index1: number, index2: number): void {
         this.arrayMutation.swap(index1, index2);
     }
-
-    get nestedImpl(): NestedArrayLink<U> {
-        if (this.nestedCacheEdition < this.originImpl.state.edition) {
-            this.nestedCacheEdition = this.originImpl.state.edition;
-
-            const proxyGetterCache = {};
-            const getter = (target: U[], key: PropertyKey) => {
-                if (key === 'length') {
-                    return target.length;
-                }
-                if (key in Array.prototype) {
-                    return Array.prototype[key];
-                }
-                // in contrast to object link,
-                // do not allow to return value links
-                // pointing to out of array bounds
-                const cachehit = proxyGetterCache[key];
-                if (cachehit) {
-                    return cachehit;
-                }
-                if (key in target) {
-                    const r = this.atImpl(Number(key))
-                    proxyGetterCache[key] = r;
-                    return r;
-                }
-                return undefined;
-            };
-            const proxy = new Proxy(this.value, {
-                getPrototypeOf: (target) => {
-                    return Object.getPrototypeOf(target);
-                },
-                setPrototypeOf: (target, v) => {
-                    throw new ValueLinkInvalidUsageError('setPrototypeOf', this.path)
-                },
-                isExtensible: (target) => {
-                    return false;
-                },
-                preventExtensions: (target) => {
-                    throw new ValueLinkInvalidUsageError('preventExtensions', this.path)
-                },
-                getOwnPropertyDescriptor: (target, p) => {
-                    const origin = Object.getOwnPropertyDescriptor(target, p);
-                    return origin && {
-                        configurable: false,
-                        enumerable: origin.enumerable,
-                        value: undefined,
-                        writable: false,
-                        get: () => getter(target, p),
-                        set: undefined
-                    };
-                },
-                has: (target, p) => {
-                    return p in target;
-                },
-                get: getter,
-                set: (target, p, value, receiver) => {
-                    throw new ValueLinkInvalidUsageError('set', this.path)
-                },
-                deleteProperty: (target, p) => {
-                    throw new ValueLinkInvalidUsageError('deleteProperty', this.path)
-                },
-                defineProperty: (target, p, attributes) => {
-                    throw new ValueLinkInvalidUsageError('defineProperty', this.path)
-                },
-                enumerate: (target) => {
-                    return Object.keys(target);
-                },
-                ownKeys: (target) => {
-                    return Object.keys(target);
-                },
-                apply: (target, thisArg, argArray?) => {
-                    throw new ValueLinkInvalidUsageError('apply', this.path)
-                },
-                construct: (target, argArray, newTarget?) => {
-                    throw new ValueLinkInvalidUsageError('construct', this.path)
-                }
-            })
-
-            this.nestedLinksCache = proxyGetterCache;
-            this.nestedCache = proxy as unknown as NestedArrayLink<U>;
-        }
-        return this.nestedCache!;
-    }
-
-    private atImpl(k: number) {
-        return new ValueLinkImpl(
-            this.originImpl.state,
-            this.path.slice().concat(k),
-            (newValue: U) => this.arrayMutation.update(k, newValue));
-    }
 }
 
 class ObjectLinkImpl<S extends object> extends ProxyLink<S> implements ObjectLink<S> {
-    private nestedCache: NestedObjectLink<S> | undefined = undefined;
-    private nestedCacheEdition = -1;
-    private nestedLinksCache: Partial<NestedObjectLink<S>> = {};
-
     private objectMutation: ObjectStateMutation<S>;
 
     constructor(private originImpl: ValueLinkImpl<S>) {
@@ -685,96 +775,6 @@ class ObjectLinkImpl<S extends object> extends ProxyLink<S> implements ObjectLin
 
     update<K extends keyof S>(key: K, value: React.SetStateAction<S[K]>): void {
         this.objectMutation.update(key, value);
-    }
-
-    get nestedImpl(): NestedObjectLink<S> {
-        if (this.nestedCacheEdition < this.originImpl.state.edition) {
-            this.nestedCacheEdition = this.originImpl.state.edition;
-
-            const proxyGetterCache = {}
-            const getter = (target: S, key: PropertyKey) => {
-                if (typeof key === 'symbol') {
-                    return undefined;
-                }
-                // in cotrast to array link,
-                // return for any key
-                const cachehit = proxyGetterCache[key];
-                if (cachehit) {
-                    return cachehit;
-                }
-                const r = this.atImpl(key as keyof S);
-                proxyGetterCache[key] = r;
-                return r;
-            };
-            const proxy = new Proxy(this.value, {
-                getPrototypeOf: (target) => {
-                    return Object.getPrototypeOf(target);
-                },
-                setPrototypeOf: (target, v) => {
-                    throw new ValueLinkInvalidUsageError('setPrototypeOf', this.path)
-                },
-                isExtensible: (target) => {
-                    return false;
-                },
-                preventExtensions: (target) => {
-                    throw new ValueLinkInvalidUsageError('preventExtensions', this.path)
-                },
-                getOwnPropertyDescriptor: (target, p) => {
-                    const origin = Object.getOwnPropertyDescriptor(target, p);
-                    return origin && {
-                        configurable: false,
-                        enumerable: origin.enumerable,
-                        value: undefined,
-                        writable: false,
-                        get: () => getter(target, p),
-                        set: undefined
-                    };
-                },
-                has: (target, p) => {
-                    if (typeof p === 'symbol') {
-                        return false;
-                    }
-                    return true;
-                },
-                get: getter,
-                set: (target, p, value, receiver) => {
-                    throw new ValueLinkInvalidUsageError('set', this.path)
-                },
-                deleteProperty: (target, p) => {
-                    throw new ValueLinkInvalidUsageError('deleteProperty', this.path)
-                },
-                defineProperty: (target, p, attributes) => {
-                    throw new ValueLinkInvalidUsageError('defineProperty', this.path)
-                },
-                enumerate: (target) => {
-                    // because object value link returns nested value link for any property key
-                    // it is impossible to know all of the available keys in advance
-                    throw new ValueLinkInvalidUsageError('enumerate', this.path)
-                },
-                ownKeys: (target) => {
-                    // because object value link returns nested value link for any property key
-                    // it is impossible to know all of the available keys in advance
-                    throw new ValueLinkInvalidUsageError('ownKeys', this.path)
-                },
-                apply: (target, thisArg, argArray?) => {
-                    throw new ValueLinkInvalidUsageError('apply', this.path)
-                },
-                construct: (target, argArray, newTarget?) => {
-                    throw new ValueLinkInvalidUsageError('construct', this.path)
-                }
-            })
-
-            this.nestedLinksCache = proxyGetterCache;
-            this.nestedCache = proxy as unknown as NestedObjectLink<S>;
-        }
-        return this.nestedCache!;
-    }
-
-    private atImpl<K extends keyof S>(k: K): ValueLink<S[K]> {
-        return new ValueLinkImpl(
-            this.originImpl.state,
-            this.path.slice().concat(k.toString()),
-            (newValue: S[K]) => this.objectMutation.update(k, newValue));
     }
 }
 
