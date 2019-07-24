@@ -24,6 +24,7 @@
         "jsx-no-multiline-js": false,
         "jsx-no-lambda": false,
         "jsx-curly-spacing": false,
+        "jsx-wrap-multiline": false,
         "label-position": true,
         "max-line-length": [
             true,
@@ -74,7 +75,7 @@
         ],
         "radix": true,
         "semicolon": [
-            true,
+            false,
             "always"
         ],
         "switch-default": true,
