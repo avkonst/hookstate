@@ -149,7 +149,8 @@ class ReadonlyState {
         // tslint:disable-next-line:no-any
         protected _current: any,
         protected _edition: number,
-        protected _settings: ResolvedSettings
+        protected _settings: ResolvedSettings,
+        public onSet: (path: Path) => void
     ) { }
 
     getCurrent(path: Path) {
@@ -193,6 +194,8 @@ class ReadonlyState {
 }
 
 class State extends ReadonlyState {
+    public subscriber!: (path: Path) => void;
+
     // eslint-disable-next-line no-useless-constructor
     constructor(
         // tslint:disable-next-line:no-any
@@ -202,7 +205,7 @@ class State extends ReadonlyState {
         _edition: number,
         _settings: ResolvedSettings
     ) {
-        super(_initial, _current, _edition, _settings);
+        super(_initial, _current, _edition, _settings, (path) => this.subscriber(path));
     }
 
     // tslint:disable-next-line:no-any
@@ -277,6 +280,11 @@ class ValueLinkImpl<S> implements ValueLink<S> {
     }
 
     set(newValue: React.SetStateAction<S>): void {
+        this.setUntracked(newValue);
+        this.state.onSet(this.path);
+    }
+
+    setUntracked(newValue: React.SetStateAction<S>): void {
         // inferred() function checks for the nullability of the current value:
         // If value is not null | undefined, it resolves to ArrayLink or ObjectLink
         // which can not take null | undefined as a value.
@@ -313,6 +321,8 @@ class ValueLinkImpl<S> implements ValueLink<S> {
         }
         this.onSet(extractedNewValue);
     }
+
+    // updateAffected(path: Path)
 
     private areValuesEqual(newValue: S, oldValue: S | undefined): boolean {
         const localCompare = this.hooks.__compare;
@@ -473,9 +483,9 @@ class ValueLinkImpl<S> implements ValueLink<S> {
         if (this.nestedCacheEdition < this.state.edition) {
             this.nestedCacheEdition = this.state.edition;
             if (Array.isArray(this.value)) {
-                this.nestedCache = this.nestedArrayImpl;
+                this.nestedCache = this.nestedArrayImpl();
             } else if (typeof this.value === 'object' && this.value !== null) {
-                this.nestedCache = this.nestedObjectImpl;
+                this.nestedCache = this.nestedObjectImpl();
             } else {
                 this.nestedCache = undefined;
             }
@@ -483,7 +493,7 @@ class ValueLinkImpl<S> implements ValueLink<S> {
         return this.nestedCache as NestedInferredLink<S>;
     }
 
-    get nestedArrayImpl(): NestedInferredLink<S> {
+    private nestedArrayImpl(): NestedInferredLink<S> {
         const proxyGetterCache = {};
         this.nestedLinksCache = proxyGetterCache;
 
@@ -565,7 +575,7 @@ class ValueLinkImpl<S> implements ValueLink<S> {
         return new ValueLinkImpl(
             this.state,
             this.path.slice().concat(k),
-            (newValue) => this.set((prevValue) => {
+            (newValue) => this.setUntracked((prevValue) => {
                 const copy = (prevValue as unknown as unknown[]).slice();
                 copy[k] = newValue;
                 return copy as unknown as S;
@@ -573,7 +583,7 @@ class ValueLinkImpl<S> implements ValueLink<S> {
         );
     }
 
-    get nestedObjectImpl(): NestedInferredLink<S> {
+    private nestedObjectImpl(): NestedInferredLink<S> {
         const proxyGetterCache = {}
         this.nestedLinksCache = proxyGetterCache;
 
@@ -655,7 +665,7 @@ class ValueLinkImpl<S> implements ValueLink<S> {
         return new ValueLinkImpl(
             this.state,
             this.path.slice().concat(k.toString()),
-            (newValue: S[K]) => this.set((prevValue: S) => {
+            (newValue: S[K]) => this.setUntracked((prevValue: S) => {
                 const copy: S = { ...prevValue };
                 copy[k] = newValue;
                 return copy;
@@ -907,18 +917,26 @@ function useLocalStateLink<S>(initialState: S | (() => S), settings?: Settings<S
         if (typeof initialState === 'function') {
             initialValue = (initialState as (() => S))();
         }
+        const state = new State(initialValue, initialValue, 0, resolveSettings(settings));
+        const link = new ValueLinkImpl<S>(
+            state,
+            [],
+            (newValue) => state.setCurrent(newValue)
+        );
         return {
-            state: new State(initialValue, initialValue, 0, resolveSettings(settings))
+            state: state,
+            link: link
         };
     });
-    return new ValueLinkImpl<S>(
-        value.state,
-        [],
-        (newValue) => {
-            setValue({
-                state: value.state.setCurrent(newValue)
-            });
-        });
+    value.state.subscriber = (path) => {
+        console.log(path)
+        // set the same value => force update
+        setValue({
+            state: value.state,
+            link: value.link
+        })
+    };
+    return value.link;
 }
 
 export function useStateLink<S>(

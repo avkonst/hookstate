@@ -10,7 +10,8 @@ interface TaskItem {
 }
 
 const TaskView = (props: { link: ValueLink<TaskItem> }) => {
-    const locallink = useStateLink(props.link);
+    const locallink = props.link;
+    // const locallink = useStateLink(props.link);
     const a = locallink.nested.priority;
     return <p>
         {Math.random()} {locallink.nested.name.value}
