@@ -10,17 +10,29 @@ interface TaskItem {
 }
 
 const TaskView = (props: { link: ValueLink<TaskItem> }) => {
-    const locallink = props.link;
-    // const locallink = useStateLink(props.link);
-    const a = locallink.nested.priority;
+    // const locallink = props.link;
+    const locallink = useStateLink(props.link);
+    // const priorityLink = locallink.nested.priority;
+    // const nameLink = locallink.nested.name;
+    // return <p>
+    //     {Math.random()} {nameLink.value}
+    //     <input value={nameLink.value} onChange={v => nameLink.set(v.target.value)} />
+    //     <input value={nameLink.value} onChange={v => priorityLink.set(pv => Number(pv) + 1)} />
+    // </p>
+
     return <p>
-        {Math.random()} {locallink.nested.name.value}
-        <input value={locallink.value.name} onChange={v => locallink.nested.name.set(v.target.value)} />
+        {Math.random()}
+        {/* {locallink.nested.name.value} */}
+        <input value={locallink.nested.name.value} onChange={v => locallink.nested.name.set(v.target.value)} />
+        <input value={locallink.nested.name.value} onChange={v => locallink.nested.priority.set(pv => Number(pv) + 1)} />
     </p>
 }
 
 const TwiceTaskView = (props: { link: ValueLink<TaskItem> }) => {
-    return <><TaskView link={props.link} /><TaskView link={props.link} /></>;
+    return <>
+        <TaskView link={props.link} />
+        <TaskView link={props.link} />
+    </>;
 }
 
 const App: React.FC = () => {

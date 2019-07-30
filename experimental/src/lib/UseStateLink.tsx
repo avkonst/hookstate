@@ -149,8 +149,7 @@ class ReadonlyState {
         // tslint:disable-next-line:no-any
         protected _current: any,
         protected _edition: number,
-        protected _settings: ResolvedSettings,
-        public onSet: (path: Path) => void
+        protected _settings: ResolvedSettings
     ) { }
 
     getCurrent(path: Path) {
@@ -194,8 +193,6 @@ class ReadonlyState {
 }
 
 class State extends ReadonlyState {
-    public subscriber!: (path: Path) => void;
-
     // eslint-disable-next-line no-useless-constructor
     constructor(
         // tslint:disable-next-line:no-any
@@ -205,7 +202,23 @@ class State extends ReadonlyState {
         _edition: number,
         _settings: ResolvedSettings
     ) {
-        super(_initial, _current, _edition, _settings, (path) => this.subscriber(path));
+        super(_initial, _current, _edition, _settings);
+    }
+
+    // tslint:disable-next-line: no-any
+    setCurrentTracked(path: Path, value: any) {
+        if (path.length === 0) {
+            this._current = value;
+        }
+        let result = this._current;
+        path.forEach((p, i) => {
+            if (i === path.length - 1) {
+                result[p] = value;
+            } else {
+                result = result[p];
+            }
+        });
+        this._edition += 1;
     }
 
     // tslint:disable-next-line:no-any
@@ -226,65 +239,74 @@ class State extends ReadonlyState {
 }
 
 class ValueLinkImpl<S> implements ValueLink<S> {
-    private inferredCache: InferredLink<S> | undefined = undefined;
-    private inferredCacheEdition = -1;
+    private subscribers: Set<ValueLinkImpl<S>> | undefined;
 
-    private nestedCache: NestedInferredLink<S> | undefined = undefined;
-    private nestedCacheEdition = -1;
-    private nestedLinksCache: Record<string | number, ValueLink<S[keyof S]>> = {};
+    private nestedCache: NestedInferredLink<S> | undefined;
+    private nestedLinksCache: Record<string | number, ValueLinkImpl<S[keyof S]>> | undefined;
 
-    private valueCache: S | undefined;
-    private valueCacheEdition = -1;
+    private valueUsed: boolean | undefined;
 
-    private initialValueCache: S | undefined;
-    private initialValueCacheEdition = -1;
+    // private initialValueCache: S | undefined;
+    // private initialValueCacheEdition = -1;
 
-    private hooksCache!: ValueProcessingHooks<S>;
-    private hooksCacheEdition = -1;
+    // private hooksCache!: ValueProcessingHooks<S>;
+    // private hooksCacheEdition = -1;
 
-    private modifiedCache!: boolean;
-    private modifiedCacheEdition = -1;
+    // private modifiedCache!: boolean;
+    // private modifiedCacheEdition = -1;
 
-    private errorsCache!: ReadonlyArray<ValidationError> & ArrayExtensions<ValidationError>;
-    private errorsCacheEdition = -1;
+    // private errorsCache!: ReadonlyArray<ValidationError> & ArrayExtensions<ValidationError>;
+    // private errorsCacheEdition = -1;
 
     // eslint-disable-next-line no-useless-constructor
     constructor(
         public readonly state: ReadonlyState,
         public readonly path: Path,
-        public onSet: (newValue: S) => void
-    ) { }
+        // tslint:disable-next-line: no-any
+        public readonly onSet: (path: Path, newValue: any) => void,
+        public readonly onUpdate: () => void,
+        public readonly valueCache: S
+    ) {
+        console.log('created new valuelink at', this.path);
+    }
 
     get value(): S {
-        if (this.valueCacheEdition < this.state.edition) {
-            this.valueCacheEdition = this.state.edition;
-            this.valueCache = this.state.getCurrent(this.path) as S;
-        }
-        return this.valueCache!;
+        // if (this.valueCacheEdition < this.state.edition) {
+        //     this.valueCacheEdition = this.state.edition;
+        //     this.valueCache = this.state.getCurrent(this.path) as S;
+        // }
+        console.log('value used', this.path);
+        this.valueUsed = true;
+        return this.valueCache;
     }
 
     get initialValue(): S | undefined {
-        if (this.initialValueCacheEdition < this.state.edition) {
-            this.initialValueCacheEdition = this.state.edition;
-            this.initialValueCache = this.state.getInitial(this.path) as S | undefined;
-        }
-        return this.initialValueCache;
+        throw 'Functionality disabled';
+        // if (this.initialValueCacheEdition < this.state.edition) {
+        //     this.initialValueCacheEdition = this.state.edition;
+        //     this.initialValueCache = this.state.getInitial(this.path) as S | undefined;
+        // }
+        // return this.initialValueCache;
     }
 
     get hooks() {
-        if (this.hooksCacheEdition < this.state.edition) {
-            this.hooksCacheEdition = this.state.edition;
-            this.hooksCache = this.state.targetHooks(this.path);
-        }
-        return this.hooksCache;
+        throw 'Functionality disabled';
+        // if (this.hooksCacheEdition < this.state.edition) {
+        //     this.hooksCacheEdition = this.state.edition;
+        //     this.hooksCache = this.state.targetHooks(this.path);
+        // }
+        // return this.hooksCache;
     }
 
     set(newValue: React.SetStateAction<S>): void {
-        this.setUntracked(newValue);
-        this.state.onSet(this.path);
+        if (typeof newValue === 'function') {
+            newValue =  (newValue as ((prevValue: S) => S))(this.state.getCurrent(this.path));
+        }
+        this.onSet(this.path, newValue);
     }
 
     setUntracked(newValue: React.SetStateAction<S>): void {
+        throw 'Functionality disabled';
         // inferred() function checks for the nullability of the current value:
         // If value is not null | undefined, it resolves to ArrayLink or ObjectLink
         // which can not take null | undefined as a value.
@@ -306,48 +328,86 @@ class ValueLinkImpl<S> implements ValueLink<S> {
         //    myvar.set(undefined);
         //    myvar_a.set('') // <-- crash here
         //    myvar.set({ a: '', b: '' }) // <-- OK
-        let extractedNewValue = extractValue(this.value, newValue);
-        const localPreset = this.hooks.__preset;
-        if (localPreset) {
-            extractedNewValue = localPreset(extractedNewValue, this);
-        }
-        const globalPreset = this.state.globalHooks().__preset;
-        if (globalPreset) {
-            extractedNewValue = globalPreset(extractedNewValue, this);
-        }
-        if (this.state.settings.skipSettingEqual &&
-            this.areValuesEqual(extractedNewValue, this.value)) {
-            return;
-        }
-        this.onSet(extractedNewValue);
+        // let extractedNewValue = extractValue(this.state.getCurrent(this.path) as S, newValue);
+        // const localPreset = this.hooks.__preset;
+        // if (localPreset) {
+        //     extractedNewValue = localPreset(extractedNewValue, this);
+        // }
+        // const globalPreset = this.state.globalHooks().__preset;
+        // if (globalPreset) {
+        //     extractedNewValue = globalPreset(extractedNewValue, this);
+        // }
+        // if (this.state.settings.skipSettingEqual &&
+        //     this.areValuesEqual(extractedNewValue, this.state.getCurrent(this.path) as S)) {
+        //     return;
+        // }
+        // this.onSet(extractedNewValue);
     }
 
-    // updateAffected(path: Path)
-
-    private areValuesEqual(newValue: S, oldValue: S | undefined): boolean {
-        const localCompare = this.hooks.__compare;
-        if (localCompare) {
-            const localCompareResult = localCompare(newValue, oldValue, this);
-            if (localCompareResult !== undefined) {
-                return localCompareResult;
-            }
+    subscribe(l: ValueLinkImpl<S>) {
+        if (this.subscribers === undefined) {
+            this.subscribers = new Set();
         }
-        const globalCompare = this.state.globalHooks().__compare;
-        if (globalCompare) {
-            const globalCompareResult = globalCompare(newValue, oldValue, this);
-            if (globalCompareResult !== undefined) {
-                return globalCompareResult;
-            }
-        }
-        return defaultEqualityOperator(newValue, oldValue);
+        this.subscribers.add(l);
     }
+
+    unsubscribe(l: ValueLinkImpl<S>) {
+        this.subscribers!.delete(l);
+    }
+
+    updateIfUsed(path: Path): boolean {
+        const update = () => {
+            const firstChildKey = path[this.path.length];
+            if (firstChildKey === undefined) {
+                if (this.valueUsed) {
+                    console.log('not stale cache undefined child', this.path, this.state.edition)
+                    this.onUpdate();
+                    return true;
+                }
+                console.log('stale cache undefined child', this.path, this.state.edition)
+                return false;
+            }
+            const firstChildValue = this.nestedLinksCache && this.nestedLinksCache[firstChildKey];
+            if (firstChildValue === undefined) {
+                console.log('undefined first child', this.path)
+                return false;
+            }
+            console.log('is affected offload to child', this.path)
+            return firstChildValue.updateIfUsed(path);
+        }
+
+        const updated = update();
+        if (!updated && this.subscribers !== undefined) {
+            this.subscribers.forEach(s => s.updateIfUsed(path))
+        }
+        return updated;
+    }
+
+    // private areValuesEqual(newValue: S, oldValue: S | undefined): boolean {
+    //     const localCompare = this.hooks.__compare;
+    //     if (localCompare) {
+    //         const localCompareResult = localCompare(newValue, oldValue, this);
+    //         if (localCompareResult !== undefined) {
+    //             return localCompareResult;
+    //         }
+    //     }
+    //     const globalCompare = this.state.globalHooks().__compare;
+    //     if (globalCompare) {
+    //         const globalCompareResult = globalCompare(newValue, oldValue, this);
+    //         if (globalCompareResult !== undefined) {
+    //             return globalCompareResult;
+    //         }
+    //     }
+    //     return defaultEqualityOperator(newValue, oldValue);
+    // }
 
     get modified(): boolean {
-        if (this.modifiedCacheEdition < this.state.edition) {
-            this.modifiedCacheEdition = this.state.edition;
-            this.modifiedCache = !this.areValuesEqual(this.value, this.initialValue);
-        }
-        return this.modifiedCache;
+        throw 'Functionality disabled';
+        // if (this.modifiedCacheEdition < this.state.edition) {
+        //     this.modifiedCacheEdition = this.state.edition;
+        //     this.modifiedCache = !this.areValuesEqual(this.value, this.initialValue);
+        // }
+        // return this.modifiedCache;
     }
 
     get unmodified(): boolean {
@@ -364,124 +424,121 @@ class ValueLinkImpl<S> implements ValueLink<S> {
 
     private validate(validator: ((val: S, link: ReadonlyValueLink<S>) => ValidationResult | undefined) | undefined):
         ValidationError[] | undefined {
-        if (validator) {
-            const errors = validator(this.value, this);
-            if (errors !== undefined) {
-                if (Array.isArray(errors)) {
-                    return (errors as ReadonlyArray<string | ValidationErrorMessage>).map(m =>
-                        typeof m === 'string' ? {
-                            path: this.path,
-                            message: m,
-                            severity: ValidationSeverity.ERROR
-                        } : {
-                            path: this.path,
-                            message: m.message,
-                            severity: m.severity
-                        }
-                    );
-                } else if (typeof errors === 'string') {
-                    return [{
-                        path: this.path,
-                        message: errors,
-                        severity: ValidationSeverity.ERROR
-                    }];
-                } else {
-                    return [{
-                        path: this.path,
-                        message: (errors as ValidationErrorMessage).message,
-                        severity: (errors as ValidationErrorMessage).severity
-                    }];
-                }
-            }
-        }
-        return undefined;
+        throw 'Functionality disabled';
+        // if (validator) {
+        //     const errors = validator(this.value, this);
+        //     if (errors !== undefined) {
+        //         if (Array.isArray(errors)) {
+        //             return (errors as ReadonlyArray<string | ValidationErrorMessage>).map(m =>
+        //                 typeof m === 'string' ? {
+        //                     path: this.path,
+        //                     message: m,
+        //                     severity: ValidationSeverity.ERROR
+        //                 } : {
+        //                     path: this.path,
+        //                     message: m.message,
+        //                     severity: m.severity
+        //                 }
+        //             );
+        //         } else if (typeof errors === 'string') {
+        //             return [{
+        //                 path: this.path,
+        //                 message: errors,
+        //                 severity: ValidationSeverity.ERROR
+        //             }];
+        //         } else {
+        //             return [{
+        //                 path: this.path,
+        //                 message: (errors as ValidationErrorMessage).message,
+        //                 severity: (errors as ValidationErrorMessage).severity
+        //             }];
+        //         }
+        //     }
+        // }
+        // return undefined;
     }
 
     get errors(): ReadonlyArray<ValidationError> & ArrayExtensions<ValidationError> {
-        if (this.errorsCacheEdition < this.state.edition) {
-            this.errorsCacheEdition = this.state.edition;
+        throw 'Functionality disabled';
+        // if (this.errorsCacheEdition < this.state.edition) {
+        //     this.errorsCacheEdition = this.state.edition;
 
-            const localHooks = this.hooks;
-            let result: ValidationError[] =
-                this.validate(localHooks.__validate) ||
-                this.validate(this.state.globalHooks().__validate) ||
-                [];
-            const nestedHooks = Object.keys(localHooks).filter(i => typeof localHooks[i] !== 'function');
-            if (nestedHooks.length > 0 && this.nested) {
-                const nestedInst = this.nested;
-                if (Array.isArray(nestedInst)) {
-                    if (localHooks['*']) {
-                        nestedInst.forEach((n, i) => {
-                            result = result.concat(n.errors as ValidationError[]);
-                        });
-                    }
-                    nestedHooks
-                        // Validation rule exists,
-                        // but the corresponding nested link may not be created,
-                        // (because it may not be inferred automatically)
-                        // because the original array value cas miss the corresponding index
-                        // The design choice is to skip validation in this case.
-                        // A client can define per array level validation rule,
-                        // where existance of the index can be cheched.
-                        .filter(k => typeof k === 'number' && nestedInst[k] !== undefined)
-                        .forEach(k => {
-                            result = result.concat(nestedInst[k].errors as ValidationError[]);
-                        });
-                } else if (nestedInst) {
-                    nestedHooks
-                        // Validation rule exists,
-                        // but the corresponding nested link may not be created,
-                        // (because it may not be inferred automatically)
-                        // because the original object value can miss the corresponding key
-                        // The design choice is to skip validation in this case.
-                        // A client can define per object level validation rule,
-                        // where existance of the property can be cheched.
-                        .filter(k => nestedInst[k] !== undefined)
-                        .forEach(k => {
-                            result = result.concat(nestedInst[k].errors as ValidationError[]);
-                        });
-                }
-            }
+        //     const localHooks = this.hooks;
+        //     let result: ValidationError[] =
+        //         this.validate(localHooks.__validate) ||
+        //         this.validate(this.state.globalHooks().__validate) ||
+        //         [];
+        //     const nestedHooks = Object.keys(localHooks).filter(i => typeof localHooks[i] !== 'function');
+        //     if (nestedHooks.length > 0 && this.nested) {
+        //         const nestedInst = this.nested;
+        //         if (Array.isArray(nestedInst)) {
+        //             if (localHooks['*']) {
+        //                 nestedInst.forEach((n, i) => {
+        //                     result = result.concat(n.errors as ValidationError[]);
+        //                 });
+        //             }
+        //             nestedHooks
+        //                 // Validation rule exists,
+        //                 // but the corresponding nested link may not be created,
+        //                 // (because it may not be inferred automatically)
+        //                 // because the original array value cas miss the corresponding index
+        //                 // The design choice is to skip validation in this case.
+        //                 // A client can define per array level validation rule,
+        //                 // where existance of the index can be cheched.
+        //                 .filter(k => typeof k === 'number' && nestedInst[k] !== undefined)
+        //                 .forEach(k => {
+        //                     result = result.concat(nestedInst[k].errors as ValidationError[]);
+        //                 });
+        //         } else if (nestedInst) {
+        //             nestedHooks
+        //                 // Validation rule exists,
+        //                 // but the corresponding nested link may not be created,
+        //                 // (because it may not be inferred automatically)
+        //                 // because the original object value can miss the corresponding key
+        //                 // The design choice is to skip validation in this case.
+        //                 // A client can define per object level validation rule,
+        //                 // where existance of the property can be cheched.
+        //                 .filter(k => nestedInst[k] !== undefined)
+        //                 .forEach(k => {
+        //                     result = result.concat(nestedInst[k].errors as ValidationError[]);
+        //                 });
+        //         }
+        //     }
 
-            const first = (condition?: (e: ValidationError) => boolean) => {
-                return result.find(e => condition ? condition(e) : true);
-            };
-            const firstPartial = (condition?: (e: ValidationError) => boolean) => {
-                const r = first(condition);
-                if (r === undefined) {
-                    return {};
-                }
-                return r;
-            };
-            Object.assign(result, {
-                first: first,
-                firstPartial: firstPartial
-            });
+        //     const first = (condition?: (e: ValidationError) => boolean) => {
+        //         return result.find(e => condition ? condition(e) : true);
+        //     };
+        //     const firstPartial = (condition?: (e: ValidationError) => boolean) => {
+        //         const r = first(condition);
+        //         if (r === undefined) {
+        //             return {};
+        //         }
+        //         return r;
+        //     };
+        //     Object.assign(result, {
+        //         first: first,
+        //         firstPartial: firstPartial
+        //     });
 
-            this.errorsCache = result as unknown as ReadonlyArray<ValidationError> & ArrayExtensions<ValidationError>;
-        }
-        return this.errorsCache;
+        //     this.errorsCache = result as unknown as ReadonlyArray<ValidationError> & ArrayExtensions<ValidationError>;
+        // }
+        // return this.errorsCache;
     }
 
     get inferred(): InferredLink<S> {
-        if (this.inferredCacheEdition < this.state.edition) {
-            this.inferredCacheEdition = this.state.edition;
-            if (Array.isArray(this.value)) {
-                this.inferredCache = new ArrayLinkImpl(
-                    this as unknown as ValueLinkImpl<unknown[]>) as unknown as InferredLink<S>;
-            } else if (typeof this.value === 'object' && this.value !== null) {
-                this.inferredCache = new ObjectLinkImpl(
-                    this as unknown as ValueLinkImpl<object>) as unknown as InferredLink<S>;
-            } else {
-                this.inferredCache = undefined as unknown as InferredLink<S>;
-            }
+        if (Array.isArray(this.value)) {
+            return new ArrayLinkImpl(
+                this as unknown as ValueLinkImpl<unknown[]>) as unknown as InferredLink<S>;
+        } else if (typeof this.value === 'object' && this.value !== null) {
+            return new ObjectLinkImpl(
+                this as unknown as ValueLinkImpl<object>) as unknown as InferredLink<S>;
+        } else {
+            return undefined as unknown as InferredLink<S>;
         }
-        return this.inferredCache as InferredLink<S>;
     }
 
     get nested(): NestedInferredLink<S> {
-        if (this.nestedCacheEdition < this.state.edition) {
-            this.nestedCacheEdition = this.state.edition;
+        if (this.nestedCache === undefined) {
             if (Array.isArray(this.value)) {
                 this.nestedCache = this.nestedArrayImpl();
             } else if (typeof this.value === 'object' && this.value !== null) {
@@ -575,11 +632,9 @@ class ValueLinkImpl<S> implements ValueLink<S> {
         return new ValueLinkImpl(
             this.state,
             this.path.slice().concat(k),
-            (newValue) => this.setUntracked((prevValue) => {
-                const copy = (prevValue as unknown as unknown[]).slice();
-                copy[k] = newValue;
-                return copy as unknown as S;
-            })
+            this.onSet,
+            this.onUpdate,
+            this.valueCache[k]
         );
     }
 
@@ -665,11 +720,9 @@ class ValueLinkImpl<S> implements ValueLink<S> {
         return new ValueLinkImpl(
             this.state,
             this.path.slice().concat(k.toString()),
-            (newValue: S[K]) => this.setUntracked((prevValue: S) => {
-                const copy: S = { ...prevValue };
-                copy[k] = newValue;
-                return copy;
-            })
+            this.onSet,
+            this.onUpdate,
+            this.valueCache[k]
         );
     }
 }
@@ -788,6 +841,8 @@ class ObjectLinkImpl<S extends object> extends ProxyLink<S> implements ObjectLin
     }
 }
 
+export const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
+
 class StateLinkImpl<S> implements StateLink<S> {
     public state: State;
     public link: ValueLink<S>;
@@ -812,7 +867,9 @@ class StateLinkImpl<S> implements StateLink<S> {
                     state: this.state
                 };
                 this.subscribers.forEach(s => s(newRef));
-            }
+            },
+            () => { throw 'Not implemented' },
+            this.state.getCurrent([])
         );
     }
 
@@ -844,57 +901,6 @@ export function createStateLink<S>(
         resolveSettings(settings));
 }
 
-function useProxyStateLink<S>(originLink: ValueLinkImpl<S>): ValueLink<S> {
-    const [value, setValue] = React.useState({
-        state: new State(
-            originLink.initialValue,
-            originLink.value,
-            0,
-            {
-                ...originLink.state.settings,
-                targetHooks: originLink.hooks
-            }
-        ),
-        originInitEdition: originLink.state.edition,
-    });
-    const isLocalStateStale = originLink.state.edition > value.originInitEdition;
-    if (isLocalStateStale) {
-        value.state = new State(
-            originLink.initialValue,
-            originLink.value,
-            0,
-            {
-                ...originLink.state.settings,
-                targetHooks: originLink.hooks
-            }
-        );
-    }
-    const result = new ValueLinkImpl<S>(
-        value.state,
-        [],
-        (newValue) => setValue({
-            state: value.state.setCurrent(newValue),
-            originInitEdition: originLink.state.edition
-        }));
-
-    React.useEffect(() => {
-        // set when the errors change, not just when validity status changes
-        if (!defaultEqualityOperator(result.errors, originLink.errors) ||
-            originLink.modified !== result.modified) {
-            originLink.set(result.value);
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        JSON.stringify(result.errors),
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        JSON.stringify(originLink.errors),
-        originLink.modified,
-        result.modified
-    ]);
-    return result;
-}
-
 function useContextStateLink<S>(stateLink: StateLinkImpl<S>): ValueLink<S> {
     if (stateLink.context === undefined) {
         // this allows to edit the global state
@@ -911,32 +917,43 @@ function useContextStateLink<S>(stateLink: StateLinkImpl<S>): ValueLink<S> {
     return stateLink.link;
 }
 
+function useDerivedStateLink<S>(originLink: ValueLinkImpl<S>): ValueLink<S> {
+    const [_, setValue] = React.useState({});
+    const link = new ValueLinkImpl<S>(
+        originLink.state,
+        originLink.path,
+        originLink.onSet,
+        () => setValue({}), // force update
+        originLink.state.getCurrent(originLink.path)
+    );
+    useIsomorphicLayoutEffect(() => {
+        originLink.subscribe(link);
+        return () => originLink.unsubscribe(link);
+    });
+    return link;
+}
+
 function useLocalStateLink<S>(initialState: S | (() => S), settings?: Settings<S>): ValueLink<S> {
     const [value, setValue] = React.useState(() => {
         let initialValue: S = initialState as S;
         if (typeof initialState === 'function') {
             initialValue = (initialState as (() => S))();
         }
-        const state = new State(initialValue, initialValue, 0, resolveSettings(settings));
-        const link = new ValueLinkImpl<S>(
-            state,
-            [],
-            (newValue) => state.setCurrent(newValue)
-        );
         return {
-            state: state,
-            link: link
+            state: new State(initialValue, initialValue, 0, resolveSettings(settings))
         };
     });
-    value.state.subscriber = (path) => {
-        console.log(path)
-        // set the same value => force update
-        setValue({
-            state: value.state,
-            link: value.link
-        })
-    };
-    return value.link;
+    const link = new ValueLinkImpl<S>(
+        value.state,
+        [],
+        (path, newValue) => {
+            value.state.setCurrentTracked(path, newValue);
+            link.updateIfUsed(path)
+        },
+        () => setValue({ state: value.state }), // force update
+        value.state.getCurrent([])
+    );
+    return link;
 }
 
 export function useStateLink<S>(
@@ -945,12 +962,12 @@ export function useStateLink<S>(
 ): ValueLink<S> {
     if (initialState instanceof ValueLinkImpl) {
         // eslint-disable-next-line react-hooks/rules-of-hooks
-        return useProxyStateLink(initialState) as ValueLink<S>;
+        return useDerivedStateLink(initialState) as ValueLink<S>;
     }
     if (initialState instanceof ProxyLink &&
         initialState.origin instanceof ValueLinkImpl) {
         // eslint-disable-next-line react-hooks/rules-of-hooks
-        return useProxyStateLink(initialState.origin) as ValueLink<S>;
+        return useDerivedStateLink(initialState.origin) as ValueLink<S>;
     }
     if (initialState instanceof StateLinkImpl) {
         // eslint-disable-next-line react-hooks/rules-of-hooks
