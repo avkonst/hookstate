@@ -2,7 +2,12 @@ import React from 'react';
 import logo from './logo.svg';
 import './App.css';
 
-import { useStateLink, ValueLink } from './lib/UseStateLink';
+import { useStateLink, ValueLink, createStateLink } from './lib/UseStateLink';
+
+const state = createStateLink<TaskItem[]>([{
+    name: 'initial global',
+    priority: 0
+}]);
 
 interface TaskItem {
     name: string,
@@ -40,6 +45,7 @@ const App: React.FC = () => {
         name: 'initial',
         priority: 0
     }]);
+    // const vl = useStateLink(state);
     return <>
         {
             vl.nested.map((i, ind) => <TwiceTaskView key={ind} link={i} />)

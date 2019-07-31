@@ -68,9 +68,7 @@ export interface ArrayLink<U> extends ValueLink<U[]>, ArrayStateMutation<U> {}
 
 export interface ObjectLink<S extends object> extends ValueLink<S>, ObjectStateMutation<S> {}
 
-export interface StateLink<S> {
-    Observer: (props: React.PropsWithChildren<{}>) => JSX.Element;
-}
+export interface StateLink<S> {}
 
 export type ValidationResult =
     string | ValidationErrorMessage | ReadonlyArray<string | ValidationErrorMessage>;
@@ -141,7 +139,17 @@ function extractValue<S>(prevValue: S, newValue: S | ((prevValue: S) => S)): S {
     return newValue;
 }
 
-class ReadonlyState {
+interface Subscribable {
+    // tslint:disable-next-line: no-any
+    subscribe(l: ValueLinkImpl<any>): void;
+    // tslint:disable-next-line: no-any
+    unsubscribe(l: ValueLinkImpl<any>): void;
+}
+
+class State implements Subscribable {
+    // tslint:disable-next-line: no-any
+    public subscribers: Set<ValueLinkImpl<any>> = new Set();
+
     // eslint-disable-next-line no-useless-constructor
     constructor(
         // tslint:disable-next-line:no-any
@@ -190,19 +198,15 @@ class ReadonlyState {
         });
         return result || defaultProcessingHooks;
     }
-}
 
-class State extends ReadonlyState {
-    // eslint-disable-next-line no-useless-constructor
-    constructor(
-        // tslint:disable-next-line:no-any
-        _initial: any,
-        // tslint:disable-next-line:no-any
-        _current: any,
-        _edition: number,
-        _settings: ResolvedSettings
-    ) {
-        super(_initial, _current, _edition, _settings);
+    // tslint:disable-next-line: no-any
+    subscribe(l: ValueLinkImpl<any>) {
+        this.subscribers.add(l);
+    }
+
+    // tslint:disable-next-line: no-any
+    unsubscribe(l: ValueLinkImpl<any>) {
+        this.subscribers.delete(l);
     }
 
     // tslint:disable-next-line: no-any
@@ -219,13 +223,7 @@ class State extends ReadonlyState {
             }
         });
         this._edition += 1;
-    }
-
-    // tslint:disable-next-line:no-any
-    setCurrent(value: any): State {
-        this._edition += 1;
-        this._current = value;
-        return this;
+        this.subscribers.forEach(s => s.updateIfUsed(path));
     }
 
     // tslint:disable-next-line:no-any
@@ -238,7 +236,13 @@ class State extends ReadonlyState {
     }
 }
 
-class ValueLinkImpl<S> implements ValueLink<S> {
+class ValueLinkInvalidUsageError extends Error {
+    constructor(op: string, path: Path) {
+        super(`ValueLink is used incorrectly. Attempted '${op}' at '/${path.join('/')}'`)
+    }
+}
+
+class ValueLinkImpl<S> implements ValueLink<S>, Subscribable {
     private subscribers: Set<ValueLinkImpl<S>> | undefined;
 
     private nestedCache: NestedInferredLink<S> | undefined;
@@ -260,22 +264,14 @@ class ValueLinkImpl<S> implements ValueLink<S> {
 
     // eslint-disable-next-line no-useless-constructor
     constructor(
-        public readonly state: ReadonlyState,
+        public readonly state: State,
         public readonly path: Path,
         // tslint:disable-next-line: no-any
-        public readonly onSet: (path: Path, newValue: any) => void,
         public readonly onUpdate: () => void,
         public readonly valueCache: S
-    ) {
-        console.log('created new valuelink at', this.path);
-    }
+    ) { }
 
     get value(): S {
-        // if (this.valueCacheEdition < this.state.edition) {
-        //     this.valueCacheEdition = this.state.edition;
-        //     this.valueCache = this.state.getCurrent(this.path) as S;
-        // }
-        console.log('value used', this.path);
         this.valueUsed = true;
         return this.valueCache;
     }
@@ -302,7 +298,7 @@ class ValueLinkImpl<S> implements ValueLink<S> {
         if (typeof newValue === 'function') {
             newValue =  (newValue as ((prevValue: S) => S))(this.state.getCurrent(this.path));
         }
-        this.onSet(this.path, newValue);
+        this.state.setCurrentTracked(this.path, newValue);
     }
 
     setUntracked(newValue: React.SetStateAction<S>): void {
@@ -360,19 +356,15 @@ class ValueLinkImpl<S> implements ValueLink<S> {
             const firstChildKey = path[this.path.length];
             if (firstChildKey === undefined) {
                 if (this.valueUsed) {
-                    console.log('not stale cache undefined child', this.path, this.state.edition)
                     this.onUpdate();
                     return true;
                 }
-                console.log('stale cache undefined child', this.path, this.state.edition)
                 return false;
             }
             const firstChildValue = this.nestedLinksCache && this.nestedLinksCache[firstChildKey];
             if (firstChildValue === undefined) {
-                console.log('undefined first child', this.path)
                 return false;
             }
-            console.log('is affected offload to child', this.path)
             return firstChildValue.updateIfUsed(path);
         }
 
@@ -595,6 +587,7 @@ class ValueLinkImpl<S> implements ValueLink<S> {
                     enumerable: origin.enumerable,
                     value: undefined,
                     writable: false,
+                    // tslint:disable-next-line: no-any
                     get: () => getter(target as any[], p),
                     set: undefined
                 };
@@ -632,7 +625,6 @@ class ValueLinkImpl<S> implements ValueLink<S> {
         return new ValueLinkImpl(
             this.state,
             this.path.slice().concat(k),
-            this.onSet,
             this.onUpdate,
             this.valueCache[k]
         );
@@ -720,16 +712,15 @@ class ValueLinkImpl<S> implements ValueLink<S> {
         return new ValueLinkImpl(
             this.state,
             this.path.slice().concat(k.toString()),
-            this.onSet,
             this.onUpdate,
             this.valueCache[k]
         );
     }
 }
 
-class ProxyLink<S> implements ValueLink<S> {
+class ArrayOrObjectLinkBase<S> implements ValueLink<S> {
     constructor(readonly origin: ValueLink<S>) {
-        if (origin instanceof ProxyLink) {
+        if (origin instanceof ArrayOrObjectLinkBase) {
             origin = origin.origin as ValueLink<S>;
         }
     }
@@ -769,13 +760,7 @@ class ProxyLink<S> implements ValueLink<S> {
     }
 }
 
-class ValueLinkInvalidUsageError extends Error {
-    constructor(op: string, path: Path) {
-        super(`ValueLink is used incorrectly. Attempted '${op}' at '/${path.join('/')}'`)
-    }
-}
-
-class ArrayLinkImpl<U> extends ProxyLink<U[]> implements ArrayLink<U> {
+class ArrayLinkImpl<U> extends ArrayOrObjectLinkBase<U[]> implements ArrayLink<U> {
     private arrayMutation: ArrayStateMutation<U>;
 
     constructor(private originImpl: ValueLinkImpl<U[]>) {
@@ -820,7 +805,7 @@ class ArrayLinkImpl<U> extends ProxyLink<U[]> implements ArrayLink<U> {
     }
 }
 
-class ObjectLinkImpl<S extends object> extends ProxyLink<S> implements ObjectLink<S> {
+class ObjectLinkImpl<S extends object> extends ArrayOrObjectLinkBase<S> implements ObjectLink<S> {
     private objectMutation: ObjectStateMutation<S>;
 
     constructor(private originImpl: ValueLinkImpl<S>) {
@@ -841,119 +826,53 @@ class ObjectLinkImpl<S extends object> extends ProxyLink<S> implements ObjectLin
     }
 }
 
-export const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
 
 class StateLinkImpl<S> implements StateLink<S> {
-    public state: State;
-    public link: ValueLink<S>;
-    public context: React.Context<{ state: State }> | undefined = undefined;
-    public subscribers: React.Dispatch<React.SetStateAction<{ state: State }>>[] = [];
-
-    constructor(
-        initial: S | (() => S),
-        public settings: ResolvedSettings
-    ) {
-        let initialValue: S = initial as S;
-        if (typeof initial === 'function') {
-            initialValue = (initial as (() => S))();
-        }
-        this.state = new State(initialValue, initialValue, 0, settings);
-        this.link = new ValueLinkImpl<S>(
-            this.state,
-            [],
-            (newValue) => {
-                this.state.setCurrent(newValue);
-                const newRef = {
-                    state: this.state
-                };
-                this.subscribers.forEach(s => s(newRef));
-            },
-            () => { throw 'Not implemented' },
-            this.state.getCurrent([])
-        );
-    }
-
-    // tslint:disable-next-line:function-name
-    Observer = (props: React.PropsWithChildren<{}>) => {
-        const [value, setState] = React.useState({
-            state: this.state
-        });
-        React.useEffect(() => {
-            this.subscribers.push(setState);
-            return () => {
-                this.subscribers = this.subscribers.filter(s => s !== setState);
-            };
-        }, [setState]);
-
-        if (this.context === undefined) {
-            this.context = React.createContext(value);
-        }
-        // submit new value every time to trigger rerender for children
-        return <this.context.Provider {...props} value={value} />;
-    }
+    constructor(public state: State) { }
 }
 
-export function createStateLink<S>(
+function createState<S>(
     initial: S | (() => S),
-    settings?: Settings<S>): StateLink<S> {
-    return new StateLinkImpl(
-        initial,
-        resolveSettings(settings));
+    settings?: Settings<S>): State {
+    let initialValue: S = initial as S;
+    if (typeof initial === 'function') {
+        initialValue = (initial as (() => S))();
+    }
+    return new State(initialValue, initialValue, 0, resolveSettings(settings));
 }
 
-function useContextStateLink<S>(stateLink: StateLinkImpl<S>): ValueLink<S> {
-    if (stateLink.context === undefined) {
-        // this allows to edit the global state
-        // whitout active observers
-        return stateLink.link;
-    }
-    // It is expected to be called within the provider scope,
-    // after the context has been initialized
-    // If not, the useContext will crash on undefined context.
-    // Note: useContext is need to trigger rerendering the component
-    // when state link changes its value.
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    React.useContext(stateLink.context);
-    return stateLink.link;
+function useSubscribedStateLink<S>(state: State, path: Path, update: () => void, subscribeTarget: Subscribable) {
+    const link = new ValueLinkImpl<S>(
+        state,
+        path,
+        update,
+        state.getCurrent(path)
+    );
+    useIsomorphicLayoutEffect(() => {
+        subscribeTarget.subscribe(link);
+        return () => subscribeTarget.unsubscribe(link);
+    });
+    return link;
+}
+
+function useGlobalStateLink<S>(stateLink: StateLinkImpl<S>): ValueLink<S> {
+    const [_, setValue] = React.useState({});
+    return useSubscribedStateLink(stateLink.state, [], () => setValue({}), stateLink.state);
+}
+
+function useLocalStateLink<S>(initialState: S | (() => S), settings?: Settings<S>): ValueLink<S> {
+    const [value, setValue] = React.useState(() => ({ state: createState(initialState, settings) }));
+    return useSubscribedStateLink(value.state, [], () => setValue({ state: value.state }), value.state);
 }
 
 function useDerivedStateLink<S>(originLink: ValueLinkImpl<S>): ValueLink<S> {
     const [_, setValue] = React.useState({});
-    const link = new ValueLinkImpl<S>(
-        originLink.state,
-        originLink.path,
-        originLink.onSet,
-        () => setValue({}), // force update
-        originLink.state.getCurrent(originLink.path)
-    );
-    useIsomorphicLayoutEffect(() => {
-        originLink.subscribe(link);
-        return () => originLink.unsubscribe(link);
-    });
-    return link;
+    return useSubscribedStateLink(originLink.state, originLink.path, () => setValue({}), originLink);
 }
 
-function useLocalStateLink<S>(initialState: S | (() => S), settings?: Settings<S>): ValueLink<S> {
-    const [value, setValue] = React.useState(() => {
-        let initialValue: S = initialState as S;
-        if (typeof initialState === 'function') {
-            initialValue = (initialState as (() => S))();
-        }
-        return {
-            state: new State(initialValue, initialValue, 0, resolveSettings(settings))
-        };
-    });
-    const link = new ValueLinkImpl<S>(
-        value.state,
-        [],
-        (path, newValue) => {
-            value.state.setCurrentTracked(path, newValue);
-            link.updateIfUsed(path)
-        },
-        () => setValue({ state: value.state }), // force update
-        value.state.getCurrent([])
-    );
-    return link;
+export function createStateLink<S>(initial: S | (() => S), settings?: Settings<S>): StateLink<S> {
+    return new StateLinkImpl(createState(initial, settings));
 }
 
 export function useStateLink<S>(
@@ -964,14 +883,14 @@ export function useStateLink<S>(
         // eslint-disable-next-line react-hooks/rules-of-hooks
         return useDerivedStateLink(initialState) as ValueLink<S>;
     }
-    if (initialState instanceof ProxyLink &&
+    if (initialState instanceof ArrayOrObjectLinkBase &&
         initialState.origin instanceof ValueLinkImpl) {
         // eslint-disable-next-line react-hooks/rules-of-hooks
         return useDerivedStateLink(initialState.origin) as ValueLink<S>;
     }
     if (initialState instanceof StateLinkImpl) {
         // eslint-disable-next-line react-hooks/rules-of-hooks
-        return useContextStateLink(initialState) as ValueLink<S>;
+        return useGlobalStateLink(initialState) as ValueLink<S>;
     }
 
     // eslint-disable-next-line react-hooks/rules-of-hooks
