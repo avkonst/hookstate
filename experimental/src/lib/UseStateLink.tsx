@@ -123,26 +123,6 @@ function defaultEqualityOperator<S>(a: S, b: S | undefined) {
 // tslint:disable-next-line:no-any
 const defaultProcessingHooks: ValueProcessingHooks<any> = {};
 
-interface ResolvedSettings {
-    readonly cloneInitial: boolean;
-    readonly skipSettingEqual: boolean;
-    readonly onset?: (newValue: any, initialValue: any, path: Path) => void
-    // tslint:disable-next-line:no-any
-    readonly globalHooks: GlobalValueProcessingHooks<any>;
-    // tslint:disable-next-line:no-any
-    readonly targetHooks?: ValueProcessingHooks<any>;
-}
-
-function resolveSettings<S>(settings?: Settings<S>): ResolvedSettings {
-    return {
-        cloneInitial: (settings && settings.cloneInitial) || false,
-        skipSettingEqual: (settings && settings.skipSettingEqual) || false,
-        onset: settings && settings.onset,
-        globalHooks: (settings && settings.globalHooks) || defaultProcessingHooks,
-        targetHooks: settings && settings.targetHooks
-    };
-}
-
 function extractValue<S>(prevValue: S, newValue: S | ((prevValue: S) => S)): S {
     if (typeof newValue === 'function') {
         return (newValue as ((prevValue: S) => S))(prevValue);
@@ -173,7 +153,8 @@ class State implements Subscribable {
     constructor(
         // tslint:disable-next-line:no-any
         protected _current: any,
-        protected _settings: ResolvedSettings
+        // tslint:disable-next-line: no-any
+        protected _settings: Settings<any>
     ) {
         if (_settings.cloneInitial) {
             this._initial = JSON.parse(JSON.stringify(_current)); // maybe better to use specialised library
@@ -205,10 +186,6 @@ class State implements Subscribable {
 
     get settings() {
         return this._settings;
-    }
-
-    globalHooks() {
-        return this._settings.globalHooks;
     }
 
     // tslint:disable-next-line:no-any
@@ -276,7 +253,6 @@ class ValueLinkImpl<S> implements ValueLink<S>, Subscribable {
     // private errorsCache!: ReadonlyArray<ValidationError> & ArrayExtensions<ValidationError>;
     // private errorsCacheEdition = -1;
 
-    // eslint-disable-next-line no-useless-constructor
     constructor(
         public readonly state: State,
         public readonly path: Path,
@@ -837,7 +813,7 @@ function createState<S>(
     if (typeof initial === 'function') {
         initialValue = (initial as (() => S))();
     }
-    return new State(initialValue, resolveSettings(settings));
+    return new State(initialValue, settings || {});
 }
 
 function useSubscribedStateLink<S>(state: State, path: Path, update: () => void, subscribeTarget: Subscribable) {
