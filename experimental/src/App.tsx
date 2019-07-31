@@ -4,10 +4,10 @@ import './App.css';
 
 import { useStateLink, ValueLink, createStateLink } from './lib/UseStateLink';
 
-const state = createStateLink<TaskItem[]>([{
-    name: 'initial global',
-    priority: 0
-}]);
+const state = createStateLink<TaskItem[]>(Array.from(Array(1000).keys()).map((i) => ({
+    name: 'initial',
+    priority: i
+})));
 
 interface TaskItem {
     name: string,
@@ -41,11 +41,11 @@ const TwiceTaskView = (props: { link: ValueLink<TaskItem> }) => {
 }
 
 const App: React.FC = () => {
-    const vl = useStateLink<TaskItem[]>([{
-        name: 'initial',
-        priority: 0
-    }]);
-    // const vl = useStateLink(state);
+    // const vl = useStateLink<TaskItem[]>(Array.from(Array(1000).keys()).map((i) => ({
+    //     name: 'initial',
+    //     priority: i
+    // })));
+    const vl = useStateLink(state);
     return <>
         {
             vl.nested.map((i, ind) => <TwiceTaskView key={ind} link={i} />)
