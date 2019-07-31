@@ -73,6 +73,11 @@ export interface StateLink<S> {}
 export type ValidationResult =
     string | ValidationErrorMessage | ReadonlyArray<string | ValidationErrorMessage>;
 
+export interface GlobalValueProcessingHooks<S> {
+    readonly __validate?: (currentValue: S, link: ReadonlyValueLink<S>) => ValidationResult | undefined;
+    readonly __compare?: (newValue: S, oldValue: S | undefined, link: ReadonlyValueLink<S>) => boolean | undefined;
+}
+
 export interface ValueProcessingHooks<S> {
     readonly __validate?: (currentValue: S, link: ReadonlyValueLink<S>) => ValidationResult | undefined;
     readonly __preset?: (newValue: S, link: ReadonlyValueLink<S>) => S;
@@ -95,10 +100,12 @@ export type InferredProcessingHooks<S> =
 
 export interface Settings<S> {
     // default is false
+    readonly cloneInitial?: boolean;
+    // default is false
     readonly skipSettingEqual?: boolean;
-
+    readonly onset?: (newValue: S, initialValue: S | undefined, path: Path) => void;
     // tslint:disable-next-line:no-any
-    readonly globalHooks?: ValueProcessingHooks<any>;
+    readonly globalHooks?: GlobalValueProcessingHooks<any>;
     readonly targetHooks?: InferredProcessingHooks<S>;
 }
 
@@ -117,18 +124,22 @@ function defaultEqualityOperator<S>(a: S, b: S | undefined) {
 const defaultProcessingHooks: ValueProcessingHooks<any> = {};
 
 interface ResolvedSettings {
+    readonly cloneInitial: boolean;
     readonly skipSettingEqual: boolean;
+    readonly onset?: (newValue: any, initialValue: any, path: Path) => void
     // tslint:disable-next-line:no-any
-    readonly globalHooks: ValueProcessingHooks<any>;
+    readonly globalHooks: GlobalValueProcessingHooks<any>;
     // tslint:disable-next-line:no-any
-    readonly targetHooks: ValueProcessingHooks<any>;
+    readonly targetHooks?: ValueProcessingHooks<any>;
 }
 
 function resolveSettings<S>(settings?: Settings<S>): ResolvedSettings {
     return {
+        cloneInitial: (settings && settings.cloneInitial) || false,
         skipSettingEqual: (settings && settings.skipSettingEqual) || false,
+        onset: settings && settings.onset,
         globalHooks: (settings && settings.globalHooks) || defaultProcessingHooks,
-        targetHooks: (settings && settings.targetHooks) || defaultProcessingHooks
+        targetHooks: settings && settings.targetHooks
     };
 }
 
@@ -137,6 +148,12 @@ function extractValue<S>(prevValue: S, newValue: S | ((prevValue: S) => S)): S {
         return (newValue as ((prevValue: S) => S))(prevValue);
     }
     return newValue;
+}
+
+class ValueLinkDisabledFeatureError extends Error {
+    constructor(op: string, hint: string, path: Path) {
+        super(`ValueLink is used incorrectly. Attempted '${op}' at '/${path.join('/')}'. ${hint}`)
+    }
 }
 
 interface Subscribable {
@@ -149,16 +166,19 @@ interface Subscribable {
 class State implements Subscribable {
     // tslint:disable-next-line: no-any
     public subscribers: Set<ValueLinkImpl<any>> = new Set();
+    // tslint:disable-next-line:no-any
+    protected _initial: any;
 
     // eslint-disable-next-line no-useless-constructor
     constructor(
         // tslint:disable-next-line:no-any
-        protected _initial: any,
-        // tslint:disable-next-line:no-any
         protected _current: any,
-        protected _edition: number,
         protected _settings: ResolvedSettings
-    ) { }
+    ) {
+        if (_settings.cloneInitial) {
+            this._initial = JSON.parse(JSON.stringify(_current)); // maybe better to use specialised library
+        }
+    }
 
     getCurrent(path: Path) {
         let result = this._current;
@@ -169,6 +189,11 @@ class State implements Subscribable {
     }
 
     getInitial(path: Path) {
+        if (!this._settings.cloneInitial) {
+            throw new ValueLinkDisabledFeatureError('initialValue',
+                'Enable this feature in settings: useStateLink(..., { cloneInitial: true })',
+                path)
+        }
         let result = this._initial;
         path.forEach(p => {
             // in contrast to the current value,
@@ -176,10 +201,6 @@ class State implements Subscribable {
             result = result && result[p];
         });
         return result;
-    }
-
-    get edition() {
-        return this._edition;
     }
 
     get settings() {
@@ -193,9 +214,12 @@ class State implements Subscribable {
     // tslint:disable-next-line:no-any
     targetHooks(path: Path): ValueProcessingHooks<any> {
         let result = this._settings.targetHooks;
-        path.forEach(p => {
-            result = result && (result[p] || (typeof p === 'number' && result['*']));
-        });
+        for (const p of path) {
+            if (!result) {
+                return defaultProcessingHooks;
+            }
+            result = result[p] || (typeof p === 'number' && result['*']);
+        }
         return result || defaultProcessingHooks;
     }
 
@@ -210,7 +234,7 @@ class State implements Subscribable {
     }
 
     // tslint:disable-next-line: no-any
-    setCurrentTracked(path: Path, value: any) {
+    setCurrent(path: Path, value: any) {
         if (path.length === 0) {
             this._current = value;
         }
@@ -222,17 +246,11 @@ class State implements Subscribable {
                 result = result[p];
             }
         });
-        this._edition += 1;
+        const onset = this.settings.onset;
+        if (onset) {
+            onset(this._current, this._initial, path);
+        }
         this.subscribers.forEach(s => s.updateIfUsed(path));
-    }
-
-    // tslint:disable-next-line:no-any
-    setInitial(value: any): State {
-        // update edition on every mutation
-        // so consumers can invalidate their caches
-        this._edition += 1;
-        this._initial = value;
-        return this;
     }
 }
 
@@ -250,11 +268,7 @@ class ValueLinkImpl<S> implements ValueLink<S>, Subscribable {
 
     private valueUsed: boolean | undefined;
 
-    // private initialValueCache: S | undefined;
-    // private initialValueCacheEdition = -1;
-
-    // private hooksCache!: ValueProcessingHooks<S>;
-    // private hooksCacheEdition = -1;
+    private initialValueCache: S | undefined;
 
     // private modifiedCache!: boolean;
     // private modifiedCacheEdition = -1;
@@ -277,32 +291,18 @@ class ValueLinkImpl<S> implements ValueLink<S>, Subscribable {
     }
 
     get initialValue(): S | undefined {
-        throw 'Functionality disabled';
-        // if (this.initialValueCacheEdition < this.state.edition) {
-        //     this.initialValueCacheEdition = this.state.edition;
-        //     this.initialValueCache = this.state.getInitial(this.path) as S | undefined;
-        // }
-        // return this.initialValueCache;
+        if (this.initialValueCache === undefined) {
+            // it still may get undefined, in this case the cache does not make an effect
+            this.initialValueCache = this.state.getInitial(this.path) as S | undefined;
+        }
+        return this.initialValueCache;
     }
 
-    get hooks() {
-        throw 'Functionality disabled';
-        // if (this.hooksCacheEdition < this.state.edition) {
-        //     this.hooksCacheEdition = this.state.edition;
-        //     this.hooksCache = this.state.targetHooks(this.path);
-        // }
-        // return this.hooksCache;
+    private get hooks(): ValueProcessingHooks<S> {
+        return this.state.targetHooks(this.path);
     }
 
     set(newValue: React.SetStateAction<S>): void {
-        if (typeof newValue === 'function') {
-            newValue =  (newValue as ((prevValue: S) => S))(this.state.getCurrent(this.path));
-        }
-        this.state.setCurrentTracked(this.path, newValue);
-    }
-
-    setUntracked(newValue: React.SetStateAction<S>): void {
-        throw 'Functionality disabled';
         // inferred() function checks for the nullability of the current value:
         // If value is not null | undefined, it resolves to ArrayLink or ObjectLink
         // which can not take null | undefined as a value.
@@ -324,20 +324,18 @@ class ValueLinkImpl<S> implements ValueLink<S>, Subscribable {
         //    myvar.set(undefined);
         //    myvar_a.set('') // <-- crash here
         //    myvar.set({ a: '', b: '' }) // <-- OK
-        // let extractedNewValue = extractValue(this.state.getCurrent(this.path) as S, newValue);
-        // const localPreset = this.hooks.__preset;
-        // if (localPreset) {
-        //     extractedNewValue = localPreset(extractedNewValue, this);
-        // }
-        // const globalPreset = this.state.globalHooks().__preset;
-        // if (globalPreset) {
-        //     extractedNewValue = globalPreset(extractedNewValue, this);
-        // }
         // if (this.state.settings.skipSettingEqual &&
         //     this.areValuesEqual(extractedNewValue, this.state.getCurrent(this.path) as S)) {
         //     return;
         // }
-        // this.onSet(extractedNewValue);
+        if (typeof newValue === 'function') {
+            newValue =  (newValue as ((prevValue: S) => S))(this.valueCache);
+        }
+        const localPreset = this.hooks.__preset;
+        if (localPreset) {
+            newValue = localPreset(newValue, this);
+        }
+        this.state.setCurrent(this.path, newValue);
     }
 
     subscribe(l: ValueLinkImpl<S>) {
@@ -839,7 +837,7 @@ function createState<S>(
     if (typeof initial === 'function') {
         initialValue = (initial as (() => S))();
     }
-    return new State(initialValue, initialValue, 0, resolveSettings(settings));
+    return new State(initialValue, resolveSettings(settings));
 }
 
 function useSubscribedStateLink<S>(state: State, path: Path, update: () => void, subscribeTarget: Subscribable) {
