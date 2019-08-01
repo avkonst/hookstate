@@ -218,6 +218,12 @@ class State implements Subscribable {
         let result = this._current;
         path.forEach((p, i) => {
             if (i === path.length - 1) {
+                if (!(p in result)) {
+                    // if an array of object is about to be extended by new property
+                    // we consider it is the whole object is changed
+                    // which is identified by upper path
+                    path = path.slice(0, -1)
+                }
                 result[p] = value;
             } else {
                 result = result[p];
