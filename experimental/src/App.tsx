@@ -4,10 +4,15 @@ import './App.css';
 
 import { useStateLink, ValueLink, createStateLink } from './lib/UseStateLink';
 
-const state = createStateLink<TaskItem[]>(Array.from(Array(1000).keys()).map((i) => ({
+JSON.stringify({ x: 5, y: 6, toJSON() { return this.x + this.y; } });
+
+const state = createStateLink<TaskItem[]>(Array.from(Array(2).keys()).map((i) => ({
     name: 'initial',
-    priority: i
-})));
+    priority: i,
+    toJSON(): any { return this.name + this.priority; }
+})), {
+    // onset: (v, i, p) => console.log('set new value', p, v)
+});
 
 interface TaskItem {
     name: string,
@@ -28,8 +33,9 @@ const TaskView = (props: { link: ValueLink<TaskItem> }) => {
     return <p>
         {Math.random()}
         {/* {locallink.nested.name.value} */}
-        <input value={locallink.nested.name.value} onChange={v => locallink.nested.name.set(v.target.value)} />
-        <input value={locallink.nested.name.value} onChange={v => locallink.nested.priority.set(pv => Number(pv) + 1)} />
+        <input value={locallink.value.name} onChange={v => locallink.nested.name.set(v.target.value)} />
+        <input value={locallink.value.name} onChange={v => locallink.nested.priority.set(pv => Number(pv) + 1)} />
+        {/* <input value={'increment priority'} onChange={v => locallink.nested.priority.set(pv => Number(pv) + 1)} /> */}
     </p>
 }
 
@@ -40,13 +46,21 @@ const TwiceTaskView = (props: { link: ValueLink<TaskItem> }) => {
     </>;
 }
 
+const JsonDump = (props: {link: ValueLink<TaskItem[]>}) => {
+    const locallink = useStateLink(props.link);
+    return <>
+        {JSON.stringify(locallink.value)}
+    </>;
+}
+
 const App: React.FC = () => {
-    // const vl = useStateLink<TaskItem[]>(Array.from(Array(1000).keys()).map((i) => ({
+    // const vl = useStateLink<TaskItem[]>(Array.from(Array(2).keys()).map((i) => ({
     //     name: 'initial',
     //     priority: i
     // })));
     const vl = useStateLink(state);
     return <>
+        <JsonDump link={vl} />
         {
             vl.nested.map((i, ind) => <TwiceTaskView key={ind} link={i} />)
         }

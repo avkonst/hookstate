@@ -243,6 +243,7 @@ class ValueLinkImpl<S> implements ValueLink<S>, Subscribable {
     private nestedCache: NestedInferredLink<S> | undefined;
     private nestedLinksCache: Record<string | number, ValueLinkImpl<S[keyof S]>> | undefined;
 
+    private valueTracked: S | undefined;
     private valueUsed: boolean | undefined;
 
     private initialValueCache: S | undefined;
@@ -258,12 +259,25 @@ class ValueLinkImpl<S> implements ValueLink<S>, Subscribable {
         public readonly path: Path,
         // tslint:disable-next-line: no-any
         public readonly onUpdate: () => void,
-        public readonly valueCache: S
+        public readonly valueUntracked: S
     ) { }
 
     get value(): S {
-        this.valueUsed = true;
-        return this.valueCache;
+        // console.log('value used', this.path);
+        if (this.valueTracked === undefined) {
+            if (Array.isArray(this.valueUntracked)) {
+                this.valueTracked = this.valueArrayImpl();
+            } else if (typeof this.valueUntracked === 'object' && this.valueUntracked !== null) {
+                this.valueTracked = this.valueObjectImpl();
+            } else {
+                this.valueTracked = this.valueUntracked;
+                if (this.valueTracked === undefined) {
+                    this.valueUsed = true;
+                }
+            }
+        }
+        // return this.nestedCache as NestedInferredLink<S>;
+        return this.valueTracked!;
     }
 
     get initialValue(): S | undefined {
@@ -272,10 +286,6 @@ class ValueLinkImpl<S> implements ValueLink<S>, Subscribable {
             this.initialValueCache = this.state.getInitial(this.path) as S | undefined;
         }
         return this.initialValueCache;
-    }
-
-    private get hooks(): ValueProcessingHooks<S> {
-        return this.state.targetHooks(this.path);
     }
 
     set(newValue: React.SetStateAction<S>): void {
@@ -305,9 +315,9 @@ class ValueLinkImpl<S> implements ValueLink<S>, Subscribable {
         //     return;
         // }
         if (typeof newValue === 'function') {
-            newValue =  (newValue as ((prevValue: S) => S))(this.valueCache);
+            newValue =  (newValue as ((prevValue: S) => S))(this.state.getCurrent(this.path));
         }
-        const localPreset = this.hooks.__preset;
+        const localPreset = this.state.targetHooks(this.path).__preset;
         if (localPreset) {
             newValue = localPreset(newValue, this);
         }
@@ -326,26 +336,35 @@ class ValueLinkImpl<S> implements ValueLink<S>, Subscribable {
     }
 
     updateIfUsed(path: Path): boolean {
+        // console.log('updateIfUsed', this.path);
         const update = () => {
             const firstChildKey = path[this.path.length];
             if (firstChildKey === undefined) {
-                if (this.valueUsed) {
+                if (this.valueTracked !== undefined || this.valueUsed === true) {
+                    // console.log('updateIfUsed updated', this.path);
                     this.onUpdate();
                     return true;
                 }
+                // console.log('updateIfUsed not updated (firstChildKey Undefined)', this.path, this.valueTracked || this.valueUsed, this.valueTracked, this.valueUsed);
                 return false;
             }
             const firstChildValue = this.nestedLinksCache && this.nestedLinksCache[firstChildKey];
             if (firstChildValue === undefined) {
+                // console.log('updateIfUsed not updated (firstChildValue Undefined)', this.path);
                 return false;
             }
-            return firstChildValue.updateIfUsed(path);
+            // console.log('updateIfUsed offload to children', this.path);
+            const r = firstChildValue.updateIfUsed(path);
+            // console.log('updateIfUsed offload to children updated', this.path, r);
+            return r;
         }
 
         const updated = update();
         if (!updated && this.subscribers !== undefined) {
+            // console.log('updateIfUsed not updated, loop subscribers', this.path, this.subscribers);
             this.subscribers.forEach(s => s.updateIfUsed(path))
         }
+        // console.log('updateIfUsed returning', this.path, updated);
         return updated;
     }
 
@@ -492,10 +511,13 @@ class ValueLinkImpl<S> implements ValueLink<S>, Subscribable {
     }
 
     get inferred(): InferredLink<S> {
-        if (Array.isArray(this.value)) {
+        if (!this.valueTracked) {
+            this.valueUsed = true;
+        }
+        if (Array.isArray(this.valueUntracked)) {
             return new ArrayLinkImpl(
                 this as unknown as ValueLinkImpl<unknown[]>) as unknown as InferredLink<S>;
-        } else if (typeof this.value === 'object' && this.value !== null) {
+        } else if (typeof this.valueUntracked === 'object' && this.valueUntracked !== null) {
             return new ObjectLinkImpl(
                 this as unknown as ValueLinkImpl<object>) as unknown as InferredLink<S>;
         } else {
@@ -504,10 +526,13 @@ class ValueLinkImpl<S> implements ValueLink<S>, Subscribable {
     }
 
     get nested(): NestedInferredLink<S> {
+        if (!this.valueTracked) {
+            this.valueUsed = true;
+        }
         if (this.nestedCache === undefined) {
-            if (Array.isArray(this.value)) {
+            if (Array.isArray(this.valueUntracked)) {
                 this.nestedCache = this.nestedArrayImpl();
-            } else if (typeof this.value === 'object' && this.value !== null) {
+            } else if (typeof this.valueUntracked === 'object' && this.valueUntracked !== null) {
                 this.nestedCache = this.nestedObjectImpl();
             } else {
                 this.nestedCache = undefined;
@@ -520,28 +545,88 @@ class ValueLinkImpl<S> implements ValueLink<S>, Subscribable {
         const proxyGetterCache = {};
         this.nestedLinksCache = proxyGetterCache;
 
-        const getter = (target: any[], key: PropertyKey) => {
+        const getter = (target: object, key: PropertyKey) => {
             if (key === 'length') {
-                return target.length;
+                return (target as []).length;
             }
             if (key in Array.prototype) {
                 return Array.prototype[key];
             }
-            // in contrast to object link,
-            // do not allow to return value links
-            // pointing to out of array bounds
+            const index = Number(key);
+            if (!Number.isInteger(index)) {
+                return undefined;
+            }
+            const cachehit = proxyGetterCache[index];
+            if (cachehit) {
+                return cachehit;
+            }
+            const r = new ValueLinkImpl(
+                this.state,
+                this.path.slice().concat(index),
+                this.onUpdate,
+                target[index]
+            )
+            proxyGetterCache[index] = r;
+            return r;
+        };
+        return this.proxyWrap(this.valueUntracked as unknown as object, getter) as unknown as NestedInferredLink<S>;
+    }
+
+    private valueArrayImpl(): S {
+        const getter = (target: object, key: PropertyKey) => {
+            if (key === 'length') {
+                return (target as []).length;
+            }
+            if (key in Array.prototype) {
+                return Array.prototype[key];
+            }
+            const index = Number(key);
+            if (!Number.isInteger(index)) {
+                return undefined;
+            }
+            return (this.nested)![index].value;
+        };
+        return this.proxyWrap(this.valueUntracked as unknown as object, getter) as unknown as S;
+    }
+
+    private nestedObjectImpl(): NestedInferredLink<S> {
+        const proxyGetterCache = {}
+        this.nestedLinksCache = proxyGetterCache;
+
+        const getter = (target: object, key: PropertyKey) => {
+            if (typeof key === 'symbol') {
+                return undefined;
+            }
             const cachehit = proxyGetterCache[key];
             if (cachehit) {
                 return cachehit;
             }
-            if (key in target) {
-                const r = this.atArrayImpl(Number(key))
-                proxyGetterCache[key] = r;
-                return r;
-            }
-            return undefined;
+            const r = new ValueLinkImpl(
+                this.state,
+                this.path.slice().concat(key.toString()),
+                this.onUpdate,
+                target[key]
+            );
+            proxyGetterCache[key] = r;
+            return r;
         };
-        const proxy = new Proxy(this.value as unknown as object, {
+        return this.proxyWrap(this.valueUntracked as unknown as object, getter) as unknown as NestedInferredLink<S>;
+    }
+
+    private valueObjectImpl(): S {
+        const getter = (target: object, key: PropertyKey) => {
+            // console.log('value getter', key);
+            if (typeof key === 'symbol') {
+                return undefined;
+            }
+            return (this.nested)![key].value;
+        };
+        return this.proxyWrap(this.valueUntracked as unknown as object, getter) as unknown as S;
+    }
+
+    // tslint:disable-next-line: no-any
+    private proxyWrap(objectToWrap: object, getter: (target: object, key: PropertyKey) => any) {
+        return new Proxy(objectToWrap, {
             getPrototypeOf: (target) => {
                 return Object.getPrototypeOf(target);
             },
@@ -557,16 +642,16 @@ class ValueLinkImpl<S> implements ValueLink<S>, Subscribable {
             getOwnPropertyDescriptor: (target, p) => {
                 const origin = Object.getOwnPropertyDescriptor(target, p);
                 return origin && {
-                    configurable: false,
+                    configurable: true, // JSON.stringify() does not work for an object without it
                     enumerable: origin.enumerable,
-                    value: undefined,
-                    writable: false,
-                    // tslint:disable-next-line: no-any
-                    get: () => getter(target as any[], p),
+                    get: () => getter(target as object, p),
                     set: undefined
                 };
             },
             has: (target, p) => {
+                if (typeof p === 'symbol') {
+                    return false;
+                }
                 return p in target;
             },
             get: getter,
@@ -591,104 +676,7 @@ class ValueLinkImpl<S> implements ValueLink<S>, Subscribable {
             construct: (target, argArray, newTarget?) => {
                 throw new ValueLinkInvalidUsageError('construct', this.path)
             }
-        })
-        return proxy as unknown as NestedInferredLink<S>;
-    }
-
-    private atArrayImpl(k: number) {
-        return new ValueLinkImpl(
-            this.state,
-            this.path.slice().concat(k),
-            this.onUpdate,
-            this.valueCache[k]
-        );
-    }
-
-    private nestedObjectImpl(): NestedInferredLink<S> {
-        const proxyGetterCache = {}
-        this.nestedLinksCache = proxyGetterCache;
-
-        const getter = (target: object, key: PropertyKey) => {
-            if (typeof key === 'symbol') {
-                return undefined;
-            }
-            // in cotrast to array link,
-            // return for any key
-            const cachehit = proxyGetterCache[key];
-            if (cachehit) {
-                return cachehit;
-            }
-            const r = this.atObjectImpl(key as keyof S);
-            proxyGetterCache[key] = r;
-            return r;
-        };
-        const proxy = new Proxy(this.value as unknown as object, {
-            getPrototypeOf: (target) => {
-                return Object.getPrototypeOf(target);
-            },
-            setPrototypeOf: (target, v) => {
-                throw new ValueLinkInvalidUsageError('setPrototypeOf', this.path)
-            },
-            isExtensible: (target) => {
-                return false;
-            },
-            preventExtensions: (target) => {
-                throw new ValueLinkInvalidUsageError('preventExtensions', this.path)
-            },
-            getOwnPropertyDescriptor: (target, p) => {
-                const origin = Object.getOwnPropertyDescriptor(target, p);
-                return origin && {
-                    configurable: false,
-                    enumerable: origin.enumerable,
-                    value: undefined,
-                    writable: false,
-                    get: () => getter(target as object, p),
-                    set: undefined
-                };
-            },
-            has: (target, p) => {
-                if (typeof p === 'symbol') {
-                    return false;
-                }
-                return true;
-            },
-            get: getter,
-            set: (target, p, value, receiver) => {
-                throw new ValueLinkInvalidUsageError('set', this.path)
-            },
-            deleteProperty: (target, p) => {
-                throw new ValueLinkInvalidUsageError('deleteProperty', this.path)
-            },
-            defineProperty: (target, p, attributes) => {
-                throw new ValueLinkInvalidUsageError('defineProperty', this.path)
-            },
-            enumerate: (target) => {
-                // because object value link returns nested value link for any property key
-                // it is impossible to know all of the available keys in advance
-                throw new ValueLinkInvalidUsageError('enumerate', this.path)
-            },
-            ownKeys: (target) => {
-                // because object value link returns nested value link for any property key
-                // it is impossible to know all of the available keys in advance
-                throw new ValueLinkInvalidUsageError('ownKeys', this.path)
-            },
-            apply: (target, thisArg, argArray?) => {
-                throw new ValueLinkInvalidUsageError('apply', this.path)
-            },
-            construct: (target, argArray, newTarget?) => {
-                throw new ValueLinkInvalidUsageError('construct', this.path)
-            }
-        })
-        return proxy as unknown as NestedInferredLink<S>;
-    }
-
-    private atObjectImpl<K extends keyof S>(k: K): ValueLink<S[K]> {
-        return new ValueLinkImpl(
-            this.state,
-            this.path.slice().concat(k.toString()),
-            this.onUpdate,
-            this.valueCache[k]
-        );
+        });
     }
 }
 
