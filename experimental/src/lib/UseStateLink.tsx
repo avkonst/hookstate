@@ -103,7 +103,6 @@ export interface Settings<S> {
     readonly cloneInitial?: boolean;
     // default is false
     readonly skipSettingEqual?: boolean;
-    readonly onset?: (newValue: S, initialValue: S | undefined, path: Path) => void;
     // tslint:disable-next-line:no-any
     readonly globalHooks?: GlobalValueProcessingHooks<any>;
     readonly targetHooks?: InferredProcessingHooks<S>;
@@ -136,16 +135,20 @@ class ValueLinkDisabledFeatureError extends Error {
     }
 }
 
+interface SubscribableTarget {
+    updateIfUsed(path: Path): boolean;
+}
+
 interface Subscribable {
     // tslint:disable-next-line: no-any
-    subscribe(l: ValueLinkImpl<any>): void;
+    subscribe(l: SubscribableTarget): void;
     // tslint:disable-next-line: no-any
-    unsubscribe(l: ValueLinkImpl<any>): void;
+    unsubscribe(l: SubscribableTarget): void;
 }
 
 class State implements Subscribable {
     // tslint:disable-next-line: no-any
-    public subscribers: Set<ValueLinkImpl<any>> = new Set();
+    public subscribers: Set<SubscribableTarget> = new Set();
     // tslint:disable-next-line:no-any
     protected _initial: any;
 
@@ -201,12 +204,12 @@ class State implements Subscribable {
     }
 
     // tslint:disable-next-line: no-any
-    subscribe(l: ValueLinkImpl<any>) {
+    subscribe(l: SubscribableTarget) {
         this.subscribers.add(l);
     }
 
     // tslint:disable-next-line: no-any
-    unsubscribe(l: ValueLinkImpl<any>) {
+    unsubscribe(l: SubscribableTarget) {
         this.subscribers.delete(l);
     }
 
@@ -229,10 +232,6 @@ class State implements Subscribable {
                 result = result[p];
             }
         });
-        const onset = this.settings.onset;
-        if (onset) {
-            onset(this._current, this._initial, path);
-        }
         this.subscribers.forEach(s => s.updateIfUsed(path));
     }
 }
@@ -244,7 +243,7 @@ class ValueLinkInvalidUsageError extends Error {
 }
 
 class ValueLinkImpl<S> implements ValueLink<S>, Subscribable {
-    private subscribers: Set<ValueLinkImpl<S>> | undefined;
+    private subscribers: Set<SubscribableTarget> | undefined;
 
     private nestedCache: NestedInferredLink<S> | undefined;
     private nestedLinksCache: Record<string | number, ValueLinkImpl<S[keyof S]>> | undefined;
@@ -264,8 +263,8 @@ class ValueLinkImpl<S> implements ValueLink<S>, Subscribable {
         public readonly state: State,
         public readonly path: Path,
         // tslint:disable-next-line: no-any
-        public readonly onUpdate: () => void,
-        public readonly valueUntracked: S
+        public onUpdate: () => void,
+        public valueUntracked: S
     ) { }
 
     get value(): S {
@@ -330,14 +329,14 @@ class ValueLinkImpl<S> implements ValueLink<S>, Subscribable {
         this.state.setCurrent(this.path, newValue);
     }
 
-    subscribe(l: ValueLinkImpl<S>) {
+    subscribe(l: SubscribableTarget) {
         if (this.subscribers === undefined) {
             this.subscribers = new Set();
         }
         this.subscribers.add(l);
     }
 
-    unsubscribe(l: ValueLinkImpl<S>) {
+    unsubscribe(l: SubscribableTarget) {
         this.subscribers!.delete(l);
     }
 
@@ -863,6 +862,46 @@ export function useStateLink<S>(
 
     // eslint-disable-next-line react-hooks/rules-of-hooks
     return useLocalStateLink(initialState as S | (() => S), settings);
+}
+
+export function createStateWatch<S>(
+    state: StateLink<S>,
+    onSet: (newstate: S) => void
+): () => void {
+    if (state instanceof StateLinkImpl) {
+        const target: SubscribableTarget = {
+            updateIfUsed: p => {
+                onSet(state.state.getCurrent([]));
+                return false;
+            }
+        };
+        state.state.subscribe(target)
+        return () => state.state.unsubscribe(target);
+    }
+    return () => ({});
+}
+
+/**
+ * Forces rerender of a hooked component when result of `watcher`
+ * is changed due to the change of the current value in `state`.
+ * Change of the result is determined by the default tripple equality operator.
+ * @param state state to watch for
+ * @param watcher state-to-result redusing function
+ */
+export function useStateWatch<S, R>(
+    state: ValueLink<S> | StateLink<S>,
+    watcher: (newstate: S, prev: R | undefined) => R
+) {
+    const link = useStateLink(state) as ValueLinkImpl<S>;
+    const originOnUpdate = link.onUpdate;
+    const result = watcher(link.value, undefined);
+    link.onUpdate = () => {
+        const updatedResult = watcher(link.state.getCurrent(link.path), result);
+        if (updatedResult !== result) {
+            originOnUpdate();
+        }
+    }
+    return result;
 }
 
 export default useStateLink;
