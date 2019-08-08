@@ -80,7 +80,6 @@ export interface GlobalValueProcessingHooks<S> {
 
 export interface ValueProcessingHooks<S> {
     readonly __validate?: (currentValue: S, link: ReadonlyValueLink<S>) => ValidationResult | undefined;
-    readonly __preset?: (newValue: S, link: ReadonlyValueLink<S>) => S;
     readonly __compare?: (newValue: S, oldValue: S | undefined, link: ReadonlyValueLink<S>) => boolean | undefined;
 }
 
@@ -321,10 +320,6 @@ class ValueLinkImpl<S> implements ValueLink<S>, Subscribable {
         // }
         if (typeof newValue === 'function') {
             newValue =  (newValue as ((prevValue: S) => S))(this.state.getCurrent(this.path));
-        }
-        const localPreset = this.state.targetHooks(this.path).__preset;
-        if (localPreset) {
-            newValue = localPreset(newValue, this);
         }
         this.state.setCurrent(this.path, newValue);
     }
