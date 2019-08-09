@@ -12,9 +12,9 @@ const state = createStateLink<TaskItem[]>(Array.from(Array(2).keys()).map((i) =>
     toJSON(): any { return this.name + this.priority; }
 })));
 
-setTimeout(() => {
+setInterval(() => {
     console.log('interval');
-    // state.use(() => console.log('on update in interval')).nested[0].nested.priority.set(p => (p || 0) + 1)
+    // state.use().nested[0].nested.name.set(p => p + 's')
 }, 5000);
 
 interface TaskItem {
@@ -121,15 +121,15 @@ const App: React.FC = () => {
     //     name: 'initial',
     //     priority: i
     // }))).with(ModifiedPlugin);
-    // const vl = useStateLink(state).with(ModifiedPlugin)
+    const vl = useStateLink(state)//.with(ModifiedPlugin)
 
-    const [value, setValue] = React.useState(0);
-    setValueG.call = setValue;
+    // const [value, setValue] = React.useState(0);
+    // setValueG.call = setValue;
 
     return <>
         {/* <ModifiedStatus link={vl} /> */}
-        {value}
-        {/* <JsonDump link={vl} />
+        {/* {value} */}
+        {/* <JsonDump link={vl} /> */}
         {
             vl.$.map((i, ind) => <TwiceTaskView key={ind} link={i} />)
         }
@@ -140,7 +140,7 @@ const App: React.FC = () => {
             })}
         >
             Add task
-        </button> */}
+        </button>
     </>;
 }
 

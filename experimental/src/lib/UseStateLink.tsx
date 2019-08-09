@@ -113,6 +113,7 @@ class State implements Subscribable {
     constructor(private _value: any) { }
 
     get(path: Path) {
+        console.log('get state')
         let result = this._value;
         path.forEach(p => {
             result = result[p];
@@ -247,6 +248,7 @@ class StateLinkImpl<S, P extends {}> implements StateLink<S, P>, Subscribable, S
     }
 
     set(newValue: React.SetStateAction<S>): void {
+        console.log('set')
         // inferred() function checks for the nullability of the current value:
         // If value is not null | undefined, it resolves to ArrayLink or ObjectLink
         // which can not take null | undefined as a value.
