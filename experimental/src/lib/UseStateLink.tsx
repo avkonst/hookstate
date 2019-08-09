@@ -2,26 +2,7 @@ import React from 'react';
 import { ObjectStateMutation, createObjectStateMutation, SetPartialStateAction } from './UseStateObject';
 import { ArrayStateMutation, createArrayStateMutation } from './UseStateArray';
 
-export enum ValidationSeverity {
-    WARNING = 1,
-    ERROR = 2
-}
-
-export interface ArrayExtensions<U> {
-    first(condition?: (e: U) => boolean): U | undefined;
-    firstPartial(condition?: (e: U) => boolean): Partial<U>;
-}
-
 export type Path = ReadonlyArray<string | number>;
-
-export interface ValidationErrorMessage {
-    readonly message: string;
-    readonly severity: ValidationSeverity;
-}
-
-export interface ValidationError extends ValidationErrorMessage {
-    readonly path: Path;
-}
 
 // TODO add support for Map and Set
 export type NestedInferredLink<S, P extends {}> =
@@ -43,29 +24,17 @@ export type InferredStateMutation<S> =
     S extends object ? ObjectStateMutation<S> :
     undefined;
 
-export interface ReadonlyValueLink<S, P extends {}> {
+export interface ValueLink<S, P extends {} = {}> {
     readonly path: Path;
-
     readonly value: S;
 
-    readonly initialValue: S | undefined;
-    readonly modified: boolean;
-    readonly unmodified: boolean;
-
-    readonly valid: boolean;
-    readonly invalid: boolean;
-    readonly errors: ReadonlyArray<ValidationError> & ArrayExtensions<ValidationError>;
-}
-
-export interface ValueLink<S, P extends {} = {}> extends ReadonlyValueLink<S, P> {
     readonly nested: NestedInferredLink<S, P>;
     readonly inferred: InferredStateMutation<S>;
 
     set(newValue: React.SetStateAction<S>): void;
 
     with<E>(plugin: Plugin<S, E>): ValueLink<S, P & E>;
-    exts: P;
-
+    extensions: P;
 }
 
 export interface Plugin<S, E extends {}> {
@@ -77,70 +46,6 @@ export interface Plugin<S, E extends {}> {
 
 export interface StateLink<S, P extends {}> {
     with<E>(plugin: Plugin<S, E>): StateLink<S, P & E>;
-}
-
-export type ValidationResult =
-    string | ValidationErrorMessage | ReadonlyArray<string | ValidationErrorMessage>;
-
-export interface GlobalValueProcessingHooks<S, P extends {}> {
-    readonly __validate?: (currentValue: S, link: ReadonlyValueLink<S, P>) => ValidationResult | undefined;
-    readonly __compare?: (newValue: S, oldValue: S | undefined, link: ReadonlyValueLink<S, P>) => boolean | undefined;
-}
-
-export interface ValueProcessingHooks<S, P extends {}> {
-    readonly __validate?: (currentValue: S, link: ReadonlyValueLink<S, P>) => ValidationResult | undefined;
-    readonly __compare?: (newValue: S, oldValue: S | undefined, link: ReadonlyValueLink<S, P>) => boolean | undefined;
-}
-
-export type ObjectProcessingHook<S, P extends {}> = {
-    readonly [K in keyof S]?: InferredProcessingHooks<S[K], P>;
-} & ValueProcessingHooks<S, P>;
-
-export type ArrayProcessingHooks<U, P extends {}> = {
-    readonly [K in number | '*']?: InferredProcessingHooks<U, P>;
-} & ValueProcessingHooks<ReadonlyArray<U>, P>;
-
-export type InferredProcessingHooks<S, P extends {}> =
-    S extends ReadonlyArray<(infer U)> ? ArrayProcessingHooks<U, P> :
-    S extends (infer Y)[] ? ArrayProcessingHooks<Y, P> :
-    S extends number | string | boolean | null | undefined | symbol ? ValueProcessingHooks<S, P> :
-    ObjectProcessingHook<S, P>;
-
-export interface Settings<S> {
-    // default is false
-    readonly cloneInitial?: boolean;
-    // default is false
-    readonly skipSettingEqual?: boolean;
-    // tslint:disable-next-line:no-any
-    // readonly globalHooks?: GlobalValueProcessingHooks<any>;
-    // readonly targetHooks?: InferredProcessingHooks<S>;
-}
-
-function defaultEqualityOperator<S>(a: S, b: S | undefined) {
-    if (typeof b === 'object') {
-        // check reference equality first for speed
-        if (a === b) {
-            return true;
-        }
-        return JSON.stringify(a) === JSON.stringify(b);
-    }
-    return a === b;
-}
-
-// tslint:disable-next-line:no-any
-const defaultProcessingHooks: ValueProcessingHooks<any, {}> = {};
-
-function extractValue<S>(prevValue: S, newValue: S | ((prevValue: S) => S)): S {
-    if (typeof newValue === 'function') {
-        return (newValue as ((prevValue: S) => S))(prevValue);
-    }
-    return newValue;
-}
-
-class ValueLinkDisabledFeatureError extends Error {
-    constructor(op: string, hint: string, path: Path) {
-        super(`ValueLink is used incorrectly. Attempted '${op}' at '/${path.join('/')}'. ${hint}`)
-    }
 }
 
 class ValueLinkInvalidUsageError extends Error {
@@ -169,7 +74,7 @@ class ExtensionConflictError extends Error {
 
 class ExtensionUnknownError extends Error {
     constructor(ext: string) {
-        super(`ValueLink extension '${ext}' is unknown'`)
+        super(`Extension '${ext}' is unknown'`)
     }
 }
 
@@ -185,29 +90,16 @@ interface Subscribable {
 }
 
 class State implements Subscribable {
-    // tslint:disable-next-line: no-any
-    public subscribers: Set<SubscribableTarget> = new Set();
-
-    private extensions: Record<string, Plugin<any, {}>> = {};
-
     private _edition = 0;
+    private _subscribers: Set<SubscribableTarget> = new Set();
+
+    // tslint:disable-next-line: no-any
+    private _extensions: Record<string, Plugin<any, {}>> = {};
 
     // tslint:disable-next-line:no-any
-    protected _initial: any;
+    constructor(protected _current: any) { }
 
-    // eslint-disable-next-line no-useless-constructor
-    constructor(
-        // tslint:disable-next-line:no-any
-        protected _current: any,
-        // tslint:disable-next-line: no-any
-        protected _settings: Settings<any>
-    ) {
-        if (_settings.cloneInitial) {
-            this._initial = JSON.parse(JSON.stringify(_current)); // maybe better to use specialised library
-        }
-    }
-
-    getCurrent(path: Path) {
+    value(path: Path) {
         let result = this._current;
         path.forEach(p => {
             result = result[p];
@@ -215,30 +107,30 @@ class State implements Subscribable {
         return result;
     }
 
-    registerPlugin<S, E extends {}>(plugin: Plugin<S, E>) {
-        if (this._edition !== 0) {
-            return;
+    // tslint:disable-next-line: no-any
+    set(path: Path, value: any) {
+        this._edition += 1;
+        if (path.length === 0) {
+            this._current = value;
         }
-        const extensions = plugin.onInit(this._current);
-        extensions.forEach(e => {
-            if (e in this.extensions) {
-                throw new ExtensionConflictError(e as string);
-            }
-            this.extensions[e as string] = plugin as unknown as Plugin<any, {}>;
-        });
-        if (plugin.onSet) {
-            const onSet = plugin.onSet;
-            this.subscribe({
-                updateIfUsed: (p) => {
-                    onSet(p);
-                    return true;
+        let result = this._current;
+        path.forEach((p, i) => {
+            if (i === path.length - 1) {
+                if (!(p in result)) {
+                    // if an array of object is about to be extended by new property
+                    // we consider it is the whole object is changed
+                    // which is identified by upper path
+                    path = path.slice(0, -1)
                 }
-            })
-        }
-        return;
+                result[p] = value;
+            } else {
+                result = result[p];
+            }
+        });
+        this._subscribers.forEach(s => s.updateIfUsed(path));
     }
 
-    getExtensions(path: Path): {} {
+    extensions(path: Path): {} {
         const getter = (target: Record<string, Plugin<any, {}>>, key: PropertyKey) => {
             if (typeof key === 'symbol') {
                 return undefined;
@@ -247,13 +139,13 @@ class State implements Subscribable {
             if (plugin === undefined) {
                 throw new ExtensionUnknownError(key.toString());
             }
-            const extension = plugin.ext(this._current, this.getCurrent(path), path)[key];
+            const extension = plugin.ext(this._current, this.value(path), path)[key];
             if (extension === undefined) {
                 throw new ExtensionUnknownError(key.toString());
             }
             return extension;
         }
-        return new Proxy(this.extensions, {
+        return new Proxy(this._extensions, {
             getPrototypeOf: (target) => {
                 return Object.getPrototypeOf(target);
             },
@@ -306,68 +198,37 @@ class State implements Subscribable {
         });
     }
 
-    getInitial(path: Path) {
-        if (!this._settings.cloneInitial) {
-            throw new ValueLinkDisabledFeatureError('initialValue',
-                'Enable this feature in settings: useStateLink(..., { cloneInitial: true })',
-                path)
+    register<S, E extends {}>(plugin: Plugin<S, E>) {
+        if (this._edition !== 0) {
+            return;
         }
-        let result = this._initial;
-        path.forEach(p => {
-            // in contrast to the current value,
-            // allow the initial may not exist
-            result = result && result[p];
+        const extensions = plugin.onInit(this._current);
+        extensions.forEach(e => {
+            if (e in this._extensions) {
+                throw new ExtensionConflictError(e as string);
+            }
+            this._extensions[e as string] = plugin as unknown as Plugin<any, {}>;
         });
-        return result;
+        if (plugin.onSet) {
+            const onSet = plugin.onSet;
+            this.subscribe({
+                updateIfUsed: (p) => {
+                    onSet(p);
+                    return true;
+                }
+            })
+        }
+        return;
     }
-
-    get settings() {
-        return this._settings;
-    }
-
-    // tslint:disable-next-line:no-any
-    // targetHooks(path: Path): ValueProcessingHooks<any, {}> {
-    //     let result = this._settings.targetHooks;
-    //     for (const p of path) {
-    //         if (!result) {
-    //             return defaultProcessingHooks;
-    //         }
-    //         result = result[p] || (typeof p === 'number' && result['*']);
-    //     }
-    //     return result || defaultProcessingHooks;
-    // }
 
     // tslint:disable-next-line: no-any
     subscribe(l: SubscribableTarget) {
-        this.subscribers.add(l);
+        this._subscribers.add(l);
     }
 
     // tslint:disable-next-line: no-any
     unsubscribe(l: SubscribableTarget) {
-        this.subscribers.delete(l);
-    }
-
-    // tslint:disable-next-line: no-any
-    setCurrent(path: Path, value: any) {
-        this._edition += 1;
-        if (path.length === 0) {
-            this._current = value;
-        }
-        let result = this._current;
-        path.forEach((p, i) => {
-            if (i === path.length - 1) {
-                if (!(p in result)) {
-                    // if an array of object is about to be extended by new property
-                    // we consider it is the whole object is changed
-                    // which is identified by upper path
-                    path = path.slice(0, -1)
-                }
-                result[p] = value;
-            } else {
-                result = result[p];
-            }
-        });
-        this.subscribers.forEach(s => s.updateIfUsed(path));
+        this._subscribers.delete(l);
     }
 }
 
@@ -379,14 +240,6 @@ class ValueLinkImpl<S, P extends {}> implements ValueLink<S, P>, Subscribable {
 
     private valueTracked: S | undefined;
     private valueUsed: boolean | undefined;
-
-    private initialValueCache: S | undefined;
-
-    // private modifiedCache!: boolean;
-    // private modifiedCacheEdition = -1;
-
-    // private errorsCache!: ReadonlyArray<ValidationError> & ArrayExtensions<ValidationError>;
-    // private errorsCacheEdition = -1;
 
     constructor(
         public readonly state: State,
@@ -412,14 +265,6 @@ class ValueLinkImpl<S, P extends {}> implements ValueLink<S, P>, Subscribable {
         }
         // return this.nestedCache as NestedInferredLink<S>;
         return this.valueTracked!;
-    }
-
-    get initialValue(): S | undefined {
-        if (this.initialValueCache === undefined) {
-            // it still may get undefined, in this case the cache does not make an effect
-            this.initialValueCache = this.state.getInitial(this.path) as S | undefined;
-        }
-        return this.initialValueCache;
     }
 
     set(newValue: React.SetStateAction<S>): void {
@@ -449,21 +294,21 @@ class ValueLinkImpl<S, P extends {}> implements ValueLink<S, P>, Subscribable {
         //     return;
         // }
         if (typeof newValue === 'function') {
-            newValue = (newValue as ((prevValue: S) => S))(this.state.getCurrent(this.path));
+            newValue = (newValue as ((prevValue: S) => S))(this.state.value(this.path));
         }
-        this.state.setCurrent(this.path, newValue);
+        this.state.set(this.path, newValue);
     }
 
     with<E>(plugin: Plugin<S, E>): ValueLink<S, P & E> {
         if (this.path.length !== 0) {
             throw new ExtensionInvalidRegistrationError(this.path)
         }
-        this.state.registerPlugin(plugin);
+        this.state.register(plugin);
         return this as unknown as ValueLink<S, P & E>;
     }
 
-    get exts() {
-        return this.state.getExtensions(this.path) as P;
+    get extensions() {
+        return this.state.extensions(this.path) as P;
     }
 
     subscribe(l: SubscribableTarget) {
@@ -508,148 +353,6 @@ class ValueLinkImpl<S, P extends {}> implements ValueLink<S, P>, Subscribable {
         }
         // console.log('updateIfUsed returning', this.path, updated);
         return updated;
-    }
-
-    // private areValuesEqual(newValue: S, oldValue: S | undefined): boolean {
-    //     const localCompare = this.hooks.__compare;
-    //     if (localCompare) {
-    //         const localCompareResult = localCompare(newValue, oldValue, this);
-    //         if (localCompareResult !== undefined) {
-    //             return localCompareResult;
-    //         }
-    //     }
-    //     const globalCompare = this.state.globalHooks().__compare;
-    //     if (globalCompare) {
-    //         const globalCompareResult = globalCompare(newValue, oldValue, this);
-    //         if (globalCompareResult !== undefined) {
-    //             return globalCompareResult;
-    //         }
-    //     }
-    //     return defaultEqualityOperator(newValue, oldValue);
-    // }
-
-    get modified(): boolean {
-        throw 'Functionality disabled';
-        // if (this.modifiedCacheEdition < this.state.edition) {
-        //     this.modifiedCacheEdition = this.state.edition;
-        //     this.modifiedCache = !this.areValuesEqual(this.value, this.initialValue);
-        // }
-        // return this.modifiedCache;
-    }
-
-    get unmodified(): boolean {
-        return !this.modified;
-    }
-
-    get valid(): boolean {
-        return this.errors.length === 0;
-    }
-
-    get invalid(): boolean {
-        return !this.valid;
-    }
-
-    private validate(validator: ((val: S, link: ReadonlyValueLink<S, P>) => ValidationResult | undefined) | undefined):
-        ValidationError[] | undefined {
-        throw 'Functionality disabled';
-        // if (validator) {
-        //     const errors = validator(this.value, this);
-        //     if (errors !== undefined) {
-        //         if (Array.isArray(errors)) {
-        //             return (errors as ReadonlyArray<string | ValidationErrorMessage>).map(m =>
-        //                 typeof m === 'string' ? {
-        //                     path: this.path,
-        //                     message: m,
-        //                     severity: ValidationSeverity.ERROR
-        //                 } : {
-        //                     path: this.path,
-        //                     message: m.message,
-        //                     severity: m.severity
-        //                 }
-        //             );
-        //         } else if (typeof errors === 'string') {
-        //             return [{
-        //                 path: this.path,
-        //                 message: errors,
-        //                 severity: ValidationSeverity.ERROR
-        //             }];
-        //         } else {
-        //             return [{
-        //                 path: this.path,
-        //                 message: (errors as ValidationErrorMessage).message,
-        //                 severity: (errors as ValidationErrorMessage).severity
-        //             }];
-        //         }
-        //     }
-        // }
-        // return undefined;
-    }
-
-    get errors(): ReadonlyArray<ValidationError> & ArrayExtensions<ValidationError> {
-        throw 'Functionality disabled';
-        // if (this.errorsCacheEdition < this.state.edition) {
-        //     this.errorsCacheEdition = this.state.edition;
-
-        //     const localHooks = this.hooks;
-        //     let result: ValidationError[] =
-        //         this.validate(localHooks.__validate) ||
-        //         this.validate(this.state.globalHooks().__validate) ||
-        //         [];
-        //     const nestedHooks = Object.keys(localHooks).filter(i => typeof localHooks[i] !== 'function');
-        //     if (nestedHooks.length > 0 && this.nested) {
-        //         const nestedInst = this.nested;
-        //         if (Array.isArray(nestedInst)) {
-        //             if (localHooks['*']) {
-        //                 nestedInst.forEach((n, i) => {
-        //                     result = result.concat(n.errors as ValidationError[]);
-        //                 });
-        //             }
-        //             nestedHooks
-        //                 // Validation rule exists,
-        //                 // but the corresponding nested link may not be created,
-        //                 // (because it may not be inferred automatically)
-        //                 // because the original array value cas miss the corresponding index
-        //                 // The design choice is to skip validation in this case.
-        //                 // A client can define per array level validation rule,
-        //                 // where existance of the index can be cheched.
-        //                 .filter(k => typeof k === 'number' && nestedInst[k] !== undefined)
-        //                 .forEach(k => {
-        //                     result = result.concat(nestedInst[k].errors as ValidationError[]);
-        //                 });
-        //         } else if (nestedInst) {
-        //             nestedHooks
-        //                 // Validation rule exists,
-        //                 // but the corresponding nested link may not be created,
-        //                 // (because it may not be inferred automatically)
-        //                 // because the original object value can miss the corresponding key
-        //                 // The design choice is to skip validation in this case.
-        //                 // A client can define per object level validation rule,
-        //                 // where existance of the property can be cheched.
-        //                 .filter(k => nestedInst[k] !== undefined)
-        //                 .forEach(k => {
-        //                     result = result.concat(nestedInst[k].errors as ValidationError[]);
-        //                 });
-        //         }
-        //     }
-
-        //     const first = (condition?: (e: ValidationError) => boolean) => {
-        //         return result.find(e => condition ? condition(e) : true);
-        //     };
-        //     const firstPartial = (condition?: (e: ValidationError) => boolean) => {
-        //         const r = first(condition);
-        //         if (r === undefined) {
-        //             return {};
-        //         }
-        //         return r;
-        //     };
-        //     Object.assign(result, {
-        //         first: first,
-        //         firstPartial: firstPartial
-        //     });
-
-        //     this.errorsCache = result as unknown as ReadonlyArray<ValidationError> & ArrayExtensions<ValidationError>;
-        // }
-        // return this.errorsCache;
     }
 
     get inferred(): InferredStateMutation<S> {
@@ -830,19 +533,17 @@ class StateLinkImpl<S, P extends {}> implements StateLink<S, P> {
     constructor(public state: State) { }
 
     with<E>(plugin: Plugin<S, E>): StateLink<S, P & E> {
-        this.state.registerPlugin(plugin);
+        this.state.register(plugin);
         return this as StateLink<S, P & E>;
     }
 }
 
-function createState<S>(
-    initial: S | (() => S),
-    settings?: Settings<S>): State {
+function createState<S>(initial: S | (() => S)): State {
     let initialValue: S = initial as S;
     if (typeof initial === 'function') {
         initialValue = (initial as (() => S))();
     }
-    return new State(initialValue, settings || {});
+    return new State(initialValue);
 }
 
 function useSubscribedStateLink<S, P extends {}>(
@@ -854,7 +555,7 @@ function useSubscribedStateLink<S, P extends {}>(
         state,
         path,
         update,
-        state.getCurrent(path)
+        state.value(path)
     );
     useIsomorphicLayoutEffect(() => {
         subscribeTarget.subscribe(link);
@@ -868,8 +569,8 @@ function useGlobalStateLink<S, P>(stateLink: StateLinkImpl<S, P>): ValueLink<S, 
     return useSubscribedStateLink(stateLink.state, [], () => setValue({}), stateLink.state);
 }
 
-function useLocalStateLink<S>(initialState: S | (() => S), settings?: Settings<S>): ValueLink<S, {}> {
-    const [value, setValue] = React.useState(() => ({ state: createState(initialState, settings) }));
+function useLocalStateLink<S>(initialState: S | (() => S)): ValueLink<S, {}> {
+    const [value, setValue] = React.useState(() => ({ state: createState(initialState) }));
     return useSubscribedStateLink(value.state, [], () => setValue({ state: value.state }), value.state);
 }
 
@@ -878,8 +579,8 @@ function useDerivedStateLink<S, P extends {}>(originLink: ValueLinkImpl<S, P>): 
     return useSubscribedStateLink(originLink.state, originLink.path, () => setValue({}), originLink);
 }
 
-export function createStateLink<S>(initial: S | (() => S), settings?: Settings<S>): StateLink<S, {}> {
-    return new StateLinkImpl(createState(initial, settings));
+export function createStateLink<S>(initial: S | (() => S)): StateLink<S, {}> {
+    return new StateLinkImpl(createState(initial));
 }
 
 export function useStateLink<S, P extends {}>(
@@ -899,23 +600,6 @@ export function useStateLink<S, P extends {}>(
     return useLocalStateLink(initialState as S | (() => S)) as ValueLink<S, P>;
 }
 
-export function createStateWatch<S, P extends {}>(
-    state: StateLink<S, P>,
-    onSet: (newstate: S) => void
-): () => void {
-    if (state instanceof StateLinkImpl) {
-        const target: SubscribableTarget = {
-            updateIfUsed: p => {
-                onSet(state.state.getCurrent([]));
-                return false;
-            }
-        };
-        state.state.subscribe(target)
-        return () => state.state.unsubscribe(target);
-    }
-    return () => ({});
-}
-
 /**
  * Forces rerender of a hooked component when result of `watcher`
  * is changed due to the change of the current value in `state`.
@@ -931,7 +615,7 @@ export function useStateWatch<S, R, P extends {}>(
     const originOnUpdate = link.onUpdate;
     const result = watcher(link.value, undefined);
     link.onUpdate = () => {
-        const updatedResult = watcher(link.state.getCurrent(link.path), result);
+        const updatedResult = watcher(link.state.value(link.path), result);
         if (updatedResult !== result) {
             originOnUpdate();
         }

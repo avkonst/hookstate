@@ -10,9 +10,7 @@ const state = createStateLink<TaskItem[]>(Array.from(Array(2).keys()).map((i) =>
     name: 'initial',
     priority: i,
     toJSON(): any { return this.name + this.priority; }
-})), {
-    // onset: (v, i, p) => console.log('set new value', p, v)
-});
+})));
 
 interface TaskItem {
     name: string,
@@ -75,7 +73,7 @@ const App: React.FC = () => {
         })
     })
 
-    vl.exts.myext();
+    vl.extensions.myext();
 
     return <>
         <JsonDump link={vl} />
