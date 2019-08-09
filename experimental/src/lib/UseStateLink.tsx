@@ -50,6 +50,7 @@ export interface StateLink<S, P extends {} = {}> extends ReadonlyStateLink<S, P>
 export type ValueLink<S, P extends {} = {}> = StateLink<S, P>;
 
 export interface Plugin<S, E extends {}> {
+    id: string;
     defines: (keyof E)[],
     // tslint:disable-next-line: no-any
     onInit?: (initialValue: S) => S | void,
@@ -108,6 +109,7 @@ class State implements Subscribable {
 
     // tslint:disable-next-line: no-any
     private _extensions: Record<string, Plugin<any, {}>> = {};
+    private _plugins: Set<string> = new Set();
 
     // tslint:disable-next-line:no-any
     constructor(private _value: any) { }
@@ -153,8 +155,11 @@ class State implements Subscribable {
         if (this._edition !== 0) {
             return;
         }
-
         const plugin = pluginInit();
+        if (this._plugins.has(plugin.id)) {
+            return;
+        }
+        this._plugins.add(plugin.id);
         if (plugin.onInit) {
             const initValue = plugin.onInit(this._value)
             if (initValue !== undefined) {
@@ -487,6 +492,9 @@ class StateLinkImpl<S, P extends {}> implements StateLink<S, P>, Subscribable, S
             },
             getOwnPropertyDescriptor: (target, p) => {
                 const origin = Object.getOwnPropertyDescriptor(target, p);
+                if (origin && Array.isArray(target) && p in Array.prototype) {
+                    return origin;
+                }
                 return origin && {
                     configurable: true, // JSON.stringify() does not work for an object without it
                     enumerable: origin.enumerable,
@@ -511,9 +519,15 @@ class StateLinkImpl<S, P extends {}> implements StateLink<S, P>, Subscribable, S
                 return onInvalidUsage('defineProperty')
             },
             enumerate: (target) => {
+                if (Array.isArray(target)) {
+                    return Object.keys(target).concat('length');
+                }
                 return Object.keys(target);
             },
             ownKeys: (target) => {
+                if (Array.isArray(target)) {
+                    return Object.keys(target).concat('length');
+                }
                 return Object.keys(target);
             },
             apply: (target, thisArg, argArray?) => {
