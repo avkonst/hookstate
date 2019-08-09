@@ -65,7 +65,7 @@ const App: React.FC = () => {
     // });
     const vl = useStateLink(state).with({
         onInit: () => ['myext'],
-        onSet: (p) => console.log('onSet', p),
+        onSet: (s, v, p) => console.log('onSet', s, v, p),
         ext: (s, v, p) => ({
             myext: () => {
                 console.log('myext called', s, v, p);
@@ -73,7 +73,7 @@ const App: React.FC = () => {
         })
     })
 
-    vl.extensions.myext();
+    vl.extended.myext();
 
     return <>
         <JsonDump link={vl} />

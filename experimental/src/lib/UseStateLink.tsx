@@ -2,7 +2,13 @@ import React from 'react';
 import { ObjectStateMutation, createObjectStateMutation, SetPartialStateAction } from './UseStateObject';
 import { ArrayStateMutation, createArrayStateMutation } from './UseStateArray';
 
-export type Path = ReadonlyArray<string | number>;
+//
+// DECLARATIONS
+//
+
+export interface StateLink<S, P extends {}> {
+    with<E>(plugin: Plugin<S, E>): StateLink<S, P & E>;
+}
 
 // TODO add support for Map and Set
 export type NestedInferredLink<S, P extends {}> =
@@ -24,29 +30,31 @@ export type InferredStateMutation<S> =
     S extends object ? ObjectStateMutation<S> :
     undefined;
 
+export type Path = ReadonlyArray<string | number>;
+
 export interface ValueLink<S, P extends {} = {}> {
     readonly path: Path;
     readonly value: S;
 
     readonly nested: NestedInferredLink<S, P>;
     readonly inferred: InferredStateMutation<S>;
+    readonly extended: P;
 
     set(newValue: React.SetStateAction<S>): void;
-
     with<E>(plugin: Plugin<S, E>): ValueLink<S, P & E>;
-    extensions: P;
 }
 
 export interface Plugin<S, E extends {}> {
     onInit: (value: S) => (keyof E)[],
-    onSet?: (path: Path) => void,
+    // tslint:disable-next-line: no-any
+    onSet?: (value: S, valueAtPath: any, path: Path) => void,
     // tslint:disable-next-line: no-any
     ext: (value: S, valueAtPath: any, path: Path) => E
 }
 
-export interface StateLink<S, P extends {}> {
-    with<E>(plugin: Plugin<S, E>): StateLink<S, P & E>;
-}
+//
+// INTERNAL IMPLEMENTATIONS
+//
 
 class ValueLinkInvalidUsageError extends Error {
     constructor(op: string, path: Path) {
@@ -78,20 +86,18 @@ class ExtensionUnknownError extends Error {
     }
 }
 
-interface SubscribableTarget {
-    updateIfUsed(path: Path): boolean;
+interface Subscriber {
+    onSet(path: Path): void;
 }
 
 interface Subscribable {
-    // tslint:disable-next-line: no-any
-    subscribe(l: SubscribableTarget): void;
-    // tslint:disable-next-line: no-any
-    unsubscribe(l: SubscribableTarget): void;
+    subscribe(l: Subscriber): void;
+    unsubscribe(l: Subscriber): void;
 }
 
 class State implements Subscribable {
     private _edition = 0;
-    private _subscribers: Set<SubscribableTarget> = new Set();
+    private _subscribers: Set<Subscriber> = new Set();
 
     // tslint:disable-next-line: no-any
     private _extensions: Record<string, Plugin<any, {}>> = {};
@@ -127,7 +133,7 @@ class State implements Subscribable {
                 result = result[p];
             }
         });
-        this._subscribers.forEach(s => s.updateIfUsed(path));
+        this._subscribers.forEach(s => s.onSet(path));
     }
 
     extensions(path: Path): {} {
@@ -212,9 +218,8 @@ class State implements Subscribable {
         if (plugin.onSet) {
             const onSet = plugin.onSet;
             this.subscribe({
-                updateIfUsed: (p) => {
-                    onSet(p);
-                    return true;
+                onSet: (p) => {
+                    onSet(this._current, this.value(p), p);
                 }
             })
         }
@@ -222,18 +227,27 @@ class State implements Subscribable {
     }
 
     // tslint:disable-next-line: no-any
-    subscribe(l: SubscribableTarget) {
+    subscribe(l: Subscriber) {
         this._subscribers.add(l);
     }
 
     // tslint:disable-next-line: no-any
-    unsubscribe(l: SubscribableTarget) {
+    unsubscribe(l: Subscriber) {
         this._subscribers.delete(l);
     }
 }
 
-class ValueLinkImpl<S, P extends {}> implements ValueLink<S, P>, Subscribable {
-    private subscribers: Set<SubscribableTarget> | undefined;
+class StateLinkImpl<S, P extends {}> implements StateLink<S, P> {
+    constructor(public state: State) { }
+
+    with<E>(plugin: Plugin<S, E>): StateLink<S, P & E> {
+        this.state.register(plugin);
+        return this as StateLink<S, P & E>;
+    }
+}
+
+class ValueLinkImpl<S, P extends {}> implements ValueLink<S, P>, Subscribable, Subscriber {
+    private subscribers: Set<Subscriber> | undefined;
 
     private nestedCache: NestedInferredLink<S, P> | undefined;
     private nestedLinksCache: Record<string | number, ValueLinkImpl<S[keyof S], P>> | undefined;
@@ -275,8 +289,8 @@ class ValueLinkImpl<S, P extends {}> implements ValueLink<S, P>, Subscribable {
         // may call set(null | undefined).
         // In this case this null will leak via setValue(prevValue => ...)
         // to mutation actions for array or object,
-        // which breaks the guarantee of ArrayLink and ObjectLink to not link nullable value.
-        // Currently this causes a crash within ObjectLink or ArrayLink mutation actions.
+        // which breaks the guarantee of ArrayStateMutation and ObjectStateMutation to not link nullable value.
+        // Currently this causes a crash within ObjectStateMutation or ArrayStateMutation mutation actions.
         // This behavior is left intentionally to make it equivivalent to the following:
         // Example (plain JS):
         //    let myvar: { a: string, b: string } = { a: '', b: '' }
@@ -289,10 +303,6 @@ class ValueLinkImpl<S, P extends {}> implements ValueLink<S, P>, Subscribable {
         //    myvar.set(undefined);
         //    myvar_a.set('') // <-- crash here
         //    myvar.set({ a: '', b: '' }) // <-- OK
-        // if (this.state.settings.skipSettingEqual &&
-        //     this.areValuesEqual(extractedNewValue, this.state.getCurrent(this.path) as S)) {
-        //     return;
-        // }
         if (typeof newValue === 'function') {
             newValue = (newValue as ((prevValue: S) => S))(this.state.value(this.path));
         }
@@ -307,19 +317,23 @@ class ValueLinkImpl<S, P extends {}> implements ValueLink<S, P>, Subscribable {
         return this as unknown as ValueLink<S, P & E>;
     }
 
-    get extensions() {
+    get extended() {
         return this.state.extensions(this.path) as P;
     }
 
-    subscribe(l: SubscribableTarget) {
+    subscribe(l: Subscriber) {
         if (this.subscribers === undefined) {
             this.subscribers = new Set();
         }
         this.subscribers.add(l);
     }
 
-    unsubscribe(l: SubscribableTarget) {
+    unsubscribe(l: Subscriber) {
         this.subscribers!.delete(l);
+    }
+
+    onSet(path: Path) {
+        this.updateIfUsed(path)
     }
 
     updateIfUsed(path: Path): boolean {
@@ -349,7 +363,7 @@ class ValueLinkImpl<S, P extends {}> implements ValueLink<S, P>, Subscribable {
         const updated = update();
         if (!updated && this.subscribers !== undefined) {
             // console.log('updateIfUsed not updated, loop subscribers', this.path, this.subscribers);
-            this.subscribers.forEach(s => s.updateIfUsed(path))
+            this.subscribers.forEach(s => s.onSet(path))
         }
         // console.log('updateIfUsed returning', this.path, updated);
         return updated;
@@ -529,15 +543,6 @@ class ValueLinkImpl<S, P extends {}> implements ValueLink<S, P>, Subscribable {
 
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
 
-class StateLinkImpl<S, P extends {}> implements StateLink<S, P> {
-    constructor(public state: State) { }
-
-    with<E>(plugin: Plugin<S, E>): StateLink<S, P & E> {
-        this.state.register(plugin);
-        return this as StateLink<S, P & E>;
-    }
-}
-
 function createState<S>(initial: S | (() => S)): State {
     let initialValue: S = initial as S;
     if (typeof initial === 'function') {
@@ -578,6 +583,10 @@ function useDerivedStateLink<S, P extends {}>(originLink: ValueLinkImpl<S, P>): 
     const [_, setValue] = React.useState({});
     return useSubscribedStateLink(originLink.state, originLink.path, () => setValue({}), originLink);
 }
+
+///
+/// EXPORTED IMPLEMENTATIONS
+///
 
 export function createStateLink<S>(initial: S | (() => S)): StateLink<S, {}> {
     return new StateLinkImpl(createState(initial));
