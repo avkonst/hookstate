@@ -24,31 +24,31 @@ export interface ValidationError extends ValidationErrorMessage {
 }
 
 // TODO add support for Map and Set
-export type NestedInferredLink<S> =
-    S extends ReadonlyArray<(infer U)> ? NestedArrayLink<U> :
+export type NestedInferredLink<S, P extends {}> =
+    S extends ReadonlyArray<(infer U)> ? NestedArrayLink<U, P> :
     S extends null ? undefined :
-    S extends object ? NestedObjectLink<S> :
+    S extends object ? NestedObjectLink<S, P> :
     undefined;
 
-export type NestedArrayLink<U> = ReadonlyArray<ValueLink<U>>;
+export type NestedArrayLink<U, P extends {}> = ReadonlyArray<ValueLink<U, P>>;
 
-export type NestedObjectLink<S extends object> = {
-    readonly [K in keyof Required<S>]: ValueLink<S[K]>;
+export type NestedObjectLink<S extends object, P extends {}> = {
+    readonly [K in keyof Required<S>]: ValueLink<S[K], P>;
 };
 
 // TODO add support for Map and Set
-export type InferredLink<S> =
-    S extends ReadonlyArray<(infer U)> ? ArrayLink<U> :
+export type InferredStateMutation<S> =
+    S extends ReadonlyArray<(infer U)> ? ArrayStateMutation<U> :
     S extends null ? undefined :
-    S extends object ? ObjectLink<S> :
+    S extends object ? ObjectStateMutation<S> :
     undefined;
 
-export interface ReadonlyValueLink<S> {
+export interface ReadonlyValueLink<S, P extends {}> {
     readonly path: Path;
 
-    readonly initialValue: S | undefined;
     readonly value: S;
 
+    readonly initialValue: S | undefined;
     readonly modified: boolean;
     readonly unmodified: boolean;
 
@@ -57,45 +57,54 @@ export interface ReadonlyValueLink<S> {
     readonly errors: ReadonlyArray<ValidationError> & ArrayExtensions<ValidationError>;
 }
 
-export interface ValueLink<S> extends ReadonlyValueLink<S> {
-    readonly nested: NestedInferredLink<S>;
-    readonly inferred: InferredLink<S>;
+export interface ValueLink<S, P extends {} = {}> extends ReadonlyValueLink<S, P> {
+    readonly nested: NestedInferredLink<S, P>;
+    readonly inferred: InferredStateMutation<S>;
 
     set(newValue: React.SetStateAction<S>): void;
+
+    with<E>(plugin: Plugin<S, E>): ValueLink<S, P & E>;
+    exts: P;
+
 }
 
-export interface ArrayLink<U> extends ValueLink<U[]>, ArrayStateMutation<U> {}
+export interface Plugin<S, E extends {}> {
+    onInit: (value: S) => (keyof E)[],
+    onSet?: (path: Path) => void,
+    // tslint:disable-next-line: no-any
+    ext: (value: S, valueAtPath: any, path: Path) => E
+}
 
-export interface ObjectLink<S extends object> extends ValueLink<S>, ObjectStateMutation<S> {}
-
-export interface StateLink<S> {}
+export interface StateLink<S, P extends {}> {
+    with<E>(plugin: Plugin<S, E>): StateLink<S, P & E>;
+}
 
 export type ValidationResult =
     string | ValidationErrorMessage | ReadonlyArray<string | ValidationErrorMessage>;
 
-export interface GlobalValueProcessingHooks<S> {
-    readonly __validate?: (currentValue: S, link: ReadonlyValueLink<S>) => ValidationResult | undefined;
-    readonly __compare?: (newValue: S, oldValue: S | undefined, link: ReadonlyValueLink<S>) => boolean | undefined;
+export interface GlobalValueProcessingHooks<S, P extends {}> {
+    readonly __validate?: (currentValue: S, link: ReadonlyValueLink<S, P>) => ValidationResult | undefined;
+    readonly __compare?: (newValue: S, oldValue: S | undefined, link: ReadonlyValueLink<S, P>) => boolean | undefined;
 }
 
-export interface ValueProcessingHooks<S> {
-    readonly __validate?: (currentValue: S, link: ReadonlyValueLink<S>) => ValidationResult | undefined;
-    readonly __compare?: (newValue: S, oldValue: S | undefined, link: ReadonlyValueLink<S>) => boolean | undefined;
+export interface ValueProcessingHooks<S, P extends {}> {
+    readonly __validate?: (currentValue: S, link: ReadonlyValueLink<S, P>) => ValidationResult | undefined;
+    readonly __compare?: (newValue: S, oldValue: S | undefined, link: ReadonlyValueLink<S, P>) => boolean | undefined;
 }
 
-export type ObjectProcessingHook<S> = {
-    readonly [K in keyof S]?: InferredProcessingHooks<S[K]>;
-} & ValueProcessingHooks<S>;
+export type ObjectProcessingHook<S, P extends {}> = {
+    readonly [K in keyof S]?: InferredProcessingHooks<S[K], P>;
+} & ValueProcessingHooks<S, P>;
 
-export type ArrayProcessingHooks<U> = {
-    readonly [K in number | '*']?: InferredProcessingHooks<U>;
-} & ValueProcessingHooks<ReadonlyArray<U>>;
+export type ArrayProcessingHooks<U, P extends {}> = {
+    readonly [K in number | '*']?: InferredProcessingHooks<U, P>;
+} & ValueProcessingHooks<ReadonlyArray<U>, P>;
 
-export type InferredProcessingHooks<S> =
-    S extends ReadonlyArray<(infer U)> ? ArrayProcessingHooks<U> :
-    S extends (infer Y)[] ? ArrayProcessingHooks<Y> :
-    S extends number | string | boolean | null | undefined | symbol ? ValueProcessingHooks<S> :
-    ObjectProcessingHook<S>;
+export type InferredProcessingHooks<S, P extends {}> =
+    S extends ReadonlyArray<(infer U)> ? ArrayProcessingHooks<U, P> :
+    S extends (infer Y)[] ? ArrayProcessingHooks<Y, P> :
+    S extends number | string | boolean | null | undefined | symbol ? ValueProcessingHooks<S, P> :
+    ObjectProcessingHook<S, P>;
 
 export interface Settings<S> {
     // default is false
@@ -103,8 +112,8 @@ export interface Settings<S> {
     // default is false
     readonly skipSettingEqual?: boolean;
     // tslint:disable-next-line:no-any
-    readonly globalHooks?: GlobalValueProcessingHooks<any>;
-    readonly targetHooks?: InferredProcessingHooks<S>;
+    // readonly globalHooks?: GlobalValueProcessingHooks<any>;
+    // readonly targetHooks?: InferredProcessingHooks<S>;
 }
 
 function defaultEqualityOperator<S>(a: S, b: S | undefined) {
@@ -119,7 +128,7 @@ function defaultEqualityOperator<S>(a: S, b: S | undefined) {
 }
 
 // tslint:disable-next-line:no-any
-const defaultProcessingHooks: ValueProcessingHooks<any> = {};
+const defaultProcessingHooks: ValueProcessingHooks<any, {}> = {};
 
 function extractValue<S>(prevValue: S, newValue: S | ((prevValue: S) => S)): S {
     if (typeof newValue === 'function') {
@@ -131,6 +140,36 @@ function extractValue<S>(prevValue: S, newValue: S | ((prevValue: S) => S)): S {
 class ValueLinkDisabledFeatureError extends Error {
     constructor(op: string, hint: string, path: Path) {
         super(`ValueLink is used incorrectly. Attempted '${op}' at '/${path.join('/')}'. ${hint}`)
+    }
+}
+
+class ValueLinkInvalidUsageError extends Error {
+    constructor(op: string, path: Path) {
+        super(`ValueLink is used incorrectly. Attempted '${op}' at '/${path.join('/')}'`)
+    }
+}
+
+class ExtensionInvalidUsageError extends Error {
+    constructor(op: string, path: Path) {
+        super(`Extension is used incorrectly. Attempted '${op}' at '/${path.join('/')}'`)
+    }
+}
+
+class ExtensionInvalidRegistrationError extends Error {
+    constructor(path: Path) {
+        super(`Extension can not be registered on nested ValueLink. Attempted 'with' at '/${path.join('/')}'`)
+    }
+}
+
+class ExtensionConflictError extends Error {
+    constructor(ext: string) {
+        super(`Extension '${ext}' is already registered'`)
+    }
+}
+
+class ExtensionUnknownError extends Error {
+    constructor(ext: string) {
+        super(`ValueLink extension '${ext}' is unknown'`)
     }
 }
 
@@ -148,6 +187,11 @@ interface Subscribable {
 class State implements Subscribable {
     // tslint:disable-next-line: no-any
     public subscribers: Set<SubscribableTarget> = new Set();
+
+    private extensions: Record<string, Plugin<any, {}>> = {};
+
+    private _edition = 0;
+
     // tslint:disable-next-line:no-any
     protected _initial: any;
 
@@ -171,6 +215,97 @@ class State implements Subscribable {
         return result;
     }
 
+    registerPlugin<S, E extends {}>(plugin: Plugin<S, E>) {
+        if (this._edition !== 0) {
+            return;
+        }
+        const extensions = plugin.onInit(this._current);
+        extensions.forEach(e => {
+            if (e in this.extensions) {
+                throw new ExtensionConflictError(e as string);
+            }
+            this.extensions[e as string] = plugin as unknown as Plugin<any, {}>;
+        });
+        if (plugin.onSet) {
+            const onSet = plugin.onSet;
+            this.subscribe({
+                updateIfUsed: (p) => {
+                    onSet(p);
+                    return true;
+                }
+            })
+        }
+        return;
+    }
+
+    getExtensions(path: Path): {} {
+        const getter = (target: Record<string, Plugin<any, {}>>, key: PropertyKey) => {
+            if (typeof key === 'symbol') {
+                return undefined;
+            }
+            const plugin = target[key];
+            if (plugin === undefined) {
+                throw new ExtensionUnknownError(key.toString());
+            }
+            const extension = plugin.ext(this._current, this.getCurrent(path), path)[key];
+            if (extension === undefined) {
+                throw new ExtensionUnknownError(key.toString());
+            }
+            return extension;
+        }
+        return new Proxy(this.extensions, {
+            getPrototypeOf: (target) => {
+                return Object.getPrototypeOf(target);
+            },
+            setPrototypeOf: (target, v) => {
+                throw new ExtensionInvalidUsageError('setPrototypeOf', path)
+            },
+            isExtensible: (target) => {
+                return false;
+            },
+            preventExtensions: (target) => {
+                throw new ExtensionInvalidUsageError('preventExtensions', path)
+            },
+            getOwnPropertyDescriptor: (target, p) => {
+                const origin = Object.getOwnPropertyDescriptor(target, p);
+                return origin && {
+                    configurable: true, // JSON.stringify() does not work for an object without it
+                    enumerable: origin.enumerable,
+                    get: () => getter(target, p),
+                    set: undefined
+                };
+            },
+            has: (target, p) => {
+                if (typeof p === 'symbol') {
+                    return false;
+                }
+                return p in target;
+            },
+            get: getter,
+            set: (target, p, value, receiver) => {
+                throw new ExtensionInvalidUsageError('set', path)
+            },
+            deleteProperty: (target, p) => {
+                throw new ExtensionInvalidUsageError('deleteProperty', path)
+            },
+            defineProperty: (target, p, attributes) => {
+                throw new ExtensionInvalidUsageError('defineProperty', path)
+            },
+            enumerate: (target) => {
+                return Object.keys(target);
+            },
+            ownKeys: (target) => {
+                return Object.keys(target);
+            },
+            apply: (target, thisArg, argArray?) => {
+                throw new ExtensionInvalidUsageError('apply', path)
+            },
+            construct: (target, argArray, newTarget?) => {
+                throw new ExtensionInvalidUsageError('construct', path)
+            }
+        });
+    }
+
     getInitial(path: Path) {
         if (!this._settings.cloneInitial) {
             throw new ValueLinkDisabledFeatureError('initialValue',
@@ -191,16 +326,16 @@ class State implements Subscribable {
     }
 
     // tslint:disable-next-line:no-any
-    targetHooks(path: Path): ValueProcessingHooks<any> {
-        let result = this._settings.targetHooks;
-        for (const p of path) {
-            if (!result) {
-                return defaultProcessingHooks;
-            }
-            result = result[p] || (typeof p === 'number' && result['*']);
-        }
-        return result || defaultProcessingHooks;
-    }
+    // targetHooks(path: Path): ValueProcessingHooks<any, {}> {
+    //     let result = this._settings.targetHooks;
+    //     for (const p of path) {
+    //         if (!result) {
+    //             return defaultProcessingHooks;
+    //         }
+    //         result = result[p] || (typeof p === 'number' && result['*']);
+    //     }
+    //     return result || defaultProcessingHooks;
+    // }
 
     // tslint:disable-next-line: no-any
     subscribe(l: SubscribableTarget) {
@@ -214,6 +349,7 @@ class State implements Subscribable {
 
     // tslint:disable-next-line: no-any
     setCurrent(path: Path, value: any) {
+        this._edition += 1;
         if (path.length === 0) {
             this._current = value;
         }
@@ -235,17 +371,11 @@ class State implements Subscribable {
     }
 }
 
-class ValueLinkInvalidUsageError extends Error {
-    constructor(op: string, path: Path) {
-        super(`ValueLink is used incorrectly. Attempted '${op}' at '/${path.join('/')}'`)
-    }
-}
-
-class ValueLinkImpl<S> implements ValueLink<S>, Subscribable {
+class ValueLinkImpl<S, P extends {}> implements ValueLink<S, P>, Subscribable {
     private subscribers: Set<SubscribableTarget> | undefined;
 
-    private nestedCache: NestedInferredLink<S> | undefined;
-    private nestedLinksCache: Record<string | number, ValueLinkImpl<S[keyof S]>> | undefined;
+    private nestedCache: NestedInferredLink<S, P> | undefined;
+    private nestedLinksCache: Record<string | number, ValueLinkImpl<S[keyof S], P>> | undefined;
 
     private valueTracked: S | undefined;
     private valueUsed: boolean | undefined;
@@ -319,9 +449,21 @@ class ValueLinkImpl<S> implements ValueLink<S>, Subscribable {
         //     return;
         // }
         if (typeof newValue === 'function') {
-            newValue =  (newValue as ((prevValue: S) => S))(this.state.getCurrent(this.path));
+            newValue = (newValue as ((prevValue: S) => S))(this.state.getCurrent(this.path));
         }
         this.state.setCurrent(this.path, newValue);
+    }
+
+    with<E>(plugin: Plugin<S, E>): ValueLink<S, P & E> {
+        if (this.path.length !== 0) {
+            throw new ExtensionInvalidRegistrationError(this.path)
+        }
+        this.state.registerPlugin(plugin);
+        return this as unknown as ValueLink<S, P & E>;
+    }
+
+    get exts() {
+        return this.state.getExtensions(this.path) as P;
     }
 
     subscribe(l: SubscribableTarget) {
@@ -407,7 +549,7 @@ class ValueLinkImpl<S> implements ValueLink<S>, Subscribable {
         return !this.valid;
     }
 
-    private validate(validator: ((val: S, link: ReadonlyValueLink<S>) => ValidationResult | undefined) | undefined):
+    private validate(validator: ((val: S, link: ReadonlyValueLink<S, P>) => ValidationResult | undefined) | undefined):
         ValidationError[] | undefined {
         throw 'Functionality disabled';
         // if (validator) {
@@ -510,22 +652,24 @@ class ValueLinkImpl<S> implements ValueLink<S>, Subscribable {
         // return this.errorsCache;
     }
 
-    get inferred(): InferredLink<S> {
+    get inferred(): InferredStateMutation<S> {
         if (!this.valueTracked) {
             this.valueUsed = true;
         }
         if (Array.isArray(this.valueUntracked)) {
-            return new ArrayLinkImpl(
-                this as unknown as ValueLinkImpl<unknown[]>) as unknown as InferredLink<S>;
+            return createArrayStateMutation((newValue) =>
+            // tslint:disable-next-line: no-any
+            this.set(newValue as any)) as unknown as InferredStateMutation<S>
         } else if (typeof this.valueUntracked === 'object' && this.valueUntracked !== null) {
-            return new ObjectLinkImpl(
-                this as unknown as ValueLinkImpl<object>) as unknown as InferredLink<S>;
+            return createObjectStateMutation((newValue) =>
+            // tslint:disable-next-line: no-any
+            this.set(newValue as any)) as unknown as InferredStateMutation<S>;
         } else {
-            return undefined as unknown as InferredLink<S>;
+            return undefined as unknown as InferredStateMutation<S>;
         }
     }
 
-    get nested(): NestedInferredLink<S> {
+    get nested(): NestedInferredLink<S, P> {
         if (!this.valueTracked) {
             this.valueUsed = true;
         }
@@ -538,10 +682,10 @@ class ValueLinkImpl<S> implements ValueLink<S>, Subscribable {
                 this.nestedCache = undefined;
             }
         }
-        return this.nestedCache as NestedInferredLink<S>;
+        return this.nestedCache as NestedInferredLink<S, P>;
     }
 
-    private nestedArrayImpl(): NestedInferredLink<S> {
+    private nestedArrayImpl(): NestedInferredLink<S, P> {
         const proxyGetterCache = {};
         this.nestedLinksCache = proxyGetterCache;
 
@@ -569,7 +713,7 @@ class ValueLinkImpl<S> implements ValueLink<S>, Subscribable {
             proxyGetterCache[index] = r;
             return r;
         };
-        return this.proxyWrap(this.valueUntracked as unknown as object, getter) as unknown as NestedInferredLink<S>;
+        return this.proxyWrap(this.valueUntracked as unknown as object, getter) as unknown as NestedInferredLink<S, P>;
     }
 
     private valueArrayImpl(): S {
@@ -589,7 +733,7 @@ class ValueLinkImpl<S> implements ValueLink<S>, Subscribable {
         return this.proxyWrap(this.valueUntracked as unknown as object, getter) as unknown as S;
     }
 
-    private nestedObjectImpl(): NestedInferredLink<S> {
+    private nestedObjectImpl(): NestedInferredLink<S, P> {
         const proxyGetterCache = {}
         this.nestedLinksCache = proxyGetterCache;
 
@@ -610,7 +754,7 @@ class ValueLinkImpl<S> implements ValueLink<S>, Subscribable {
             proxyGetterCache[key] = r;
             return r;
         };
-        return this.proxyWrap(this.valueUntracked as unknown as object, getter) as unknown as NestedInferredLink<S>;
+        return this.proxyWrap(this.valueUntracked as unknown as object, getter) as unknown as NestedInferredLink<S, P>;
     }
 
     private valueObjectImpl(): S {
@@ -680,118 +824,15 @@ class ValueLinkImpl<S> implements ValueLink<S>, Subscribable {
     }
 }
 
-class ArrayOrObjectLinkBase<S> implements ValueLink<S> {
-    constructor(readonly origin: ValueLink<S>) {
-        if (origin instanceof ArrayOrObjectLinkBase) {
-            origin = origin.origin as ValueLink<S>;
-        }
-    }
-
-    get path(): Path {
-        return this.origin.path;
-    }
-    get initialValue(): S | undefined {
-        return this.origin.initialValue;
-    }
-    get value(): S {
-        return this.origin.value;
-    }
-    get nested(): NestedInferredLink<S> {
-        return this.origin.nested;
-    }
-    get modified(): boolean {
-        return this.origin.modified;
-    }
-    get unmodified(): boolean {
-        return this.origin.unmodified;
-    }
-    get valid(): boolean {
-        return this.origin.valid;
-    }
-    get invalid(): boolean {
-        return this.origin.invalid;
-    }
-    get errors(): ReadonlyArray<ValidationError> & ArrayExtensions<ValidationError> {
-        return this.origin.errors;
-    }
-    get inferred(): InferredLink<S> {
-        return this as unknown as InferredLink<S>;
-    }
-    set(newValue: React.SetStateAction<S>): void {
-        this.origin.set(newValue);
-    }
-}
-
-class ArrayLinkImpl<U> extends ArrayOrObjectLinkBase<U[]> implements ArrayLink<U> {
-    private arrayMutation: ArrayStateMutation<U>;
-
-    constructor(private originImpl: ValueLinkImpl<U[]>) {
-        super(originImpl);
-        this.arrayMutation = createArrayStateMutation((newValue) => originImpl.set(newValue));
-    }
-
-    set(newValue: React.SetStateAction<U[]>): void {
-        this.arrayMutation.set(newValue);
-    }
-
-    merge(other: React.SetStateAction<{ [index: number]: U; }>): void {
-        this.arrayMutation.merge(other);
-    }
-
-    update(key: number, value: React.SetStateAction<U>): void {
-        this.arrayMutation.update(key, value);
-    }
-
-    concat(other: React.SetStateAction<U[]>): void {
-        this.arrayMutation.concat(other);
-    }
-
-    push(elem: U): void {
-        this.arrayMutation.push(elem);
-    }
-
-    pop(): void {
-        this.arrayMutation.pop();
-    }
-
-    insert(index: number, elem: U): void {
-        this.arrayMutation.insert(index, elem);
-    }
-
-    remove(index: number): void {
-        this.arrayMutation.remove(index);
-    }
-
-    swap(index1: number, index2: number): void {
-        this.arrayMutation.swap(index1, index2);
-    }
-}
-
-class ObjectLinkImpl<S extends object> extends ArrayOrObjectLinkBase<S> implements ObjectLink<S> {
-    private objectMutation: ObjectStateMutation<S>;
-
-    constructor(private originImpl: ValueLinkImpl<S>) {
-        super(originImpl);
-        this.objectMutation = createObjectStateMutation((newValue) => originImpl.set(newValue));
-    }
-
-    set(newValue: React.SetStateAction<S>): void {
-        this.objectMutation.set(newValue);
-    }
-
-    merge(newValue: SetPartialStateAction<S>) {
-        this.objectMutation.merge(newValue);
-    }
-
-    update<K extends keyof S>(key: K, value: React.SetStateAction<S[K]>): void {
-        this.objectMutation.update(key, value);
-    }
-}
-
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
 
-class StateLinkImpl<S> implements StateLink<S> {
+class StateLinkImpl<S, P extends {}> implements StateLink<S, P> {
     constructor(public state: State) { }
+
+    with<E>(plugin: Plugin<S, E>): StateLink<S, P & E> {
+        this.state.registerPlugin(plugin);
+        return this as StateLink<S, P & E>;
+    }
 }
 
 function createState<S>(
@@ -804,8 +845,12 @@ function createState<S>(
     return new State(initialValue, settings || {});
 }
 
-function useSubscribedStateLink<S>(state: State, path: Path, update: () => void, subscribeTarget: Subscribable) {
-    const link = new ValueLinkImpl<S>(
+function useSubscribedStateLink<S, P extends {}>(
+    state: State,
+    path: Path, update: () => void,
+    subscribeTarget: Subscribable
+) {
+    const link = new ValueLinkImpl<S, P>(
         state,
         path,
         update,
@@ -818,49 +863,44 @@ function useSubscribedStateLink<S>(state: State, path: Path, update: () => void,
     return link;
 }
 
-function useGlobalStateLink<S>(stateLink: StateLinkImpl<S>): ValueLink<S> {
+function useGlobalStateLink<S, P>(stateLink: StateLinkImpl<S, P>): ValueLink<S, P> {
     const [_, setValue] = React.useState({});
     return useSubscribedStateLink(stateLink.state, [], () => setValue({}), stateLink.state);
 }
 
-function useLocalStateLink<S>(initialState: S | (() => S), settings?: Settings<S>): ValueLink<S> {
+function useLocalStateLink<S>(initialState: S | (() => S), settings?: Settings<S>): ValueLink<S, {}> {
     const [value, setValue] = React.useState(() => ({ state: createState(initialState, settings) }));
     return useSubscribedStateLink(value.state, [], () => setValue({ state: value.state }), value.state);
 }
 
-function useDerivedStateLink<S>(originLink: ValueLinkImpl<S>): ValueLink<S> {
+function useDerivedStateLink<S, P extends {}>(originLink: ValueLinkImpl<S, P>): ValueLink<S, P> {
     const [_, setValue] = React.useState({});
     return useSubscribedStateLink(originLink.state, originLink.path, () => setValue({}), originLink);
 }
 
-export function createStateLink<S>(initial: S | (() => S), settings?: Settings<S>): StateLink<S> {
+export function createStateLink<S>(initial: S | (() => S), settings?: Settings<S>): StateLink<S, {}> {
     return new StateLinkImpl(createState(initial, settings));
 }
 
-export function useStateLink<S>(
-    initialState: S | (() => S) | ValueLink<S> | StateLink<S>,
-    settings?: Settings<S>
-): ValueLink<S> {
+export function useStateLink<S, P extends {}>(
+    initialState: S | (() => S) | ValueLink<S, P> | StateLink<S, P>
+): ValueLink<S, P> {
+    // tslint:disable-next-line: no-any
     if (initialState instanceof ValueLinkImpl) {
         // eslint-disable-next-line react-hooks/rules-of-hooks
-        return useDerivedStateLink(initialState) as ValueLink<S>;
-    }
-    if (initialState instanceof ArrayOrObjectLinkBase &&
-        initialState.origin instanceof ValueLinkImpl) {
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        return useDerivedStateLink(initialState.origin) as ValueLink<S>;
+        return useDerivedStateLink(initialState) as ValueLink<S, P>;
     }
     if (initialState instanceof StateLinkImpl) {
         // eslint-disable-next-line react-hooks/rules-of-hooks
-        return useGlobalStateLink(initialState) as ValueLink<S>;
+        return useGlobalStateLink(initialState) as ValueLink<S, P>;
     }
 
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useLocalStateLink(initialState as S | (() => S), settings);
+    return useLocalStateLink(initialState as S | (() => S)) as ValueLink<S, P>;
 }
 
-export function createStateWatch<S>(
-    state: StateLink<S>,
+export function createStateWatch<S, P extends {}>(
+    state: StateLink<S, P>,
     onSet: (newstate: S) => void
 ): () => void {
     if (state instanceof StateLinkImpl) {
@@ -883,11 +923,11 @@ export function createStateWatch<S>(
  * @param state state to watch for
  * @param watcher state-to-result redusing function
  */
-export function useStateWatch<S, R>(
-    state: ValueLink<S> | StateLink<S>,
+export function useStateWatch<S, R, P extends {}>(
+    state: ValueLink<S, P> | StateLink<S, P>,
     watcher: (newstate: S, prev: R | undefined) => R
 ) {
-    const link = useStateLink(state) as ValueLinkImpl<S>;
+    const link = useStateLink(state) as ValueLinkImpl<S, P>;
     const originOnUpdate = link.onUpdate;
     const result = watcher(link.value, undefined);
     link.onUpdate = () => {

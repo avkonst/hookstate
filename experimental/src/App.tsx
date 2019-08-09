@@ -2,7 +2,7 @@ import React from 'react';
 import logo from './logo.svg';
 import './App.css';
 
-import { useStateLink, ValueLink, createStateLink } from './lib/UseStateLink';
+import { useStateLink, ValueLink, createStateLink, Plugin } from './lib/UseStateLink';
 
 JSON.stringify({ x: 5, y: 6, toJSON() { return this.x + this.y; } });
 
@@ -54,11 +54,29 @@ const JsonDump = (props: {link: ValueLink<TaskItem[]>}) => {
 }
 
 const App: React.FC = () => {
-    // const vl = useStateLink<TaskItem[]>(Array.from(Array(2).keys()).map((i) => ({
+    // const vl = useStateLink<TaskItem[], { myext: () => void }>(Array.from(Array(2).keys()).map((i) => ({
     //     name: 'initial',
     //     priority: i
-    // })));
-    const vl = useStateLink(state);
+    // }))).with({
+    //     onInit: () => ['myext'],
+    //     ext: (s, v, p) => ({
+    //         myext: () => {
+    //             console.log('myext called', s, v, p);
+    //         }
+    //     })
+    // });
+    const vl = useStateLink(state).with({
+        onInit: () => ['myext'],
+        onSet: (p) => console.log('onSet', p),
+        ext: (s, v, p) => ({
+            myext: () => {
+                console.log('myext called', s, v, p);
+            }
+        })
+    })
+
+    vl.exts.myext();
+
     return <>
         <JsonDump link={vl} />
         {
