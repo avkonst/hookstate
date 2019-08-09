@@ -1,5 +1,5 @@
 import React from 'react';
-import { ObjectStateMutation, createObjectStateMutation, SetPartialStateAction } from './UseStateObject';
+import { ObjectStateMutation, createObjectStateMutation } from './UseStateObject';
 import { ArrayStateMutation, createArrayStateMutation } from './UseStateArray';
 
 //
@@ -94,7 +94,7 @@ class ExtensionUnknownError extends Error {
 }
 
 interface Subscriber {
-    onSet(path: Path): void;
+    onUpdate(path: Path, actions: (() => void)[]): void;
 }
 
 interface Subscribable {
@@ -113,7 +113,6 @@ class State implements Subscribable {
     constructor(private _value: any) { }
 
     get(path: Path) {
-        console.log('get state')
         let result = this._value;
         path.forEach(p => {
             result = result[p];
@@ -123,7 +122,6 @@ class State implements Subscribable {
 
     // tslint:disable-next-line: no-any
     set(path: Path, value: any) {
-        console.log('set state', path, value)
         this._edition += 1;
         if (path.length === 0) {
             this._value = value;
@@ -142,7 +140,9 @@ class State implements Subscribable {
                 result = result[p];
             }
         });
-        this._subscribers.forEach(s => s.onSet(path));
+        const actions: (() => void)[] = [];
+        this._subscribers.forEach(s => s.onUpdate(path, actions));
+        actions.forEach(a => a());
     }
 
     extensions() {
@@ -172,9 +172,7 @@ class State implements Subscribable {
         if (plugin.onSet) {
             const onSet = plugin.onSet;
             this.subscribe({
-                onSet: (p) => {
-                    onSet(p, this._value);
-                }
+                onUpdate: (p) => onSet(p, this._value)
             })
         }
         return;
@@ -225,12 +223,11 @@ class StateLinkImpl<S, P extends {}> implements StateLink<S, P>, Subscribable, S
         public readonly state: State,
         public readonly path: Path,
         // tslint:disable-next-line: no-any
-        public onUpdate: () => void,
+        public onUpdateUsed: () => void,
         public valueUntracked: S
     ) { }
 
     get value(): S {
-        // console.log('value used', this.path);
         if (this.valueTracked === undefined) {
             if (Array.isArray(this.valueUntracked)) {
                 this.valueTracked = this.valueArrayImpl();
@@ -243,12 +240,10 @@ class StateLinkImpl<S, P extends {}> implements StateLink<S, P>, Subscribable, S
                 }
             }
         }
-        // return this.nestedCache as NestedInferredLink<S>;
         return this.valueTracked!;
     }
 
     set(newValue: React.SetStateAction<S>): void {
-        console.log('set')
         // inferred() function checks for the nullability of the current value:
         // If value is not null | undefined, it resolves to ArrayLink or ObjectLink
         // which can not take null | undefined as a value.
@@ -316,41 +311,33 @@ class StateLinkImpl<S, P extends {}> implements StateLink<S, P>, Subscribable, S
         this.subscribers!.delete(l);
     }
 
-    onSet(path: Path) {
-        this.updateIfUsed(path)
+    onUpdate(path: Path, actions: (() => void)[]) {
+        this.updateIfUsed(path, actions)
     }
 
-    updateIfUsed(path: Path): boolean {
-        // console.log('updateIfUsed', this.path);
+    updateIfUsed(path: Path, actions: (() => void)[]): boolean {
         const update = () => {
             const firstChildKey = path[this.path.length];
             if (firstChildKey === undefined) {
                 if (this.valueTracked !== undefined || this.valueUsed === true) {
-                    // console.log('updateIfUsed updated', this.path);
-                    this.onUpdate();
+                    actions.push(this.onUpdateUsed);
                     return true;
                 }
-                // console.log('updateIfUsed not updated (firstChildKey Undefined)',
-                // this.path, this.valueTracked || this.valueUsed, this.valueTracked, this.valueUsed);
                 return false;
             }
             const firstChildValue = this.nestedLinksCache && this.nestedLinksCache[firstChildKey];
             if (firstChildValue === undefined) {
-                // console.log('updateIfUsed not updated (firstChildValue Undefined)', this.path);
                 return false;
             }
-            // console.log('updateIfUsed offload to children', this.path);
-            const r = firstChildValue.updateIfUsed(path);
-            // console.log('updateIfUsed offload to children updated', this.path, r);
-            return r;
+            return firstChildValue.updateIfUsed(path, actions);
         }
 
         const updated = update();
         if (!updated && this.subscribers !== undefined) {
-            // console.log('updateIfUsed not updated, loop subscribers', this.path, this.subscribers);
-            this.subscribers.forEach(s => s.onSet(path))
+            this.subscribers.forEach(s => {
+                s.onUpdate(path, actions)
+            })
         }
-        // console.log('updateIfUsed returning', this.path, updated);
         return updated;
     }
 
@@ -413,7 +400,7 @@ class StateLinkImpl<S, P extends {}> implements StateLink<S, P>, Subscribable, S
             const r = new StateLinkImpl(
                 this.state,
                 this.path.slice().concat(index),
-                this.onUpdate,
+                this.onUpdateUsed,
                 target[index]
             )
             proxyGetterCache[index] = r;
@@ -458,7 +445,7 @@ class StateLinkImpl<S, P extends {}> implements StateLink<S, P>, Subscribable, S
             const r = new StateLinkImpl(
                 this.state,
                 this.path.slice().concat(key.toString()),
-                this.onUpdate,
+                this.onUpdateUsed,
                 target[key]
             );
             proxyGetterCache[key] = r;
@@ -471,7 +458,6 @@ class StateLinkImpl<S, P extends {}> implements StateLink<S, P>, Subscribable, S
 
     private valueObjectImpl(): S {
         const getter = (target: object, key: PropertyKey) => {
-            // console.log('value getter', key);
             if (typeof key === 'symbol') {
                 return undefined;
             }
@@ -570,17 +556,23 @@ function useSubscribedStateLink<S, P extends {}>(
 
 function useGlobalStateLink<S, P>(stateLink: StateRefImpl<S, P>): StateLink<S, P> {
     const [_, setValue] = React.useState({});
-    return useSubscribedStateLink(stateLink.state, [], () => setValue({}), stateLink.state);
+    return useSubscribedStateLink(stateLink.state, [], () => {
+        setValue({})
+    }, stateLink.state);
 }
 
 function useLocalStateLink<S>(initialState: S | (() => S)): StateLink<S, {}> {
     const [value, setValue] = React.useState(() => ({ state: createState(initialState) }));
-    return useSubscribedStateLink(value.state, [], () => setValue({ state: value.state }), value.state);
+    return useSubscribedStateLink(value.state, [], () => {
+        setValue({ state: value.state })
+    }, value.state);
 }
 
 function useWatchStateLink<S, P extends {}>(originLink: StateLinkImpl<S, P>): StateLink<S, P> {
     const [_, setValue] = React.useState({});
-    return useSubscribedStateLink(originLink.state, originLink.path, () => setValue({}), originLink);
+    return useSubscribedStateLink(originLink.state, originLink.path, () => {
+        setValue({})
+    }, originLink);
 }
 
 ///
@@ -623,11 +615,11 @@ export function useStateWatch<S, R, P extends {}>(
     watcher: (state: ReadonlyStateLink<S, P>, prev: R | undefined) => R
 ) {
     const link = useStateLink(state) as StateLinkImpl<S, P>;
-    const originOnUpdate = link.onUpdate;
+    const originOnUpdate = link.onUpdateUsed;
     const injectOnUpdate = {
         call: originOnUpdate
     }
-    link.onUpdate = () => injectOnUpdate.call()
+    link.onUpdateUsed = () => injectOnUpdate.call()
     const result = watcher(link, undefined);
     injectOnUpdate.call = () => {
         // need to create new one to make sure

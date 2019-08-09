@@ -9,13 +9,12 @@ JSON.stringify({ x: 5, y: 6, toJSON() { return this.x + this.y; } });
 const state = createStateLink<TaskItem[]>(Array.from(Array(2).keys()).map((i) => ({
     name: 'initial',
     priority: i,
-    toJSON(): any { return this.name + this.priority; }
+    // toJSON(): any { return this.name + this.priority; }
 })));
 
 setInterval(() => {
-    console.log('interval');
-    // state.use().nested[0].nested.name.set(p => p + 's')
-}, 5000);
+    state.use().nested[0].nested.priority.set(p => (p || 0) + 1)
+}, 10);
 
 interface TaskItem {
     name: string,
@@ -52,7 +51,7 @@ const TwiceTaskView = (props: { link: StateLink<TaskItem> }) => {
 const JsonDump = (props: {link: StateLink<TaskItem[]>}) => {
     const locallink = useStateLink(props.link);
     return <p>
-        {Math.random()} {JSON.stringify(locallink.value)}
+        {Math.random()} {JSON.stringify(locallink.value.slice(0, 2))}
     </p>;
 }
 
@@ -106,30 +105,17 @@ function ModifiedPlugin<S>(): Plugin<S, ModifiedPluginExtensions> {
     }
 };
 
-const setValueG = {
-    call: (a: number) => {}
-}
-
-setTimeout(() => {
-    console.log('interval2');
-    setValueG.call(1);
-    // state.use(() => console.log('on update in interval')).nested[0].nested.priority.set(p => (p || 0) + 1)
-}, 5000);
-
 const App: React.FC = () => {
     // const vl = useStateLink<TaskItem[], { myext: () => void }>(Array.from(Array(2).keys()).map((i) => ({
     //     name: 'initial',
     //     priority: i
     // }))).with(ModifiedPlugin);
-    const vl = useStateLink(state)//.with(ModifiedPlugin)
-
-    // const [value, setValue] = React.useState(0);
-    // setValueG.call = setValue;
+    const vl = useStateLink(state).with(ModifiedPlugin)
 
     return <>
-        {/* <ModifiedStatus link={vl} /> */}
+        <ModifiedStatus link={vl} />
         {/* {value} */}
-        {/* <JsonDump link={vl} /> */}
+        <JsonDump link={vl} />
         {
             vl.$.map((i, ind) => <TwiceTaskView key={ind} link={i} />)
         }
