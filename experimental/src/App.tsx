@@ -2,7 +2,7 @@ import React from 'react';
 import logo from './logo.svg';
 import './App.css';
 
-import { useStateLink, ValueLink, createStateLink, Plugin, Path, useStateWatch } from './lib/UseStateLink';
+import { useStateLink, StateLink, createStateLink, Plugin, Path, useStateWatch } from './lib/UseStateLink';
 
 JSON.stringify({ x: 5, y: 6, toJSON() { return this.x + this.y; } });
 
@@ -17,7 +17,7 @@ interface TaskItem {
     priority?: number
 }
 
-const TaskView = (props: { link: ValueLink<TaskItem> }) => {
+const TaskView = (props: { link: StateLink<TaskItem> }) => {
     // const locallink = props.link;
     const locallink = useStateLink(props.link);
     // const priorityLink = locallink.nested.priority;
@@ -37,21 +37,21 @@ const TaskView = (props: { link: ValueLink<TaskItem> }) => {
     </p>
 }
 
-const TwiceTaskView = (props: { link: ValueLink<TaskItem> }) => {
+const TwiceTaskView = (props: { link: StateLink<TaskItem> }) => {
     return <>
         <TaskView link={props.link} />
         <TaskView link={props.link} />
     </>;
 }
 
-const JsonDump = (props: {link: ValueLink<TaskItem[]>}) => {
+const JsonDump = (props: {link: StateLink<TaskItem[]>}) => {
     const locallink = useStateLink(props.link);
     return <p>
         {Math.random()} {JSON.stringify(locallink.value)}
     </p>;
 }
 
-const ModifiedStatus = (props: {link: ValueLink<TaskItem[], { modified: () => boolean }>}) => {
+const ModifiedStatus = (props: {link: StateLink<TaskItem[], { modified: () => boolean }>}) => {
     const modified = useStateWatch(props.link, (l) => {
         return l.extended.modified();
     });
@@ -59,6 +59,47 @@ const ModifiedStatus = (props: {link: ValueLink<TaskItem[], { modified: () => bo
         {Math.random()} Modified: {modified.toString()}
     </p>;
 }
+
+type ModifiedPluginExtensions = {
+    modified: () => boolean;
+    unmodified: () => boolean;
+}
+
+function ModifiedPlugin<S>(): Plugin<S, ModifiedPluginExtensions> {
+    let initial: TaskItem[] | undefined = undefined;
+    const getInitial = (path: Path) => {
+        let result = initial;
+        path.forEach(p => {
+            result = result && result[p];
+        });
+        return result;
+    }
+    function defaultEqualityOperator<S>(a: S, b: S | undefined) {
+        if (typeof b === 'object') {
+            // check reference equality first for speed
+            if (a === b) {
+                return true;
+            }
+            return JSON.stringify(a) === JSON.stringify(b);
+        }
+        return a === b;
+    }
+    const modified = (v: StateLink<any, {}>, path: Path) => {
+        return !defaultEqualityOperator(v.value, getInitial(path))
+    }
+    return {
+        defines: ['modified'],
+        onInit: (i) => {
+            initial = JSON.parse(JSON.stringify(i)) as TaskItem[];
+            return undefined;
+        },
+        // onSet: (p, v) => console.log('onSet', p, v),
+        extensions: (l) => ({
+            modified: () => modified(l, l.path),
+            unmodified: () => !modified(l, l.path),
+        })
+    }
+};
 
 const App: React.FC = () => {
     // const vl = useStateLink<TaskItem[], { myext: () => void }>(Array.from(Array(2).keys()).map((i) => ({
@@ -72,47 +113,13 @@ const App: React.FC = () => {
     //         }
     //     })
     // });
-    const vl = useStateLink(state).with(() => {
-        let initial: TaskItem[] | undefined = undefined;
-        const getInitial = (path: Path) => {
-            let result = initial;
-            path.forEach(p => {
-                result = result && result[p];
-            });
-            return result;
-        }
-        function defaultEqualityOperator<S>(a: S, b: S | undefined) {
-            if (typeof b === 'object') {
-                // check reference equality first for speed
-                if (a === b) {
-                    return true;
-                }
-                return JSON.stringify(a) === JSON.stringify(b);
-            }
-            return a === b;
-        }
-        const modified = (v: ValueLink<any, {}>, path: Path) => {
-            return !defaultEqualityOperator(v.value, getInitial(path))
-        }
-        return {
-            defines: ['modified'],
-            onInit: (i) => {
-                initial = JSON.parse(JSON.stringify(i)) as TaskItem[];
-                return undefined;
-            },
-            // onSet: (p, v) => console.log('onSet', p, v),
-            extensions: (l) => ({
-                modified: () => modified(l, l.path),
-                unmodified: () => !modified(l, l.path),
-            })
-        }
-    })
+    const vl = useStateLink(state).with(ModifiedPlugin)
 
     return <>
         <ModifiedStatus link={vl} />
         <JsonDump link={vl} />
         {
-            vl.nested.map((i, ind) => <TwiceTaskView key={ind} link={i} />)
+            vl.$.map((i, ind) => <TwiceTaskView key={ind} link={i} />)
         }
         <button
             onClick={() => vl.inferred.push({
