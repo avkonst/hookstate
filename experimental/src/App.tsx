@@ -13,8 +13,8 @@ const state = createStateLink<TaskItem[]>(Array.from(Array(2).keys()).map((i) =>
 })));
 
 setInterval(() => {
-    state.use().nested[0].nested.priority.set(p => (p || 0) + 1)
-}, 10);
+    state.use().nested[0].nested.priority.set(p => p === 10 ? 0 : (p || 0) + 1)
+}, 100);
 
 interface TaskItem {
     name: string,
@@ -55,7 +55,7 @@ const JsonDump = (props: {link: StateLink<TaskItem[]>}) => {
     </p>;
 }
 
-const ModifiedStatus = (props: {link: StateLink<TaskItem[], { modified: () => boolean }>}) => {
+const ModifiedStatus = (props: {link: StateLink<TaskItem[], ModifiedPluginExtensions>}) => {
     const modified = useStateWatch(props.link, (l) => {
         return l.extended.modified();
     });
@@ -92,7 +92,7 @@ function ModifiedPlugin<S>(): Plugin<S, ModifiedPluginExtensions> {
         return !defaultEqualityOperator(v.value, getInitial(path))
     }
     return {
-        defines: ['modified'],
+        defines: ['modified', 'unmodified'],
         onInit: (i) => {
             initial = JSON.parse(JSON.stringify(i)) as TaskItem[];
             return undefined;
@@ -105,12 +105,12 @@ function ModifiedPlugin<S>(): Plugin<S, ModifiedPluginExtensions> {
     }
 };
 
-const App: React.FC = () => {
-    // const vl = useStateLink<TaskItem[], { myext: () => void }>(Array.from(Array(2).keys()).map((i) => ({
-    //     name: 'initial',
-    //     priority: i
-    // }))).with(ModifiedPlugin);
-    const vl = useStateLink(state).with(ModifiedPlugin)
+const App = () => {
+    const vl = useStateLink<TaskItem[], { myext: () => void }>(Array.from(Array(2).keys()).map((i) => ({
+        name: 'initial',
+        priority: i
+    }))).with(ModifiedPlugin);
+    // const vl = useStateLink(state).with(ModifiedPlugin)
 
     return <>
         <ModifiedStatus link={vl} />
