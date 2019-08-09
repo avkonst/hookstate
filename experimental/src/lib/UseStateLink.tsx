@@ -8,6 +8,8 @@ import { ArrayStateMutation, createArrayStateMutation } from './UseStateArray';
 
 export interface StateRef<S, P extends {}> {
     with<E>(plugin: () => Plugin<S, E>): StateRef<S, P & E>;
+
+    use(onUpdate?: () => void): StateLink<S, P>;
 }
 
 // TODO add support for Map and Set
@@ -120,6 +122,7 @@ class State implements Subscribable {
 
     // tslint:disable-next-line: no-any
     set(path: Path, value: any) {
+        console.log('set state', path, value)
         this._edition += 1;
         if (path.length === 0) {
             this._value = value;
@@ -193,6 +196,18 @@ class StateRefImpl<S, P extends {}> implements StateRef<S, P> {
     with<E>(plugin: () => Plugin<S, E>): StateRef<S, P & E> {
         this.state.register(plugin);
         return this as unknown as StateRef<S, P & E>;
+    }
+
+    use(onUpdate?: () => void): StateLink<S, P> {
+        const path: Path = [];
+        return new StateLinkImpl<S, P>(
+            this.state,
+            path,
+            // it is assumed the client discards the state link once it is used
+            // or when user's onUpdate is fired up
+            onUpdate || (() => { /* nothing */ }),
+            this.state.get(path)
+        )
     }
 }
 
