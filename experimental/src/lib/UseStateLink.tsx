@@ -100,7 +100,7 @@ interface Subscribable {
     unsubscribe(l: Subscriber): void;
 }
 
-class Store implements Subscribable {
+class State implements Subscribable {
     private _edition = 0;
     private _subscribers: Set<Subscriber> = new Set();
 
@@ -188,7 +188,7 @@ class Store implements Subscribable {
 }
 
 class StateRefImpl<S, P extends {}> implements StateRef<S, P> {
-    constructor(public state: Store) { }
+    constructor(public state: State) { }
 
     with<E>(plugin: () => Plugin<S, E>): StateRef<S, P & E> {
         this.state.register(plugin);
@@ -206,7 +206,7 @@ class StateLinkImpl<S, P extends {}> implements StateLink<S, P>, Subscribable, S
     private valueUsed: boolean | undefined;
 
     constructor(
-        public readonly state: Store,
+        public readonly state: State,
         public readonly path: Path,
         // tslint:disable-next-line: no-any
         public onUpdate: () => void,
@@ -466,9 +466,7 @@ class StateLinkImpl<S, P extends {}> implements StateLink<S, P>, Subscribable, S
     }
 
     // tslint:disable-next-line: no-any
-    private proxyWrap(
-        objectToWrap: any,
-        getter: (target: any, key: PropertyKey) => any,
+    private proxyWrap(objectToWrap: any, getter: (target: any, key: PropertyKey) => any,
         onInvalidUsage: (op: string) => never
     ) {
         return new Proxy(objectToWrap, {
@@ -527,16 +525,16 @@ class StateLinkImpl<S, P extends {}> implements StateLink<S, P>, Subscribable, S
 
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
 
-function createStore<S>(initial: S | (() => S)): Store {
+function createState<S>(initial: S | (() => S)): State {
     let initialValue: S = initial as S;
     if (typeof initial === 'function') {
         initialValue = (initial as (() => S))();
     }
-    return new Store(initialValue);
+    return new State(initialValue);
 }
 
 function useSubscribedStateLink<S, P extends {}>(
-    state: Store,
+    state: State,
     path: Path, update: () => void,
     subscribeTarget: Subscribable
 ) {
@@ -559,7 +557,7 @@ function useGlobalStateLink<S, P>(stateLink: StateRefImpl<S, P>): StateLink<S, P
 }
 
 function useLocalStateLink<S>(initialState: S | (() => S)): StateLink<S, {}> {
-    const [value, setValue] = React.useState(() => ({ state: createStore(initialState) }));
+    const [value, setValue] = React.useState(() => ({ state: createState(initialState) }));
     return useSubscribedStateLink(value.state, [], () => setValue({ state: value.state }), value.state);
 }
 
@@ -573,7 +571,7 @@ function useWatchStateLink<S, P extends {}>(originLink: StateLinkImpl<S, P>): St
 ///
 
 export function createStateLink<S>(initial: S | (() => S)): StateRef<S, {}> {
-    return new StateRefImpl(createStore(initial));
+    return new StateRefImpl(createState(initial));
 }
 
 export function useStateLink<S, P extends {}>(
