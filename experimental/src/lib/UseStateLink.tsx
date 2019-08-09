@@ -7,7 +7,7 @@ import { ArrayStateMutation, createArrayStateMutation } from './UseStateArray';
 //
 
 export interface StateLink<S, P extends {}> {
-    with<E>(plugin: Plugin<S, E>): StateLink<S, P & E>;
+    with<E>(plugin: () => Plugin<S, E>): StateLink<S, P & E>;
 }
 
 // TODO add support for Map and Set
@@ -32,24 +32,28 @@ export type InferredStateMutation<S> =
 
 export type Path = ReadonlyArray<string | number>;
 
-export interface ValueLink<S, P extends {} = {}> {
+export interface ReadonlyValueLink<S, P extends {} = {}> {
     readonly path: Path;
     readonly value: S;
 
     readonly nested: NestedInferredLink<S, P>;
     readonly inferred: InferredStateMutation<S>;
     readonly extended: P;
+}
 
+export interface ValueLink<S, P extends {} = {}> extends ReadonlyValueLink<S, P> {
     set(newValue: React.SetStateAction<S>): void;
-    with<E>(plugin: Plugin<S, E>): ValueLink<S, P & E>;
+    with<E>(plugin: () => Plugin<S, E>): ValueLink<S, P & E>;
 }
 
 export interface Plugin<S, E extends {}> {
-    onInit: (value: S) => (keyof E)[],
+    defines: (keyof E)[],
     // tslint:disable-next-line: no-any
-    onSet?: (value: S, valueAtPath: any, path: Path) => void,
+    onInit?: (initialValue: S) => S | void,
     // tslint:disable-next-line: no-any
-    ext: (value: S, valueAtPath: any, path: Path) => E
+    onSet?: (path: Path, newValue: S) => void,
+    // tslint:disable-next-line: no-any
+    extensions: (thisLink: ValueLink<S, {}>) => E
 }
 
 //
@@ -74,7 +78,7 @@ class ExtensionInvalidRegistrationError extends Error {
     }
 }
 
-class ExtensionConflictError extends Error {
+class ExtensionConflictRegistrationError extends Error {
     constructor(ext: string) {
         super(`Extension '${ext}' is already registered'`)
     }
@@ -103,10 +107,10 @@ class State implements Subscribable {
     private _extensions: Record<string, Plugin<any, {}>> = {};
 
     // tslint:disable-next-line:no-any
-    constructor(protected _current: any) { }
+    constructor(private _value: any) { }
 
-    value(path: Path) {
-        let result = this._current;
+    get(path: Path) {
+        let result = this._value;
         path.forEach(p => {
             result = result[p];
         });
@@ -117,9 +121,9 @@ class State implements Subscribable {
     set(path: Path, value: any) {
         this._edition += 1;
         if (path.length === 0) {
-            this._current = value;
+            this._value = value;
         }
-        let result = this._current;
+        let result = this._value;
         path.forEach((p, i) => {
             if (i === path.length - 1) {
                 if (!(p in result)) {
@@ -136,83 +140,26 @@ class State implements Subscribable {
         this._subscribers.forEach(s => s.onSet(path));
     }
 
-    extensions(path: Path): {} {
-        // tslint:disable-next-line: no-any
-        const getter = (target: Record<string, Plugin<any, {}>>, key: PropertyKey) => {
-            if (typeof key === 'symbol') {
-                return undefined;
-            }
-            const plugin = target[key];
-            if (plugin === undefined) {
-                throw new ExtensionUnknownError(key.toString());
-            }
-            const extension = plugin.ext(this._current, this.value(path), path)[key];
-            if (extension === undefined) {
-                throw new ExtensionUnknownError(key.toString());
-            }
-            return extension;
-        }
-        return new Proxy(this._extensions, {
-            getPrototypeOf: (target) => {
-                return Object.getPrototypeOf(target);
-            },
-            setPrototypeOf: (target, v) => {
-                throw new ExtensionInvalidUsageError('setPrototypeOf', path)
-            },
-            isExtensible: (target) => {
-                return false;
-            },
-            preventExtensions: (target) => {
-                throw new ExtensionInvalidUsageError('preventExtensions', path)
-            },
-            getOwnPropertyDescriptor: (target, p) => {
-                const origin = Object.getOwnPropertyDescriptor(target, p);
-                return origin && {
-                    configurable: true, // JSON.stringify() does not work for an object without it
-                    enumerable: origin.enumerable,
-                    get: () => getter(target, p),
-                    set: undefined
-                };
-            },
-            has: (target, p) => {
-                if (typeof p === 'symbol') {
-                    return false;
-                }
-                return p in target;
-            },
-            get: getter,
-            set: (target, p, value, receiver) => {
-                throw new ExtensionInvalidUsageError('set', path)
-            },
-            deleteProperty: (target, p) => {
-                throw new ExtensionInvalidUsageError('deleteProperty', path)
-            },
-            defineProperty: (target, p, attributes) => {
-                throw new ExtensionInvalidUsageError('defineProperty', path)
-            },
-            enumerate: (target) => {
-                return Object.keys(target);
-            },
-            ownKeys: (target) => {
-                return Object.keys(target);
-            },
-            apply: (target, thisArg, argArray?) => {
-                throw new ExtensionInvalidUsageError('apply', path)
-            },
-            construct: (target, argArray, newTarget?) => {
-                throw new ExtensionInvalidUsageError('construct', path)
-            }
-        });
+    extensions() {
+        return this._extensions;
     }
 
-    register<S, E extends {}>(plugin: Plugin<S, E>) {
+    register<S, E extends {}>(pluginInit: () => Plugin<S, E>) {
         if (this._edition !== 0) {
             return;
         }
-        const extensions = plugin.onInit(this._current);
+
+        const plugin = pluginInit();
+        if (plugin.onInit) {
+            const initValue = plugin.onInit(this._value)
+            if (initValue !== undefined) {
+                this._value = initValue;
+            }
+        }
+        const extensions = plugin.defines;
         extensions.forEach(e => {
             if (e in this._extensions) {
-                throw new ExtensionConflictError(e as string);
+                throw new ExtensionConflictRegistrationError(e as string);
             }
             // tslint:disable-next-line: no-any
             this._extensions[e as string] = plugin as unknown as Plugin<any, {}>;
@@ -221,7 +168,7 @@ class State implements Subscribable {
             const onSet = plugin.onSet;
             this.subscribe({
                 onSet: (p) => {
-                    onSet(this._current, this.value(p), p);
+                    onSet(p, this._value);
                 }
             })
         }
@@ -242,9 +189,9 @@ class State implements Subscribable {
 class StateLinkImpl<S, P extends {}> implements StateLink<S, P> {
     constructor(public state: State) { }
 
-    with<E>(plugin: Plugin<S, E>): StateLink<S, P & E> {
+    with<E>(plugin: () => Plugin<S, E>): StateLink<S, P & E> {
         this.state.register(plugin);
-        return this as StateLink<S, P & E>;
+        return this as unknown as StateLink<S, P & E>;
     }
 }
 
@@ -306,12 +253,12 @@ class ValueLinkImpl<S, P extends {}> implements ValueLink<S, P>, Subscribable, S
         //    myvar_a.set('') // <-- crash here
         //    myvar.set({ a: '', b: '' }) // <-- OK
         if (typeof newValue === 'function') {
-            newValue = (newValue as ((prevValue: S) => S))(this.state.value(this.path));
+            newValue = (newValue as ((prevValue: S) => S))(this.state.get(this.path));
         }
         this.state.set(this.path, newValue);
     }
 
-    with<E>(plugin: Plugin<S, E>): ValueLink<S, P & E> {
+    with<E>(plugin: () => Plugin<S, E>): ValueLink<S, P & E> {
         if (this.path.length !== 0) {
             throw new ExtensionInvalidRegistrationError(this.path)
         }
@@ -320,7 +267,24 @@ class ValueLinkImpl<S, P extends {}> implements ValueLink<S, P>, Subscribable, S
     }
 
     get extended() {
-        return this.state.extensions(this.path) as P;
+        // tslint:disable-next-line: no-any
+        const getter = (target: Record<string, Plugin<any, {}>>, key: PropertyKey): any => {
+            if (typeof key === 'symbol') {
+                return undefined;
+            }
+            const plugin = target[key];
+            if (plugin === undefined) {
+                throw new ExtensionUnknownError(key.toString());
+            }
+            const extension = plugin.extensions(this)[key];
+            if (extension === undefined) {
+                throw new ExtensionUnknownError(key.toString());
+            }
+            return extension;
+        };
+        return this.proxyWrap(this.state.extensions(), getter, o => {
+            throw new ExtensionInvalidUsageError(o, this.path)
+        });
     }
 
     subscribe(l: Subscriber) {
@@ -433,7 +397,9 @@ class ValueLinkImpl<S, P extends {}> implements ValueLink<S, P>, Subscribable, S
             proxyGetterCache[index] = r;
             return r;
         };
-        return this.proxyWrap(this.valueUntracked as unknown as object, getter) as unknown as NestedInferredLink<S, P>;
+        return this.proxyWrap(this.valueUntracked as unknown as object, getter, o => {
+            throw new ValueLinkInvalidUsageError(o, this.path)
+        }) as unknown as NestedInferredLink<S, P>;
     }
 
     private valueArrayImpl(): S {
@@ -450,7 +416,9 @@ class ValueLinkImpl<S, P extends {}> implements ValueLink<S, P>, Subscribable, S
             }
             return (this.nested)![index].value;
         };
-        return this.proxyWrap(this.valueUntracked as unknown as object, getter) as unknown as S;
+        return this.proxyWrap(this.valueUntracked as unknown as object, getter, o => {
+            throw new ValueLinkInvalidUsageError(o, this.path)
+        }) as unknown as S;
     }
 
     private nestedObjectImpl(): NestedInferredLink<S, P> {
@@ -474,7 +442,9 @@ class ValueLinkImpl<S, P extends {}> implements ValueLink<S, P>, Subscribable, S
             proxyGetterCache[key] = r;
             return r;
         };
-        return this.proxyWrap(this.valueUntracked as unknown as object, getter) as unknown as NestedInferredLink<S, P>;
+        return this.proxyWrap(this.valueUntracked as unknown as object, getter, o => {
+            throw new ValueLinkInvalidUsageError(o, this.path)
+        }) as unknown as NestedInferredLink<S, P>;
     }
 
     private valueObjectImpl(): S {
@@ -485,11 +455,17 @@ class ValueLinkImpl<S, P extends {}> implements ValueLink<S, P>, Subscribable, S
             }
             return (this.nested)![key].value;
         };
-        return this.proxyWrap(this.valueUntracked as unknown as object, getter) as unknown as S;
+        return this.proxyWrap(this.valueUntracked as unknown as object, getter, o => {
+            throw new ValueLinkInvalidUsageError(o, this.path)
+        }) as unknown as S;
     }
 
     // tslint:disable-next-line: no-any
-    private proxyWrap(objectToWrap: object, getter: (target: object, key: PropertyKey) => any) {
+    private proxyWrap(
+        objectToWrap: any,
+        getter: (target: any, key: PropertyKey) => any,
+        onInvalidUsage: (op: string) => never
+    ) {
         return new Proxy(objectToWrap, {
             getPrototypeOf: (target) => {
                 return Object.getPrototypeOf(target);
@@ -563,7 +539,7 @@ function useSubscribedStateLink<S, P extends {}>(
         state,
         path,
         update,
-        state.value(path)
+        state.get(path)
     );
     useIsomorphicLayoutEffect(() => {
         subscribeTarget.subscribe(link);
@@ -617,17 +593,33 @@ export function useStateLink<S, P extends {}>(
  * is changed due to the change of the current value in `state`.
  * Change of the result is determined by the default tripple equality operator.
  * @param state state to watch for
- * @param watcher state-to-result redusing function
+ * @param watcher state-to-result redusing function. The second argument `prev` is
+ * defined only when the `watcher` is invokded in reaction event after state is updated.
+ * If the watcher returns the same value as the `prev`, the rerendering is not forced
+ * by the watcher.
  */
 export function useStateWatch<S, R, P extends {}>(
     state: ValueLink<S, P> | StateLink<S, P>,
-    watcher: (newstate: S, prev: R | undefined) => R
+    watcher: (state: ReadonlyValueLink<S, P>, prev: R | undefined) => R
 ) {
     const link = useStateLink(state) as ValueLinkImpl<S, P>;
     const originOnUpdate = link.onUpdate;
-    const result = watcher(link.value, undefined);
-    link.onUpdate = () => {
-        const updatedResult = watcher(link.state.value(link.path), result);
+    const injectOnUpdate = {
+        call: originOnUpdate
+    }
+    link.onUpdate = () => injectOnUpdate.call()
+    const result = watcher(link, undefined);
+    injectOnUpdate.call = () => {
+        // need to create new one to make sure
+        // it does not pickup the stale cache of the other after mutation
+        const unconnected = new ValueLinkImpl<S, P>(
+            link.state,
+            link.path,
+            () => {
+                throw new Error('Internal Error: unexpected call');
+            },
+            link.state.get(link.path))
+        const updatedResult = watcher(unconnected, result);
         if (updatedResult !== result) {
             originOnUpdate();
         }
