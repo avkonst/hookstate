@@ -137,6 +137,7 @@ class State implements Subscribable {
     }
 
     extensions(path: Path): {} {
+        // tslint:disable-next-line: no-any
         const getter = (target: Record<string, Plugin<any, {}>>, key: PropertyKey) => {
             if (typeof key === 'symbol') {
                 return undefined;
@@ -213,6 +214,7 @@ class State implements Subscribable {
             if (e in this._extensions) {
                 throw new ExtensionConflictError(e as string);
             }
+            // tslint:disable-next-line: no-any
             this._extensions[e as string] = plugin as unknown as Plugin<any, {}>;
         });
         if (plugin.onSet) {
@@ -346,7 +348,8 @@ class ValueLinkImpl<S, P extends {}> implements ValueLink<S, P>, Subscribable, S
                     this.onUpdate();
                     return true;
                 }
-                // console.log('updateIfUsed not updated (firstChildKey Undefined)', this.path, this.valueTracked || this.valueUsed, this.valueTracked, this.valueUsed);
+                // console.log('updateIfUsed not updated (firstChildKey Undefined)',
+                // this.path, this.valueTracked || this.valueUsed, this.valueTracked, this.valueUsed);
                 return false;
             }
             const firstChildValue = this.nestedLinksCache && this.nestedLinksCache[firstChildKey];
