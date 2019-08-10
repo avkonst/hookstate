@@ -2,7 +2,7 @@ import React from 'react';
 import logo from './logo.svg';
 import './App.css';
 
-import { useStateLink, StateLink, createStateLink, Plugin, Path, useStateWatch } from './lib/UseStateLink';
+import { useStateLink, StateLink, createStateLink, Plugin, Path, useStateWatch, DisabledTracking, PluginFactory } from './lib/UseStateLink';
 
 import isEqual from 'lodash.isequal';
 
@@ -15,7 +15,7 @@ const state = createStateLink<TaskItem[]>(Array.from(Array(2).keys()).map((i) =>
 })));
 
 setInterval(() => {
-    state.use().nested[0].nested.priority.set(p => (p || 0) + 1)
+    // state.use().nested[0].nested.priority.set(p => (p || 0) + 1)
 }, 10);
 
 interface TaskItem {
@@ -56,24 +56,28 @@ const JsonDump = (props: {link: StateLink<TaskItem[]>}) => {
     </p>;
 }
 
-const ModifiedStatus = (props: {link: StateLink<TaskItem[], ModifiedPluginExtensions>}) => {
-    const modified = useStateWatch(props.link, (l, prev: boolean | undefined) => {
-        return l.extended.modified(prev !== undefined);
+const ModifiedStatus = (props: {link: StateLink<TaskItem[], ModifiedPluginExtensions<TaskItem[]>>}) => {
+    const modified = useStateWatch(props.link, (l) => {
+        l.with(DisabledTracking) // TODO descide if modified should do it internally
+        return l.extended.modified;
     });
     return <p>
         {new Date().toISOString()} Modified: {modified.toString()}
     </p>;
 }
 
-type ModifiedPluginExtensions = {
-    touched: () => boolean;
-    modified: (checkOnlyTouched?: boolean) => boolean;
-    unmodified: (checkOnlyTouched?: boolean) => boolean;
+interface ModifiedPluginExtensions<S> {
+    initial: S | undefined;
+    modified: boolean;
+    unmodified: boolean;
 }
 
-function ModifiedPlugin<S>(): Plugin<S, ModifiedPluginExtensions> {
+function ModifiedPlugin<S>(initValue: S): Plugin<S, ModifiedPluginExtensions<S>> {
     // tslint:disable-next-line: no-any
-    let initial: any | undefined = undefined;
+    let lastCompared: any = undefined;
+    let lastResult: boolean | undefined = undefined;
+    // tslint:disable-next-line: no-any
+    const initial: any = JSON.parse(JSON.stringify(initValue));
     const getInitial = (path: Path) => {
         let result = initial;
         path.forEach(p => {
@@ -81,21 +85,29 @@ function ModifiedPlugin<S>(): Plugin<S, ModifiedPluginExtensions> {
         });
         return result;
     }
-    const touched: object = {}
-    const setTouched = (path: Path) => {
-        let result = touched;
-        path.forEach(p => {
-            result[p] = result[p] || {}
-            result = result[p]
-        });
-    }
-    const getTouched = (path: Path): object | undefined => {
-        let result = touched;
-        path.forEach(p => {
-            result = result && result[p];
-        });
-        return result;
-    }
+    // const touched: object = {}
+    // const setTouched = (path: Path) => {
+    //     let result = touched;
+    //     path.forEach(p => {
+    //         result[p] = result[p] || {}
+    //         result = result[p]
+    //     });
+    // }
+    // function setDeepTouched(path: Path, v: object): void {
+    //     let result = touched;
+    //     path.forEach(p => {
+    //         result[p] = result[p] || {}
+    //         result = result[p]
+    //     });
+    //     Object.keys(v).forEach(k => setDe)
+    // }
+    // const getTouched = (path: Path): object | undefined => {
+    //     let result = touched;
+    //     path.forEach(p => {
+    //         result = result && result![p];
+    //     });
+    //     return result;
+    // }
     // tslint:disable-next-line: no-any
     // function deepEqual(a: any, b: any) {
     //     if ((typeof a === 'object' && a !== null) &&
@@ -116,53 +128,78 @@ function ModifiedPlugin<S>(): Plugin<S, ModifiedPluginExtensions> {
     //         return a === b;
     //     }
     // }
-    function deepEqualTouched(t: object | undefined, a: any, b: any) {
-        if (t === undefined) {
-            return true;
-        }
-        if ((typeof a === 'object' && a !== null) &&
-            (typeof b === 'object' && b !== null)) {
-            const touchedKeys = Object.keys(t);
-            for (let index = 0; index < touchedKeys.length; index += 1) {
-                const k = touchedKeys[index];
-                if (!deepEqualTouched(t[k], a[k], b[k])) { return false; }
-            }
-            return true;
-        } else {
-            return a === b;
-        }
-    }
-    function deepVisit(a: any): void {
-        if (typeof a === 'object' && a !== null) {
-            for (const k in a) {
-                deepVisit(a[k])
-            }
-        }
-    }
-    const modified = (v: StateLink<any, {}>, path: Path, checkOnlyTouched?: boolean) => {
+    // function deepEqualTouched(t: object | undefined, a: any, b: any) {
+    //     // console.log(t);
+    //     if (t === undefined) {
+    //         return true;
+    //     }
+    //     if ((typeof a === 'object' && a !== null) &&
+    //         (typeof b === 'object' && b !== null)) {
+    //         const touchedKeys = Object.keys(t);
+    //         for (let index = 0; index < touchedKeys.length; index += 1) {
+    //             const k = touchedKeys[index];
+    //             if (!deepEqualTouched(t[k], a[k], b[k])) { return false; }
+    //         }
+    //         return true;
+    //     } else {
+    //         return a === b;
+    //     }
+    // }
+    // function deepVisit(a: any): void {
+    //     if (typeof a === 'object' && a !== null) {
+    //         // tslint:disable-next-line: forin
+    //         for (const k in a) {
+    //             deepVisit(a[k])
+    //         }
+    //     }
+    // }
+    // tslint:disable-next-line: no-any
+    const modified = (current: any, path: Path): boolean => {
+        // v.with(DisabledTracking)
         // return !deepEqual(v.value, getInitial(path))
         // return !isEqual(v.value, getInitial(path))
         // JSON.stringify(v.value); // leave trace of used for everything
-        if (!checkOnlyTouched) {
-            deepVisit(v.value)
+        // TODO deepEqualTouched is broken when entire object is set
+        // return !deepEqualTouched(getTouched(path), v.value, getInitial(path))
+        // return !isEqual(v.value, getInitial(path))
+        if (current === lastCompared && lastCompared !== undefined) {
+            console.log('optimized')
+            return lastResult!;
         }
-        return !deepEqualTouched(getTouched(path), v.value, getInitial(path))
+        console.log('not optimized')
+        lastCompared = current;
+        lastResult = !isEqual(current, getInitial(path))
+        return lastResult;
     }
     return {
-        id: 'ModifiedPlugin',
-        defines: ['modified', 'unmodified'],
-        onInit: (i) => {
-            initial = JSON.parse(JSON.stringify(i)) as TaskItem[];
+        onInit: () => {
             return undefined;
         },
-        onSet: (p) => setTouched(p),
+        onSet: (p, v) => {
+            console.log('on set')
+            lastCompared = undefined;
+        },
         extensions: (l) => ({
-            touched: () => getTouched(l.path) !== undefined,
-            modified: (checkOnlyTouched?: boolean) => modified(l, l.path, checkOnlyTouched),
-            unmodified: (checkOnlyTouched?: boolean) => !modified(l, l.path, checkOnlyTouched),
+            get initial() {
+                return getInitial(l.path)
+            },
+            get modified() {
+                return modified(l.value, l.path);
+            },
+            get unmodified() {
+                return !modified(l.value, l.path)
+            },
         })
     }
 };
+
+function ModifiedPluginFactory<S>(initial: S): PluginFactory<S, ModifiedPluginExtensions<S>> {
+    return {
+        id: 'ModifiedPlugin',
+        extensions: ['initial', 'modified', 'unmodified'],
+        create: () => ModifiedPlugin(initial)
+    }
+}
 
 const App = () => {
     // const vl = useStateLink<TaskItem[], { myext: () => void }>(Array.from(Array(2).keys()).map((i) => ({
@@ -170,7 +207,9 @@ const App = () => {
     //     priority: i
     // }))).with(ModifiedPlugin);
     const [value, setValue] = React.useState('');
-    const vl = useStateLink(state).with(ModifiedPlugin)
+    const vl = useStateLink(state)
+        // .with(() => ModifiedPlugin<TaskItem[]>())//.with(DisabledTracking)
+        .with(ModifiedPluginFactory)
 
     return <>
         <p>{new Date().toISOString()} Other App local

@@ -7,7 +7,7 @@ import { ArrayStateMutation, createArrayStateMutation } from './UseStateArray';
 //
 
 export interface StateRef<S, P extends {}> {
-    with<E>(plugin: () => Plugin<S, E>): StateRef<S, P & E>;
+    with<E>(plugin: (s: S) => PluginFactory<S, E>): StateRef<S, P & E>;
 
     use(onUpdate?: () => void): StateLink<S, P>;
 }
@@ -38,22 +38,29 @@ export interface ReadonlyStateLink<S, P extends {} = {}> {
 
     readonly inferred: InferredStateMutation<S>;
     readonly extended: P;
+
+    with<E>(plugin: (s: S) => PluginFactory<S, E>): StateLink<S, P & E>;
 }
 // keep temporary for backward compatibility with the previous version
 export type ReadonlyValueLink<S, P extends {} = {}> = ReadonlyStateLink<S, P>;
 
 export interface StateLink<S, P extends {} = {}> extends ReadonlyStateLink<S, P> {
     set(newValue: React.SetStateAction<S>): void;
-    with<E>(plugin: () => Plugin<S, E>): StateLink<S, P & E>;
 }
 // keep temporary for backward compatibility with the previous version
 export type ValueLink<S, P extends {} = {}> = StateLink<S, P>;
 
-export interface Plugin<S, E extends {}> {
+export interface PluginFactory<S, E extends {}> {
     id: string;
-    defines: (keyof E)[],
+    extensions: (keyof E)[],
+    create: () => Plugin<S, E>;
+}
+
+export interface Plugin<S, E extends {}> {
+    // if returns defined value,
+    // it overrides the current / initial value in the state
     // tslint:disable-next-line: no-any
-    onInit?: (initialValue: S) => S | void,
+    onInit?: () => S | void,
     // tslint:disable-next-line: no-any
     onSet?: (path: Path, newValue: S) => void,
     // tslint:disable-next-line: no-any
@@ -104,7 +111,6 @@ interface Subscribable {
 }
 
 class State implements Subscribable {
-    private _edition = 0;
     private _subscribers: Set<Subscriber> = new Set();
 
     // tslint:disable-next-line: no-any
@@ -124,7 +130,6 @@ class State implements Subscribable {
 
     // tslint:disable-next-line: no-any
     set(path: Path, value: any) {
-        this._edition += 1;
         if (path.length === 0) {
             this._value = value;
         }
@@ -151,22 +156,20 @@ class State implements Subscribable {
         return this._extensions;
     }
 
-    register<S, E extends {}>(pluginInit: () => Plugin<S, E>) {
-        if (this._edition !== 0) {
+    register<S, E extends {}>(pluginInit: (s: S) => PluginFactory<S, E>) {
+        const pluginFactory = pluginInit(this._value);
+        if (this._plugins.has(pluginFactory.id)) {
             return;
         }
-        const plugin = pluginInit();
-        if (this._plugins.has(plugin.id)) {
-            return;
-        }
-        this._plugins.add(plugin.id);
+        this._plugins.add(pluginFactory.id);
+        const plugin = pluginFactory.create();
         if (plugin.onInit) {
-            const initValue = plugin.onInit(this._value)
+            const initValue = plugin.onInit()
             if (initValue !== undefined) {
                 this._value = initValue;
             }
         }
-        const extensions = plugin.defines;
+        const extensions = pluginFactory.extensions;
         extensions.forEach(e => {
             if (e in this._extensions) {
                 throw new ExtensionConflictRegistrationError(e as string);
@@ -195,27 +198,37 @@ class State implements Subscribable {
 }
 
 class StateRefImpl<S, P extends {}> implements StateRef<S, P> {
+    public disabledTracking: boolean | undefined;
+
     constructor(public state: State) { }
 
-    with<E>(plugin: () => Plugin<S, E>): StateRef<S, P & E> {
+    with<E>(plugin: (s: S) => PluginFactory<S, E>): StateRef<S, P & E> {
+        // tslint:disable-next-line: no-any
+        if (plugin === DisabledTracking as any) {
+            this.disabledTracking = true;
+        }
         this.state.register(plugin);
         return this as unknown as StateRef<S, P & E>;
     }
 
-    use(onUpdate?: () => void): StateLink<S, P> {
+    use(): StateLink<S, P> {
         const path: Path = [];
-        return new StateLinkImpl<S, P>(
+        const r = new StateLinkImpl<S, P>(
             this.state,
             path,
             // it is assumed the client discards the state link once it is used
-            // or when user's onUpdate is fired up
-            onUpdate || (() => { /* nothing */ }),
+            () => {
+                throw new Error('Internal Error: unexpected call');
+            },
             this.state.get(path)
-        )
+        ).with(DisabledTracking) // it does not matter how it is used, it is not subscribed anyway
+        return r;
     }
 }
 
 class StateLinkImpl<S, P extends {}> implements StateLink<S, P>, Subscribable, Subscriber {
+    public disabledTracking: boolean | undefined;
+
     private subscribers: Set<Subscriber> | undefined;
 
     private nestedCache: NestedInferredLink<S, P> | undefined;
@@ -234,7 +247,12 @@ class StateLinkImpl<S, P extends {}> implements StateLink<S, P>, Subscribable, S
 
     get value(): S {
         if (this.valueTracked === undefined) {
-            if (Array.isArray(this.valueUntracked)) {
+            if (this.disabledTracking) {
+                this.valueTracked = this.valueUntracked;
+                if (this.valueTracked === undefined) {
+                    this.valueUsed = true;
+                }
+            } else if (Array.isArray(this.valueUntracked)) {
                 this.valueTracked = this.valueArrayImpl();
             } else if (typeof this.valueUntracked === 'object' && this.valueUntracked !== null) {
                 this.valueTracked = this.valueObjectImpl();
@@ -276,7 +294,12 @@ class StateLinkImpl<S, P extends {}> implements StateLink<S, P>, Subscribable, S
         this.state.set(this.path, newValue);
     }
 
-    with<E>(plugin: () => Plugin<S, E>): StateLink<S, P & E> {
+    // tslint:disable-next-line: no-any
+    with<E>(plugin: (s: S) => PluginFactory<S, E>): StateLink<S, P & E> {
+        if (plugin === DisabledTracking as any) {
+            this.disabledTracking = true;
+            return this as unknown as StateLink<S, P & E>;
+        }
         if (this.path.length !== 0) {
             throw new ExtensionInvalidRegistrationError(this.path)
         }
@@ -322,6 +345,10 @@ class StateLinkImpl<S, P extends {}> implements StateLink<S, P>, Subscribable, S
 
     updateIfUsed(path: Path, actions: (() => void)[]): boolean {
         const update = () => {
+            if (this.disabledTracking && (this.valueTracked !== undefined || this.valueUsed === true)) {
+                actions.push(this.onUpdateUsed);
+                return true;
+            }
             const firstChildKey = path[this.path.length];
             if (firstChildKey === undefined) {
                 if (this.valueTracked !== undefined || this.valueUsed === true) {
@@ -408,6 +435,9 @@ class StateLinkImpl<S, P extends {}> implements StateLink<S, P>, Subscribable, S
                 this.onUpdateUsed,
                 target[index]
             )
+            if (this.disabledTracking) {
+                r.disabledTracking = true;
+            }
             proxyGetterCache[index] = r;
             return r;
         };
@@ -453,6 +483,9 @@ class StateLinkImpl<S, P extends {}> implements StateLink<S, P>, Subscribable, S
                 this.onUpdateUsed,
                 target[key]
             );
+            if (this.disabledTracking) {
+                r.disabledTracking = true;
+            }
             proxyGetterCache[key] = r;
             return r;
         };
@@ -553,7 +586,8 @@ function createState<S>(initial: S | (() => S)): State {
 function useSubscribedStateLink<S, P extends {}>(
     state: State,
     path: Path, update: () => void,
-    subscribeTarget: Subscribable
+    subscribeTarget: Subscribable,
+    disabledTracking?: boolean | undefined
 ) {
     const link = new StateLinkImpl<S, P>(
         state,
@@ -561,6 +595,9 @@ function useSubscribedStateLink<S, P extends {}>(
         update,
         state.get(path)
     );
+    if (disabledTracking) {
+        link.with(DisabledTracking)
+    }
     useIsomorphicLayoutEffect(() => {
         subscribeTarget.subscribe(link);
         return () => subscribeTarget.unsubscribe(link);
@@ -572,7 +609,7 @@ function useGlobalStateLink<S, P>(stateLink: StateRefImpl<S, P>): StateLink<S, P
     const [_, setValue] = React.useState({});
     return useSubscribedStateLink(stateLink.state, [], () => {
         setValue({})
-    }, stateLink.state);
+    }, stateLink.state, stateLink.disabledTracking);
 }
 
 function useLocalStateLink<S>(initialState: S | (() => S)): StateLink<S, {}> {
@@ -586,7 +623,7 @@ function useWatchStateLink<S, P extends {}>(originLink: StateLinkImpl<S, P>): St
     const [_, setValue] = React.useState({});
     return useSubscribedStateLink(originLink.state, originLink.path, () => {
         setValue({})
-    }, originLink);
+    }, originLink, originLink.disabledTracking);
 }
 
 ///
@@ -644,13 +681,25 @@ export function useStateWatch<S, R, P extends {}>(
             () => {
                 throw new Error('Internal Error: unexpected call');
             },
-            link.state.get(link.path))
+            link.state.get(link.path)
+        ).with(DisabledTracking) // this instance is not subscribed, so do not track it's usage
         const updatedResult = watcher(unconnected, result);
         if (updatedResult !== result) {
             originOnUpdate();
         }
     }
     return result;
+}
+
+// tslint:disable-next-line: no-any function-name
+export function DisabledTracking(): PluginFactory<any, {}> {
+    return {
+        id: 'DisabledTracking',
+        extensions: [],
+        create: () => ({
+            extensions: () => ({})
+        })
+    }
 }
 
 export default useStateLink;
