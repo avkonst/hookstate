@@ -34,22 +34,22 @@ export function Touched<S, E extends InitialExtensions<S>>(
             }
             const getTouched = (path: Path): boolean | undefined => {
                 let result = touchedState;
-                let deepestVisited = -1
-                let deepestTouched = -1
+                let somethingVisted = false
+                let somethingTouched = false
                 path.forEach((p, i) => {
                     if (result) {
-                        deepestVisited = i;
-                        deepestTouched = result[PluginID] ? i : deepestTouched;
+                        somethingVisted = true;
+                        somethingTouched = result[PluginID] ? true : somethingTouched;
                         result = result[p];
                     }
                 });
                 if (result) {
                     return true;
                 }
-                if (deepestVisited === -1) {
+                if (!somethingVisted) {
                     return false;
                 }
-                if (deepestTouched === -1) {
+                if (!somethingTouched) {
                     return false;
                 }
                 return undefined;

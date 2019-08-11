@@ -37,8 +37,8 @@ const TaskView = (props: { link: StateLink<TaskItem> }) => {
 
     return <p>
         {new Date().toISOString()}
-        Modified: {props.link.with(Initial).with(Touched)._.name.extended.modified.toString()}
-        Touched: {props.link.with(Initial).with(Touched)._.name.extended.touched.toString()}
+        Modified: {locallink.with(Initial).with(Touched)._.name.extended.modified.toString()}
+        Touched: {locallink.with(Initial).with(Touched)._.name.extended.touched.toString()}
         <input value={locallink.value.name} onChange={v => locallink.nested.name.set(v.target.value)} />
         <button onClick={v => locallink.nested.priority.set(pv => Number(pv) + 1)} children={'increment'} />
         {/* <input value={'increment priority'} onChange={v => locallink.nested.priority.set(pv => Number(pv) + 1)} /> */}
