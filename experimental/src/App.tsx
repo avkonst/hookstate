@@ -202,9 +202,11 @@ interface InitialExtensions2<S> {
     initialDup: S | undefined;
 }
 
+const Initial2ID = Symbol('Initial2');
+
 function Initial2<S>(initValue: S): Plugin<S, InitialExtensions<S>, InitialExtensions2<S>> {
     return {
-        id: InitialID,
+        id: Initial2ID,
         instanceFactory: () => {
             return {
                 extensions: ['initialDup'],
@@ -229,6 +231,9 @@ const App = () => {
         .with(Initial)
         .with(Initial2)
         // .with(DisabledTracking)
+    // console.log(vl.extended.initialDup);
+
+    // vl.extended.initial
 
     return <>
         <p>{new Date().toISOString()} Other App local
