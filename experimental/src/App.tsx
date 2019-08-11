@@ -56,7 +56,7 @@ const JsonDump = (props: {link: StateLink<TaskItem[]>}) => {
     </p>;
 }
 
-const ModifiedStatus = (props: {link: StateLink<TaskItem[], ModifiedPluginExtensions<TaskItem[]>>}) => {
+const ModifiedStatus = (props: {link: StateLink<TaskItem[], InitialExtensions<TaskItem[]>>}) => {
     const modified = useStateWatch(props.link, (l) => {
         l.with(DisabledTracking) // TODO descide if modified should do it internally
         return l.extended.modified;
@@ -66,138 +66,133 @@ const ModifiedStatus = (props: {link: StateLink<TaskItem[], ModifiedPluginExtens
     </p>;
 }
 
-interface ModifiedPluginExtensions<S> {
+interface InitialExtensions<S> {
     initial: S | undefined;
     modified: boolean;
     unmodified: boolean;
 }
 
-function ModifiedPlugin<S>(initValue: S): PluginInstance<S, ModifiedPluginExtensions<S>> {
-    // tslint:disable-next-line: no-any
-    let lastCompared: any = undefined;
-    let lastResult: boolean | undefined = undefined;
-    // tslint:disable-next-line: no-any
-    const initial: any = JSON.parse(JSON.stringify(initValue));
-    const getInitial = (path: Path) => {
-        let result = initial;
-        path.forEach(p => {
-            result = result && result[p];
-        });
-        return result;
-    }
-    // const touched: object = {}
-    // const setTouched = (path: Path) => {
-    //     let result = touched;
-    //     path.forEach(p => {
-    //         result[p] = result[p] || {}
-    //         result = result[p]
-    //     });
-    // }
-    // function setDeepTouched(path: Path, v: object): void {
-    //     let result = touched;
-    //     path.forEach(p => {
-    //         result[p] = result[p] || {}
-    //         result = result[p]
-    //     });
-    //     Object.keys(v).forEach(k => setDe)
-    // }
-    // const getTouched = (path: Path): object | undefined => {
-    //     let result = touched;
-    //     path.forEach(p => {
-    //         result = result && result![p];
-    //     });
-    //     return result;
-    // }
-    // tslint:disable-next-line: no-any
-    // function deepEqual(a: any, b: any) {
-    //     if ((typeof a === 'object' && a !== null) &&
-    //         (typeof b === 'object' && b !== null)) {
-    //         const aKeys = Object.keys(a);
-    //         const bKeys = Object.keys(b);
-    //         if (aKeys.length !== bKeys.length) {
-    //             return false;
-    //         }
-    //         for (const k in a) {
-    //             if (!(k in b) || !deepEqual(a[k], b[k])) { return false; }
-    //         }
-    //         for (const k in b) {
-    //             if (!(k in a)) { return false; }
-    //         }
-    //         return true;
-    //     } else {
-    //         return a === b;
-    //     }
-    // }
-    // function deepEqualTouched(t: object | undefined, a: any, b: any) {
-    //     // console.log(t);
-    //     if (t === undefined) {
-    //         return true;
-    //     }
-    //     if ((typeof a === 'object' && a !== null) &&
-    //         (typeof b === 'object' && b !== null)) {
-    //         const touchedKeys = Object.keys(t);
-    //         for (let index = 0; index < touchedKeys.length; index += 1) {
-    //             const k = touchedKeys[index];
-    //             if (!deepEqualTouched(t[k], a[k], b[k])) { return false; }
-    //         }
-    //         return true;
-    //     } else {
-    //         return a === b;
-    //     }
-    // }
-    // function deepVisit(a: any): void {
-    //     if (typeof a === 'object' && a !== null) {
-    //         // tslint:disable-next-line: forin
-    //         for (const k in a) {
-    //             deepVisit(a[k])
-    //         }
-    //     }
-    // }
-    // tslint:disable-next-line: no-any
-    const modified = (current: any, path: Path): boolean => {
-        // v.with(DisabledTracking)
-        // return !deepEqual(v.value, getInitial(path))
-        // return !isEqual(v.value, getInitial(path))
-        // JSON.stringify(v.value); // leave trace of used for everything
-        // TODO deepEqualTouched is broken when entire object is set
-        // return !deepEqualTouched(getTouched(path), v.value, getInitial(path))
-        // return !isEqual(v.value, getInitial(path))
-        if (current === lastCompared && lastCompared !== undefined) {
-            console.log('optimized')
-            return lastResult!;
-        }
-        console.log('not optimized')
-        lastCompared = current;
-        lastResult = !isEqual(current, getInitial(path))
-        return lastResult;
-    }
-    return {
-        onInit: () => {
-            return undefined;
-        },
-        onSet: (p, v) => {
-            console.log('on set')
-            lastCompared = undefined;
-        },
-        declaration: ['initial', 'modified', 'unmodified'],
-        implementation: (l) => ({
-            get initial() {
-                return getInitial(l.path)
-            },
-            get modified() {
-                return modified(l.value, l.path);
-            },
-            get unmodified() {
-                return !modified(l.value, l.path)
-            },
-        })
-    }
-};
-
-function ModifiedPluginFactory<S>(initial: S): Plugin<S, ModifiedPluginExtensions<S>> {
+function Initial<S>(initValue: S): Plugin<S, InitialExtensions<S>> {
     return {
         id: 'ModifiedPlugin',
-        factory: () => ModifiedPlugin(initial)
+        factory: () => {
+            // tslint:disable-next-line: no-any
+            let lastCompared: any = undefined;
+            let lastResult: boolean | undefined = undefined;
+            // tslint:disable-next-line: no-any
+            const initial: any = JSON.parse(JSON.stringify(initValue));
+            const getInitial = (path: Path) => {
+                let result = initial;
+                path.forEach(p => {
+                    result = result && result[p];
+                });
+                return result;
+            }
+            // const touched: object = {}
+            // const setTouched = (path: Path) => {
+            //     let result = touched;
+            //     path.forEach(p => {
+            //         result[p] = result[p] || {}
+            //         result = result[p]
+            //     });
+            // }
+            // function setDeepTouched(path: Path, v: object): void {
+            //     let result = touched;
+            //     path.forEach(p => {
+            //         result[p] = result[p] || {}
+            //         result = result[p]
+            //     });
+            //     Object.keys(v).forEach(k => setDe)
+            // }
+            // const getTouched = (path: Path): object | undefined => {
+            //     let result = touched;
+            //     path.forEach(p => {
+            //         result = result && result![p];
+            //     });
+            //     return result;
+            // }
+            // tslint:disable-next-line: no-any
+            // function deepEqual(a: any, b: any) {
+            //     if ((typeof a === 'object' && a !== null) &&
+            //         (typeof b === 'object' && b !== null)) {
+            //         const aKeys = Object.keys(a);
+            //         const bKeys = Object.keys(b);
+            //         if (aKeys.length !== bKeys.length) {
+            //             return false;
+            //         }
+            //         for (const k in a) {
+            //             if (!(k in b) || !deepEqual(a[k], b[k])) { return false; }
+            //         }
+            //         for (const k in b) {
+            //             if (!(k in a)) { return false; }
+            //         }
+            //         return true;
+            //     } else {
+            //         return a === b;
+            //     }
+            // }
+            // function deepEqualTouched(t: object | undefined, a: any, b: any) {
+            //     // console.log(t);
+            //     if (t === undefined) {
+            //         return true;
+            //     }
+            //     if ((typeof a === 'object' && a !== null) &&
+            //         (typeof b === 'object' && b !== null)) {
+            //         const touchedKeys = Object.keys(t);
+            //         for (let index = 0; index < touchedKeys.length; index += 1) {
+            //             const k = touchedKeys[index];
+            //             if (!deepEqualTouched(t[k], a[k], b[k])) { return false; }
+            //         }
+            //         return true;
+            //     } else {
+            //         return a === b;
+            //     }
+            // }
+            // function deepVisit(a: any): void {
+            //     if (typeof a === 'object' && a !== null) {
+            //         // tslint:disable-next-line: forin
+            //         for (const k in a) {
+            //             deepVisit(a[k])
+            //         }
+            //     }
+            // }
+            // tslint:disable-next-line: no-any
+            const modified = (current: any, path: Path): boolean => {
+                // v.with(DisabledTracking)
+                // return !deepEqual(v.value, getInitial(path))
+                // return !isEqual(v.value, getInitial(path))
+                // JSON.stringify(v.value); // leave trace of used for everything
+                // TODO deepEqualTouched is broken when entire object is set
+                // return !deepEqualTouched(getTouched(path), v.value, getInitial(path))
+                // return !isEqual(v.value, getInitial(path))
+                if (current === lastCompared && lastCompared !== undefined) {
+                    return lastResult!;
+                }
+                lastCompared = current;
+                lastResult = !isEqual(current, getInitial(path))
+                return lastResult;
+            }
+            return {
+                onInit: () => {
+                    return undefined;
+                },
+                onSet: (p, v) => {
+                    lastCompared = undefined;
+                },
+                declaration: ['initial', 'modified', 'unmodified'],
+                implementation: (l) => ({
+                    get initial() {
+                        return getInitial(l.path)
+                    },
+                    get modified() {
+                        return modified(l.value, l.path);
+                    },
+                    get unmodified() {
+                        return !modified(l.value, l.path)
+                    },
+                })
+            }
+        }
     }
 }
 
@@ -209,7 +204,7 @@ const App = () => {
     const [value, setValue] = React.useState('');
     const vl = useStateLink(state)
         // .with(() => ModifiedPlugin<TaskItem[]>())//.with(DisabledTracking)
-        .with(ModifiedPluginFactory)
+        .with(Initial)
 
     return <>
         <p>{new Date().toISOString()} Other App local
