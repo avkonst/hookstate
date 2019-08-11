@@ -6,17 +6,17 @@ import { ArrayStateMutation, createArrayStateMutation } from './UseStateArray';
 // DECLARATIONS
 //
 
-export interface StateRef<S, P extends {}> {
-    with<E>(plugin: (s: S) => Plugin<S, P, E>): StateRef<S, P & E>;
+export interface StateRef<S, E extends {}> {
+    with<I>(plugin: (s: S) => Plugin<S, E, I>): StateRef<S, E & I>;
 
-    use(onUpdate?: () => void): StateLink<S, P>;
+    use(onUpdate?: () => void): StateLink<S, E>;
 }
 
 // TODO add support for Map and Set
-export type NestedInferredLink<S, P extends {}> =
-    S extends ReadonlyArray<(infer U)> ? ReadonlyArray<StateLink<U, P>> :
+export type NestedInferredLink<S, E extends {}> =
+    S extends ReadonlyArray<(infer U)> ? ReadonlyArray<StateLink<U, E>> :
     S extends null ? undefined :
-    S extends object ? { readonly [K in keyof Required<S>]: StateLink<S[K], P>; } :
+    S extends object ? { readonly [K in keyof Required<S>]: StateLink<S[K], E>; } :
     undefined;
 
 // TODO add support for Map and Set
@@ -28,43 +28,43 @@ export type InferredStateMutation<S> =
 
 export type Path = ReadonlyArray<string | number>;
 
-export interface ReadonlyStateLink<S, P extends {} = {}> {
+export interface ReadonlyStateLink<S, E extends {} = {}> {
     readonly path: Path;
     readonly value: S;
 
     // shortcut for nested
-    readonly _: NestedInferredLink<S, P>;
-    readonly nested: NestedInferredLink<S, P>;
+    readonly _: NestedInferredLink<S, E>;
+    readonly nested: NestedInferredLink<S, E>;
 
     readonly inferred: InferredStateMutation<S>;
-    readonly extended: P;
+    readonly extended: E;
 
-    with<E>(plugin: (s: S) => Plugin<S, P, E>): StateLink<S, P & E>;
+    with<I>(plugin: (s: S) => Plugin<S, E, I>): StateLink<S, E & I>;
 }
 // keep temporary for backward compatibility with the previous version
-export type ReadonlyValueLink<S, P extends {} = {}> = ReadonlyStateLink<S, P>;
+export type ReadonlyValueLink<S, E extends {} = {}> = ReadonlyStateLink<S, E>;
 
-export interface StateLink<S, P extends {} = {}> extends ReadonlyStateLink<S, P> {
+export interface StateLink<S, E extends {} = {}> extends ReadonlyStateLink<S, E> {
     set(newValue: React.SetStateAction<S>): void;
 }
 // keep temporary for backward compatibility with the previous version
-export type ValueLink<S, P extends {} = {}> = StateLink<S, P>;
+export type ValueLink<S, E extends {} = {}> = StateLink<S, E>;
 
-export interface PluginInstance<S, P extends {}, E extends {}> {
+export interface PluginInstance<S, E extends {}, I extends {}> {
     // if returns defined value,
     // it overrides the current / initial value in the state
     onInit?: () => S | void,
     onSet?: (path: Path, newValue: S) => void,
 
-    extensions: (keyof E)[],
+    extensions: (keyof I)[],
     // thisLink can be anything, not only root link with value of type S
     // tslint:disable-next-line: no-any
-    extensionsFactory: (thisLink: StateLink<any, P>) => E
+    extensionsFactory: (thisLink: StateLink<any, E>) => I
 };
 
-export interface Plugin<S, P extends {}, E extends {}> {
+export interface Plugin<S, E extends {}, I extends {}> {
     id: symbol;
-    instanceFactory: () => PluginInstance<S, P, E>;
+    instanceFactory: () => PluginInstance<S, E, I>;
 }
 
 //
@@ -198,24 +198,24 @@ class State implements Subscribable {
     }
 }
 
-class StateRefImpl<S, P extends {}> implements StateRef<S, P> {
+class StateRefImpl<S, E extends {}> implements StateRef<S, E> {
     public disabledTracking: boolean | undefined;
 
     constructor(public state: State) { }
 
-    with<E>(plugin: (s: S) => Plugin<S, P, E>): StateRef<S, P & E> {
+    with<I>(plugin: (s: S) => Plugin<S, E, I>): StateRef<S, E & I> {
         // tslint:disable-next-line: no-any
         if (plugin === DisabledTracking as any) {
             this.disabledTracking = true;
         }
         // tslint:disable-next-line: no-any
         this.state.register(plugin as any);
-        return this as unknown as StateRef<S, P & E>;
+        return this as unknown as StateRef<S, E & I>;
     }
 
-    use(): StateLink<S, P> {
+    use(): StateLink<S, E> {
         const path: Path = [];
-        const r = new StateLinkImpl<S, P>(
+        const r = new StateLinkImpl<S, E>(
             this.state,
             path,
             // it is assumed the client discards the state link once it is used
@@ -228,13 +228,13 @@ class StateRefImpl<S, P extends {}> implements StateRef<S, P> {
     }
 }
 
-class StateLinkImpl<S, P extends {}> implements StateLink<S, P>, Subscribable, Subscriber {
+class StateLinkImpl<S, E extends {}> implements StateLink<S, E>, Subscribable, Subscriber {
     public disabledTracking: boolean | undefined;
 
     private subscribers: Set<Subscriber> | undefined;
 
-    private nestedCache: NestedInferredLink<S, P> | undefined;
-    private nestedLinksCache: Record<string | number, StateLinkImpl<S[keyof S], P>> | undefined;
+    private nestedCache: NestedInferredLink<S, E> | undefined;
+    private nestedLinksCache: Record<string | number, StateLinkImpl<S[keyof S], E>> | undefined;
 
     private valueTracked: S | undefined;
     private valueUsed: boolean | undefined;
@@ -297,17 +297,17 @@ class StateLinkImpl<S, P extends {}> implements StateLink<S, P>, Subscribable, S
     }
 
     // tslint:disable-next-line: no-any
-    with<E>(plugin: (s: S) => Plugin<S, P, E>): StateLink<S, P & E> {
+    with<I>(plugin: (s: S) => Plugin<S, E, I>): StateLink<S, E & I> {
         if (plugin === DisabledTracking as any) {
             this.disabledTracking = true;
-            return this as unknown as StateLink<S, P & E>;
+            return this as unknown as StateLink<S, E & I>;
         }
         if (this.path.length !== 0) {
             throw new ExtensionInvalidRegistrationError(this.path)
         }
         // tslint:disable-next-line: no-any
         this.state.register(plugin as any);
-        return this as unknown as StateLink<S, P & E>;
+        return this as unknown as StateLink<S, E & I>;
     }
 
     get extended() {
@@ -393,11 +393,11 @@ class StateLinkImpl<S, P extends {}> implements StateLink<S, P>, Subscribable, S
         }
     }
 
-    get _(): NestedInferredLink<S, P> {
+    get _(): NestedInferredLink<S, E> {
         return this.nested;
     }
 
-    get nested(): NestedInferredLink<S, P> {
+    get nested(): NestedInferredLink<S, E> {
         if (!this.valueTracked) {
             this.valueUsed = true;
         }
@@ -410,10 +410,10 @@ class StateLinkImpl<S, P extends {}> implements StateLink<S, P>, Subscribable, S
                 this.nestedCache = undefined;
             }
         }
-        return this.nestedCache as NestedInferredLink<S, P>;
+        return this.nestedCache as NestedInferredLink<S, E>;
     }
 
-    private nestedArrayImpl(): NestedInferredLink<S, P> {
+    private nestedArrayImpl(): NestedInferredLink<S, E> {
         const proxyGetterCache = {};
         this.nestedLinksCache = proxyGetterCache;
 
@@ -446,7 +446,7 @@ class StateLinkImpl<S, P extends {}> implements StateLink<S, P>, Subscribable, S
         };
         return this.proxyWrap(this.valueUntracked as unknown as object, getter, o => {
             throw new StateLinkInvalidUsageError(o, this.path)
-        }) as unknown as NestedInferredLink<S, P>;
+        }) as unknown as NestedInferredLink<S, E>;
     }
 
     private valueArrayImpl(): S {
@@ -468,7 +468,7 @@ class StateLinkImpl<S, P extends {}> implements StateLink<S, P>, Subscribable, S
         }) as unknown as S;
     }
 
-    private nestedObjectImpl(): NestedInferredLink<S, P> {
+    private nestedObjectImpl(): NestedInferredLink<S, E> {
         const proxyGetterCache = {}
         this.nestedLinksCache = proxyGetterCache;
 
@@ -494,7 +494,7 @@ class StateLinkImpl<S, P extends {}> implements StateLink<S, P>, Subscribable, S
         };
         return this.proxyWrap(this.valueUntracked as unknown as object, getter, o => {
             throw new StateLinkInvalidUsageError(o, this.path)
-        }) as unknown as NestedInferredLink<S, P>;
+        }) as unknown as NestedInferredLink<S, E>;
     }
 
     private valueObjectImpl(): S {
@@ -586,13 +586,13 @@ function createState<S>(initial: S | (() => S)): State {
     return new State(initialValue);
 }
 
-function useSubscribedStateLink<S, P extends {}>(
+function useSubscribedStateLink<S, E extends {}>(
     state: State,
     path: Path, update: () => void,
     subscribeTarget: Subscribable,
     disabledTracking?: boolean | undefined
 ) {
-    const link = new StateLinkImpl<S, P>(
+    const link = new StateLinkImpl<S, E>(
         state,
         path,
         update,
@@ -608,7 +608,7 @@ function useSubscribedStateLink<S, P extends {}>(
     return link;
 }
 
-function useGlobalStateLink<S, P>(stateLink: StateRefImpl<S, P>): StateLink<S, P> {
+function useGlobalStateLink<S, E>(stateLink: StateRefImpl<S, E>): StateLink<S, E> {
     const [_, setValue] = React.useState({});
     return useSubscribedStateLink(stateLink.state, [], () => {
         setValue({})
@@ -622,7 +622,7 @@ function useLocalStateLink<S>(initialState: S | (() => S)): StateLink<S, {}> {
     }, value.state);
 }
 
-function useWatchStateLink<S, P extends {}>(originLink: StateLinkImpl<S, P>): StateLink<S, P> {
+function useWatchStateLink<S, E extends {}>(originLink: StateLinkImpl<S, E>): StateLink<S, E> {
     const [_, setValue] = React.useState({});
     return useSubscribedStateLink(originLink.state, originLink.path, () => {
         setValue({})
@@ -639,21 +639,21 @@ export function createStateLink<S>(initial: S | (() => S)): StateRef<S, {}> {
     return new StateRefImpl(createState(initial));
 }
 
-export function useStateLink<S, P extends {}>(
-    initialState: S | (() => S) | StateLink<S, P> | StateRef<S, P>
-): StateLink<S, P> {
+export function useStateLink<S, E extends {}>(
+    initialState: S | (() => S) | StateLink<S, E> | StateRef<S, E>
+): StateLink<S, E> {
     // tslint:disable-next-line: no-any
     if (initialState instanceof StateLinkImpl) {
         // eslint-disable-next-line react-hooks/rules-of-hooks
-        return useWatchStateLink(initialState) as StateLink<S, P>;
+        return useWatchStateLink(initialState) as StateLink<S, E>;
     }
     if (initialState instanceof StateRefImpl) {
         // eslint-disable-next-line react-hooks/rules-of-hooks
-        return useGlobalStateLink(initialState) as StateLink<S, P>;
+        return useGlobalStateLink(initialState) as StateLink<S, E>;
     }
 
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useLocalStateLink(initialState as S | (() => S)) as StateLink<S, P>;
+    return useLocalStateLink(initialState as S | (() => S)) as StateLink<S, E>;
 }
 
 /**
@@ -666,11 +666,11 @@ export function useStateLink<S, P extends {}>(
  * If the watcher returns the same value as the `prev`, the rerendering is not forced
  * by the watcher.
  */
-export function useStateWatch<S, R, P extends {}>(
-    state: StateLink<S, P> | StateRef<S, P>,
-    watcher: (state: ReadonlyStateLink<S, P>, prev: R | undefined) => R
+export function useStateWatch<S, R, E extends {}>(
+    state: StateLink<S, E> | StateRef<S, E>,
+    watcher: (state: ReadonlyStateLink<S, E>, prev: R | undefined) => R
 ) {
-    const link = useStateLink(state) as StateLinkImpl<S, P>;
+    const link = useStateLink(state) as StateLinkImpl<S, E>;
     const originOnUpdate = link.onUpdateUsed;
     const injectOnUpdate = {
         call: originOnUpdate
@@ -680,7 +680,7 @@ export function useStateWatch<S, R, P extends {}>(
     injectOnUpdate.call = () => {
         // need to create new one to make sure
         // it does not pickup the stale cache of the other after mutation
-        const unconnected = new StateLinkImpl<S, P>(
+        const unconnected = new StateLinkImpl<S, E>(
             link.state,
             link.path,
             () => {
