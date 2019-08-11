@@ -74,7 +74,7 @@ interface InitialExtensions<S> {
 
 const InitialID = Symbol('Initial');
 
-function Initial<S>(initValue: S): Plugin<S, InitialExtensions<S>> {
+function Initial<S>(initValue: S): Plugin<S, {}, InitialExtensions<S>> {
     return {
         id: InitialID,
         instanceFactory: () => {
@@ -198,6 +198,26 @@ function Initial<S>(initValue: S): Plugin<S, InitialExtensions<S>> {
     }
 }
 
+interface InitialExtensions2<S> {
+    initialDup: S | undefined;
+}
+
+function Initial2<S>(initValue: S): Plugin<S, InitialExtensions<S>, InitialExtensions2<S>> {
+    return {
+        id: InitialID,
+        instanceFactory: () => {
+            return {
+                extensions: ['initialDup'],
+                extensionsFactory: (l) => ({
+                    get initialDup() {
+                        return l.extended.initial
+                    }
+                })
+            }
+        }
+    }
+}
+
 const App = () => {
     // const vl = useStateLink<TaskItem[], { myext: () => void }>(Array.from(Array(2).keys()).map((i) => ({
     //     name: 'initial',
@@ -207,6 +227,8 @@ const App = () => {
     const vl = useStateLink(state)
         // .with(() => ModifiedPlugin<TaskItem[]>())//.with(DisabledTracking)
         .with(Initial)
+        .with(Initial2)
+        // .with(DisabledTracking)
 
     return <>
         <p>{new Date().toISOString()} Other App local

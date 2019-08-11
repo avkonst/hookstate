@@ -7,7 +7,7 @@ import { ArrayStateMutation, createArrayStateMutation } from './UseStateArray';
 //
 
 export interface StateRef<S, P extends {}> {
-    with<E>(plugin: (s: S) => Plugin<S, E>): StateRef<S, P & E>;
+    with<E>(plugin: (s: S) => Plugin<S, P, E>): StateRef<S, P & E>;
 
     use(onUpdate?: () => void): StateLink<S, P>;
 }
@@ -39,7 +39,7 @@ export interface ReadonlyStateLink<S, P extends {} = {}> {
     readonly inferred: InferredStateMutation<S>;
     readonly extended: P;
 
-    with<E>(plugin: (s: S) => Plugin<S, E>): StateLink<S, P & E>;
+    with<E>(plugin: (s: S) => Plugin<S, P, E>): StateLink<S, P & E>;
 }
 // keep temporary for backward compatibility with the previous version
 export type ReadonlyValueLink<S, P extends {} = {}> = ReadonlyStateLink<S, P>;
@@ -50,7 +50,7 @@ export interface StateLink<S, P extends {} = {}> extends ReadonlyStateLink<S, P>
 // keep temporary for backward compatibility with the previous version
 export type ValueLink<S, P extends {} = {}> = StateLink<S, P>;
 
-export interface PluginInstance<S, E extends {}> {
+export interface PluginInstance<S, P extends {}, E extends {}> {
     // if returns defined value,
     // it overrides the current / initial value in the state
     onInit?: () => S | void,
@@ -59,12 +59,12 @@ export interface PluginInstance<S, E extends {}> {
     extensions: (keyof E)[],
     // thisLink can be anything, not only root link with value of type S
     // tslint:disable-next-line: no-any
-    extensionsFactory: (thisLink: StateLink<any, {}>) => E
+    extensionsFactory: (thisLink: StateLink<any, P>) => E
 };
 
-export interface Plugin<S, E extends {}> {
+export interface Plugin<S, P extends {}, E extends {}> {
     id: symbol;
-    instanceFactory: () => PluginInstance<S, E>;
+    instanceFactory: () => PluginInstance<S, P, E>;
 }
 
 //
@@ -114,7 +114,7 @@ class State implements Subscribable {
     private _subscribers: Set<Subscriber> = new Set();
 
     // tslint:disable-next-line: no-any
-    private _extensions: Record<string, PluginInstance<any, {}>> = {};
+    private _extensions: Record<string, PluginInstance<any, {}, {}>> = {};
     private _plugins: Set<symbol> = new Set();
 
     // tslint:disable-next-line:no-any
@@ -156,7 +156,8 @@ class State implements Subscribable {
         return this._extensions;
     }
 
-    register<S, E extends {}>(pluginInit: (s: S) => Plugin<S, E>) {
+    // tslint:disable-next-line: no-any
+    register(pluginInit: (s: any) => Plugin<any, {}, {}>) {
         const plugin = pluginInit(this._value);
         if (this._plugins.has(plugin.id)) {
             return;
@@ -175,7 +176,7 @@ class State implements Subscribable {
                 throw new ExtensionConflictRegistrationError(e as string);
             }
             // tslint:disable-next-line: no-any
-            this._extensions[e as string] = pluginInstance as unknown as PluginInstance<any, {}>;
+            this._extensions[e as string] = pluginInstance as unknown as PluginInstance<any, {}, {}>;
         });
         if (pluginInstance.onSet) {
             const onSet = pluginInstance.onSet;
@@ -202,12 +203,13 @@ class StateRefImpl<S, P extends {}> implements StateRef<S, P> {
 
     constructor(public state: State) { }
 
-    with<E>(plugin: (s: S) => Plugin<S, E>): StateRef<S, P & E> {
+    with<E>(plugin: (s: S) => Plugin<S, P, E>): StateRef<S, P & E> {
         // tslint:disable-next-line: no-any
         if (plugin === DisabledTracking as any) {
             this.disabledTracking = true;
         }
-        this.state.register(plugin);
+        // tslint:disable-next-line: no-any
+        this.state.register(plugin as any);
         return this as unknown as StateRef<S, P & E>;
     }
 
@@ -295,7 +297,7 @@ class StateLinkImpl<S, P extends {}> implements StateLink<S, P>, Subscribable, S
     }
 
     // tslint:disable-next-line: no-any
-    with<E>(plugin: (s: S) => Plugin<S, E>): StateLink<S, P & E> {
+    with<E>(plugin: (s: S) => Plugin<S, P, E>): StateLink<S, P & E> {
         if (plugin === DisabledTracking as any) {
             this.disabledTracking = true;
             return this as unknown as StateLink<S, P & E>;
@@ -303,13 +305,14 @@ class StateLinkImpl<S, P extends {}> implements StateLink<S, P>, Subscribable, S
         if (this.path.length !== 0) {
             throw new ExtensionInvalidRegistrationError(this.path)
         }
-        this.state.register(plugin);
+        // tslint:disable-next-line: no-any
+        this.state.register(plugin as any);
         return this as unknown as StateLink<S, P & E>;
     }
 
     get extended() {
         // tslint:disable-next-line: no-any
-        const getter = (target: Record<string, PluginInstance<any, {}>>, key: PropertyKey): any => {
+        const getter = (target: Record<string, PluginInstance<any, {}, {}>>, key: PropertyKey): any => {
             if (typeof key === 'symbol') {
                 return undefined;
             }
@@ -694,7 +697,7 @@ export function useStateWatch<S, R, P extends {}>(
 }
 
 // tslint:disable-next-line: no-any function-name
-export function DisabledTracking(): Plugin<any, {}> {
+export function DisabledTracking(): Plugin<any, {}, {}> {
     return {
         id: DisabledTrackingID,
         instanceFactory: () => ({
