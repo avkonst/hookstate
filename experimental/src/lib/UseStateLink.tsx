@@ -57,7 +57,9 @@ export interface PluginInstance<S, E extends {}> {
     onSet?: (path: Path, newValue: S) => void,
 
     extensions: (keyof E)[],
-    extensionsFactory: (thisLink: StateLink<S, {}>) => E
+    // thisLink can be anything, not only root link with value of type S
+    // tslint:disable-next-line: no-any
+    extensionsFactory: (thisLink: StateLink<any, {}>) => E
 };
 
 export interface Plugin<S, E extends {}> {
