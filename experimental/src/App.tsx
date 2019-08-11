@@ -2,7 +2,7 @@ import React from 'react';
 import logo from './logo.svg';
 import './App.css';
 
-import { useStateLink, StateLink, createStateLink, Path, useStateWatch, DisabledTracking, Plugin } from './lib/UseStateLink';
+import { useStateLink, StateLink, createStateLink, Path, useStateWatch, DisabledTracking, Plugin, PluginTypeMarker } from './lib/UseStateLink';
 
 import isEqual from 'lodash.isequal';
 
@@ -74,15 +74,16 @@ interface InitialExtensions<S> {
 
 const InitialID = Symbol('Initial');
 
-function Initial<S>(initValue: S): Plugin<S, {}, InitialExtensions<S>> {
+function Initial<S, E extends {}>(unused: PluginTypeMarker<S, E>): Plugin<S, E, InitialExtensions<S>> {
     return {
         id: InitialID,
-        instanceFactory: () => {
+        // tslint:disable-next-line: no-any
+        instanceFactory: (initialValue: any) => {
             // tslint:disable-next-line: no-any
             let lastCompared: any = undefined;
             let lastResult: boolean | undefined = undefined;
             // tslint:disable-next-line: no-any
-            const initial: any = JSON.parse(JSON.stringify(initValue));
+            const initial: any = JSON.parse(JSON.stringify(initialValue));
             const getInitial = (path: Path) => {
                 let result = initial;
                 path.forEach(p => {
@@ -204,7 +205,7 @@ interface InitialExtensions2<S> {
 
 const Initial2ID = Symbol('Initial2');
 
-function Initial2<S>(initValue: S): Plugin<S, InitialExtensions<S>, InitialExtensions2<S>> {
+function Initial2<S, E extends InitialExtensions<S>>(unused: PluginTypeMarker<S, E>): Plugin<S, E, InitialExtensions2<S>> {
     return {
         id: Initial2ID,
         instanceFactory: () => {
@@ -230,6 +231,7 @@ const App = () => {
         // .with(() => ModifiedPlugin<TaskItem[]>())//.with(DisabledTracking)
         .with(Initial)
         .with(Initial2)
+        // .with2()
         // .with(DisabledTracking)
     // console.log(vl.extended.initialDup);
 

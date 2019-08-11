@@ -6,10 +6,12 @@ import { ArrayStateMutation, createArrayStateMutation } from './UseStateArray';
 // DECLARATIONS
 //
 
+export interface PluginTypeMarker<S, E extends {}> { }
+
 export interface StateRef<S, E extends {}> {
     use(): StateLink<S, E>;
 
-    with<I>(plugin: (s: S) => Plugin<S, E, I>): StateRef<S, E & I>;
+    with<I>(plugin: (marker: PluginTypeMarker<S, E>) => Plugin<S, E, I>): StateRef<S, E & I>;
 }
 
 // TODO add support for Map and Set
@@ -39,7 +41,7 @@ export interface ReadonlyStateLink<S, E extends {} = {}> {
     readonly inferred: InferredStateMutation<S>;
     readonly extended: E;
 
-    with<I>(plugin: (s: S) => Plugin<S, E, I>): StateLink<S, E & I>;
+    with<I>(plugin: (marker: PluginTypeMarker<S, E>) => Plugin<S, E, I>): StateLink<S, E & I>;
 }
 // keep temporary for backward compatibility with the previous version
 export type ReadonlyValueLink<S, E extends {} = {}> = ReadonlyStateLink<S, E>;
@@ -64,7 +66,10 @@ export interface PluginInstance<S, E extends {}, I extends {}> {
 
 export interface Plugin<S, E extends {}, I extends {}> {
     id: symbol;
-    instanceFactory: () => PluginInstance<S, E, I>;
+    // initial value may not be of the same type as the target value type,
+    // because it is coming from the state and represents the type of the root value
+    // tslint:disable-next-line: no-any
+    instanceFactory: (initial: any) => PluginInstance<S, E, I>;
 }
 
 //
@@ -80,12 +85,6 @@ class StateLinkInvalidUsageError extends Error {
 class ExtensionInvalidUsageError extends Error {
     constructor(op: string, path: Path) {
         super(`Extension is used incorrectly. Attempted '${op}' at '/${path.join('/')}'`)
-    }
-}
-
-class ExtensionInvalidRegistrationError extends Error {
-    constructor(path: Path) {
-        super(`Extension can not be registered on nested StateLink. Attempted 'with' at '/${path.join('/')}'`)
     }
 }
 
@@ -109,6 +108,8 @@ interface Subscribable {
     subscribe(l: Subscriber): void;
     unsubscribe(l: Subscriber): void;
 }
+
+const DisabledTrackingID = Symbol('DisabledTracking');
 
 class State implements Subscribable {
     private _subscribers: Set<Subscriber> = new Set();
@@ -157,13 +158,12 @@ class State implements Subscribable {
     }
 
     // tslint:disable-next-line: no-any
-    register(pluginInit: (s: any) => Plugin<any, {}, {}>) {
-        const plugin = pluginInit(this._value);
+    register(plugin: Plugin<any, {}, {}>) {
         if (this._plugins.has(plugin.id)) {
             return;
         }
         this._plugins.add(plugin.id);
-        const pluginInstance = plugin.instanceFactory();
+        const pluginInstance = plugin.instanceFactory(this._value);
         if (pluginInstance.onInit) {
             const initValue = pluginInstance.onInit()
             if (initValue !== undefined) {
@@ -217,13 +217,14 @@ class StateRefImpl<S, E extends {}> implements StateRef<S, E> {
         return r;
     }
 
-    with<I>(plugin: (s: S) => Plugin<S, E, I>): StateRef<S, E & I> {
+    with<I>(plugin: (marker: PluginTypeMarker<S, E>) => Plugin<S, E, I>): StateRef<S, E & I> {
+        const pluginMeta = plugin({})
         // tslint:disable-next-line: no-any
-        if (plugin === DisabledTracking as any) {
+        if (pluginMeta.id === DisabledTrackingID) {
             this.disabledTracking = true;
         }
         // tslint:disable-next-line: no-any
-        this.state.register(plugin as any);
+        this.state.register(pluginMeta as unknown as Plugin<any, {}, {}>);
         return this as unknown as StateRef<S, E & I>;
     }
 }
@@ -297,16 +298,14 @@ class StateLinkImpl<S, E extends {}> implements StateLink<S, E>, Subscribable, S
     }
 
     // tslint:disable-next-line: no-any
-    with<I>(plugin: (s: S) => Plugin<S, E, I>): StateLink<S, E & I> {
-        if (plugin === DisabledTracking as any) {
+    with<I>(plugin: (marker: PluginTypeMarker<S, E>) => Plugin<S, E, I>): StateLink<S, E & I> {
+        const pluginMeta = plugin({});
+        if (pluginMeta.id === DisabledTrackingID) {
             this.disabledTracking = true;
             return this as unknown as StateLink<S, E & I>;
         }
-        if (this.path.length !== 0) {
-            throw new ExtensionInvalidRegistrationError(this.path)
-        }
         // tslint:disable-next-line: no-any
-        this.state.register(plugin as any);
+        this.state.register(pluginMeta as unknown as Plugin<any, {}, {}>);
         return this as unknown as StateLink<S, E & I>;
     }
 
@@ -628,8 +627,6 @@ function useWatchStateLink<S, E extends {}>(originLink: StateLinkImpl<S, E>): St
         setValue({})
     }, originLink, originLink.disabledTracking);
 }
-
-const DisabledTrackingID = Symbol('DisabledTracking');
 
 ///
 /// EXPORTED IMPLEMENTATIONS
