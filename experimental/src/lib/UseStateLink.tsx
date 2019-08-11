@@ -7,9 +7,9 @@ import { ArrayStateMutation, createArrayStateMutation } from './UseStateArray';
 //
 
 export interface StateRef<S, E extends {}> {
-    with<I>(plugin: (s: S) => Plugin<S, E, I>): StateRef<S, E & I>;
+    use(): StateLink<S, E>;
 
-    use(onUpdate?: () => void): StateLink<S, E>;
+    with<I>(plugin: (s: S) => Plugin<S, E, I>): StateRef<S, E & I>;
 }
 
 // TODO add support for Map and Set
@@ -203,16 +203,6 @@ class StateRefImpl<S, E extends {}> implements StateRef<S, E> {
 
     constructor(public state: State) { }
 
-    with<I>(plugin: (s: S) => Plugin<S, E, I>): StateRef<S, E & I> {
-        // tslint:disable-next-line: no-any
-        if (plugin === DisabledTracking as any) {
-            this.disabledTracking = true;
-        }
-        // tslint:disable-next-line: no-any
-        this.state.register(plugin as any);
-        return this as unknown as StateRef<S, E & I>;
-    }
-
     use(): StateLink<S, E> {
         const path: Path = [];
         const r = new StateLinkImpl<S, E>(
@@ -225,6 +215,16 @@ class StateRefImpl<S, E extends {}> implements StateRef<S, E> {
             this.state.get(path)
         ).with(DisabledTracking) // it does not matter how it is used, it is not subscribed anyway
         return r;
+    }
+
+    with<I>(plugin: (s: S) => Plugin<S, E, I>): StateRef<S, E & I> {
+        // tslint:disable-next-line: no-any
+        if (plugin === DisabledTracking as any) {
+            this.disabledTracking = true;
+        }
+        // tslint:disable-next-line: no-any
+        this.state.register(plugin as any);
+        return this as unknown as StateRef<S, E & I>;
     }
 }
 
