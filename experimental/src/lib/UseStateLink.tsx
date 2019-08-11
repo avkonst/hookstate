@@ -50,19 +50,19 @@ export interface StateLink<S, P extends {} = {}> extends ReadonlyStateLink<S, P>
 // keep temporary for backward compatibility with the previous version
 export type ValueLink<S, P extends {} = {}> = StateLink<S, P>;
 
-export interface Plugin<S, E extends {}> {
-    id: symbol;
-    factory: () => PluginInstance<S, E>;
-}
-
 export interface PluginInstance<S, E extends {}> {
     // if returns defined value,
     // it overrides the current / initial value in the state
     onInit?: () => S | void,
     onSet?: (path: Path, newValue: S) => void,
 
-    declaration: (keyof E)[],
-    implementation: (thisLink: StateLink<S, {}>) => E
+    extensions: (keyof E)[],
+    extensionsFactory: (thisLink: StateLink<S, {}>) => E
+};
+
+export interface Plugin<S, E extends {}> {
+    id: symbol;
+    instanceFactory: () => PluginInstance<S, E>;
 }
 
 //
@@ -160,14 +160,14 @@ class State implements Subscribable {
             return;
         }
         this._plugins.add(plugin.id);
-        const pluginInstance = plugin.factory();
+        const pluginInstance = plugin.instanceFactory();
         if (pluginInstance.onInit) {
             const initValue = pluginInstance.onInit()
             if (initValue !== undefined) {
                 this._value = initValue;
             }
         }
-        const extensions = pluginInstance.declaration;
+        const extensions = pluginInstance.extensions;
         extensions.forEach(e => {
             if (e in this._extensions) {
                 throw new ExtensionConflictRegistrationError(e as string);
@@ -315,7 +315,7 @@ class StateLinkImpl<S, P extends {}> implements StateLink<S, P>, Subscribable, S
             if (plugin === undefined) {
                 throw new ExtensionUnknownError(key.toString());
             }
-            const extension = plugin.implementation(this)[key];
+            const extension = plugin.extensionsFactory(this)[key];
             if (extension === undefined) {
                 throw new ExtensionUnknownError(key.toString());
             }
@@ -695,9 +695,9 @@ export function useStateWatch<S, R, P extends {}>(
 export function DisabledTracking(): Plugin<any, {}> {
     return {
         id: DisabledTrackingID,
-        factory: () => ({
-            declaration: [],
-            implementation: () => ({})
+        instanceFactory: () => ({
+            extensions: [],
+            extensionsFactory: () => ({})
         })
     }
 }

@@ -2,7 +2,7 @@ import React from 'react';
 import logo from './logo.svg';
 import './App.css';
 
-import { useStateLink, StateLink, createStateLink, PluginInstance, Path, useStateWatch, DisabledTracking, Plugin } from './lib/UseStateLink';
+import { useStateLink, StateLink, createStateLink, Path, useStateWatch, DisabledTracking, Plugin } from './lib/UseStateLink';
 
 import isEqual from 'lodash.isequal';
 
@@ -77,7 +77,7 @@ const InitialID = Symbol('Initial');
 function Initial<S>(initValue: S): Plugin<S, InitialExtensions<S>> {
     return {
         id: InitialID,
-        factory: () => {
+        instanceFactory: () => {
             // tslint:disable-next-line: no-any
             let lastCompared: any = undefined;
             let lastResult: boolean | undefined = undefined;
@@ -181,8 +181,8 @@ function Initial<S>(initValue: S): Plugin<S, InitialExtensions<S>> {
                 onSet: (p, v) => {
                     lastCompared = undefined;
                 },
-                declaration: ['initial', 'modified', 'unmodified'],
-                implementation: (l) => ({
+                extensions: ['initial', 'modified', 'unmodified'],
+                extensionsFactory: (l) => ({
                     get initial() {
                         return getInitial(l.path)
                     },
