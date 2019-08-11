@@ -4,6 +4,8 @@ import './App.css';
 
 import { useStateLink, StateLink, createStateLink, Path, useStateWatch, Plugin, PluginTypeMarker } from './lib/UseStateLink';
 import { Initial, InitialExtensions } from './lib/plugins/Initial';
+import { Logger } from './lib/plugins/Logger';
+import { Touched } from './lib/plugins/Touched';
 
 JSON.stringify({ x: 5, y: 6, toJSON() { return this.x + this.y; } });
 
@@ -34,7 +36,10 @@ const TaskView = (props: { link: StateLink<TaskItem> }) => {
     // </p>
 
     return <p>
-        {new Date().toISOString()} <input value={locallink.value.name} onChange={v => locallink.nested.name.set(v.target.value)} />
+        {new Date().toISOString()}
+        Modified: {props.link.with(Initial).with(Touched)._.name.extended.modified.toString()}
+        Touched: {props.link.with(Initial).with(Touched)._.name.extended.touched.toString()}
+        <input value={locallink.value.name} onChange={v => locallink.nested.name.set(v.target.value)} />
         <button onClick={v => locallink.nested.priority.set(pv => Number(pv) + 1)} children={'increment'} />
         {/* <input value={'increment priority'} onChange={v => locallink.nested.priority.set(pv => Number(pv) + 1)} /> */}
     </p>
@@ -44,7 +49,7 @@ const TwiceTaskView = (props: { link: StateLink<TaskItem>, ind: number }) => {
     return <>
         Task number {props.ind} two times:
         <TaskView link={props.link} />
-        <TaskView link={props.link} />
+        {/* <TaskView link={props.link} /> */}
     </>;
 }
 
@@ -55,36 +60,22 @@ const JsonDump = (props: {link: StateLink<TaskItem[]>}) => {
     </p>;
 }
 
-const ModifiedStatus = (props: {link: StateLink<TaskItem[]>}) => {
+const ModifiedStatus = (props: {link: StateLink<TaskItem[], InitialExtensions<TaskItem[]>>}) => {
     const modified = useStateWatch(props.link, (l) => {
-        return l.with(Initial).extended.modified
-        // return l.extended.modified;
+        return l.extended.modified
     });
     return <p>
         {new Date().toISOString()} Modified: {modified.toString()}
     </p>;
 }
 
-interface InitialExtensions2<S> {
-    initialDup: S | undefined;
-}
-
-const Initial2ID = Symbol('Initial2');
-
-function Initial2<S, E extends InitialExtensions<S>>(unused: PluginTypeMarker<S, E>): Plugin<S, E, InitialExtensions2<S>> {
-    return {
-        id: Initial2ID,
-        instanceFactory: () => {
-            return {
-                extensions: ['initialDup'],
-                extensionsFactory: (l) => ({
-                    get initialDup() {
-                        return l.extended.initial
-                    }
-                })
-            }
-        }
-    }
+const TouchedStatus = (props: {link: StateLink<TaskItem[], InitialExtensions<TaskItem[]>>}) => {
+    const touched = useStateWatch(props.link, (l) => {
+        return l.with(Touched).extended.touched
+    });
+    return <p>
+        {new Date().toISOString()} Touched: {touched.toString()}
+    </p>;
 }
 
 const App = () => {
@@ -96,7 +87,8 @@ const App = () => {
     const vl = useStateLink(state)
         // .with(() => ModifiedPlugin<TaskItem[]>())//.with(DisabledTracking)
         .with(Initial)
-        .with(Initial2)
+        .with(Touched)
+        .with(Logger)
         // .with2()
         // .with(DisabledTracking)
     // console.log(vl.extended.initialDup);
@@ -107,6 +99,7 @@ const App = () => {
         <p>{new Date().toISOString()} Other App local
         state: <input value={value} onChange={e => setValue(e.target.value)} /></p>
         <ModifiedStatus link={vl} />
+        <TouchedStatus link={vl} />
         {/* {value} */}
         <JsonDump link={vl} />
         {

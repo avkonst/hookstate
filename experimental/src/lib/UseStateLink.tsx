@@ -205,6 +205,7 @@ class StateRefImpl<S, E extends {}> implements StateRef<S, E> {
 
     use(): StateLink<S, E> {
         const path: Path = [];
+        // tslint:disable-next-line: no-use-before-declare
         const r = new StateLinkImpl<S, E>(
             this.state,
             path,
