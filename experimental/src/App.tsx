@@ -72,9 +72,11 @@ interface InitialExtensions<S> {
     unmodified: boolean;
 }
 
+const InitialID = Symbol('Initial');
+
 function Initial<S>(initValue: S): Plugin<S, InitialExtensions<S>> {
     return {
-        id: 'ModifiedPlugin',
+        id: InitialID,
         factory: () => {
             // tslint:disable-next-line: no-any
             let lastCompared: any = undefined;

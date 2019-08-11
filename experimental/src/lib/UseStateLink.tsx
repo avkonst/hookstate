@@ -51,7 +51,7 @@ export interface StateLink<S, P extends {} = {}> extends ReadonlyStateLink<S, P>
 export type ValueLink<S, P extends {} = {}> = StateLink<S, P>;
 
 export interface Plugin<S, E extends {}> {
-    id: string;
+    id: symbol;
     factory: () => PluginInstance<S, E>;
 }
 
@@ -113,7 +113,7 @@ class State implements Subscribable {
 
     // tslint:disable-next-line: no-any
     private _extensions: Record<string, PluginInstance<any, {}>> = {};
-    private _plugins: Set<string> = new Set();
+    private _plugins: Set<symbol> = new Set();
 
     // tslint:disable-next-line:no-any
     constructor(private _value: any) { }
@@ -624,6 +624,8 @@ function useWatchStateLink<S, P extends {}>(originLink: StateLinkImpl<S, P>): St
     }, originLink, originLink.disabledTracking);
 }
 
+const DisabledTrackingID = Symbol('DisabledTracking');
+
 ///
 /// EXPORTED IMPLEMENTATIONS
 ///
@@ -692,7 +694,7 @@ export function useStateWatch<S, R, P extends {}>(
 // tslint:disable-next-line: no-any function-name
 export function DisabledTracking(): Plugin<any, {}> {
     return {
-        id: 'DisabledTracking',
+        id: DisabledTrackingID,
         factory: () => ({
             declaration: [],
             implementation: () => ({})
