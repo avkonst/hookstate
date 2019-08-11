@@ -2,7 +2,7 @@ import React from 'react';
 import logo from './logo.svg';
 import './App.css';
 
-import { useStateLink, StateLink, createStateLink, Plugin, Path, useStateWatch, DisabledTracking, PluginFactory } from './lib/UseStateLink';
+import { useStateLink, StateLink, createStateLink, PluginInstance, Path, useStateWatch, DisabledTracking, Plugin } from './lib/UseStateLink';
 
 import isEqual from 'lodash.isequal';
 
@@ -72,7 +72,7 @@ interface ModifiedPluginExtensions<S> {
     unmodified: boolean;
 }
 
-function ModifiedPlugin<S>(initValue: S): Plugin<S, ModifiedPluginExtensions<S>> {
+function ModifiedPlugin<S>(initValue: S): PluginInstance<S, ModifiedPluginExtensions<S>> {
     // tslint:disable-next-line: no-any
     let lastCompared: any = undefined;
     let lastResult: boolean | undefined = undefined;
@@ -179,7 +179,8 @@ function ModifiedPlugin<S>(initValue: S): Plugin<S, ModifiedPluginExtensions<S>>
             console.log('on set')
             lastCompared = undefined;
         },
-        extensions: (l) => ({
+        declaration: ['initial', 'modified', 'unmodified'],
+        implementation: (l) => ({
             get initial() {
                 return getInitial(l.path)
             },
@@ -193,11 +194,10 @@ function ModifiedPlugin<S>(initValue: S): Plugin<S, ModifiedPluginExtensions<S>>
     }
 };
 
-function ModifiedPluginFactory<S>(initial: S): PluginFactory<S, ModifiedPluginExtensions<S>> {
+function ModifiedPluginFactory<S>(initial: S): Plugin<S, ModifiedPluginExtensions<S>> {
     return {
         id: 'ModifiedPlugin',
-        extensions: ['initial', 'modified', 'unmodified'],
-        create: () => ModifiedPlugin(initial)
+        factory: () => ModifiedPlugin(initial)
     }
 }
 
@@ -218,7 +218,7 @@ const App = () => {
         {/* {value} */}
         <JsonDump link={vl} />
         {
-            vl.$.map((i, ind) => <TwiceTaskView key={ind} ind={ind} link={i} />)
+            vl._.map((i, ind) => <TwiceTaskView key={ind} ind={ind} link={i} />)
         }
         <button
             onClick={() => vl.inferred.push({
