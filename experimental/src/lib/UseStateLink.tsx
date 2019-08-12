@@ -30,7 +30,7 @@ export type InferredStateMutation<S> =
 
 export type Path = ReadonlyArray<string | number>;
 
-export interface ReadonlyStateLink<S, E extends {} = {}> {
+export interface StateLink<S, E extends {} = {}> {
     readonly path: Path;
     readonly value: S;
 
@@ -41,13 +41,8 @@ export interface ReadonlyStateLink<S, E extends {} = {}> {
     readonly inferred: InferredStateMutation<S>;
     readonly extended: E;
 
-    with<I>(plugin: (marker: PluginTypeMarker<S, E>) => Plugin<E, I>): StateLink<S, E & I>;
-}
-// keep temporary for backward compatibility with the previous version
-export type ReadonlyValueLink<S, E extends {} = {}> = ReadonlyStateLink<S, E>;
-
-export interface StateLink<S, E extends {} = {}> extends ReadonlyStateLink<S, E> {
     set(newValue: React.SetStateAction<S>): void;
+    with<I>(plugin: (marker: PluginTypeMarker<S, E>) => Plugin<E, I>): StateLink<S, E & I>;
 }
 // keep temporary for backward compatibility with the previous version
 export type ValueLink<S, E extends {} = {}> = StateLink<S, E>;
