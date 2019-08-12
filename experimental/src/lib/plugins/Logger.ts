@@ -29,7 +29,7 @@ export function Logger<S, E extends {}>(unused: PluginTypeMarker<S, E>): Plugin<
                     const newValue = getAtPath(v, p);
                     // tslint:disable-next-line: no-console
                     console.log(
-                        `[hookstate]: new value set at path '${p.join('/')}': ${JSON.stringify(newValue)}`,
+                        `[hookstate]: new value set at path '/${p.join('/')}': ${JSON.stringify(newValue)}`,
                         newValue);
                 },
                 extensions: ['log'],
@@ -38,7 +38,7 @@ export function Logger<S, E extends {}>(unused: PluginTypeMarker<S, E>): Plugin<
                         l.with(DisabledTracking); // everything is touched by the JSON, so no point to track
                         // tslint:disable-next-line: no-console
                         return console.log(
-                            `[hookstate]: current value at path '${l.path.join('/')}: ${JSON.stringify(l.value)}'`,
+                            `[hookstate]: current value at path '/${l.path.join('/')}: ${JSON.stringify(l.value)}'`,
                             l.value);
                     }
                 })

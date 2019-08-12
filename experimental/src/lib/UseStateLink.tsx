@@ -55,6 +55,7 @@ export type ValueLink<S, E extends {} = {}> = StateLink<S, E>;
 export interface PluginInstance<S, E extends {}, I extends {}> {
     // if returns defined value,
     // it overrides the current / initial value in the state
+    // it is only applicable for plugins attached via stateref, not via statelink
     onInit?: () => S | void,
     onSet?: (path: Path, newValue: S) => void,
 
@@ -88,9 +89,18 @@ class ExtensionInvalidUsageError extends Error {
     }
 }
 
+class ExtensionInvalidRegistrationError extends Error {
+    constructor(id: symbol, path: Path) {
+        super(`Extension with onInit, which overrides initial value, ` +
+        `should be attached to StateRef instance, but not to StateLink instance. ` +
+        `Attempted 'with ${id.toString()}' at '/${path.join('/')}'`)
+    }
+}
+
 class ExtensionConflictRegistrationError extends Error {
-    constructor(ext: string) {
-        super(`Extension '${ext}' is already registered'`)
+    constructor(newId: symbol, existingId: symbol, ext: string) {
+        super(`Extension '${ext}' is already registered for '${existingId.toString()}'. ` +
+        `Attempted 'with ${newId.toString()}''`)
     }
 }
 
@@ -110,6 +120,7 @@ interface Subscribable {
 }
 
 const DisabledTrackingID = Symbol('DisabledTracking');
+const HiddenPluginId = Symbol('PluginID');
 
 class State implements Subscribable {
     private _subscribers: Set<Subscriber> = new Set();
@@ -158,7 +169,7 @@ class State implements Subscribable {
     }
 
     // tslint:disable-next-line: no-any
-    register(plugin: Plugin<any, {}, {}>) {
+    register(plugin: Plugin<any, {}, {}>, path?: Path | undefined) {
         if (this._plugins.has(plugin.id)) {
             return;
         }
@@ -167,16 +178,23 @@ class State implements Subscribable {
         if (pluginInstance.onInit) {
             const initValue = pluginInstance.onInit()
             if (initValue !== undefined) {
+                if (path) {
+                    throw new ExtensionInvalidRegistrationError(plugin.id, path);
+                }
                 this._value = initValue;
             }
         }
         const extensions = pluginInstance.extensions;
         extensions.forEach(e => {
             if (e in this._extensions) {
-                throw new ExtensionConflictRegistrationError(e as string);
+                throw new ExtensionConflictRegistrationError(
+                    plugin.id,
+                    this._extensions[e as string][HiddenPluginId],
+                    e as string);
             }
+            pluginInstance[HiddenPluginId] = plugin.id;
             // tslint:disable-next-line: no-any
-            this._extensions[e as string] = pluginInstance as unknown as PluginInstance<any, {}, {}>;
+            this._extensions[e as string] = pluginInstance;
         });
         if (pluginInstance.onSet) {
             const onSet = pluginInstance.onSet;
@@ -306,7 +324,7 @@ class StateLinkImpl<S, E extends {}> implements StateLink<S, E>, Subscribable, S
             return this as unknown as StateLink<S, E & I>;
         }
         // tslint:disable-next-line: no-any
-        this.state.register(pluginMeta as unknown as Plugin<any, {}, {}>);
+        this.state.register(pluginMeta as unknown as Plugin<any, {}, {}>, this.path);
         return this as unknown as StateLink<S, E & I>;
     }
 

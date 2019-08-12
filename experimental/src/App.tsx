@@ -6,6 +6,7 @@ import { useStateLink, StateLink, createStateLink, Path, useStateWatch, Plugin, 
 import { Initial, InitialExtensions } from './lib/plugins/Initial';
 import { Logger } from './lib/plugins/Logger';
 import { Touched } from './lib/plugins/Touched';
+import { LocalPersistence } from './lib/plugins/LocalPersistence';
 
 JSON.stringify({ x: 5, y: 6, toJSON() { return this.x + this.y; } });
 
@@ -13,7 +14,7 @@ const state = createStateLink<TaskItem[]>(Array.from(Array(2).keys()).map((i) =>
     name: 'initial',
     priority: i,
     // toJSON(): any { return this.name + this.priority; }
-})));
+})))//.with(LocalPersistence('somekey2'));
 
 setInterval(() => {
     // state.use().nested[0].nested.priority.set(p => (p || 0) + 1)
@@ -78,17 +79,33 @@ const TouchedStatus = (props: {link: StateLink<TaskItem[], InitialExtensions<Tas
     </p>;
 }
 
+const s = Symbol('Dup');
+export function Dup<S, E extends {}>(unused: PluginTypeMarker<S, E>): Plugin<S, E, { log: () => void }> {
+    return {
+        id: s,
+        instanceFactory: () => ({
+            extensions: ['log'],
+            extensionsFactory: () => ({
+                log: () => console.log('')
+            })
+        })
+    }
+}
+
 const App = () => {
     // const vl = useStateLink<TaskItem[], { myext: () => void }>(Array.from(Array(2).keys()).map((i) => ({
     //     name: 'initial',
     //     priority: i
     // }))).with(ModifiedPlugin);
     const [value, setValue] = React.useState('');
-    const vl = useStateLink(state)
+    const vl = useStateLink(state.with(LocalPersistence('somekey2')))
         // .with(() => ModifiedPlugin<TaskItem[]>())//.with(DisabledTracking)
         .with(Initial)
         .with(Touched)
+        // .with(Dup)
         .with(Logger)
+
+        // .with(LocalPersistence('somekey2'));
         // .with2()
         // .with(DisabledTracking)
     // console.log(vl.extended.initialDup);
