@@ -6,7 +6,7 @@ import { useStateLink, StateLink, createStateLink, Path, useStateWatch, Plugin, 
 import { Initial, InitialExtensions } from './lib/plugins/Initial';
 import { Logger } from './lib/plugins/Logger';
 import { Touched } from './lib/plugins/Touched';
-import { LocalPersistence } from './lib/plugins/LocalPersistence';
+import { Persistence } from './lib/plugins/Persistence';
 
 JSON.stringify({ x: 5, y: 6, toJSON() { return this.x + this.y; } });
 
@@ -98,7 +98,9 @@ const App = () => {
     //     priority: i
     // }))).with(ModifiedPlugin);
     const [value, setValue] = React.useState('');
-    const vl = useStateLink(state.with(LocalPersistence('somekey2')))
+    const vl = useStateLink(state
+        // .with(Persistence('somekey2'))
+        )
         // .with(() => ModifiedPlugin<TaskItem[]>())//.with(DisabledTracking)
         .with(Initial)
         .with(Touched)

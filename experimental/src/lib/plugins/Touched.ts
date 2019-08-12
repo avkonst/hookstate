@@ -1,5 +1,5 @@
 
-import { Path, Plugin, PluginTypeMarker, StateLink } from '../UseStateLink';
+import { Path, Plugin, PluginTypeMarker, StateLink, DisabledTracking } from '../UseStateLink';
 
 import { InitialExtensions } from './Initial';
 
@@ -58,6 +58,12 @@ export function Touched<S, E extends InitialExtensions<S>>(
             const touched = (l: StateLink<any, E>): boolean => {
                 const t = getTouched(l.path);
                 if (t !== undefined) {
+                    // For optimization purposes, there is nothing being used from the link value
+                    // as a result it is left untracked and no rerender happens for the result of this function
+                    // when the source value is updated.
+                    // We do the trick to fix it, we mark the value being 'deeply used',
+                    // so any changes for this value or any nested will trigger rerender.
+                    const dummy = l.with(DisabledTracking).value;
                     return t;
                 }
                 return l.extended.modified;

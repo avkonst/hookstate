@@ -4,10 +4,10 @@ import { Plugin, PluginTypeMarker } from '../UseStateLink';
 const PluginID = Symbol('LocalPersistence');
 
 // tslint:disable-next-line: function-name
-export function LocalPersistence<S, E extends {}>(localStorageKey: string):
+export function Persistence<S, E extends {}>(localStorageKey: string):
     ((unsued: PluginTypeMarker<S, E>) => Plugin<S, E, {}>) {
 
-    return function localStoragePluginInit(unused: PluginTypeMarker<S, E>): Plugin<S, E, {}> {
+    return () => {
         return {
             id: PluginID,
             // tslint:disable-next-line: no-any
