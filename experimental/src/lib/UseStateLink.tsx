@@ -78,6 +78,8 @@ export interface Plugin<E extends {}, I extends {}> {
     instanceFactory: (initial: StateValueAtRoot) => PluginInstance<E, I>;
 }
 
+export type PrerenderTransformStrategy = 'primitive' | 'always' | 'never';
+
 //
 // INTERNAL IMPLEMENTATIONS
 //
@@ -125,6 +127,8 @@ interface Subscribable {
 }
 
 const DisabledTrackingID = Symbol('DisabledTracking');
+const PrerenderTransformID = Symbol('PrerenderTransform');
+
 const HiddenPluginId = Symbol('PluginID');
 
 class State implements Subscribable {
@@ -223,6 +227,7 @@ class State implements Subscribable {
 
 class StateRefImpl<S, E extends {}> implements StateRef<S, E> {
     public disabledTracking: boolean | undefined;
+    public prerenderTransform: PrerenderTransformStrategy | undefined;
 
     constructor(public state: State) { }
 
@@ -238,6 +243,7 @@ class StateRefImpl<S, E extends {}> implements StateRef<S, E> {
             },
             this.state.get(path)
         ).with(DisabledTracking) // it does not matter how it is used, it is not subscribed anyway
+        .with(PrerenderTransform('never'))
         return r;
     }
 
@@ -245,6 +251,11 @@ class StateRefImpl<S, E extends {}> implements StateRef<S, E> {
         const pluginMeta = plugin({})
         if (pluginMeta.id === DisabledTrackingID) {
             this.disabledTracking = true;
+            return this as unknown as StateRef<S, E & I>;
+        }
+        if (pluginMeta.id === PrerenderTransformID) {
+            this.prerenderTransform = (pluginMeta as unknown as { strategy: PrerenderTransformStrategy }).strategy;
+            return this as unknown as StateRef<S, E & I>;
         }
         this.state.register(pluginMeta as unknown as Plugin<{}, {}>);
         return this as unknown as StateRef<S, E & I>;
@@ -253,6 +264,7 @@ class StateRefImpl<S, E extends {}> implements StateRef<S, E> {
 
 class StateLinkImpl<S, E extends {}> implements StateLink<S, E>, Subscribable, Subscriber {
     public disabledTracking: boolean | undefined;
+    public prerenderTransform: PrerenderTransformStrategy | undefined;
 
     private subscribers: Set<Subscriber> | undefined;
 
@@ -322,6 +334,10 @@ class StateLinkImpl<S, E extends {}> implements StateLink<S, E>, Subscribable, S
         const pluginMeta = plugin({});
         if (pluginMeta.id === DisabledTrackingID) {
             this.disabledTracking = true;
+            return this as unknown as StateLink<S, E & I>;
+        }
+        if (pluginMeta.id === PrerenderTransformID) {
+            this.prerenderTransform = (pluginMeta as unknown as { strategy: PrerenderTransformStrategy }).strategy;
             return this as unknown as StateLink<S, E & I>;
         }
         this.state.register(pluginMeta as unknown as Plugin<{}, {}>, this.path);
@@ -608,7 +624,8 @@ function useSubscribedStateLink<S, E extends {}>(
     state: State,
     path: Path, update: () => void,
     subscribeTarget: Subscribable,
-    disabledTracking?: boolean | undefined
+    disabledTracking?: boolean | undefined,
+    prerenderTransformStrategy?: PrerenderTransformStrategy
 ) {
     const link = new StateLinkImpl<S, E>(
         state,
@@ -619,6 +636,9 @@ function useSubscribedStateLink<S, E extends {}>(
     if (disabledTracking) {
         link.with(DisabledTracking)
     }
+    if (prerenderTransformStrategy) {
+        link.with(PrerenderTransform(prerenderTransformStrategy))
+    }
     useIsomorphicLayoutEffect(() => {
         subscribeTarget.subscribe(link);
         return () => subscribeTarget.unsubscribe(link);
@@ -626,25 +646,42 @@ function useSubscribedStateLink<S, E extends {}>(
     return link;
 }
 
-function useGlobalStateLink<S, E>(stateLink: StateRefImpl<S, E>): StateLink<S, E> {
+function useGlobalStateLink<S, E>(stateLink: StateRefImpl<S, E>): StateLinkImpl<S, E> {
     const [, setValue] = React.useState({});
     return useSubscribedStateLink(stateLink.state, [], () => {
         setValue({})
-    }, stateLink.state, stateLink.disabledTracking);
+    }, stateLink.state, stateLink.disabledTracking, stateLink.prerenderTransform);
 }
 
-function useLocalStateLink<S>(initialState: S | (() => S)): StateLink<S, {}> {
+function useLocalStateLink<S>(initialState: S | (() => S)): StateLinkImpl<S, {}> {
     const [value, setValue] = React.useState(() => ({ state: createState(initialState) }));
     return useSubscribedStateLink(value.state, [], () => {
         setValue({ state: value.state })
     }, value.state);
 }
 
-function useWatchStateLink<S, E extends {}>(originLink: StateLinkImpl<S, E>): StateLink<S, E> {
+function useDerivedStateLink<S, E extends {}>(originLink: StateLinkImpl<S, E>): StateLinkImpl<S, E> {
     const [, setValue] = React.useState({});
     return useSubscribedStateLink(originLink.state, originLink.path, () => {
         setValue({})
     }, originLink, originLink.disabledTracking);
+    // note PrerenderTransform strategy is not inherited intentionally
+}
+
+function useAutoStateLink<S, E extends {}>(
+    initialState: S | (() => S) | StateLink<S, E> | StateRef<S, E>
+): StateLinkImpl<S, E> {
+    if (initialState instanceof StateLinkImpl) {
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        return useDerivedStateLink(initialState as StateLinkImpl<S, E>);
+    }
+    if (initialState instanceof StateRefImpl) {
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        return useGlobalStateLink(initialState as StateRefImpl<S, E>);
+    }
+
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    return useLocalStateLink(initialState as S | (() => S)) as StateLinkImpl<S, E>;
 }
 
 ///
@@ -655,23 +692,8 @@ export function createStateLink<S>(initial: S | (() => S)): StateRef<S, {}> {
     return new StateRefImpl(createState(initial));
 }
 
-export function useStateLink<S, E extends {}>(
-    initialState: S | (() => S) | StateLink<S, E> | StateRef<S, E>
-): StateLink<S, E> {
-    if (initialState instanceof StateLinkImpl) {
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        return useWatchStateLink(initialState) as StateLink<S, E>;
-    }
-    if (initialState instanceof StateRefImpl) {
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        return useGlobalStateLink(initialState) as StateLink<S, E>;
-    }
-
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useLocalStateLink(initialState as S | (() => S)) as StateLink<S, E>;
-}
-
 /**
+ * Future docs for transformer
  * Forces rerender of a hooked component when result of `watcher`
  * is changed due to the change of the current value in `state`.
  * Change of the result is determined by the default tripple equality operator.
@@ -681,34 +703,58 @@ export function useStateLink<S, E extends {}>(
  * If the watcher returns the same value as the `prev`, the rerendering is not forced
  * by the watcher.
  */
-export function useStateWatch<S, E extends {}, R>(
-    state: StateLink<S, E> | StateRef<S, E>,
-    watcher: (state: ReadonlyStateLink<S, E>, prev: R | undefined) => R
-) {
-    const link = useStateLink(state) as StateLinkImpl<S, E>;
-    const originOnUpdate = link.onUpdateUsed;
-    const injectOnUpdate = {
-        call: originOnUpdate
-    }
-    link.onUpdateUsed = () => injectOnUpdate.call()
-    const result = watcher(link, undefined);
-    injectOnUpdate.call = () => {
-        // need to create new one to make sure
-        // it does not pickup the stale cache of the other after mutation
-        const unconnected = new StateLinkImpl<S, E>(
-            link.state,
-            link.path,
-            () => {
-                throw new Error('Internal Error: unexpected call');
-            },
-            link.state.get(link.path)
-        ).with(DisabledTracking) // this instance is not subscribed, so do not track it's usage
-        const updatedResult = watcher(unconnected, result);
-        if (updatedResult !== result) {
-            originOnUpdate();
+
+export function useStateLink<S, E extends {}>(
+    initialState: StateLink<S, E> | StateRef<S, E>
+): StateLink<S, E>;
+export function useStateLink<S, E extends {}, R>(
+    initialState: StateLink<S, E> | StateRef<S, E>,
+    transform: (state: StateLink<S, E>, prev: R | undefined) => R
+): R;
+export function useStateLink<S, E extends {}>(
+    initialState: S | (() => S)
+): StateLink<S, E>;
+export function useStateLink<S, E extends {}, R>(
+    initialState: S | (() => S),
+    transform: (state: StateLink<S, E>, prev: R | undefined) => R
+): R;
+export function useStateLink<S, E extends {}, R>(
+    initialState: S | (() => S) | StateLink<S, E> | StateRef<S, E>,
+    transform?: (state: StateLink<S, E>, prev: R | undefined) => R
+): R {
+    const link = useAutoStateLink(initialState);
+    if (transform) {
+        const result = transform(link, undefined);
+        const strategy = link.prerenderTransform || 'primitive';
+        if (strategy === 'primitive' && (typeof result === 'object' || typeof result === 'function') ||
+            strategy === 'never') {
+            return result;
         }
+
+        const originOnUpdate = link.onUpdateUsed;
+        const injectOnUpdate = {
+            call: originOnUpdate
+        }
+        link.onUpdateUsed = () => injectOnUpdate.call()
+        injectOnUpdate.call = () => {
+            // need to create new one to make sure
+            // it does not pickup the stale cache of the other after mutation
+            const unconnected = new StateLinkImpl<S, E>(
+                link.state,
+                link.path,
+                () => {
+                    throw new Error('Internal Error: unexpected call');
+                },
+                link.state.get(link.path)
+            ).with(DisabledTracking) // this instance is not subscribed, so do not track it's usage
+            const updatedResult = transform(unconnected, result);
+            if (updatedResult !== result) {
+                originOnUpdate();
+            }
+        }
+        return result;
     }
-    return result;
+    return link as unknown as R;
 }
 
 // tslint:disable-next-line: function-name
@@ -719,6 +765,21 @@ export function DisabledTracking(): Plugin<{}, {}> {
             extensions: [],
             extensionsFactory: () => ({})
         })
+    }
+}
+
+// tslint:disable-next-line: function-name
+export function PrerenderTransform(strategy: PrerenderTransformStrategy):
+    (marker: PluginTypeMarker<{}, {}>) => Plugin<{}, {}> {
+    return () => {
+        return {
+            id: DisabledTrackingID,
+            strategy: strategy,
+            instanceFactory: () => ({
+                extensions: [],
+                extensionsFactory: () => ({})
+            })
+        }
     }
 }
 

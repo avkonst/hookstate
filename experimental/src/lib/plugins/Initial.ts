@@ -28,8 +28,6 @@ export function Initial<S, E extends {}>(unused: PluginTypeMarker<S, E>): Plugin
     return {
         id: PluginID,
         instanceFactory: (initialValue: StateValueAtRoot) => {
-            let lastCompared: StateValueAtPath = undefined;
-            let lastResult: boolean | undefined = undefined;
             const initialState: StateValueAtRoot = cloneDeep(initialValue);
             const getInitial = (path: Path) => {
                 let result = initialState;
@@ -40,20 +38,9 @@ export function Initial<S, E extends {}>(unused: PluginTypeMarker<S, E>): Plugin
             }
             const modified = (l: StateLink<StateValueAtPath, E>): boolean => {
                 l.with(DisabledTracking)
-                const current = l.value;
-                const path = l.path;
-                if (current === lastCompared && lastCompared !== undefined) {
-                    return lastResult!;
-                }
-                lastCompared = current;
-                lastResult = !isEqual(current, getInitial(path))
-                return lastResult;
+                return !isEqual(l.value, getInitial(l.path))
             }
             return {
-                onSet: () => {
-                    lastCompared = undefined;
-                    lastResult = undefined;
-                },
                 extensions: ['initial', 'modified', 'unmodified'],
                 extensionsFactory: (l) => ({
                     get initial() {

@@ -2,7 +2,7 @@ import React from 'react';
 import logo from './logo.svg';
 import './App.css';
 
-import { useStateLink, StateLink, createStateLink, Path, useStateWatch, Plugin, PluginTypeMarker } from './lib/UseStateLink';
+import { useStateLink, StateLink, createStateLink, Plugin, PluginTypeMarker, PrerenderTransform, PrerenderTransformStrategy } from './lib/UseStateLink';
 import { Initial, InitialExtensions } from './lib/plugins/Initial';
 import { Logger } from './lib/plugins/Logger';
 import { Touched } from './lib/plugins/Touched';
@@ -68,7 +68,8 @@ const JsonDump = (props: {link: StateLink<TaskItem[]>}) => {
 }
 
 const ModifiedStatus = (props: {link: StateLink<TaskItem[], InitialExtensions>}) => {
-    const modified = useStateWatch(props.link, (l) => {
+    const modified = useStateLink(props.link, (l) => {
+        l.with(PrerenderTransform('primitive'))
         return l.extended.modified
     });
     return <p>
@@ -77,7 +78,7 @@ const ModifiedStatus = (props: {link: StateLink<TaskItem[], InitialExtensions>})
 }
 
 const TouchedStatus = (props: {link: StateLink<TaskItem[], InitialExtensions>}) => {
-    const touched = useStateWatch(props.link, (l) => {
+    const touched = useStateLink(props.link, (l) => {
         return l.with(Touched).extended.touched
     });
     return <p>
