@@ -7,6 +7,7 @@ import { Initial, InitialExtensions } from './lib/plugins/Initial';
 import { Logger } from './lib/plugins/Logger';
 import { Touched } from './lib/plugins/Touched';
 import { Persistence } from './lib/plugins/Persistence';
+import { Validator } from './lib/plugins/Validator';
 
 JSON.stringify({ x: 5, y: 6, toJSON() { return this.x + this.y; } });
 
@@ -106,13 +107,29 @@ const App = () => {
         .with(Touched)
         // .with(Dup)
         .with(Logger)
+        // .with(Validator({
+        //     __validate: (current, link) => undefined,
+        //     '*': {
+        //         __validate: (current, link) => undefined,
+        //     }
+        // }));
+        .with(Validator())
+        // .with(Validator((current, link) => undefined,
+        //     // '*': {
+        //     //     __validate: (current, link) => undefined,
+        //     // }
+        // ));
 
         // .with(LocalPersistence('somekey2'));
         // .with2()
         // .with(DisabledTracking)
     // console.log(vl.extended.initialDup);
 
+    const b = vl.nested[0].nested.name.extended.initial;
+    // vl.nested[0].nested.name.extended.validate(t => t, '')
     // vl.extended.initial
+
+    // console.log(vl._[Infinity].value)
 
     return <>
         <p>{new Date().toISOString()} Other App local

@@ -5,9 +5,9 @@ import isEqual from 'lodash.isequal';
 import cloneDeep from 'lodash.clonedeep';
 
 export interface InitialExtensions<S> {
-    initial: S | undefined;
-    modified: boolean;
-    unmodified: boolean;
+    readonly initial: S | undefined;
+    readonly modified: boolean;
+    readonly unmodified: boolean;
 }
 
 const PluginID = Symbol('Initial');

@@ -4,8 +4,8 @@ import { Path, Plugin, PluginTypeMarker, StateLink, DisabledTracking } from '../
 import { InitialExtensions } from './Initial';
 
 export interface TouchedExtensions<S> {
-    touched: boolean;
-    untouched: boolean;
+    readonly touched: boolean;
+    readonly untouched: boolean;
 }
 
 const PluginID = Symbol('Touched');
@@ -63,7 +63,7 @@ export function Touched<S, E extends InitialExtensions<S>>(
                     // when the source value is updated.
                     // We do the trick to fix it, we mark the value being 'deeply used',
                     // so any changes for this value or any nested will trigger rerender.
-                    const dummy = l.with(DisabledTracking).value;
+                    const _ = l.with(DisabledTracking).value;
                     return t;
                 }
                 return l.extended.modified;
