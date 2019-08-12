@@ -627,7 +627,7 @@ function useSubscribedStateLink<S, E extends {}>(
 }
 
 function useGlobalStateLink<S, E>(stateLink: StateRefImpl<S, E>): StateLink<S, E> {
-    const [_, setValue] = React.useState({});
+    const [, setValue] = React.useState({});
     return useSubscribedStateLink(stateLink.state, [], () => {
         setValue({})
     }, stateLink.state, stateLink.disabledTracking);
@@ -641,7 +641,7 @@ function useLocalStateLink<S>(initialState: S | (() => S)): StateLink<S, {}> {
 }
 
 function useWatchStateLink<S, E extends {}>(originLink: StateLinkImpl<S, E>): StateLink<S, E> {
-    const [_, setValue] = React.useState({});
+    const [, setValue] = React.useState({});
     return useSubscribedStateLink(originLink.state, originLink.path, () => {
         setValue({})
     }, originLink, originLink.disabledTracking);

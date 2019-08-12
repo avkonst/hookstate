@@ -22,7 +22,7 @@ export function Initial<S, E extends {}>(unused: PluginTypeMarker<S, E>): Plugin
             let lastCompared: any = undefined;
             let lastResult: boolean | undefined = undefined;
             // tslint:disable-next-line: no-any
-            const initialState: any = JSON.parse(JSON.stringify(initialValue)); //cloneDeep(initialValue);
+            const initialState: any = cloneDeep(initialValue);
             const getInitial = (path: Path) => {
                 let result = initialState;
                 path.forEach(p => {
