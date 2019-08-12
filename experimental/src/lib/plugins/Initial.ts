@@ -1,5 +1,5 @@
 
-import { Path, DisabledTracking, Plugin, PluginTypeMarker, StateLink } from '../UseStateLink';
+import { Path, DisabledTracking, Plugin, PluginTypeMarker, StateLink, StateValueAtPath, StateValueAtRoot } from '../UseStateLink';
 
 import isEqual from 'lodash.isequal';
 import cloneDeep from 'lodash.clonedeep';
@@ -8,8 +8,7 @@ export interface InitialExtensions {
     // unfortunately, there is no way in typescript to
     // express generic type parameter, which would change
     // on the result of nested statelink call
-    // tslint:disable-next-line: no-any
-    readonly initial: any | undefined;
+    readonly initial: StateValueAtPath | undefined;
     readonly modified: boolean;
     readonly unmodified: boolean;
 }
@@ -17,16 +16,13 @@ export interface InitialExtensions {
 const PluginID = Symbol('Initial');
 
 // tslint:disable-next-line: function-name
-export function Initial<S, E extends {}>(unused: PluginTypeMarker<S, E>): Plugin<S, E, InitialExtensions> {
+export function Initial<S, E extends {}>(unused: PluginTypeMarker<S, E>): Plugin<E, InitialExtensions> {
     return {
         id: PluginID,
-        // tslint:disable-next-line: no-any
-        instanceFactory: (initialValue: any) => {
-            // tslint:disable-next-line: no-any
-            let lastCompared: any = undefined;
+        instanceFactory: (initialValue: StateValueAtRoot) => {
+            let lastCompared: StateValueAtPath = undefined;
             let lastResult: boolean | undefined = undefined;
-            // tslint:disable-next-line: no-any
-            const initialState: any = cloneDeep(initialValue);
+            const initialState: StateValueAtRoot = cloneDeep(initialValue);
             const getInitial = (path: Path) => {
                 let result = initialState;
                 path.forEach(p => {
@@ -34,8 +30,7 @@ export function Initial<S, E extends {}>(unused: PluginTypeMarker<S, E>): Plugin
                 });
                 return result;
             }
-            // tslint:disable-next-line: no-any
-            const modified = (l: StateLink<any, E>): boolean => {
+            const modified = (l: StateLink<StateValueAtPath, E>): boolean => {
                 l.with(DisabledTracking)
                 const current = l.value;
                 const path = l.path;

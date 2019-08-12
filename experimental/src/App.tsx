@@ -81,7 +81,7 @@ const TouchedStatus = (props: {link: StateLink<TaskItem[], InitialExtensions>}) 
 }
 
 const s = Symbol('Dup');
-export function Dup<S, E extends {}>(unused: PluginTypeMarker<S, E>): Plugin<S, E, { log: () => void }> {
+export function Dup<S, E extends {}>(unused: PluginTypeMarker<S, E>): Plugin<E, { log: () => void }> {
     return {
         id: s,
         instanceFactory: () => ({

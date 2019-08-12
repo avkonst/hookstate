@@ -101,7 +101,7 @@ const PluginID = Symbol('Validator');
 
 // tslint:disable-next-line: function-name
 export function Validator<S, E extends {}>(hooks?: InferredProcessingHooks<S, E>):
-    ((unused: PluginTypeMarker<S, E>) => Plugin<S, E, ValidatorExtensions>) {
+    ((unused: PluginTypeMarker<S, E>) => Plugin<E, ValidatorExtensions>) {
 
     const defaultProcessingHooks: ValueProcessingHooks<any, {}> = {};
     const hooksStore = hooks || defaultProcessingHooks

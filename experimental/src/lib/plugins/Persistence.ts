@@ -1,17 +1,16 @@
 
-import { Plugin, PluginTypeMarker } from '../UseStateLink';
+import { Plugin, PluginTypeMarker, StateValueAtRoot } from '../UseStateLink';
 
 const PluginID = Symbol('LocalPersistence');
 
 // tslint:disable-next-line: function-name
 export function Persistence<S, E extends {}>(localStorageKey: string):
-    ((unsued: PluginTypeMarker<S, E>) => Plugin<S, E, {}>) {
+    ((unsued: PluginTypeMarker<S, E>) => Plugin<E, {}>) {
 
     return () => {
         return {
             id: PluginID,
-            // tslint:disable-next-line: no-any
-            instanceFactory: (initial: any) => {
+            instanceFactory: (initial: StateValueAtRoot) => {
                 return {
                     onInit: () => {
                         const persisted = localStorage.getItem(localStorageKey);

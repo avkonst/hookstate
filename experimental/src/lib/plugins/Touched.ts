@@ -1,5 +1,5 @@
 
-import { Path, Plugin, PluginTypeMarker, StateLink, DisabledTracking } from '../UseStateLink';
+import { Path, Plugin, PluginTypeMarker, StateLink, DisabledTracking, StateValueAtPath } from '../UseStateLink';
 
 import { InitialExtensions } from './Initial';
 
@@ -13,7 +13,7 @@ const PluginID = Symbol('Touched');
 // tslint:disable-next-line: function-name
 export function Touched<S, E extends InitialExtensions>(
     unused: PluginTypeMarker<S, E>
-): Plugin<S, E, TouchedExtensions> {
+): Plugin<E, TouchedExtensions> {
     return {
         id: PluginID,
         instanceFactory: () => {
@@ -54,8 +54,7 @@ export function Touched<S, E extends InitialExtensions>(
                 }
                 return undefined;
             }
-            // tslint:disable-next-line: no-any
-            const touched = (l: StateLink<any, E>): boolean => {
+            const touched = (l: StateLink<StateValueAtPath, E>): boolean => {
                 const t = getTouched(l.path);
                 if (t !== undefined) {
                     // For optimization purposes, there is nothing being used from the link value

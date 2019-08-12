@@ -1,5 +1,5 @@
 
-import { DisabledTracking, Plugin, PluginTypeMarker, Path } from '../UseStateLink';
+import { DisabledTracking, Plugin, PluginTypeMarker, Path, StateValueAtRoot } from '../UseStateLink';
 
 export interface LoggerExtensions {
     log(): void;
@@ -8,12 +8,11 @@ export interface LoggerExtensions {
 const PluginID = Symbol('Logger');
 
 // tslint:disable-next-line: function-name
-export function Logger<S, E extends {}>(unused: PluginTypeMarker<S, E>): Plugin<S, E, LoggerExtensions> {
+export function Logger<S, E extends {}>(unused: PluginTypeMarker<S, E>): Plugin<E, LoggerExtensions> {
     return {
         id: PluginID,
         instanceFactory: () => {
-            // tslint:disable-next-line: no-any
-            const getAtPath = (v: any, path: Path) => {
+            const getAtPath = (v: StateValueAtRoot, path: Path) => {
                 let result = v;
                 path.forEach(p => {
                     result = result[p];
