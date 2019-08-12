@@ -1,5 +1,13 @@
 
-import { Path, DisabledTracking, Plugin, PluginTypeMarker, StateLink, StateValueAtPath, StateValueAtRoot } from '../UseStateLink';
+import {
+    Path,
+    DisabledTracking,
+    Plugin,
+    PluginTypeMarker,
+    StateLink,
+    StateValueAtPath,
+    StateValueAtRoot
+} from '../UseStateLink';
 
 import isEqual from 'lodash.isequal';
 import cloneDeep from 'lodash.clonedeep';
