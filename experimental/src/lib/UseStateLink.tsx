@@ -174,7 +174,7 @@ class State implements Subscribable {
         const existingInstance = this._plugins.get(plugin.id)
         if (existingInstance) {
             if (existingInstance.onAttach) {
-
+                existingInstance.onAttach(path || [], plugin.instanceFactory(this._value))
             }
             return;
         }
@@ -188,6 +188,9 @@ class State implements Subscribable {
                 }
                 this._value = initValue;
             }
+        }
+        if (pluginInstance.onAttach) {
+            pluginInstance.onAttach(path || [], pluginInstance)
         }
         const extensions = pluginInstance.extensions;
         extensions.forEach(e => {

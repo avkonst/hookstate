@@ -1,5 +1,5 @@
 
-import { DisabledTracking, Plugin, PluginTypeMarker, Path, StateLink, ReadonlyStateLink } from '../UseStateLink';
+import { DisabledTracking, Plugin, PluginTypeMarker, Path, StateLink, ReadonlyStateLink, StateValueAtPath } from '../UseStateLink';
 
 export enum ValidationSeverity {
     WARNING = 1,
@@ -9,6 +9,10 @@ export enum ValidationSeverity {
 export interface ValidationErrorMessage {
     readonly message: string;
     readonly severity: ValidationSeverity;
+}
+
+export interface ValidationRule extends ValidationErrorMessage {
+    rule: (v: StateValueAtPath) => boolean
 }
 
 export interface ValidationError extends ValidationErrorMessage {
@@ -100,11 +104,39 @@ export interface ValidatorExtensions {
 const PluginID = Symbol('Validator');
 
 // tslint:disable-next-line: function-name
-export function Validator<S, E extends {}>(hooks?: InferredProcessingHooks<S, E>):
+export function Validator<S, E extends {}>(rule: (value: S) => boolean, message: string, severity: ValidationSeverity = ValidationSeverity.ERROR):
     ((unused: PluginTypeMarker<S, E>) => Plugin<E, ValidatorExtensions>) {
 
-    const defaultProcessingHooks: ValueProcessingHooks<any, {}> = {};
-    const hooksStore = hooks || defaultProcessingHooks
+    const defaultProcessingHooks: ValueProcessingHooks<any, {}> = { };
+    const hooksStore = defaultProcessingHooks
+
+    const rules = {};
+    const getRules = (path: Path): Map<string, ValidationRule> | undefined => {
+        let result = rules;
+        path.forEach(p => {
+            result = result && result[p];
+        });
+        return result && result[PluginID];
+    }
+    const addRule = (path: Path, r: ValidationRule) => {
+        let result = rules;
+        path.forEach((p, i) => {
+            result[p] = result[p] || {}
+            result = result[p]
+        });
+        const existingRules: Map<string, ValidationRule> | undefined = result[PluginID];
+        const newRuleFunction = r.rule.toString();
+        if (existingRules) {
+            if (existingRules.has(newRuleFunction)) {
+                return;
+            }
+            existingRules.set(newRuleFunction, r);
+            return;
+        }
+        const newMap: Map<string, ValidationRule> = new Map();
+        newMap.set(newRuleFunction, r);
+        result[PluginID] = newMap;
+    }
 
     return () => {
         return {
@@ -215,8 +247,7 @@ export function Validator<S, E extends {}>(hooks?: InferredProcessingHooks<S, E>
                 }
                 return {
                     // onInit: () => {
-                        // tslint:disable-next-line: no-console
-                        // console.log(`[hookstate]: logger attached`);
+                    //     console.log(`[hookstate]: logger attached`);
                     // },
                     // onSet: (p, v) => {
                         // const newValue = getAtPath(v, p);
@@ -225,11 +256,16 @@ export function Validator<S, E extends {}>(hooks?: InferredProcessingHooks<S, E>
                         //     `[hookstate]: new value set at path '/${p.join('/')}': ${JSON.stringify(newValue)}`,
                         //     newValue);
                     // },
+                    get config(): ValidationRule {
+                        return { rule, message, severity }
+                    },
+                    onAttach: (path, plugin) => {
+                        const r = (plugin as unknown as { config: ValidationRule }).config;
+                        addRule(path, r);
+                        // console.log('attach', path, rule, rule.rule.toString());
+                    },
                     extensions: ['valid', 'invalid', 'errors', 'firstError', 'firstPartial'],
                     extensionsFactory: (l) => ({
-                        validate(rule: (target: S, targetLink: StateLink<S, E>) => boolean, message: string) {
-                            addHook(l.path, (v, rl) => !rule(v, rl) ? message : undefined);
-                        },
                         get valid(): boolean {
                             return getErrors(l).length === 0
                         },
@@ -237,7 +273,9 @@ export function Validator<S, E extends {}>(hooks?: InferredProcessingHooks<S, E>
                             return getErrors(l).length !== 0
                         },
                         get errors(): ReadonlyArray<ValidationError> {
-                            return getErrors(l)
+                            const existingrules = getRules(l.path);
+                            console.log(existingrules && Array.from(existingrules.values()))
+                            return []
                         },
                         firstError: (condition?: (e: ValidationError) => boolean) => {
                             return getErrors(l).find((e:any) => condition ? condition(e) : true);
@@ -278,13 +316,13 @@ export function Validator<S, E extends {}>(hooks?: InferredProcessingHooks<S, E>
 //     [P in keyof T]-?: DeepRequired<NonUndefined<T[P]>>
 // } & PathMarker<T, {}>;
 
-interface TaskItem {
-    name?: string,
-    priority?: number
-    data?: {
-        a?: string[]
-    }
-}
+// interface TaskItem {
+//     name?: string,
+//     priority?: number
+//     data?: {
+//         a?: string[]
+//     }
+// }
 
 // // const Each = Infinity
 // // const a: DeepRequired<TaskItem[]> | undefined = undefined;
