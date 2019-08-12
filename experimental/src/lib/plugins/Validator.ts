@@ -44,8 +44,8 @@ export type InferredProcessingHooks<S, E extends {}> =
     S extends number | string | boolean | null | undefined | symbol ? ValueProcessingHooks<S, E> :
     ObjectProcessingHook<S, E>;
 
-export interface ValidatorExtensions<S, E extends {}> {
-    validate(rule: (target: S, targetLink: StateLink<S, E>) => boolean, message: string): void,
+export interface ValidatorExtensions {
+    // validate(rule: (target: S, targetLink: StateLink<S, E>) => boolean, message: string): void,
     readonly valid: boolean,
     readonly invalid: boolean,
     readonly errors: ReadonlyArray<ValidationError>,
@@ -57,7 +57,7 @@ const PluginID = Symbol('Validator');
 
 // tslint:disable-next-line: function-name
 export function Validator<S, E extends {}>(hooks?: InferredProcessingHooks<S, E>):
-    ((unused: PluginTypeMarker<S, E>) => Plugin<S, E, ValidatorExtensions<S, E>>) {
+    ((unused: PluginTypeMarker<S, E>) => Plugin<S, E, ValidatorExtensions>) {
 
     const defaultProcessingHooks: ValueProcessingHooks<any, {}> = {};
     const hooksStore = hooks || defaultProcessingHooks

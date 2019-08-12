@@ -4,8 +4,12 @@ import { Path, DisabledTracking, Plugin, PluginTypeMarker, StateLink } from '../
 import isEqual from 'lodash.isequal';
 import cloneDeep from 'lodash.clonedeep';
 
-export interface InitialExtensions<S> {
-    readonly initial: S | undefined;
+export interface InitialExtensions {
+    // unfortunately, there is no way in typescript to
+    // express generic type parameter, which would change
+    // on the result of nested statelink call
+    // tslint:disable-next-line: no-any
+    readonly initial: any | undefined;
     readonly modified: boolean;
     readonly unmodified: boolean;
 }
@@ -13,7 +17,7 @@ export interface InitialExtensions<S> {
 const PluginID = Symbol('Initial');
 
 // tslint:disable-next-line: function-name
-export function Initial<S, E extends {}>(unused: PluginTypeMarker<S, E>): Plugin<S, E, InitialExtensions<S>> {
+export function Initial<S, E extends {}>(unused: PluginTypeMarker<S, E>): Plugin<S, E, InitialExtensions> {
     return {
         id: PluginID,
         // tslint:disable-next-line: no-any

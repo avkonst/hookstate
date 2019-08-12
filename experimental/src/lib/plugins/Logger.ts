@@ -1,14 +1,14 @@
 
 import { DisabledTracking, Plugin, PluginTypeMarker, Path } from '../UseStateLink';
 
-export interface LoggerExtensions<S> {
+export interface LoggerExtensions {
     log(): void;
 }
 
 const PluginID = Symbol('Logger');
 
 // tslint:disable-next-line: function-name
-export function Logger<S, E extends {}>(unused: PluginTypeMarker<S, E>): Plugin<S, E, LoggerExtensions<S>> {
+export function Logger<S, E extends {}>(unused: PluginTypeMarker<S, E>): Plugin<S, E, LoggerExtensions> {
     return {
         id: PluginID,
         instanceFactory: () => {

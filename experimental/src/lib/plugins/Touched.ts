@@ -3,7 +3,7 @@ import { Path, Plugin, PluginTypeMarker, StateLink, DisabledTracking } from '../
 
 import { InitialExtensions } from './Initial';
 
-export interface TouchedExtensions<S> {
+export interface TouchedExtensions {
     readonly touched: boolean;
     readonly untouched: boolean;
 }
@@ -11,9 +11,9 @@ export interface TouchedExtensions<S> {
 const PluginID = Symbol('Touched');
 
 // tslint:disable-next-line: function-name
-export function Touched<S, E extends InitialExtensions<S>>(
+export function Touched<S, E extends InitialExtensions>(
     unused: PluginTypeMarker<S, E>
-): Plugin<S, E, TouchedExtensions<S>> {
+): Plugin<S, E, TouchedExtensions> {
     return {
         id: PluginID,
         instanceFactory: () => {

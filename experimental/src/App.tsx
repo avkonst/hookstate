@@ -62,7 +62,7 @@ const JsonDump = (props: {link: StateLink<TaskItem[]>}) => {
     </p>;
 }
 
-const ModifiedStatus = (props: {link: StateLink<TaskItem[], InitialExtensions<TaskItem[]>>}) => {
+const ModifiedStatus = (props: {link: StateLink<TaskItem[], InitialExtensions>}) => {
     const modified = useStateWatch(props.link, (l) => {
         return l.extended.modified
     });
@@ -71,7 +71,7 @@ const ModifiedStatus = (props: {link: StateLink<TaskItem[], InitialExtensions<Ta
     </p>;
 }
 
-const TouchedStatus = (props: {link: StateLink<TaskItem[], InitialExtensions<TaskItem[]>>}) => {
+const TouchedStatus = (props: {link: StateLink<TaskItem[], InitialExtensions>}) => {
     const touched = useStateWatch(props.link, (l) => {
         return l.with(Touched).extended.touched
     });
@@ -125,7 +125,7 @@ const App = () => {
         // .with(DisabledTracking)
     // console.log(vl.extended.initialDup);
 
-    const b = vl.nested[0].nested.name.extended.initial;
+    const b = vl.nested[0].nested.name.extended;
     // vl.nested[0].nested.name.extended.validate(t => t, '')
     // vl.extended.initial
 
