@@ -7,7 +7,7 @@ import { Initial, InitialExtensions } from './lib/plugins/Initial';
 import { Logger } from './lib/plugins/Logger';
 import { Touched } from './lib/plugins/Touched';
 import { Persistence } from './lib/plugins/Persistence';
-import { Validation, ValidationSeverity, ValidationExtensions, ValidationError } from './lib/plugins/Validator';
+import { Validation, ValidationSeverity, ValidationExtensions, ValidationError } from './lib/plugins/Validation';
 
 JSON.stringify({ x: 5, y: 6, toJSON() { return this.x + this.y; } });
 
