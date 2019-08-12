@@ -7,7 +7,7 @@ import { Initial, InitialExtensions } from './lib/plugins/Initial';
 import { Logger } from './lib/plugins/Logger';
 import { Touched } from './lib/plugins/Touched';
 import { Persistence } from './lib/plugins/Persistence';
-import { Validator } from './lib/plugins/Validator';
+import { Validator, Validate } from './lib/plugins/Validator';
 
 JSON.stringify({ x: 5, y: 6, toJSON() { return this.x + this.y; } });
 
@@ -113,11 +113,27 @@ const App = () => {
         //         __validate: (current, link) => undefined,
         //     }
         // }));
-        .with(Validator())
-        // .with(Validator((current, link) => undefined,
-        //     // '*': {
-        //     //     __validate: (current, link) => undefined,
+        // .with(Validator(({
+        //     // ((currentValue, link): undefined,
+        //     __validate: (v, l) => undefined,
+        //     // 0: {
+        //     //     __validate: (v, l) => undefined,
+        //     //     name: {
+        //     //         __validate: (v, l) => undefined
+        //     //     }
         //     // }
+        // })))
+        // .with(Validator(
+        //     Validate((v, l) => undefined, {
+        //         0: Validate((v, l) => undefined, {
+        //             // name: Validate((v, l) => undefined),
+        //             priority: Validate((v, l) => undefined),
+        //             // priority2: Validate((v, l) => undefined, {}),
+        //         })
+        //     })
+            // '*': {
+            //     __validate: (current, link) => undefined,
+            // }
         // ));
 
         // .with(LocalPersistence('somekey2'));
@@ -125,7 +141,7 @@ const App = () => {
         // .with(DisabledTracking)
     // console.log(vl.extended.initialDup);
 
-    const b = vl.nested[0].nested.name.extended;
+    // const b = vl.nested[0].nested.name.extended;
     // vl.nested[0].nested.name.extended.validate(t => t, '')
     // vl.extended.initial
 

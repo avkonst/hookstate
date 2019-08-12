@@ -18,30 +18,74 @@ export interface ValidationError extends ValidationErrorMessage {
 export type ValidationResult =
     string | ValidationErrorMessage | ReadonlyArray<string | ValidationErrorMessage>;
 
+// interface ValueProcessingHooksCallable<S, E extends {}> {
+//     (currentValue: S, link: ReadonlyStateLink<S, E>): ValidationResult | undefined;
+// }
+
+export type ValidateFunction<S, E extends {}> = (currentValue: S, link: ReadonlyStateLink<S, E>) => ValidationResult | undefined;
+
 export interface ValueProcessingHooks<S, E extends {}> {
-    readonly __validate?: (currentValue: S, link: ReadonlyStateLink<S, E>) => ValidationResult | undefined;
+    readonly __validate?: ValidateFunction<S, E>
 }
+
+export function Validate<S, E extends {}, T extends (S extends (infer U)[] ? {
+    readonly [K in number]?: InferredProcessingHooks<U, E>;
+} : S extends (number | string | boolean | null | undefined | symbol) ? never : {
+    readonly [K in (keyof S)]?: InferredProcessingHooks<S[K], E>;
+})>(validate: ValidateFunction<S, E>, arg?: T) {
+    return new ValueProcessingHooksClass(validate, arg)
+}
+
+export class ValueProcessingHooksClass<S, E extends {}, T> {
+    constructor(validate: ValidateFunction<S, E>, arg: T) {
+        // super('...args', 'return this.__call__(...args)');
+        // return this.bind(this);
+    }
+
+    // Example `__call__` met hod.
+    // __call__(a: number, b: number, c: number) {
+    //     return [a, b, c];
+    // }
+}
+
+// (new ValueProcessingHooksClass())(1, 2, 3)
+
+// export type ValueProcessingHooks<S, E extends {}> = ValueProcessingHooksOld<S, E> | (ValueProcessingHooksOld<S, E> & ValueProcessingHooksCallable<S, E>);
+
+// export function Validate<S, E extends {}, N>(
+//     validator: (currentValue: S, link: ReadonlyStateLink<S, E>) => ValidationResult | undefined,
+//     nested: N
+// )
+
+// export type ValidateInterface<S, E extends {}, N> =
+//     (validator: (currentValue: S, link: ReadonlyStateLink<S, E>) => ValidationResult | undefined, nested: N) => InferredProcessingHooks<S, E extends {}>
 
 // export type ValueProcessingHooks<S, E extends {}> = (currentValue: S, link: ReadonlyStateLink<S, E>) => ValidationResult | undefined;
 
 export type ObjectProcessingHook<S, E extends {}> = {
     readonly [K in keyof S]?: InferredProcessingHooks<S[K], E>;
-} & ValueProcessingHooks<S, E>;
+} | ValueProcessingHooksClass<S, E, {
+    readonly [K in keyof S]?: InferredProcessingHooks<S[K], E>;
+}>;
 
 export type ArrayProcessingHooks<U, E extends {}> = {
     readonly [K in number | '*']?: InferredProcessingHooks<U, E>;
-} & ValueProcessingHooks<U[], E>;
+} | ValueProcessingHooksClass<U[], E, {
+    readonly [K in number | '*']?: InferredProcessingHooks<U, E>;
+}>;
 
 export type ReadonlyArrayProcessingHooks<U, E extends {}> = {
     readonly [K in number | '*']?: InferredProcessingHooks<U, E>;
-} & ValueProcessingHooks<ReadonlyArray<U>, E>;
+} | ValueProcessingHooksClass<ReadonlyArray<U>, E, {
+    readonly [K in number | '*']?: InferredProcessingHooks<U, E>;
+}>;
 
 export type InferredProcessingHooks<S, E extends {}> =
     // TODO add other types like Map, Set
     S extends (infer Y)[] ? ArrayProcessingHooks<Y, E> :
     S extends ReadonlyArray<(infer U)> ? ReadonlyArrayProcessingHooks<U, E> :
     // TODO add other types like RegExp, Date, etc.
-    S extends number | string | boolean | null | undefined | symbol ? ValueProcessingHooks<S, E> :
+    S extends number | string | boolean | null | undefined | symbol ? ValueProcessingHooksClass<S, E, {}> :
     ObjectProcessingHook<S, E>;
 
 export interface ValidatorExtensions {
@@ -234,13 +278,13 @@ export function Validator<S, E extends {}>(hooks?: InferredProcessingHooks<S, E>
 //     [P in keyof T]-?: DeepRequired<NonUndefined<T[P]>>
 // } & PathMarker<T, {}>;
 
-// interface TaskItem {
-//     name?: string,
-//     priority?: number
-//     data?: {
-//         a?: string[]
-//     }
-// }
+interface TaskItem {
+    name?: string,
+    priority?: number
+    data?: {
+        a?: string[]
+    }
+}
 
 // // const Each = Infinity
 // // const a: DeepRequired<TaskItem[]> | undefined = undefined;
@@ -261,3 +305,13 @@ export function Validator<S, E extends {}>(hooks?: InferredProcessingHooks<S, E>
 // // function ValidatorF<R>(v: (l: ))
 
 // const a = Lookup<TaskItem[]>(s => s[0].data)
+
+// interface Callable<S, E extends {}> {
+//     (v: S/*, l: StateLink<S, E> */): boolean
+
+//     data: string;
+// }
+
+// const a: Callable<TaskItem[], {}> | undefined = undefined;
+// a!(null as unknown as TaskItem[])
+// // a!.data
