@@ -131,7 +131,7 @@ class State implements Subscribable {
     private _subscribers: Set<Subscriber> = new Set();
 
     private _extensions: Record<string, PluginInstance<{}, {}>> = {};
-    private _plugins: Set<symbol> = new Set();
+    private _plugins: Map<symbol, PluginInstance<{}, {}>> = new Map();
 
     constructor(private _value: StateValueAtRoot) { }
 
@@ -171,11 +171,15 @@ class State implements Subscribable {
     }
 
     register(plugin: Plugin<{}, {}>, path?: Path | undefined) {
-        if (this._plugins.has(plugin.id)) {
+        const existingInstance = this._plugins.get(plugin.id)
+        if (existingInstance) {
+            if (existingInstance.onAttach) {
+
+            }
             return;
         }
-        this._plugins.add(plugin.id);
         const pluginInstance = plugin.instanceFactory(this._value);
+        this._plugins.set(plugin.id, pluginInstance);
         if (pluginInstance.onInit) {
             const initValue = pluginInstance.onInit()
             if (initValue !== undefined) {
