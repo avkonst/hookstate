@@ -682,7 +682,7 @@ export function useStateLink<S, E extends {}>(
  * If the watcher returns the same value as the `prev`, the rerendering is not forced
  * by the watcher.
  */
-export function useStateWatch<S, R, E extends {}>(
+export function useStateWatch<S, E extends {}, R>(
     state: StateLink<S, E> | StateRef<S, E>,
     watcher: (state: ReadonlyStateLink<S, E>, prev: R | undefined) => R
 ) {
