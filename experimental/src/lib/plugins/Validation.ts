@@ -21,11 +21,19 @@ export interface ValidationError extends ValidationErrorMessage {
 
 export interface ValidationExtensions {
     // validate(rule: (target: S, targetLink: StateLink<S, E>) => boolean, message: string): void,
+    readonly validShallow: boolean,
     readonly valid: boolean,
+    readonly invalidShallow: boolean,
     readonly invalid: boolean,
-    readonly errors: ReadonlyArray<ValidationError>,
-    readonly firstError: (condition?: (e: ValidationError) => boolean) => ValidationError | undefined,
-    readonly firstPartial: (condition?: (e: ValidationError) => boolean) => Partial<ValidationError>,
+    firstError(
+        filter?: (e: ValidationError) => boolean,
+        depth?: number
+    ): Partial<ValidationError>,
+    errors(
+        filter?: (e: ValidationError) => boolean,
+        depth?: number,
+        first?: boolean
+    ): ReadonlyArray<ValidationError>,
 }
 
 const PluginID = Symbol('Validate');
@@ -79,114 +87,146 @@ export function Validation<S, E extends {}>(
             result[PluginID] = newMap;
         }
 
-        return {
-            id: PluginID,
-            instanceFactory: () => {
-                function getErrors(l: StateLink<StateValueAtPath>, recursive?: boolean): ReadonlyArray<ValidationError> {
-                    // console.warn('getResults', l.path)
-                    let result: ValidationError[] = [];
-                    const consistentResult = () => result.length === 0 ? emptyErrors : result;
+        function getErrors(l: StateLink<StateValueAtPath>,
+            depth: number,
+            filter?: (e: ValidationError) => boolean,
+            first?: boolean): ReadonlyArray<ValidationError> {
 
-                    const existingRulesMap = getRules(l.path);
-                    if (existingRulesMap) {
-                        const existingRules = Array.from(existingRulesMap.values())
-                        existingRules.forEach(r => {
-                            if (!r.rule(l.value)) {
-                                result.push({
-                                    path: l.path,
-                                    message: r.message,
-                                    severity: r.severity
-                                })
+            console.log('get errors');
+
+            let result: ValidationError[] = [];
+            const consistentResult = () => result.length === 0 ? emptyErrors : result;
+
+            if (depth === 0) {
+                return consistentResult();
+            }
+
+            const existingRulesMap = getRules(l.path);
+            if (existingRulesMap) {
+                const existingRules = Array.from(existingRulesMap.values())
+                for (let i = 0; i < existingRules.length; i += 1) {
+                    const r = existingRules[i];
+                    if (!r.rule(l.value)) {
+                        const err = {
+                            path: l.path,
+                            message: r.message,
+                            severity: r.severity
+                        };
+                        if (!filter || filter(err)) {
+                            result.push(err)
+                            if (first) {
+                                return result;
                             }
-                        })
-                    }
-                    if (!recursive) {
-                        // console.log('getResults not recursive', result)
-                        return consistentResult();
-                    }
-                    const nestedRules = getRulesRecursive(l.path);
-                    if (nestedRules === undefined) {
-                        // console.log('getResults no nested rules', result)
-                        return consistentResult();
-                    }
-
-                    const nestedRulesKeys = Object.keys(nestedRules);
-                    if (nestedRulesKeys.length === 0) {
-                        // console.log('getResults nested rules 0 length', result)
-                        return consistentResult();
-                    }
-                    const nestedInst = l.nested;
-                    if (nestedInst === undefined) {
-                        // console.log('getResults no nested inst', result)
-                        return consistentResult();
-                    }
-                    if (Array.isArray(nestedInst)) {
-                        if (nestedRules['*']) {
-                            nestedInst.forEach((n, i) => {
-                                result = result.concat((n as StateLink<StateValueAtPath, ValidationExtensions>).extended.errors);
-                            });
                         }
-                        nestedRulesKeys
-                            // Validation rule exists,
-                            // but the corresponding nested link may not be created,
-                            // (because it may not be inferred automatically)
-                            // because the original array value cas miss the corresponding index
-                            // The design choice is to skip validation in this case.
-                            // A client can define per array level validation rule,
-                            // where existance of the index can be cheched.
-                            .filter(k => nestedInst[k] !== undefined)
-                            .forEach(k => {
-                                result = result.concat((nestedInst[k]  as StateLink<StateValueAtPath, ValidationExtensions>).extended.errors);
-                            });
-                    } else {
-                        nestedRulesKeys
-                            // Validation rule exists,
-                            // but the corresponding nested link may not be created,
-                            // (because it may not be inferred automatically)
-                            // because the original object value can miss the corresponding key
-                            // The design choice is to skip validation in this case.
-                            // A client can define per object level validation rule,
-                            // where existance of the property can be cheched.
-                            .filter(k => nestedInst[k] !== undefined)
-                            .forEach(k => {
-                                result = result.concat((nestedInst[k] as StateLink<StateValueAtPath, ValidationExtensions>).extended.errors);
-                            });
                     }
-                    // console.log('getResults final', result)
-                    return consistentResult();
-                }
-                return {
-                    get config(): ValidationRule {
-                        return { rule: attachRule, message: message, severity: severity }
-                    },
-                    onAttach: (path, plugin) => {
-                        const r = (plugin as unknown as { config: ValidationRule }).config;
-                        addRule(path, r);
-                    },
-                    extensions: ['valid', 'invalid', 'errors', 'firstError', 'firstPartial'],
-                    extensionsFactory: (l) => ({
-                        get valid(): boolean {
-                            return getErrors(l, true).length === 0
-                        },
-                        get invalid(): boolean {
-                            return getErrors(l).length !== 0
-                        },
-                        get errors(): ReadonlyArray<ValidationError> {
-                            return getErrors(l, true);
-                        },
-                        firstError: (condition?: (e: ValidationError) => boolean) => {
-                            return getErrors(l).find((e:any) => condition ? condition(e) : true);
-                        },
-                        firstPartial: (condition?: (e: ValidationError) => boolean) => {
-                            const r = getErrors(l).find((e:any) => condition ? condition(e) : true);
-                            if (r === undefined) {
-                                return {}; // make consistent same instance
-                            }
-                            return r;
-                        },
-                    })
                 }
             }
+            if (depth === 1) {
+                return consistentResult();
+            }
+            const nestedRules = getRulesRecursive(l.path);
+            if (nestedRules === undefined) {
+                return consistentResult();
+            }
+
+            const nestedRulesKeys = Object.keys(nestedRules);
+            if (nestedRulesKeys.length === 0) {
+                // console.log('getResults nested rules 0 length', result)
+                return consistentResult();
+            }
+            const nestedInst = l.nested;
+            if (nestedInst === undefined) {
+                // console.log('getResults no nested inst', result)
+                return consistentResult();
+            }
+            if (Array.isArray(nestedInst)) {
+                if (nestedRules['*']) {
+                    for (let i = 0; i < nestedInst.length; i += 1) {
+                        const n = nestedInst[i];
+                        result = result.concat((n as StateLink<StateValueAtPath, ValidationExtensions>)
+                            .extended.errors(filter, depth - 1, first));
+                        if (first && result.length > 0) {
+                            return result;
+                        }
+                    }
+                }
+                for (let i = 0; i < nestedRulesKeys.length; i += 1) {
+                    const k = nestedRulesKeys[i];
+                    // Validation rule exists,
+                    // but the corresponding nested link may not be created,
+                    // (because it may not be inferred automatically)
+                    // because the original array value cas miss the corresponding index
+                    // The design choice is to skip validation in this case.
+                    // A client can define per array level validation rule,
+                    // where existance of the index can be cheched.
+                    if (nestedInst[k] !== undefined) {
+                        result = result.concat((nestedInst[k] as StateLink<StateValueAtPath, ValidationExtensions>)
+                            .extended.errors(filter, depth - 1, first));
+                        if (first && result.length > 0) {
+                            return result;
+                        }
+                    }
+                }
+            } else {
+                for (let i = 0; i < nestedRulesKeys.length; i += 1) {
+                    const k = nestedRulesKeys[i];
+                    // Validation rule exists,
+                    // but the corresponding nested link may not be created,
+                    // (because it may not be inferred automatically)
+                    // because the original array value cas miss the corresponding index
+                    // The design choice is to skip validation in this case.
+                    // A client can define per array level validation rule,
+                    // where existance of the index can be cheched.
+                    if (nestedInst[k] !== undefined) {
+                        result = result.concat((nestedInst[k] as StateLink<StateValueAtPath, ValidationExtensions>)
+                            .extended.errors(filter, depth - 1, first));
+                        if (first && result.length > 0) {
+                            return result;
+                        }
+                    }
+                }
+            }
+            return consistentResult();
+        }
+
+        return {
+            id: PluginID,
+            instanceFactory: () => ({
+                get config(): ValidationRule {
+                    return { rule: attachRule, message: message, severity: severity }
+                },
+                onAttach: (path, plugin) => {
+                    const r = (plugin as unknown as { config: ValidationRule }).config;
+                    addRule(path, r);
+                },
+                extensions: ['valid', 'invalid', 'errors', 'firstError'],
+                extensionsFactory: (l) => ({
+                    get validShallow(): boolean {
+                        return getErrors(l, 1).length === 0
+                    },
+                    get valid(): boolean {
+                        return getErrors(l, Number.MAX_SAFE_INTEGER).length === 0
+                    },
+                    get invalidShallow(): boolean {
+                        return getErrors(l, 1).length !== 0
+                    },
+                    get invalid(): boolean {
+                        return getErrors(l, Number.MAX_SAFE_INTEGER).length !== 0
+                    },
+                    errors(filter?: (e: ValidationError) => boolean,
+                        depth?: number,
+                        first?: boolean): ReadonlyArray<ValidationError> {
+                        return getErrors(l, depth === undefined ? Number.MAX_SAFE_INTEGER : depth, filter, first);
+                    },
+                    firstError(filter?: (e: ValidationError) => boolean, depth?: number) {
+                        const r = getErrors(l, depth === undefined ? Number.MAX_SAFE_INTEGER : depth, filter, true);
+                        if (r.length === 0) {
+                            return {};
+                        }
+                        return r;
+                    },
+                })
+            })
         }
     }
 }

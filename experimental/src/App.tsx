@@ -48,9 +48,9 @@ const TaskView = (props: { link: StateLink<TaskItem> }) => {
         {new Date().toISOString()} <span />
         Modified: {locallink.with(Initial).with(Touched)._.name.extended.modified.toString()} <span />
         Touched: {locallink.with(Initial).with(Touched)._.name.extended.touched.toString()} <span />
-        Valid per task: {JSON.stringify(locallink.extended.errors)} <span />
-        Valid per name: {JSON.stringify(locallink._.name.extended.errors)} <span />
-        Valid per priority: {JSON.stringify(locallink._.priority.extended.errors)} <span />
+        Valid per task: {JSON.stringify(locallink.extended.errors())} <span />
+        Valid per name: {JSON.stringify(locallink._.name.extended.errors())} <span />
+        Valid per priority: {JSON.stringify(locallink._.priority.extended.errors())} <span />
         <input value={locallink.value.name} onChange={v => locallink.nested.name.set(v.target.value)} />
         <button onClick={v => locallink.nested.priority.set(pv => Number(pv) + 1)} children={'increment'} />
         {/* <input value={'increment priority'} onChange={v => locallink.nested.priority.set(pv => Number(pv) + 1)} /> */}
@@ -87,7 +87,7 @@ const TouchedStatus = (props: {link: StateLink<TaskItem[], InitialExtensions & T
 }
 
 const ValidStatus = (props: {link: StateLink<TaskItem[], ValidationExtensions>}) => {
-    const errors = useStateLink(props.link, EqualsPrerender(l => l.extended.errors));
+    const errors = useStateLink(props.link, EqualsPrerender(l => l.extended.errors()));
     return <p>
         {new Date().toISOString()} Valid: {JSON.stringify(errors)}
     </p>;
