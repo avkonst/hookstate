@@ -7,12 +7,12 @@
         "name": "Andrey Konstantinov"
     },
     "repository": {
-        "url": "https://github.com/avkonst/react-hookstate"
+        "url": "https://github.com/avkonst/hookstate"
     },
     "bugs": {
-        "url": "https://github.com/avkonst/react-hookstate/issues"
+        "url": "https://github.com/avkonst/hookstate/issues"
     },
-    "homepage": "https://github.com/avkonst/react-hookstate",
+    "homepage": "https://github.com/avkonst/hookstate",
     "main": "dist/index.js",
     "module": "dist/index.es.js",
     "jsnext:main": "dist/index.es.js",

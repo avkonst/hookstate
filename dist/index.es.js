@@ -1,87 +1,5 @@
 import React from 'react';
 
-function extractValue(prevValue, value) {
-    if (typeof value === 'function') {
-        return value(prevValue);
-    }
-    return value;
-}
-function createArrayStateMutation(setValue) {
-    // All actions (except set) should crash if prevValue is null or undefined.
-    // It is intentional behavior.
-    // Although this situation is not allowed by type checking of the typescript,
-    // it is still possible to get null coming from ValueLink (see notes in the ValueLinkImpl)
-    return {
-        set: setValue,
-        merge: function (other) {
-            setValue(function (prevValue) {
-                var copy = prevValue.slice();
-                var source = extractValue(copy, other);
-                Object.keys(source).sort().forEach(function (i) {
-                    var index = Number(i);
-                    copy[index] = source[index];
-                });
-                return copy;
-            });
-        },
-        update: function (key, value) {
-            setValue(function (prevValue) {
-                var copy = prevValue.slice();
-                copy[key] = extractValue(copy[key], value);
-                return copy;
-            });
-        },
-        concat: function (other) {
-            if (other) {
-                setValue(function (prevValue) {
-                    var copy = prevValue.slice();
-                    return copy.concat(extractValue(copy, other));
-                });
-            }
-        },
-        push: function (elem) {
-            setValue(function (prevValue) {
-                var copy = prevValue.slice();
-                copy.push(elem);
-                return copy;
-            });
-        },
-        pop: function () {
-            setValue(function (prevValue) {
-                var copy = prevValue.slice();
-                copy.pop();
-                return copy;
-            });
-        },
-        insert: function (index, elem) {
-            setValue(function (prevValue) {
-                var copy = prevValue.slice();
-                copy.splice(index, 0, elem);
-                return copy;
-            });
-        },
-        remove: function (index) {
-            setValue(function (prevValue) {
-                var copy = prevValue.slice();
-                copy.splice(index, 1);
-                return copy;
-            });
-        },
-        swap: function (index1, index2) {
-            setValue(function (prevValue) {
-                var copy = prevValue.slice();
-                copy[index1] = prevValue[index2];
-                copy[index2] = prevValue[index1];
-                return copy;
-            });
-        }
-    };
-}
-function useStateArray(initialState) {
-    var _a = React.useState(initialState), value = _a[0], setValue = _a[1];
-    return [value, createArrayStateMutation(setValue)];
-}
-
 /*! *****************************************************************************
 Copyright (c) Microsoft Corporation. All rights reserved.
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use
@@ -109,66 +27,6 @@ function __extends(d, b) {
     extendStatics(d, b);
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-}
-
-var __assign = function() {
-    __assign = Object.assign || function __assign(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-            s = arguments[i];
-            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
-        }
-        return t;
-    };
-    return __assign.apply(this, arguments);
-};
-
-function extractValue$1(prevValue, value) {
-    if (typeof value === 'function') {
-        return value(prevValue);
-    }
-    return value;
-}
-function createObjectStateMutation(setValue) {
-    // All actions (except set and merge with empty object) should crash
-    // if prevValue is null or undefined. It is intentional behavior.
-    // Although this situation is not allowed by type checking of the typescript,
-    // it is still possible to get null coming from ValueLink (see notes in the ValueLinkImpl)
-    var merge = function (value) {
-        setValue(function (prevValue) {
-            var extractedValue = extractValue$1(prevValue, value);
-            var keys = Object.keys(extractedValue);
-            if (keys.length === 0) {
-                // empty object to merge with
-                return prevValue;
-            }
-            // this causes the intended crash if merging with
-            // the prevously set to undefined | null value
-            // eslint-disable-next-line
-            var _unused = prevValue[keys[0]];
-            return __assign({}, (prevValue
-                // this causes the intended crash if merging with
-                // the prevously set to undefined | null value
-                // and the block with _unused variable is optimized out
-                // by a bundler like webpack, minify, etc.
-                || Object.keys(prevValue)), extractedValue);
-        });
-    };
-    return {
-        set: setValue,
-        merge: merge,
-        update: function (key, value) { return merge(function (prevValue) {
-            var partialResult = {};
-            partialResult[key] = extractValue$1(
-            // this causes the intended crash if updating the property of
-            // the prevously set to undefined | null value
-            prevValue[key], value);
-            return partialResult;
-        }); }
-    };
-}
-function useStateObject(initialState) {
-    var _a = React.useState(initialState), value = _a[0], setValue = _a[1];
-    return [value, createObjectStateMutation(setValue)];
 }
 
 //
@@ -454,31 +312,6 @@ var StateLinkImpl = /** @class */ (function () {
         }
         return updated;
     };
-    Object.defineProperty(StateLinkImpl.prototype, "inferred", {
-        get: function () {
-            var _this = this;
-            if (!this.valueTracked) {
-                this.valueUsed = true;
-            }
-            if (Array.isArray(this.valueUntracked)) {
-                return createArrayStateMutation(function (newValue) {
-                    // tslint:disable-next-line: no-any
-                    return _this.set(newValue);
-                });
-            }
-            else if (typeof this.valueUntracked === 'object' && this.valueUntracked !== null) {
-                return createObjectStateMutation(function (newValue) {
-                    // tslint:disable-next-line: no-any
-                    return _this.set(newValue);
-                });
-            }
-            else {
-                return undefined;
-            }
-        },
-        enumerable: true,
-        configurable: true
-    });
     Object.defineProperty(StateLinkImpl.prototype, "nested", {
         get: function () {
             if (!this.valueTracked) {
@@ -782,5 +615,5 @@ function Prerender(marker) {
     };
 }
 
-export { DisabledTracking, Prerender, createArrayStateMutation, createObjectStateMutation, createStateLink, useStateArray, useStateLink, useStateLinkUnmounted, useStateObject };
+export { DisabledTracking, Prerender, createStateLink, useStateLink, useStateLinkUnmounted };
 //# sourceMappingURL=index.es.js.map

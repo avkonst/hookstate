@@ -1,6 +1,4 @@
 import React from 'react';
-import { ObjectStateMutation } from './UseStateObject';
-import { ArrayStateMutation } from './UseStateArray';
 export interface PluginTypeMarker<S, E extends {}> {
 }
 export interface StateRef<S, E extends {}> {
@@ -9,13 +7,11 @@ export interface StateRef<S, E extends {}> {
 export declare type NestedInferredLink<S, E extends {}> = S extends ReadonlyArray<(infer U)> ? ReadonlyArray<StateLink<U, E>> : S extends null ? undefined : S extends object ? {
     readonly [K in keyof Required<S>]: StateLink<S[K], E>;
 } : undefined;
-export declare type InferredStateMutation<S> = S extends ReadonlyArray<(infer U)> ? ArrayStateMutation<U> : S extends null ? undefined : S extends object ? ObjectStateMutation<S> : undefined;
 export declare type Path = ReadonlyArray<string | number>;
 export interface StateLink<S, E extends {} = {}> {
     readonly path: Path;
     readonly value: S;
     readonly nested: NestedInferredLink<S, E>;
-    readonly inferred: InferredStateMutation<S>;
     readonly extended: E;
     set(newValue: React.SetStateAction<S>): void;
     with<I>(plugin: (marker: PluginTypeMarker<S, E>) => Plugin<E, I>): StateLink<S, E & I>;
@@ -38,8 +34,8 @@ export interface Plugin<E extends {}, I extends {}> {
 export declare function createStateLink<S>(initial: S | (() => S)): StateRef<S, {}>;
 export declare function useStateLink<S, E extends {}>(initialState: StateLink<S, E> | StateRef<S, E>): StateLink<S, E>;
 export declare function useStateLink<S, E extends {}, R>(initialState: StateLink<S, E> | StateRef<S, E>, transform: (state: StateLink<S, E>, prev: R | undefined) => R): R;
-export declare function useStateLink<S, E extends {}>(initialState: S | (() => S)): StateLink<S, E>;
-export declare function useStateLink<S, E extends {}, R>(initialState: S | (() => S), transform: (state: StateLink<S, E>, prev: R | undefined) => R): R;
+export declare function useStateLink<S>(initialState: S | (() => S)): StateLink<S>;
+export declare function useStateLink<S, R>(initialState: S | (() => S), transform: (state: StateLink<S>, prev: R | undefined) => R): R;
 export declare function useStateLinkUnmounted<S, E extends {}>(stateRef: StateRef<S, E>): StateLink<S, E>;
 export declare function DisabledTracking(): Plugin<{}, {}>;
 export interface PrerenderExtensions {

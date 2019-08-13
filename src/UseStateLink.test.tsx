@@ -1,5 +1,5 @@
 
-import { useStateObject } from '..';
+import { useStateLink } from './UseStateLink';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 
@@ -7,7 +7,7 @@ type Dict<T> = {
     [key: string]: T
 };
 
-test('should update object state', () => {
+test('should update state', () => {
     const { result } = renderHook(() => useStateLink<Dict<number>>({}));
 
     act(() => {

@@ -1,18 +1,18 @@
 {
-    "name": "react-hookstate",
+    "name": "@hookstate/core",
     "version": "0.10.0",
-    "description": "Modern and high-performance state management for react done in type-safe, data usage tracked, plugin extandable way.",
+    "description": "Modern and high-performance (data access tracked) state management for react done in type-safe and plugin extandable way.",
     "license": "MIT",
     "author": {
         "name": "Andrey Konstantinov"
     },
     "repository": {
-        "url": "https://github.com/avkonst/react-hookstate"
+        "url": "https://github.com/avkonst/hookstate"
     },
     "bugs": {
-        "url": "https://github.com/avkonst/react-hookstate/issues"
+        "url": "https://github.com/avkonst/hookstate/issues"
     },
-    "homepage": "https://github.com/avkonst/react-hookstate",
+    "homepage": "https://github.com/avkonst/hookstate",
     "main": "dist/index.js",
     "module": "dist/index.es.js",
     "jsnext:main": "dist/index.es.js",
