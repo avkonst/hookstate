@@ -33,10 +33,13 @@
         "prepare": "yarn build"
     },
     "dependencies": {
-        "lodash.clonedeep": "4.5.0",
-        "lodash.isequal": "4.5.0"
+        "lodash.clonedeep": "^4.5.0",
+        "lodash.isequal": "^4.5.0",
+        "react-hookstate": "^0.10.0"
     },
     "peerDependencies": {
+        "lodash.clonedeep": "4.5.0",
+        "lodash.isequal": "4.5.0",
         "react-hookstate": "^0.10.0"
     },
     "devDependencies": {

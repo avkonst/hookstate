@@ -7,7 +7,7 @@ import {
     StateLink,
     StateValueAtPath,
     StateValueAtRoot
-} from '../UseStateLink';
+} from 'react-hookstate';
 
 import isEqual from 'lodash.isequal';
 import cloneDeep from 'lodash.clonedeep';
