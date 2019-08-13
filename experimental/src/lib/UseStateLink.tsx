@@ -260,6 +260,7 @@ class StateRefImpl<S, E extends {}> implements StateRef<S, E> {
 class StateLinkImpl<S, E extends {}> implements StateLink<S, E>, Subscribable, Subscriber {
     public disabledTracking: boolean | undefined;
     public prerenderTransform: PrerenderTransformStrategy | undefined;
+    public overridingLink: StateLinkImpl<S, E> | undefined = undefined;
 
     private subscribers: Set<Subscriber> | undefined;
 
@@ -372,6 +373,10 @@ class StateLinkImpl<S, E extends {}> implements StateLink<S, E>, Subscribable, S
     }
 
     onUpdate(path: Path, actions: (() => void)[]) {
+        if (this.overridingLink) {
+            this.overridingLink.onUpdate(path, actions);
+            return;
+        }
         this.updateIfUsed(path, actions)
     }
 
@@ -719,6 +724,15 @@ export function useStateLink<S, E extends {}, R>(
 ): R {
     const link = useAutoStateLink(initialState);
     if (transform) {
+        let injectedOnUpdateUsed: (() => void) | undefined = undefined;
+        const originOnUpdateUsed = link.onUpdateUsed;
+        link.onUpdateUsed = () => {
+            if (injectedOnUpdateUsed) {
+                return injectedOnUpdateUsed();
+            }
+            return originOnUpdateUsed();
+        }
+
         const result = transform(link, undefined);
         const strategy = link.prerenderTransform || 'primitive';
         if (strategy === 'primitive' && (typeof result === 'object' || typeof result === 'function') ||
@@ -726,25 +740,23 @@ export function useStateLink<S, E extends {}, R>(
             return result;
         }
 
-        const originOnUpdate = link.onUpdateUsed;
-        const injectOnUpdate = {
-            call: originOnUpdate
-        }
-        link.onUpdateUsed = () => injectOnUpdate.call()
-        injectOnUpdate.call = () => {
+        injectedOnUpdateUsed = () => {
             // need to create new one to make sure
-            // it does not pickup the stale cache of the other after mutation
-            const unconnected = new StateLinkImpl<S, E>(
+            // it does not pickup the stale cache of the original link after mutation
+            const overidingLink = new StateLinkImpl<S, E>(
                 link.state,
                 link.path,
-                () => {
-                    throw new Error('Internal Error: unexpected call');
-                },
+                () => injectedOnUpdateUsed!(),
                 link.state.get(link.path)
-            ).with(DisabledTracking) // this instance is not subscribed, so do not track it's usage
-            const updatedResult = transform(unconnected, result);
+            )
+            // and we should inject to onUpdate now
+            // so the overriding link is used to track used properties
+            link.overridingLink = overidingLink;
+            const updatedResult = transform(overidingLink, result);
+            // if result is not changed, it does not affect the rendering result too
+            // so, we skip triggering rerendering in this case
             if (updatedResult !== result) {
-                originOnUpdate();
+                originOnUpdateUsed();
             }
         }
         return result;
@@ -770,7 +782,7 @@ export function PrerenderTransform(strategy: PrerenderTransformStrategy):
     (marker: PluginTypeMarker<{}, {}>) => Plugin<{}, {}> {
     return () => {
         return {
-            id: DisabledTrackingID,
+            id: PrerenderTransformID,
             strategy: strategy,
             instanceFactory: () => ({
                 extensions: [],

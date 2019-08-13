@@ -56,7 +56,7 @@ export function Validation<S, E extends {}>(
             path.forEach(p => {
                 result = result && result[p];
             });
-            console.log('recursive rules', result)
+            // console.log('recursive rules', result)
             return result;
         }
         function addRule(path: Path, r: ValidationRule) {
@@ -83,7 +83,7 @@ export function Validation<S, E extends {}>(
             id: PluginID,
             instanceFactory: () => {
                 function getErrors(l: StateLink<StateValueAtPath>, recursive?: boolean): ReadonlyArray<ValidationError> {
-                    console.warn('getResults', l.path)
+                    // console.warn('getResults', l.path)
                     let result: ValidationError[] = [];
                     const consistentResult = () => result.length === 0 ? emptyErrors : result;
 
@@ -101,23 +101,23 @@ export function Validation<S, E extends {}>(
                         })
                     }
                     if (!recursive) {
-                        console.log('getResults not recursive', result)
+                        // console.log('getResults not recursive', result)
                         return consistentResult();
                     }
                     const nestedRules = getRulesRecursive(l.path);
                     if (nestedRules === undefined) {
-                        console.log('getResults no nested rules', result)
+                        // console.log('getResults no nested rules', result)
                         return consistentResult();
                     }
 
                     const nestedRulesKeys = Object.keys(nestedRules);
                     if (nestedRulesKeys.length === 0) {
-                        console.log('getResults nested rules 0 length', result)
+                        // console.log('getResults nested rules 0 length', result)
                         return consistentResult();
                     }
                     const nestedInst = l.nested;
                     if (nestedInst === undefined) {
-                        console.log('getResults no nested inst', result)
+                        // console.log('getResults no nested inst', result)
                         return consistentResult();
                     }
                     if (Array.isArray(nestedInst)) {
@@ -152,7 +152,7 @@ export function Validation<S, E extends {}>(
                                 result = result.concat((nestedInst[k] as StateLink<StateValueAtPath, ValidationExtensions>).extended.errors);
                             });
                     }
-                    console.log('getResults final', result)
+                    // console.log('getResults final', result)
                     return consistentResult();
                 }
                 return {
