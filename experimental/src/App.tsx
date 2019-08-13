@@ -2,7 +2,7 @@ import React from 'react';
 import logo from './logo.svg';
 import './App.css';
 
-import { useStateLink, StateLink, createStateLink, Plugin, PluginTypeMarker, Prerender, DisabledTracking } from './lib/UseStateLink';
+import { useStateLink, StateLink, createStateLink, Plugin, PluginTypeMarker, Prerender, DisabledTracking, useStateLinkUnmounted } from './lib/UseStateLink';
 import { Initial, InitialExtensions } from './lib/plugins/Initial';
 import { Logger } from './lib/plugins/Logger';
 import { Touched, TouchedExtensions } from './lib/plugins/Touched';
@@ -20,7 +20,7 @@ const state = createStateLink<TaskItem[]>(Array.from(Array(2).keys()).map((i) =>
 })))//.with(LocalPersistence('somekey2'));
 
 setInterval(() => {
-    // state.use().nested[0].nested.priority.set(p => (p || 0) + 1)
+    // useStateLinkUnmounted(state).nested[0].nested.priority.set(p => (p || 0) + 1)
 }, 10);
 
 interface TaskItem {

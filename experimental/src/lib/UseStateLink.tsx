@@ -9,8 +9,6 @@ import { ArrayStateMutation, createArrayStateMutation } from './UseStateArray';
 export interface PluginTypeMarker<S, E extends {}> { }
 
 export interface StateRef<S, E extends {}> {
-    use(): StateLink<S, E>;
-
     with<I>(plugin: (marker: PluginTypeMarker<S, E>) => Plugin<E, I>): StateRef<S, E & I>;
 }
 
@@ -122,7 +120,7 @@ interface Subscribable {
 }
 
 const DisabledTrackingID = Symbol('DisabledTracking');
-const PrerenderTransformID = Symbol('PrerenderTransform');
+const PrerenderID = Symbol('Prerender');
 
 const HiddenPluginId = Symbol('PluginID');
 const RootPath: Path = [];
@@ -225,20 +223,6 @@ class StateRefImpl<S, E extends {}> implements StateRef<S, E> {
     public disabledTracking: boolean | undefined;
 
     constructor(public state: State) { }
-
-    use(): StateLink<S, E> {
-        // tslint:disable-next-line: no-use-before-declare
-        const r = new StateLinkImpl<S, E>(
-            this.state,
-            RootPath,
-            // it is assumed the client discards the state link once it is used
-            () => {
-                throw new Error('Internal Error: unexpected call');
-            },
-            this.state.get(RootPath)
-        ).with(DisabledTracking) // it does not matter how it is used, it is not subscribed anyway
-        return r;
-    }
 
     with<I extends {}>(plugin: (marker: PluginTypeMarker<S, E>) => Plugin<E, I>): StateRef<S, E & I> {
         const pluginMeta = plugin({})
@@ -677,7 +661,7 @@ function injectTransform<S, E extends {}, R>(
     }
 
     const result = transform(link, undefined);
-    const prerenderEquals: ((a: R, b: R) => boolean) | undefined = link[PrerenderTransformID];
+    const prerenderEquals: ((a: R, b: R) => boolean) | undefined = link[PrerenderID];
     if (prerenderEquals === undefined) {
         return result;
     }
@@ -749,6 +733,29 @@ export function useStateLink<S, E extends {}, R>(
     return link as unknown as R;
 }
 
+export function useStateLinkUnmounted<S, E extends {}>(
+    stateRef: StateRef<S, E>,
+): StateLink<S, E>;
+export function useStateLinkUnmounted<S, E extends {}, R>(
+    state: StateRef<S, E>,
+    transform?: (state: StateLink<S, E>) => R
+): R {
+    const stateRef = state as StateRefImpl<S, E>;
+    const link = new StateLinkImpl<S, E>(
+        stateRef.state,
+        RootPath,
+        // it is assumed the client discards the state link once it is used
+        () => {
+            throw new Error('Internal Error: unexpected call');
+        },
+        stateRef.state.get(RootPath)
+    ).with(DisabledTracking) // it does not matter how it is used, it is not subscribed anyway
+    if (transform) {
+        return transform(link);
+    }
+    return link as unknown as R;
+}
+
 // tslint:disable-next-line: function-name
 export function DisabledTracking(): Plugin<{}, {}> {
     return {
@@ -773,12 +780,12 @@ export function Prerender<S, E extends {}>(marker: PluginTypeMarker<S, E>):
     }
 
     return {
-        id: PrerenderTransformID,
+        id: PrerenderID,
         instanceFactory: () => ({
             extensions: ['enablePrerender'],
             extensionsFactory: (l: StateLink<StateValueAtPath, E>) => ({
                 enablePrerender: (equals) => {
-                    l[PrerenderTransformID] = equals || defaultEquals
+                    l[PrerenderID] = equals || defaultEquals
                 },
             })
         })
