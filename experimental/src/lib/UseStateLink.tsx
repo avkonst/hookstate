@@ -52,6 +52,8 @@ export type ValueLink<S, E extends {} = {}> = StateLink<S, E>;
 export type StateValueAtRoot = any;
 // tslint:disable-next-line: no-any
 export type StateValueAtPath = any;
+// tslint:disable-next-line: no-any
+export type TransformResult = any;
 
 export interface PluginInstance<E extends {}, I extends {}> {
     // if returns defined value,
@@ -72,8 +74,6 @@ export interface Plugin<E extends {}, I extends {}> {
     // because it is coming from the state and represents the type of the root value
     instanceFactory: (initial: StateValueAtRoot) => PluginInstance<E, I>;
 }
-
-export type PrerenderTransformStrategy = 'primitive' | 'always' | 'never';
 
 //
 // INTERNAL IMPLEMENTATIONS
@@ -113,7 +113,7 @@ class ExtensionUnknownError extends Error {
 }
 
 interface Subscriber {
-    onUpdate(path: Path, actions: (() => void)[]): void;
+    onSet(path: Path, actions: (() => void)[]): void;
 }
 
 interface Subscribable {
@@ -162,7 +162,7 @@ class State implements Subscribable {
             }
         });
         const actions: (() => void)[] = [];
-        this._subscribers.forEach(s => s.onUpdate(path, actions));
+        this._subscribers.forEach(s => s.onSet(path, actions));
         actions.forEach(a => a());
     }
 
@@ -206,7 +206,7 @@ class State implements Subscribable {
         if (pluginInstance.onSet) {
             const onSet = pluginInstance.onSet;
             this.subscribe({
-                onUpdate: (p) => onSet(p, this._value)
+                onSet: (p) => onSet(p, this._value)
             })
         }
         return;
@@ -223,7 +223,6 @@ class State implements Subscribable {
 
 class StateRefImpl<S, E extends {}> implements StateRef<S, E> {
     public disabledTracking: boolean | undefined;
-    public prerenderTransform: PrerenderTransformStrategy | undefined;
 
     constructor(public state: State) { }
 
@@ -238,7 +237,6 @@ class StateRefImpl<S, E extends {}> implements StateRef<S, E> {
             },
             this.state.get(RootPath)
         ).with(DisabledTracking) // it does not matter how it is used, it is not subscribed anyway
-        .with(PrerenderTransform('never'))
         return r;
     }
 
@@ -248,10 +246,6 @@ class StateRefImpl<S, E extends {}> implements StateRef<S, E> {
             this.disabledTracking = true;
             return this as unknown as StateRef<S, E & I>;
         }
-        if (pluginMeta.id === PrerenderTransformID) {
-            this.prerenderTransform = (pluginMeta as unknown as { strategy: PrerenderTransformStrategy }).strategy;
-            return this as unknown as StateRef<S, E & I>;
-        }
         this.state.register(pluginMeta as unknown as Plugin<{}, {}>);
         return this as unknown as StateRef<S, E & I>;
     }
@@ -259,9 +253,6 @@ class StateRefImpl<S, E extends {}> implements StateRef<S, E> {
 
 class StateLinkImpl<S, E extends {}> implements StateLink<S, E>, Subscribable, Subscriber {
     public disabledTracking: boolean | undefined;
-    public prerenderTransform: PrerenderTransformStrategy | undefined;
-    public overridingLink: StateLinkImpl<S, E> | undefined = undefined;
-
     private subscribers: Set<Subscriber> | undefined;
 
     private nestedCache: NestedInferredLink<S, E> | undefined;
@@ -332,10 +323,6 @@ class StateLinkImpl<S, E extends {}> implements StateLink<S, E>, Subscribable, S
             this.disabledTracking = true;
             return this as unknown as StateLink<S, E & I>;
         }
-        if (pluginMeta.id === PrerenderTransformID) {
-            this.prerenderTransform = (pluginMeta as unknown as { strategy: PrerenderTransformStrategy }).strategy;
-            return this as unknown as StateLink<S, E & I>;
-        }
         this.state.register(pluginMeta as unknown as Plugin<{}, {}>, this.path);
         return this as unknown as StateLink<S, E & I>;
     }
@@ -372,11 +359,7 @@ class StateLinkImpl<S, E extends {}> implements StateLink<S, E>, Subscribable, S
         this.subscribers!.delete(l);
     }
 
-    onUpdate(path: Path, actions: (() => void)[]) {
-        if (this.overridingLink) {
-            this.overridingLink.onUpdate(path, actions);
-            return;
-        }
+    onSet(path: Path, actions: (() => void)[]) {
         this.updateIfUsed(path, actions)
     }
 
@@ -404,7 +387,7 @@ class StateLinkImpl<S, E extends {}> implements StateLink<S, E>, Subscribable, S
         const updated = update();
         if (!updated && this.subscribers !== undefined) {
             this.subscribers.forEach(s => {
-                s.onUpdate(path, actions)
+                s.onSet(path, actions)
             })
         }
         return updated;
@@ -624,8 +607,7 @@ function useSubscribedStateLink<S, E extends {}>(
     state: State,
     path: Path, update: () => void,
     subscribeTarget: Subscribable,
-    disabledTracking?: boolean | undefined,
-    prerenderTransformStrategy?: PrerenderTransformStrategy
+    disabledTracking?: boolean | undefined
 ) {
     const link = new StateLinkImpl<S, E>(
         state,
@@ -635,9 +617,6 @@ function useSubscribedStateLink<S, E extends {}>(
     );
     if (disabledTracking) {
         link.with(DisabledTracking)
-    }
-    if (prerenderTransformStrategy) {
-        link.with(PrerenderTransform(prerenderTransformStrategy))
     }
     useIsomorphicLayoutEffect(() => {
         subscribeTarget.subscribe(link);
@@ -650,7 +629,7 @@ function useGlobalStateLink<S, E>(stateLink: StateRefImpl<S, E>): StateLinkImpl<
     const [, setValue] = React.useState({});
     return useSubscribedStateLink(stateLink.state, RootPath, () => {
         setValue({})
-    }, stateLink.state, stateLink.disabledTracking, stateLink.prerenderTransform);
+    }, stateLink.state, stateLink.disabledTracking);
 }
 
 function useLocalStateLink<S>(initialState: S | (() => S)): StateLinkImpl<S, {}> {
@@ -698,9 +677,8 @@ function injectTransform<S, E extends {}, R>(
     }
 
     const result = transform(link, undefined);
-    const strategy = link.prerenderTransform || 'primitive';
-    if (strategy === 'primitive' && (typeof result === 'object' || typeof result === 'function') ||
-        strategy === 'never') {
+    const prerenderEquals: ((a: R, b: R) => boolean) | undefined = link[PrerenderTransformID];
+    if (prerenderEquals === undefined) {
         return result;
     }
 
@@ -710,16 +688,16 @@ function injectTransform<S, E extends {}, R>(
         const overidingLink = new StateLinkImpl<S, E>(
             link.state,
             link.path,
-            () => injectedOnUpdateUsed!(),
+            link.onUpdateUsed,
             link.state.get(link.path)
         )
         // and we should inject to onUpdate now
         // so the overriding link is used to track used properties
-        link.overridingLink = overidingLink;
+        link.onSet = (s, p) => overidingLink.onSet(s, p);
         const updatedResult = transform(overidingLink, result);
         // if result is not changed, it does not affect the rendering result too
         // so, we skip triggering rerendering in this case
-        if (updatedResult !== result) {
+        if (!prerenderEquals(updatedResult, result)) {
             originOnUpdateUsed();
         }
     }
@@ -782,20 +760,28 @@ export function DisabledTracking(): Plugin<{}, {}> {
     }
 }
 
-const emptyInstance = {}
+export interface PrerenderTransformExtensions {
+    prerenderTransform(equals?: (newValue: TransformResult, prevValue: TransformResult) => boolean): void;
+}
 
 // tslint:disable-next-line: function-name
-export function PrerenderTransform(strategy: PrerenderTransformStrategy):
-    (marker: PluginTypeMarker<{}, {}>) => Plugin<{}, {}> {
-    return () => {
-        return {
-            id: PrerenderTransformID,
-            strategy: strategy,
-            instanceFactory: () => ({
-                extensions: [],
-                extensionsFactory: () => emptyInstance
+export function PrerenderTransform<S, E extends {}>(marker: PluginTypeMarker<S, E>):
+    Plugin<E, PrerenderTransformExtensions> {
+
+    function defaultEquals(a: TransformResult, b: TransformResult) {
+        return a === b;
+    }
+
+    return {
+        id: PrerenderTransformID,
+        instanceFactory: () => ({
+            extensions: ['prerenderTransform'],
+            extensionsFactory: (l: StateLink<StateValueAtPath, E>) => ({
+                prerenderTransform: (equals) => {
+                    l[PrerenderTransformID] = equals || defaultEquals
+                },
             })
-        }
+        })
     }
 }
 

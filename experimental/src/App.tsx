@@ -5,10 +5,11 @@ import './App.css';
 import { useStateLink, StateLink, createStateLink, Plugin, PluginTypeMarker, PrerenderTransform, DisabledTracking } from './lib/UseStateLink';
 import { Initial, InitialExtensions } from './lib/plugins/Initial';
 import { Logger } from './lib/plugins/Logger';
-import { Touched } from './lib/plugins/Touched';
+import { Touched, TouchedExtensions } from './lib/plugins/Touched';
 import { Persistence } from './lib/plugins/Persistence';
 import { Validation, ValidationSeverity, ValidationExtensions, ValidationError } from './lib/plugins/Validation';
 import isEqual from 'lodash.isequal';
+import { Prerender } from './lib/plugins/Transform';
 
 JSON.stringify({ x: 5, y: 6, toJSON() { return this.x + this.y; } });
 
@@ -73,7 +74,7 @@ const JsonDump = (props: {link: StateLink<TaskItem[]>}) => {
 
 const ModifiedStatus = (props: {link: StateLink<TaskItem[], InitialExtensions>}) => {
     const modified = useStateLink(props.link, (l) => {
-        l.with(PrerenderTransform('primitive'))
+        l.with(PrerenderTransform).extended.prerenderTransform()
         return l.extended.modified
     });
     return <p>
@@ -81,29 +82,18 @@ const ModifiedStatus = (props: {link: StateLink<TaskItem[], InitialExtensions>})
     </p>;
 }
 
-const TouchedStatus = (props: {link: StateLink<TaskItem[], InitialExtensions>}) => {
+const TouchedStatus = (props: {link: StateLink<TaskItem[], InitialExtensions & TouchedExtensions>}) => {
     const touched = useStateLink(props.link, (l) => {
-        return l.with(Touched).extended.touched
+        l.with(PrerenderTransform).extended.prerenderTransform()
+        return l.extended.touched
     });
     return <p>
         {new Date().toISOString()} Touched: {touched.toString()}
     </p>;
 }
 
-function ReturnChanged<S, E extends {}, R>(
-    transform: (state: StateLink<S, E>) => R) {
-    return (link: StateLink<S, E>, prev: R | undefined) => {
-        link.with(PrerenderTransform('always'));
-        const result = transform(link);
-        if (prev !== undefined && isEqual(result, prev)) {
-            return prev;
-        }
-        return result;
-    }
-}
-
 const ValidStatus = (props: {link: StateLink<TaskItem[], ValidationExtensions>}) => {
-    const errors = useStateLink(props.link, ReturnChanged(l => l.extended.errors));
+    const errors = useStateLink(props.link, Prerender(l => l.extended.errors));
     return <p>
         {new Date().toISOString()} Valid: {JSON.stringify(errors)}
     </p>;
