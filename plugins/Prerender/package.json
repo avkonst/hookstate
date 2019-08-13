@@ -34,11 +34,11 @@
     },
     "dependencies": {
         "lodash.isequal": "^4.5.0",
-        "@hookstate": "^0.10.0"
+        "@hookstate/core": "^0.10.0"
     },
     "peerDependencies": {
         "lodash.isequal": "4.5.0",
-        "@hookstate": "^0.10.0"
+        "@hookstate/core": "^0.10.0"
     },
     "devDependencies": {
         "@testing-library/react": "8.0.5",

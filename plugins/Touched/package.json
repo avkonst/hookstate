@@ -33,11 +33,11 @@
         "prepare": "yarn build"
     },
     "dependencies": {
-        "@hookstate": "^0.10.0",
+        "@hookstate/core": "^0.10.0",
         "@hookstate/initial": "^0.10.0"
     },
     "peerDependencies": {
-        "@hookstate": "^0.10.0",
+        "@hookstate/core": "^0.10.0",
         "@hookstate/initial": "^0.10.0"
     },
     "devDependencies": {

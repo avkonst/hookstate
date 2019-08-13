@@ -33,10 +33,10 @@
         "prepare": "yarn build"
     },
     "dependencies": {
-        "@hookstate": "^0.10.0"
+        "@hookstate/core": "^0.10.0"
     },
     "peerDependencies": {
-        "@hookstate": "^0.10.0"
+        "@hookstate/core": "^0.10.0"
     },
     "devDependencies": {
         "@testing-library/react": "8.0.5",
