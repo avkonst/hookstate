@@ -1,7 +1,7 @@
 {
     "name": "@hookstate/prerender",
     "version": "0.10.0",
-    "description": "Plugin for @hookstate/core to enable optimization of rerendering of transformed data state.",
+    "description": "Plugin for @hookstate/core to enable optimized rerendering of transformed data state.",
     "license": "MIT",
     "author": {
         "name": "Andrey Konstantinov"
