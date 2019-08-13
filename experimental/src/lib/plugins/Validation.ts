@@ -41,10 +41,28 @@ const PluginID = Symbol('Validate');
 const emptyErrors: ValidationError[] = []
 
 // tslint:disable-next-line: function-name
+export function ValidationForEach<S extends ReadonlyArray<StateValueAtPath>, E extends {}>(
+    attachRule: (value: S[number]) => boolean,
+    message: string,
+    severity: ValidationSeverity = ValidationSeverity.ERROR
+): ((unused: PluginTypeMarker<S, E>) => Plugin<E, ValidationExtensions>) {
+    return validationImpl(attachRule, message, severity, true)
+}
+
+// tslint:disable-next-line: function-name
 export function Validation<S, E extends {}>(
     attachRule: (value: S) => boolean,
     message: string,
     severity: ValidationSeverity = ValidationSeverity.ERROR
+): ((unused: PluginTypeMarker<S, E>) => Plugin<E, ValidationExtensions>) {
+    return validationImpl(attachRule, message, severity, false)
+}
+
+function validationImpl<S, E extends {}>(
+    attachRule: (value: S) => boolean,
+    message: string,
+    severity: ValidationSeverity,
+    foreach: boolean
 ): ((unused: PluginTypeMarker<S, E>) => Plugin<E, ValidationExtensions>) {
 
     // const defaultProcessingHooks: ValueProcessingHooks<any, {}> = { };
@@ -52,20 +70,24 @@ export function Validation<S, E extends {}>(
 
     return () => {
         const storeRules = {};
-        function getRules(path: Path): Map<string, ValidationRule> | undefined {
+        function getRulesAndNested(path: Path): [ValidationRule[], string[]] {
             let result = storeRules;
             path.forEach(p => {
-                result = result && result[p];
+                result = result && (result[p] || (typeof p === 'number' && result['*']));
+                // if (result) {
+                //     if (typeof p === 'number' && result['*']) {
+                //         if (result[p]) {
+                //             result = { ...result['*'], ...result[p] }
+                //         } else {
+                //             result = result['*']
+                //         }
+                //     } else {
+                //         result = result && result[p]
+                //     }
+                // }
             });
-            return result && result[PluginID];
-        }
-        function getRulesRecursive(path: Path) {
-            let result = storeRules;
-            path.forEach(p => {
-                result = result && result[p];
-            });
-            // console.log('recursive rules', result)
-            return result;
+            return [result && result[PluginID] ? Array.from(result[PluginID].values()) : [],
+                result ? Object.keys(result) : []];
         }
         function addRule(path: Path, r: ValidationRule) {
             let result = storeRules;
@@ -92,8 +114,6 @@ export function Validation<S, E extends {}>(
             filter?: (e: ValidationError) => boolean,
             first?: boolean): ReadonlyArray<ValidationError> {
 
-            console.log('get errors');
-
             let result: ValidationError[] = [];
             const consistentResult = () => result.length === 0 ? emptyErrors : result;
 
@@ -101,22 +121,19 @@ export function Validation<S, E extends {}>(
                 return consistentResult();
             }
 
-            const existingRulesMap = getRules(l.path);
-            if (existingRulesMap) {
-                const existingRules = Array.from(existingRulesMap.values())
-                for (let i = 0; i < existingRules.length; i += 1) {
-                    const r = existingRules[i];
-                    if (!r.rule(l.value)) {
-                        const err = {
-                            path: l.path,
-                            message: r.message,
-                            severity: r.severity
-                        };
-                        if (!filter || filter(err)) {
-                            result.push(err)
-                            if (first) {
-                                return result;
-                            }
+            const [existingRules, nestedRulesKeys] = getRulesAndNested(l.path);
+            for (let i = 0; i < existingRules.length; i += 1) {
+                const r = existingRules[i];
+                if (!r.rule(l.value)) {
+                    const err = {
+                        path: l.path,
+                        message: r.message,
+                        severity: r.severity
+                    };
+                    if (!filter || filter(err)) {
+                        result.push(err)
+                        if (first) {
+                            return result;
                         }
                     }
                 }
@@ -124,12 +141,6 @@ export function Validation<S, E extends {}>(
             if (depth === 1) {
                 return consistentResult();
             }
-            const nestedRules = getRulesRecursive(l.path);
-            if (nestedRules === undefined) {
-                return consistentResult();
-            }
-
-            const nestedRulesKeys = Object.keys(nestedRules);
             if (nestedRulesKeys.length === 0) {
                 // console.log('getResults nested rules 0 length', result)
                 return consistentResult();
@@ -140,7 +151,7 @@ export function Validation<S, E extends {}>(
                 return consistentResult();
             }
             if (Array.isArray(nestedInst)) {
-                if (nestedRules['*']) {
+                if (nestedRulesKeys.includes('*')) {
                     for (let i = 0; i < nestedInst.length; i += 1) {
                         const n = nestedInst[i];
                         result = result.concat((n as StateLink<StateValueAtPath, ValidationExtensions>)
@@ -192,12 +203,12 @@ export function Validation<S, E extends {}>(
         return {
             id: PluginID,
             instanceFactory: () => ({
-                get config(): ValidationRule {
-                    return { rule: attachRule, message: message, severity: severity }
+                get config(): ValidationRule & { foreach: boolean } {
+                    return { rule: attachRule, message: message, severity: severity, foreach: foreach }
                 },
                 onAttach: (path, plugin) => {
-                    const r = (plugin as unknown as { config: ValidationRule }).config;
-                    addRule(path, r);
+                    const r = (plugin as unknown as { config: ValidationRule & { foreach: boolean } }).config;
+                    addRule(r.foreach ? path.concat('*') : path, r);
                 },
                 extensions: ['valid', 'invalid', 'errors', 'firstError'],
                 extensionsFactory: (l) => ({
