@@ -1,7 +1,7 @@
 
-import { Path, Plugin, PluginTypeMarker, StateLink, DisabledTracking, StateValueAtPath } from 'react-hookstate';
+import { Path, Plugin, PluginTypeMarker, StateLink, DisabledTracking, StateValueAtPath } from '@hookstate';
 
-import { InitialExtensions } from 'react-hookstate-initial';
+import { InitialExtensions } from '@hookstate/initial';
 
 export interface TouchedExtensions {
     readonly touched: boolean;

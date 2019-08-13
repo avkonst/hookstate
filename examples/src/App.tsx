@@ -7,15 +7,15 @@ import {
     StateLink,
     Plugin,
     PluginTypeMarker
-} from 'react-hookstate';
-import { Initial, InitialExtensions } from 'react-hookstate-initial';
-import { Logger } from 'react-hookstate-logger';
-import { Touched, TouchedExtensions } from 'react-hookstate-touched';
-import { Persistence } from 'react-hookstate-persistence';
-import { Validation, ValidationForEach, ValidationSeverity, ValidationExtensions } from 'react-hookstate-validation';
+} from '@hookstate/core';
+import { Initial, InitialExtensions } from '@hookstate/initial';
+import { Logger } from '@hookstate/logger';
+import { Touched, TouchedExtensions } from '@hookstate/touched';
+import { Persistence } from '@hookstate/persistence';
+import { Validation, ValidationForEach, ValidationSeverity, ValidationExtensions } from '@hookstate/validation';
 
 import isEqual from 'lodash.isequal';
-import { EqualsPrerender } from 'react-hookstate-prerender';
+import { EqualsPrerender } from '@hookstate/prerender';
 
 JSON.stringify({ x: 5, y: 6, toJSON() { return this.x + this.y; } });
 

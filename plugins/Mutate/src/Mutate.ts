@@ -1,5 +1,5 @@
 
-import { StateValueAtPath, StateLink } from 'react-hookstate';
+import { StateValueAtPath, StateLink } from '@hookstate';
 
 // TODO add support for Map and Set
 export type InferredStateMutation<S> =

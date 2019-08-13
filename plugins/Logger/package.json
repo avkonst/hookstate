@@ -1,7 +1,7 @@
 {
-    "name": "react-hookstate-logger",
+    "name": "@hookstate/logger",
     "version": "0.10.0",
-    "description": "Plugin for react-hookstate to enable logging.",
+    "description": "Plugin for @hookstate/core to enable logging.",
     "license": "MIT",
     "author": {
         "name": "Andrey Konstantinov"
@@ -33,10 +33,10 @@
         "prepare": "yarn build"
     },
     "dependencies": {
-        "react-hookstate": "^0.10.0"
+        "@hookstate": "^0.10.0"
     },
     "peerDependencies": {
-        "react-hookstate": "^0.10.0"
+        "@hookstate": "^0.10.0"
     },
     "devDependencies": {
         "@testing-library/react": "8.0.5",
