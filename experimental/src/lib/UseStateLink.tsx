@@ -125,6 +125,7 @@ const DisabledTrackingID = Symbol('DisabledTracking');
 const PrerenderTransformID = Symbol('PrerenderTransform');
 
 const HiddenPluginId = Symbol('PluginID');
+const RootPath: Path = [];
 
 class State implements Subscribable {
     private _subscribers: Set<Subscriber> = new Set();
@@ -173,7 +174,7 @@ class State implements Subscribable {
         const existingInstance = this._plugins.get(plugin.id)
         if (existingInstance) {
             if (existingInstance.onAttach) {
-                existingInstance.onAttach(path || [], plugin.instanceFactory(this._value))
+                existingInstance.onAttach(path || RootPath, plugin.instanceFactory(this._value))
             }
             return;
         }
@@ -189,7 +190,7 @@ class State implements Subscribable {
             }
         }
         if (pluginInstance.onAttach) {
-            pluginInstance.onAttach(path || [], pluginInstance)
+            pluginInstance.onAttach(path || RootPath, pluginInstance)
         }
         const extensions = pluginInstance.extensions;
         extensions.forEach(e => {
@@ -227,16 +228,15 @@ class StateRefImpl<S, E extends {}> implements StateRef<S, E> {
     constructor(public state: State) { }
 
     use(): StateLink<S, E> {
-        const path: Path = [];
         // tslint:disable-next-line: no-use-before-declare
         const r = new StateLinkImpl<S, E>(
             this.state,
-            path,
+            RootPath,
             // it is assumed the client discards the state link once it is used
             () => {
                 throw new Error('Internal Error: unexpected call');
             },
-            this.state.get(path)
+            this.state.get(RootPath)
         ).with(DisabledTracking) // it does not matter how it is used, it is not subscribed anyway
         .with(PrerenderTransform('never'))
         return r;
@@ -643,14 +643,14 @@ function useSubscribedStateLink<S, E extends {}>(
 
 function useGlobalStateLink<S, E>(stateLink: StateRefImpl<S, E>): StateLinkImpl<S, E> {
     const [, setValue] = React.useState({});
-    return useSubscribedStateLink(stateLink.state, [], () => {
+    return useSubscribedStateLink(stateLink.state, RootPath, () => {
         setValue({})
     }, stateLink.state, stateLink.disabledTracking, stateLink.prerenderTransform);
 }
 
 function useLocalStateLink<S>(initialState: S | (() => S)): StateLinkImpl<S, {}> {
     const [value, setValue] = React.useState(() => ({ state: createState(initialState) }));
-    return useSubscribedStateLink(value.state, [], () => {
+    return useSubscribedStateLink(value.state, RootPath, () => {
         setValue({ state: value.state })
     }, value.state);
 }
@@ -763,6 +763,8 @@ export function DisabledTracking(): Plugin<{}, {}> {
     }
 }
 
+const emptyInstance = {}
+
 // tslint:disable-next-line: function-name
 export function PrerenderTransform(strategy: PrerenderTransformStrategy):
     (marker: PluginTypeMarker<{}, {}>) => Plugin<{}, {}> {
@@ -772,7 +774,7 @@ export function PrerenderTransform(strategy: PrerenderTransformStrategy):
             strategy: strategy,
             instanceFactory: () => ({
                 extensions: [],
-                extensionsFactory: () => ({})
+                extensionsFactory: () => emptyInstance
             })
         }
     }

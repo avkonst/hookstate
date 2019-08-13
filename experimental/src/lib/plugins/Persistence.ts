@@ -3,6 +3,8 @@ import { Plugin, PluginTypeMarker, StateValueAtRoot } from '../UseStateLink';
 
 const PluginID = Symbol('LocalPersistence');
 
+const emptyInstance = {};
+
 // tslint:disable-next-line: function-name
 export function Persistence<S, E extends {}>(localStorageKey: string):
     ((unsued: PluginTypeMarker<S, E>) => Plugin<E, {}>) {
@@ -25,7 +27,7 @@ export function Persistence<S, E extends {}>(localStorageKey: string):
                         localStorage.setItem(localStorageKey, JSON.stringify(v));
                     },
                     extensions: [],
-                    extensionsFactory: (l) => ({})
+                    extensionsFactory: (l) => emptyInstance
                 }
             }
         }

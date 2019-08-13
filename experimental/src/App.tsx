@@ -2,7 +2,7 @@ import React from 'react';
 import logo from './logo.svg';
 import './App.css';
 
-import { useStateLink, StateLink, createStateLink, Plugin, PluginTypeMarker, PrerenderTransform } from './lib/UseStateLink';
+import { useStateLink, StateLink, createStateLink, Plugin, PluginTypeMarker, PrerenderTransform, DisabledTracking } from './lib/UseStateLink';
 import { Initial, InitialExtensions } from './lib/plugins/Initial';
 import { Logger } from './lib/plugins/Logger';
 import { Touched } from './lib/plugins/Touched';
@@ -90,7 +90,8 @@ const TouchedStatus = (props: {link: StateLink<TaskItem[], InitialExtensions>}) 
 }
 
 const ValidStatus = (props: {link: StateLink<TaskItem[], ValidationExtensions>}) => {
-    const errors = useStateLink(props.link, (l) => {
+    const errors = useStateLink(props.link, (l, prev) => {
+        l.with(PrerenderTransform('always'))
         return l.extended.errors;
     });
     return <p>
@@ -171,7 +172,6 @@ const App = () => {
         state: <input value={value} onChange={e => setValue(e.target.value)} /></p>
         <ModifiedStatus link={vl} />
         <TouchedStatus link={vl} />
-        <ValidStatus link={vl} />
         {/* {value} */}
         <JsonDump link={vl} />
         {
@@ -185,6 +185,7 @@ const App = () => {
         >
             Add task
         </button>
+        <ValidStatus link={vl} />
     </>;
 }
 
