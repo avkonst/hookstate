@@ -2,79 +2,186 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
-var reactHookstate = require('react-hookstate');
-
-var PluginID = Symbol('Touched');
+(function (ValidationSeverity) {
+    ValidationSeverity[ValidationSeverity["WARNING"] = 1] = "WARNING";
+    ValidationSeverity[ValidationSeverity["ERROR"] = 2] = "ERROR";
+})(exports.ValidationSeverity || (exports.ValidationSeverity = {}));
+var PluginID = Symbol('Validate');
+var emptyErrors = [];
 // tslint:disable-next-line: function-name
-function Touched(unused) {
-    return {
-        id: PluginID,
-        instanceFactory: function () {
-            var touchedState = undefined;
-            var setTouched = function (path) {
-                touchedState = touchedState || {};
-                var result = touchedState;
-                if (path.length === 0) {
-                    result[PluginID] = true;
+function ValidationForEach(attachRule, message, severity) {
+    if (severity === void 0) { severity = exports.ValidationSeverity.ERROR; }
+    return validationImpl(attachRule, message, severity, true);
+}
+// tslint:disable-next-line: function-name
+function Validation(attachRule, message, severity) {
+    if (severity === void 0) { severity = exports.ValidationSeverity.ERROR; }
+    return validationImpl(attachRule, message, severity, false);
+}
+function validationImpl(attachRule, message, severity, foreach) {
+    // const defaultProcessingHooks: ValueProcessingHooks<any, {}> = { };
+    // const hooksStore = defaultProcessingHooks
+    return function () {
+        var storeRules = {};
+        function getRulesAndNested(path) {
+            var result = storeRules;
+            path.forEach(function (p) {
+                if (typeof p === 'number') {
+                    p = '*'; // limitation: support only validation for each element of array
                 }
-                path.forEach(function (p, i) {
-                    result[p] = result[p] || {};
-                    result = result[p];
-                    if (i === path.length - 1) {
-                        result[PluginID] = true;
+                result = result && (result[p]);
+            });
+            return [result && result[PluginID] ? Array.from(result[PluginID].values()) : [],
+                result ? Object.keys(result) : []];
+        }
+        function addRule(path, r) {
+            var result = storeRules;
+            path.forEach(function (p, i) {
+                if (typeof p === 'number') {
+                    p = '*'; // limitation: support only validation for each element of array
+                }
+                result[p] = result[p] || {};
+                result = result[p];
+            });
+            var existingRules = result[PluginID];
+            var newRuleFunction = r.rule.toString();
+            if (existingRules) {
+                if (existingRules.has(newRuleFunction)) {
+                    return;
+                }
+                existingRules.set(newRuleFunction, r);
+                return;
+            }
+            var newMap = new Map();
+            newMap.set(newRuleFunction, r);
+            result[PluginID] = newMap;
+        }
+        function getErrors(l, depth, filter, first) {
+            var result = [];
+            var consistentResult = function () { return result.length === 0 ? emptyErrors : result; };
+            if (depth === 0) {
+                return consistentResult();
+            }
+            var _a = getRulesAndNested(l.path), existingRules = _a[0], nestedRulesKeys = _a[1];
+            for (var i = 0; i < existingRules.length; i += 1) {
+                var r = existingRules[i];
+                if (!r.rule(l.value)) {
+                    var err = {
+                        path: l.path,
+                        message: r.message,
+                        severity: r.severity
+                    };
+                    if (!filter || filter(err)) {
+                        result.push(err);
+                        if (first) {
+                            return result;
+                        }
                     }
-                });
-            };
-            var getTouched = function (path) {
-                var result = touchedState;
-                var somethingVisted = false;
-                var somethingTouched = false;
-                path.forEach(function (p, i) {
-                    if (result) {
-                        somethingVisted = true;
-                        somethingTouched = result[PluginID] ? true : somethingTouched;
-                        result = result[p];
+                }
+            }
+            if (depth === 1) {
+                return consistentResult();
+            }
+            if (nestedRulesKeys.length === 0) {
+                // console.log('getResults nested rules 0 length', result)
+                return consistentResult();
+            }
+            var nestedInst = l.nested;
+            if (nestedInst === undefined) {
+                // console.log('getResults no nested inst', result)
+                return consistentResult();
+            }
+            if (Array.isArray(nestedInst)) {
+                if (nestedRulesKeys.includes('*')) {
+                    for (var i = 0; i < nestedInst.length; i += 1) {
+                        var n = nestedInst[i];
+                        result = result.concat(n
+                            .extended.errors(filter, depth - 1, first));
+                        if (first && result.length > 0) {
+                            return result;
+                        }
                     }
-                });
-                if (result) {
-                    return true;
                 }
-                if (!somethingVisted) {
-                    return false;
+                // validation for individual array elements is not supported, it is covered by foreach above
+                // for (let i = 0; i < nestedRulesKeys.length; i += 1) {
+                //     const k = nestedRulesKeys[i];
+                //     // Validation rule exists,
+                //     // but the corresponding nested link may not be created,
+                //     // (because it may not be inferred automatically)
+                //     // because the original array value cas miss the corresponding index
+                //     // The design choice is to skip validation in this case.
+                //     // A client can define per array level validation rule,
+                //     // where existance of the index can be cheched.
+                //     if (nestedInst[k] !== undefined) {
+                //         result = result.concat((nestedInst[k] as StateLink<StateValueAtPath, ValidationExtensions>)
+                //             .extended.errors(filter, depth - 1, first));
+                //         if (first && result.length > 0) {
+                //             return result;
+                //         }
+                //     }
+                // }
+            }
+            else {
+                for (var i = 0; i < nestedRulesKeys.length; i += 1) {
+                    var k = nestedRulesKeys[i];
+                    // Validation rule exists,
+                    // but the corresponding nested link may not be created,
+                    // (because it may not be inferred automatically)
+                    // because the original array value cas miss the corresponding index
+                    // The design choice is to skip validation in this case.
+                    // A client can define per array level validation rule,
+                    // where existance of the index can be cheched.
+                    if (nestedInst[k] !== undefined) {
+                        result = result.concat(nestedInst[k]
+                            .extended.errors(filter, depth - 1, first));
+                        if (first && result.length > 0) {
+                            return result;
+                        }
+                    }
                 }
-                if (!somethingTouched) {
-                    return false;
-                }
-                return undefined;
-            };
-            var touched = function (l) {
-                var t = getTouched(l.path);
-                if (t !== undefined) {
-                    // For optimization purposes, there is nothing being used from the link value
-                    // as a result it is left untracked and no rerender happens for the result of this function
-                    // when the source value is updated.
-                    // We do the trick to fix it, we mark the value being 'deeply used',
-                    // so any changes for this value or any nested will trigger rerender.
-                    var _1 = l.with(reactHookstate.DisabledTracking).value;
-                    return t;
-                }
-                return l.extended.modified;
-            };
-            return {
-                onSet: function (p) { return setTouched(p); },
-                extensions: ['touched', 'untouched'],
+            }
+            return consistentResult();
+        }
+        return {
+            id: PluginID,
+            instanceFactory: function () { return ({
+                get config() {
+                    return { rule: attachRule, message: message, severity: severity, foreach: foreach };
+                },
+                onAttach: function (path, plugin) {
+                    var r = plugin.config;
+                    addRule(r.foreach ? path.concat('*') : path, r);
+                },
+                extensions: ['valid', 'invalid', 'errors', 'firstError'],
                 extensionsFactory: function (l) { return ({
-                    get touched() {
-                        return touched(l);
+                    get validShallow() {
+                        return getErrors(l, 1).length === 0;
                     },
-                    get untouched() {
-                        return !touched(l);
+                    get valid() {
+                        return getErrors(l, Number.MAX_SAFE_INTEGER).length === 0;
+                    },
+                    get invalidShallow() {
+                        return getErrors(l, 1).length !== 0;
+                    },
+                    get invalid() {
+                        return getErrors(l, Number.MAX_SAFE_INTEGER).length !== 0;
+                    },
+                    errors: function (filter, depth, first) {
+                        return getErrors(l, depth === undefined ? Number.MAX_SAFE_INTEGER : depth, filter, first);
+                    },
+                    firstError: function (filter, depth) {
+                        var r = getErrors(l, depth === undefined ? Number.MAX_SAFE_INTEGER : depth, filter, true);
+                        if (r.length === 0) {
+                            return {};
+                        }
+                        return r;
                     },
                 }); }
-            };
-        }
+            }); }
+        };
     };
 }
 
-exports.Touched = Touched;
+exports.Validation = Validation;
+exports.ValidationForEach = ValidationForEach;
 //# sourceMappingURL=index.js.map
