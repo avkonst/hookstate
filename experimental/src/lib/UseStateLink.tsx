@@ -33,7 +33,6 @@ export interface StateLink<S, E extends {} = {}> {
     readonly value: S;
 
     // shortcut for nested
-    readonly _: NestedInferredLink<S, E>;
     readonly nested: NestedInferredLink<S, E>;
 
     readonly inferred: InferredStateMutation<S>;
@@ -392,10 +391,6 @@ class StateLinkImpl<S, E extends {}> implements StateLink<S, E>, Subscribable, S
         } else {
             return undefined as unknown as InferredStateMutation<S>;
         }
-    }
-
-    get _(): NestedInferredLink<S, E> {
-        return this.nested;
     }
 
     get nested(): NestedInferredLink<S, E> {

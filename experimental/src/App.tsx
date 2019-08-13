@@ -17,7 +17,7 @@ const state = createStateLink<TaskItem[]>(Array.from(Array(2).keys()).map((i) =>
     name: 'initial',
     priority: i,
     // toJSON(): any { return this.name + this.priority; }
-})))//.with(LocalPersistence('somekey2'));
+})))//.with(Persistence('somekey2'));
 
 setInterval(() => {
     // useStateLinkUnmounted(state).nested[0].nested.priority.set(p => (p || 0) + 1)
@@ -36,7 +36,7 @@ const TaskView = (props: { link: StateLink<TaskItem> }) => {
         ValidationSeverity.WARNING))
     // const locallink = props.link;
     const locallink = useStateLink(pl);
-    locallink._.name.with(Validation(v => v.length !== 0, 'Task name should not be empty'));
+    locallink.nested.name.with(Validation(v => v.length !== 0, 'Task name should not be empty'));
     // const priorityLink = locallink.nested.priority;
     // const nameLink = locallink.nested.name;
     // return <p>
@@ -47,11 +47,11 @@ const TaskView = (props: { link: StateLink<TaskItem> }) => {
 
     return <p>
         {new Date().toISOString()} <span />
-        Modified: {locallink.with(Initial).with(Touched)._.name.extended.modified.toString()} <span />
-        Touched: {locallink.with(Initial).with(Touched)._.name.extended.touched.toString()} <span />
+        Modified: {locallink.with(Initial).with(Touched).nested.name.extended.modified.toString()} <span />
+        Touched: {locallink.with(Initial).with(Touched).nested.name.extended.touched.toString()} <span />
         Valid per task: {JSON.stringify(locallink.extended.errors())} <span />
-        Valid per name: {JSON.stringify(locallink._.name.extended.errors())} <span />
-        Valid per priority: {JSON.stringify(locallink._.priority.extended.errors())} <span />
+        Valid per name: {JSON.stringify(locallink.nested.name.extended.errors())} <span />
+        Valid per priority: {JSON.stringify(locallink.nested.priority.extended.errors())} <span />
         <input value={locallink.value.name} onChange={v => locallink.nested.name.set(v.target.value)} />
         <button onClick={v => locallink.nested.priority.set(pv => Number(pv) + 1)} children={'increment'} />
         {/* <input value={'increment priority'} onChange={v => locallink.nested.priority.set(pv => Number(pv) + 1)} /> */}
@@ -62,7 +62,7 @@ const TwiceTaskView = (props: { link: StateLink<TaskItem>, ind: number }) => {
     return <>
         Task number {props.ind} two times:
         <TaskView link={props.link} />
-        {/* <TaskView link={props.link} /> */}
+        <TaskView link={props.link} />
     </>;
 }
 
@@ -173,7 +173,7 @@ const App = () => {
         {/* {value} */}
         <JsonDump link={vl} />
         {
-            vl._.map((i, ind) => <TwiceTaskView key={ind} ind={ind} link={i} />)
+            vl.nested.map((i, ind) => <TwiceTaskView key={ind} ind={ind} link={i} />)
         }
         <button
             onClick={() => vl.inferred.push({
