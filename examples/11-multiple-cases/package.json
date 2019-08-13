@@ -1,0 +1,51 @@
+{
+    "name": "experimental",
+    "version": "0.1.0",
+    "private": true,
+    "dependencies": {
+        "@types/jest": "24.0.15",
+        "@types/lodash.clonedeep": "4.5.6",
+        "@types/lodash.isequal": "4.5.5",
+        "@types/node": "12.6.4",
+        "@types/react": "16.8.23",
+        "@types/react-dom": "16.8.4",
+        "lodash.clonedeep": "4.5.0",
+        "lodash.isequal": "4.5.0",
+        "npm-check-updates": "3.1.8",
+        "react": "16.8.6",
+        "react-dom": "16.8.6",
+        "react-hookstate": "0.10.0",
+        "react-hookstate-initial": "0.10.0",
+        "react-hookstate-logger": "0.10.0",
+        "react-hookstate-persistence": "0.10.0",
+        "react-hookstate-prerender": "0.10.0",
+        "react-hookstate-touched": "0.10.0",
+        "react-hookstate-validation": "0.10.0",
+        "react-scripts": "3.0.1",
+        "typescript": "3.5.3"
+    },
+    "scripts": {
+        "start": "react-scripts start",
+        "build": "react-scripts build",
+        "test": "react-scripts test",
+        "eject": "react-scripts eject",
+        "check-updates": "ncu",
+        "apply-updates": "ncu -u"
+    },
+    "eslintConfig": {
+        "extends": "react-app"
+    },
+    "browserslist": {
+        "production": [
+            ">0.2%",
+            "not dead",
+            "not op_mini all"
+        ],
+        "development": [
+            "last 1 chrome version",
+            "last 1 firefox version",
+            "last 1 safari version"
+        ]
+    },
+    "devDependencies": { }
+}
