@@ -106,11 +106,11 @@ export function Dup<S, E extends {}>(unused: PluginTypeMarker<S, E>): Plugin<E, 
 }
 
 const App = () => {
-    // const vl = useStateLink<TaskItem[], { myext: () => void }>(Array.from(Array(2).keys()).map((i) => ({
+    const [value, setValue] = React.useState('');
+    // const vl = useStateLink<TaskItem[]>(Array.from(Array(2).keys()).map((i) => ({
     //     name: 'initial',
     //     priority: i
-    // }))).with(ModifiedPlugin);
-    const [value, setValue] = React.useState('');
+    // })))
     const vl = useStateLink(state
         // .with(Persistence('somekey2'))
         )
