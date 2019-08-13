@@ -1,6 +1,4 @@
 import React from 'react';
-import { ObjectStateMutation, createObjectStateMutation } from './UseStateObject';
-import { ArrayStateMutation, createArrayStateMutation } from './UseStateArray';
 
 //
 // DECLARATIONS
@@ -19,23 +17,13 @@ export type NestedInferredLink<S, E extends {}> =
     S extends object ? { readonly [K in keyof Required<S>]: StateLink<S[K], E>; } :
     undefined;
 
-// TODO add support for Map and Set
-export type InferredStateMutation<S> =
-    S extends ReadonlyArray<(infer U)> ? ArrayStateMutation<U> :
-    S extends null ? undefined :
-    S extends object ? ObjectStateMutation<S> :
-    undefined;
-
 export type Path = ReadonlyArray<string | number>;
 
 export interface StateLink<S, E extends {} = {}> {
     readonly path: Path;
     readonly value: S;
 
-    // shortcut for nested
     readonly nested: NestedInferredLink<S, E>;
-
-    readonly inferred: InferredStateMutation<S>;
     readonly extended: E;
 
     set(newValue: React.SetStateAction<S>): void;
@@ -376,23 +364,6 @@ class StateLinkImpl<S, E extends {}> implements StateLink<S, E>, Subscribable, S
         return updated;
     }
 
-    get inferred(): InferredStateMutation<S> {
-        if (!this.valueTracked) {
-            this.valueUsed = true;
-        }
-        if (Array.isArray(this.valueUntracked)) {
-            return createArrayStateMutation((newValue) =>
-            // tslint:disable-next-line: no-any
-            this.set(newValue as any)) as unknown as InferredStateMutation<S>
-        } else if (typeof this.valueUntracked === 'object' && this.valueUntracked !== null) {
-            return createObjectStateMutation((newValue) =>
-            // tslint:disable-next-line: no-any
-            this.set(newValue as any)) as unknown as InferredStateMutation<S>;
-        } else {
-            return undefined as unknown as InferredStateMutation<S>;
-        }
-    }
-
     get nested(): NestedInferredLink<S, E> {
         if (!this.valueTracked) {
             this.valueUsed = true;
@@ -691,7 +662,7 @@ export function createStateLink<S>(initial: S | (() => S)): StateRef<S, {}> {
     return new StateRefImpl(createState(initial));
 }
 
-/*
+/**
  * Future docs for transformer
  * Forces rerender of a hooked component when result of `watcher`
  * is changed due to the change of the current value in `state`.
