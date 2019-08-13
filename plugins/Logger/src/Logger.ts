@@ -1,5 +1,5 @@
 
-import { DisabledTracking, Plugin, PluginTypeMarker, Path, StateValueAtRoot, StateValueAtPath } from '@hookstate';
+import { DisabledTracking, Plugin, PluginTypeMarker, Path, StateValueAtRoot, StateValueAtPath } from '@hookstate/core';
 
 export interface LoggerExtensions {
     log(): void;

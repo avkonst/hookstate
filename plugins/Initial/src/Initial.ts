@@ -7,7 +7,7 @@ import {
     StateLink,
     StateValueAtPath,
     StateValueAtRoot
-} from '@hookstate';
+} from '@hookstate/core';
 
 import isEqual from 'lodash.isequal';
 import cloneDeep from 'lodash.clonedeep';

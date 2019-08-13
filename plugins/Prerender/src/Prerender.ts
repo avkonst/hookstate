@@ -1,4 +1,4 @@
-import { StateLink, Prerender } from '@hookstate';
+import { StateLink, Prerender } from '@hookstate/core';
 import isEqual from 'lodash.isequal';
 
 // tslint:disable-next-line: function-name

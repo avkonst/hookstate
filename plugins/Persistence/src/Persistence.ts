@@ -1,5 +1,5 @@
 
-import { Plugin, PluginTypeMarker, StateValueAtRoot } from '@hookstate';
+import { Plugin, PluginTypeMarker, StateValueAtRoot } from '@hookstate/core';
 
 const PluginID = Symbol('LocalPersistence');
 

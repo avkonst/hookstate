@@ -1,5 +1,5 @@
 
-import { Path, Plugin, PluginTypeMarker, StateLink, DisabledTracking, StateValueAtPath } from '@hookstate';
+import { Path, Plugin, PluginTypeMarker, StateLink, DisabledTracking, StateValueAtPath } from '@hookstate/core';
 
 import { InitialExtensions } from '@hookstate/initial';
 

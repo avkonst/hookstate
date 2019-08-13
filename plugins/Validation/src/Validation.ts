@@ -1,5 +1,5 @@
 
-import { Plugin, PluginTypeMarker, Path, StateLink, StateValueAtPath } from '@hookstate';
+import { Plugin, PluginTypeMarker, Path, StateLink, StateValueAtPath } from '@hookstate/core';
 
 export enum ValidationSeverity {
     WARNING = 1,
