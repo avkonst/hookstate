@@ -73,18 +73,10 @@ function validationImpl<S, E extends {}>(
         function getRulesAndNested(path: Path): [ValidationRule[], string[]] {
             let result = storeRules;
             path.forEach(p => {
-                result = result && (result[p] || (typeof p === 'number' && result['*']));
-                // if (result) {
-                //     if (typeof p === 'number' && result['*']) {
-                //         if (result[p]) {
-                //             result = { ...result['*'], ...result[p] }
-                //         } else {
-                //             result = result['*']
-                //         }
-                //     } else {
-                //         result = result && result[p]
-                //     }
-                // }
+                if (typeof p === 'number') {
+                    p = '*' // limitation: support only validation for each element of array
+                }
+                result = result && (result[p])
             });
             return [result && result[PluginID] ? Array.from(result[PluginID].values()) : [],
                 result ? Object.keys(result) : []];
@@ -92,6 +84,9 @@ function validationImpl<S, E extends {}>(
         function addRule(path: Path, r: ValidationRule) {
             let result = storeRules;
             path.forEach((p, i) => {
+                if (typeof p === 'number') {
+                    p = '*' // limitation: support only validation for each element of array
+                }
                 result[p] = result[p] || {}
                 result = result[p]
             });
@@ -161,23 +156,24 @@ function validationImpl<S, E extends {}>(
                         }
                     }
                 }
-                for (let i = 0; i < nestedRulesKeys.length; i += 1) {
-                    const k = nestedRulesKeys[i];
-                    // Validation rule exists,
-                    // but the corresponding nested link may not be created,
-                    // (because it may not be inferred automatically)
-                    // because the original array value cas miss the corresponding index
-                    // The design choice is to skip validation in this case.
-                    // A client can define per array level validation rule,
-                    // where existance of the index can be cheched.
-                    if (nestedInst[k] !== undefined) {
-                        result = result.concat((nestedInst[k] as StateLink<StateValueAtPath, ValidationExtensions>)
-                            .extended.errors(filter, depth - 1, first));
-                        if (first && result.length > 0) {
-                            return result;
-                        }
-                    }
-                }
+                // validation for individual array elements is not supported, it is covered by foreach above
+                // for (let i = 0; i < nestedRulesKeys.length; i += 1) {
+                //     const k = nestedRulesKeys[i];
+                //     // Validation rule exists,
+                //     // but the corresponding nested link may not be created,
+                //     // (because it may not be inferred automatically)
+                //     // because the original array value cas miss the corresponding index
+                //     // The design choice is to skip validation in this case.
+                //     // A client can define per array level validation rule,
+                //     // where existance of the index can be cheched.
+                //     if (nestedInst[k] !== undefined) {
+                //         result = result.concat((nestedInst[k] as StateLink<StateValueAtPath, ValidationExtensions>)
+                //             .extended.errors(filter, depth - 1, first));
+                //         if (first && result.length > 0) {
+                //             return result;
+                //         }
+                //     }
+                // }
             } else {
                 for (let i = 0; i < nestedRulesKeys.length; i += 1) {
                     const k = nestedRulesKeys[i];
