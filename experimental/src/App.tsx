@@ -8,6 +8,7 @@ import { Logger } from './lib/plugins/Logger';
 import { Touched } from './lib/plugins/Touched';
 import { Persistence } from './lib/plugins/Persistence';
 import { Validation, ValidationSeverity, ValidationExtensions, ValidationError } from './lib/plugins/Validation';
+import isEqual from 'lodash.isequal';
 
 JSON.stringify({ x: 5, y: 6, toJSON() { return this.x + this.y; } });
 
@@ -89,11 +90,20 @@ const TouchedStatus = (props: {link: StateLink<TaskItem[], InitialExtensions>}) 
     </p>;
 }
 
+function ReturnChanged<S, E extends {}, R>(
+    transform: (state: StateLink<S, E>) => R) {
+    return (link: StateLink<S, E>, prev: R | undefined) => {
+        link.with(PrerenderTransform('always'));
+        const result = transform(link);
+        if (prev !== undefined && isEqual(result, prev)) {
+            return prev;
+        }
+        return result;
+    }
+}
+
 const ValidStatus = (props: {link: StateLink<TaskItem[], ValidationExtensions>}) => {
-    const errors = useStateLink(props.link, (l, prev) => {
-        l.with(PrerenderTransform('always'))
-        return l.extended.errors;
-    });
+    const errors = useStateLink(props.link, ReturnChanged(l => l.extended.errors));
     return <p>
         {new Date().toISOString()} Valid: {JSON.stringify(errors)}
     </p>;

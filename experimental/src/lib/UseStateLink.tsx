@@ -684,6 +684,48 @@ function useAutoStateLink<S, E extends {}>(
     return useLocalStateLink(initialState as S | (() => S)) as StateLinkImpl<S, E>;
 }
 
+function injectTransform<S, E extends {}, R>(
+    link: StateLinkImpl<S, E>,
+    transform: (state: StateLink<S, E>, prev: R | undefined) => R
+) {
+    let injectedOnUpdateUsed: (() => void) | undefined = undefined;
+    const originOnUpdateUsed = link.onUpdateUsed;
+    link.onUpdateUsed = () => {
+        if (injectedOnUpdateUsed) {
+            return injectedOnUpdateUsed();
+        }
+        return originOnUpdateUsed();
+    }
+
+    const result = transform(link, undefined);
+    const strategy = link.prerenderTransform || 'primitive';
+    if (strategy === 'primitive' && (typeof result === 'object' || typeof result === 'function') ||
+        strategy === 'never') {
+        return result;
+    }
+
+    injectedOnUpdateUsed = () => {
+        // need to create new one to make sure
+        // it does not pickup the stale cache of the original link after mutation
+        const overidingLink = new StateLinkImpl<S, E>(
+            link.state,
+            link.path,
+            () => injectedOnUpdateUsed!(),
+            link.state.get(link.path)
+        )
+        // and we should inject to onUpdate now
+        // so the overriding link is used to track used properties
+        link.overridingLink = overidingLink;
+        const updatedResult = transform(overidingLink, result);
+        // if result is not changed, it does not affect the rendering result too
+        // so, we skip triggering rerendering in this case
+        if (updatedResult !== result) {
+            originOnUpdateUsed();
+        }
+    }
+    return result;
+}
+
 ///
 /// EXPORTED IMPLEMENTATIONS
 ///
@@ -724,42 +766,7 @@ export function useStateLink<S, E extends {}, R>(
 ): R {
     const link = useAutoStateLink(initialState);
     if (transform) {
-        let injectedOnUpdateUsed: (() => void) | undefined = undefined;
-        const originOnUpdateUsed = link.onUpdateUsed;
-        link.onUpdateUsed = () => {
-            if (injectedOnUpdateUsed) {
-                return injectedOnUpdateUsed();
-            }
-            return originOnUpdateUsed();
-        }
-
-        const result = transform(link, undefined);
-        const strategy = link.prerenderTransform || 'primitive';
-        if (strategy === 'primitive' && (typeof result === 'object' || typeof result === 'function') ||
-            strategy === 'never') {
-            return result;
-        }
-
-        injectedOnUpdateUsed = () => {
-            // need to create new one to make sure
-            // it does not pickup the stale cache of the original link after mutation
-            const overidingLink = new StateLinkImpl<S, E>(
-                link.state,
-                link.path,
-                () => injectedOnUpdateUsed!(),
-                link.state.get(link.path)
-            )
-            // and we should inject to onUpdate now
-            // so the overriding link is used to track used properties
-            link.overridingLink = overidingLink;
-            const updatedResult = transform(overidingLink, result);
-            // if result is not changed, it does not affect the rendering result too
-            // so, we skip triggering rerendering in this case
-            if (updatedResult !== result) {
-                originOnUpdateUsed();
-            }
-        }
-        return result;
+        return injectTransform(link, transform);
     }
     return link as unknown as R;
 }
