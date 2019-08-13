@@ -1,5 +1,5 @@
 
-import { DisabledTracking, Plugin, PluginTypeMarker, Path, StateValueAtRoot, StateValueAtPath } from '../UseStateLink';
+import { DisabledTracking, Plugin, PluginTypeMarker, Path, StateValueAtRoot, StateValueAtPath } from 'react-hookstate';
 
 export interface LoggerExtensions {
     log(): void;

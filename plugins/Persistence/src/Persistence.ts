@@ -1,5 +1,5 @@
 
-import { Plugin, PluginTypeMarker, StateValueAtRoot } from '../UseStateLink';
+import { Plugin, PluginTypeMarker, StateValueAtRoot } from 'react-hookstate';
 
 const PluginID = Symbol('LocalPersistence');
 

@@ -1,5 +1,5 @@
 
-import { Plugin, PluginTypeMarker, Path, StateLink, StateValueAtPath } from '../UseStateLink';
+import { Plugin, PluginTypeMarker, Path, StateLink, StateValueAtPath } from 'react-hookstate';
 
 export enum ValidationSeverity {
     WARNING = 1,

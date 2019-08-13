@@ -4,77 +4,57 @@ Object.defineProperty(exports, '__esModule', { value: true });
 
 var reactHookstate = require('react-hookstate');
 
-var PluginID = Symbol('Touched');
+var PluginID = Symbol('Logger');
 // tslint:disable-next-line: function-name
-function Touched(unused) {
+function Logger(unused) {
+    var toJsonTrimmed = function (s) {
+        var limit = 100;
+        var r = JSON.stringify(s);
+        if (r.length > 100) {
+            return r.slice(0, limit) + "... (" + (r.length - limit) + " characters trunkated)";
+        }
+        return r;
+    };
     return {
         id: PluginID,
         instanceFactory: function () {
-            var touchedState = undefined;
-            var setTouched = function (path) {
-                touchedState = touchedState || {};
-                var result = touchedState;
-                if (path.length === 0) {
-                    result[PluginID] = true;
-                }
-                path.forEach(function (p, i) {
-                    result[p] = result[p] || {};
+            var getAtPath = function (v, path) {
+                var result = v;
+                path.forEach(function (p) {
                     result = result[p];
-                    if (i === path.length - 1) {
-                        result[PluginID] = true;
-                    }
                 });
-            };
-            var getTouched = function (path) {
-                var result = touchedState;
-                var somethingVisted = false;
-                var somethingTouched = false;
-                path.forEach(function (p, i) {
-                    if (result) {
-                        somethingVisted = true;
-                        somethingTouched = result[PluginID] ? true : somethingTouched;
-                        result = result[p];
-                    }
-                });
-                if (result) {
-                    return true;
-                }
-                if (!somethingVisted) {
-                    return false;
-                }
-                if (!somethingTouched) {
-                    return false;
-                }
-                return undefined;
-            };
-            var touched = function (l) {
-                var t = getTouched(l.path);
-                if (t !== undefined) {
-                    // For optimization purposes, there is nothing being used from the link value
-                    // as a result it is left untracked and no rerender happens for the result of this function
-                    // when the source value is updated.
-                    // We do the trick to fix it, we mark the value being 'deeply used',
-                    // so any changes for this value or any nested will trigger rerender.
-                    var _1 = l.with(reactHookstate.DisabledTracking).value;
-                    return t;
-                }
-                return l.extended.modified;
+                return result;
             };
             return {
-                onSet: function (p) { return setTouched(p); },
-                extensions: ['touched', 'untouched'],
+                onInit: function () {
+                    // tslint:disable-next-line: no-console
+                    console.log("[hookstate]: logger attached");
+                },
+                onSet: function (p, v) {
+                    var newValue = getAtPath(v, p);
+                    // tslint:disable-next-line: no-console
+                    console.log("[hookstate]: new value set at path '/" + p.join('/') + "': " +
+                        ("" + toJsonTrimmed(newValue)), {
+                        path: p,
+                        value: newValue
+                    });
+                },
+                extensions: ['log'],
                 extensionsFactory: function (l) { return ({
-                    get touched() {
-                        return touched(l);
-                    },
-                    get untouched() {
-                        return !touched(l);
-                    },
+                    log: function () {
+                        l.with(reactHookstate.DisabledTracking); // everything is touched by the JSON, so no point to track
+                        // tslint:disable-next-line: no-console
+                        return console.log("[hookstate]: current value at path '/" + l.path.join('/') + ": " +
+                            (toJsonTrimmed(l.value) + "'"), {
+                            path: l.path,
+                            value: l.value
+                        });
+                    }
                 }); }
             };
         }
     };
 }
 
-exports.Touched = Touched;
+exports.Logger = Logger;
 //# sourceMappingURL=index.js.map
