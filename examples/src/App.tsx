@@ -12,6 +12,7 @@ import { Initial, InitialExtensions } from '@hookstate/initial';
 import { Logger } from '@hookstate/logger';
 import { Touched, TouchedExtensions } from '@hookstate/touched';
 import { Persistence } from '@hookstate/persistence';
+import { Mutate } from '@hookstate/mutate';
 import { Validation, ValidationForEach, ValidationSeverity, ValidationExtensions } from '@hookstate/validation';
 
 import isEqual from 'lodash.isequal';
@@ -133,7 +134,7 @@ const App = () => {
             vl.nested.map((i, ind) => <TwiceTaskView key={ind} ind={ind} link={i} />)
         }
         <button
-            onClick={() => vl.inferred.push({
+            onClick={() => Mutate(vl).push({
                 name: 'new task',
                 priority: 1
             })}

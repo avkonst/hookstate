@@ -1219,6 +1219,64 @@
   dependencies:
     "@hapi/hoek" "8.x.x"
 
+"@hookstate/core@0.10.0", "@hookstate/core@^0.10.0":
+  version "0.10.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-0.10.0.tgz#eb5002a1e7faebbe1f79d486fc2ac9a0f3554317"
+  integrity sha512-Sfzfa/mb6PSSm2co6R4/OGnYvk1Zo8X8ur0bXSxKkhZZd14RMs7KQbXeaLE5RJaG5u7h+AZsgsSH+S6RHp2vmQ==
+
+"@hookstate/initial@0.10.0", "@hookstate/initial@^0.10.0":
+  version "0.10.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/initial/-/initial-0.10.0.tgz#f1374a93ed195f5642d5d26c10597ac5a1dfeef5"
+  integrity sha512-7IHCBeEC8GWGR6ZZNZozs3aVG6PN3hkO0JowGqhYWUgl+GZbR0eBFjxdr7ss86hu1GzKJ/6SZ1BreybZ0ui/Vg==
+  dependencies:
+    "@hookstate/core" "^0.10.0"
+    lodash.clonedeep "^4.5.0"
+    lodash.isequal "^4.5.0"
+
+"@hookstate/logger@0.10.0":
+  version "0.10.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/logger/-/logger-0.10.0.tgz#5d6ac6dd3186176c263a64e5853cc666cf9bc11f"
+  integrity sha512-jidcDFfOY/9JBvB7F1yBXx/8HOfLZTrMQuWchAubYyjinWvbF3xLRWOnr4r6IjumDEG3Ry8WQtCEnBVuSEBoaQ==
+  dependencies:
+    "@hookstate/core" "^0.10.0"
+
+"@hookstate/mutate@0.10.0":
+  version "0.10.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/mutate/-/mutate-0.10.0.tgz#251b41b55fd19f4b96c19ee224bac50e66957f80"
+  integrity sha512-DfsARcAdxFoqdl5PwEfpJ1gcRBcqFgXtF5VNg1+YkGkq8setMAgeA+bRIOYlLIFFzkcUJu0v6sdVLQov75bJ2Q==
+  dependencies:
+    "@hookstate/core" "^0.10.0"
+
+"@hookstate/persistence@0.10.0":
+  version "0.10.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/persistence/-/persistence-0.10.0.tgz#6ef148de5c7593555365f2aac882e445a201cc9c"
+  integrity sha512-YuUTi/7t6cJyuiRtVYPYQS3l+anobVsrYfgAbmAQUTdc1FFcqKeOkmxAgnHSIigrnzN18CsdE4Tz/dblvgacCQ==
+  dependencies:
+    "@hookstate/core" "^0.10.0"
+
+"@hookstate/prerender@0.10.0":
+  version "0.10.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/prerender/-/prerender-0.10.0.tgz#7a91d2f7d44e7cfd0fda19fb409c9a7089afa9b2"
+  integrity sha512-Am78k1rBg9BAVHQeYC7KXfVLkAWWDRWw8uGrF8Ok7Da8a6PK9GkgaRQGfcetTVLVvTI8drYLbGl8tzg1Gb0d6g==
+  dependencies:
+    "@hookstate/core" "^0.10.0"
+    lodash.isequal "^4.5.0"
+
+"@hookstate/touched@0.10.0":
+  version "0.10.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/touched/-/touched-0.10.0.tgz#e32f62e203647152082617122b7cbe5e779679b6"
+  integrity sha512-v8tkLd3Cw1K/MWrylGSL2XVu5bkWjfDXQhtSSotLbzEr9AswfSHukhG3I1mUM3E/YjwYzHSaGEzBrBoSq//2PQ==
+  dependencies:
+    "@hookstate/core" "^0.10.0"
+    "@hookstate/initial" "^0.10.0"
+
+"@hookstate/validation@0.10.0":
+  version "0.10.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/validation/-/validation-0.10.0.tgz#ea43d1ddf3101c3ff7f4dc3514495fcc4c74f4bf"
+  integrity sha512-AZ3EVq3+5VROigsY9YG8o1peCcSUD0umXYpkOfw2DcVJZ8gKTruVGpnISCfPVpxFqqUIma8f33QFZ0u3FEvZ8A==
+  dependencies:
+    "@hookstate/core" "^0.10.0"
+
 "@jest/console@^24.7.1":
   version "24.7.1"
   resolved "https://registry.yarnpkg.com/@jest/console/-/console-24.7.1.tgz#32a9e42535a97aedfe037e725bd67e954b459545"
@@ -8851,57 +8909,6 @@ react-error-overlay@^5.1.6:
   version "5.1.6"
   resolved "https://registry.yarnpkg.com/react-error-overlay/-/react-error-overlay-5.1.6.tgz#0cd73407c5d141f9638ae1e0c63e7b2bf7e9929d"
   integrity sha512-X1Y+0jR47ImDVr54Ab6V9eGk0Hnu7fVWGeHQSOXHf/C2pF9c6uy3gef8QUeuUiWlNb0i08InPSE5a/KJzNzw1Q==
-
-react-hookstate-initial@0.10.0, react-hookstate-initial@^0.10.0:
-  version "0.10.0"
-  resolved "https://registry.yarnpkg.com/react-hookstate-initial/-/react-hookstate-initial-0.10.0.tgz#67f1c6e6c8df81cad04c7d9e7eb6c323996cd080"
-  integrity sha512-W/QHmkIbsYYfeRGWcOWcn7cm17YS9xuUGoYGdV3lgAgSN0IhuMiyiBQWsdwyKgNj76QmL6nlvf8o3rB73omqew==
-  dependencies:
-    lodash.clonedeep "^4.5.0"
-    lodash.isequal "^4.5.0"
-    react-hookstate "^0.10.0"
-
-react-hookstate-logger@0.10.0:
-  version "0.10.0"
-  resolved "https://registry.yarnpkg.com/react-hookstate-logger/-/react-hookstate-logger-0.10.0.tgz#e65a344de19b6e06c3209cb98a053a734c0f3e8e"
-  integrity sha512-dpk+aUI1XP0d52fZs6GgVp+2q1LzHaPZ+QVKFPc8drrJijLliUxmwNt5Aw4ePsbV/7I81rFFoVdS8NA0Vpvosw==
-  dependencies:
-    react-hookstate "^0.10.0"
-
-react-hookstate-persistence@0.10.0:
-  version "0.10.0"
-  resolved "https://registry.yarnpkg.com/react-hookstate-persistence/-/react-hookstate-persistence-0.10.0.tgz#0f0b6b96a5728e27cf4c99c3894211dbef5ac92f"
-  integrity sha512-2YF7KeFUQFsd+l8wja/Nm3kNQeX23btUlvfRFghyBYOEKCzOO5/rjZOt9fXHonhAv/moijngeLAKbefWOvjHvw==
-  dependencies:
-    react-hookstate "^0.10.0"
-
-react-hookstate-prerender@0.10.0:
-  version "0.10.0"
-  resolved "https://registry.yarnpkg.com/react-hookstate-prerender/-/react-hookstate-prerender-0.10.0.tgz#a0374415d462c7d7127f6880be9e3418f3458d9c"
-  integrity sha512-4OPU07KVkWYZ/b9OnR4u/YV9fE0BmNe9R7uNfPbipufh4VA3HNSx1XwvX+J33vBGUpv+RanohQgwMr8dm905Ug==
-  dependencies:
-    lodash.isequal "^4.5.0"
-    react-hookstate "^0.10.0"
-
-react-hookstate-touched@0.10.0:
-  version "0.10.0"
-  resolved "https://registry.yarnpkg.com/react-hookstate-touched/-/react-hookstate-touched-0.10.0.tgz#c84d882d7bbb6ca9839067fc452d774e2e16bd0d"
-  integrity sha512-JyVlpqFWZNIFfThX8EjiawRJeD7MFxLj+P59XwiUJQUJ+mwxTGIFVXcPZ6w6QIR8d1pMyT8leaWuewlkblJPJg==
-  dependencies:
-    react-hookstate "^0.10.0"
-    react-hookstate-initial "^0.10.0"
-
-react-hookstate-validation@0.10.0:
-  version "0.10.0"
-  resolved "https://registry.yarnpkg.com/react-hookstate-validation/-/react-hookstate-validation-0.10.0.tgz#16d03ffea6c13fe8a9d0f97c9c5f55d88b54778d"
-  integrity sha512-OcisTH/B4iDyPYwPL4nU5TU+joIEBe1CYkbhdzdPHbTrPAF4QSJUnJo15fz64VDq1Mi2BhGOoXSSwFR7WqEqfg==
-  dependencies:
-    react-hookstate "^0.10.0"
-
-react-hookstate@0.10.0, react-hookstate@^0.10.0:
-  version "0.10.0"
-  resolved "https://registry.yarnpkg.com/react-hookstate/-/react-hookstate-0.10.0.tgz#2e6f6398a90582415832543a79246e2981419a66"
-  integrity sha512-OR9nWF8idg6eFUzvzaKCdE9IvMhTFVdb2uOP3WghOn1PwZrCzckSkie7/VWexGncbZ9aIIbqBbeGQ2KyOHoGaw==
 
 react-is@^16.8.1:
   version "16.8.4"
