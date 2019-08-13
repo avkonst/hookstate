@@ -985,6 +985,11 @@
   dependencies:
     "@hapi/hoek" "8.x.x"
 
+"@hookstate/core@^0.10.0":
+  version "0.10.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-0.10.0.tgz#eb5002a1e7faebbe1f79d486fc2ac9a0f3554317"
+  integrity sha512-Sfzfa/mb6PSSm2co6R4/OGnYvk1Zo8X8ur0bXSxKkhZZd14RMs7KQbXeaLE5RJaG5u7h+AZsgsSH+S6RHp2vmQ==
+
 "@jest/console@^24.7.1":
   version "24.7.1"
   resolved "https://registry.yarnpkg.com/@jest/console/-/console-24.7.1.tgz#32a9e42535a97aedfe037e725bd67e954b459545"
@@ -6559,16 +6564,6 @@ lodash._reinterpolate@~3.0.0:
   resolved "https://registry.yarnpkg.com/lodash._reinterpolate/-/lodash._reinterpolate-3.0.0.tgz#0ccf2d89166af03b3663c796538b75ac6e114d9d"
   integrity sha1-DM8tiRZq8Ds2Y8eWU4t1rG4RTZ0=
 
-lodash.clonedeep@4.5.0:
-  version "4.5.0"
-  resolved "https://registry.yarnpkg.com/lodash.clonedeep/-/lodash.clonedeep-4.5.0.tgz#e23f3f9c4f8fbdde872529c1071857a086e5ccef"
-  integrity sha1-4j8/nE+Pvd6HJSnBBxhXoIblzO8=
-
-lodash.isequal@4.5.0:
-  version "4.5.0"
-  resolved "https://registry.yarnpkg.com/lodash.isequal/-/lodash.isequal-4.5.0.tgz#415c4478f2bcc30120c22ce10ed3226f7d3e18e0"
-  integrity sha1-QVxEePK8wwEgwizhDtMib30+GOA=
-
 lodash.memoize@^4.1.2:
   version "4.1.2"
   resolved "https://registry.yarnpkg.com/lodash.memoize/-/lodash.memoize-4.1.2.tgz#bcc6c49a42a2840ed997f323eada5ecd182e0bfe"
@@ -8798,11 +8793,6 @@ react-error-overlay@^5.1.6:
   version "5.1.6"
   resolved "https://registry.yarnpkg.com/react-error-overlay/-/react-error-overlay-5.1.6.tgz#0cd73407c5d141f9638ae1e0c63e7b2bf7e9929d"
   integrity sha512-X1Y+0jR47ImDVr54Ab6V9eGk0Hnu7fVWGeHQSOXHf/C2pF9c6uy3gef8QUeuUiWlNb0i08InPSE5a/KJzNzw1Q==
-
-react-hookstate@^0.10.0:
-  version "0.10.0"
-  resolved "https://registry.yarnpkg.com/react-hookstate/-/react-hookstate-0.10.0.tgz#2e6f6398a90582415832543a79246e2981419a66"
-  integrity sha512-OR9nWF8idg6eFUzvzaKCdE9IvMhTFVdb2uOP3WghOn1PwZrCzckSkie7/VWexGncbZ9aIIbqBbeGQ2KyOHoGaw==
 
 react-is@^16.8.1, react-is@^16.8.4, react-is@^16.8.6:
   version "16.8.6"

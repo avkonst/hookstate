@@ -1,4 +1,4 @@
-import { Plugin, PluginTypeMarker } from 'react-hookstate';
+import { Plugin, PluginTypeMarker } from '@hookstate/core';
 export interface LoggerExtensions {
     log(): void;
 }

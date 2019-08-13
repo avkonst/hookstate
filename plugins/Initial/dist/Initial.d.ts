@@ -1,4 +1,4 @@
-import { Plugin, PluginTypeMarker, StateValueAtPath } from 'react-hookstate';
+import { Plugin, PluginTypeMarker, StateValueAtPath } from '@hookstate/core';
 export interface InitialExtensions {
     readonly initial: StateValueAtPath | undefined;
     readonly modified: boolean;

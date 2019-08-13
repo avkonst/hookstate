@@ -2,7 +2,7 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
-var reactHookstate = require('react-hookstate');
+var core = require('@hookstate/core');
 
 var PluginID = Symbol('Logger');
 // tslint:disable-next-line: function-name
@@ -42,7 +42,7 @@ function Logger(unused) {
                 extensions: ['log'],
                 extensionsFactory: function (l) { return ({
                     log: function () {
-                        l.with(reactHookstate.DisabledTracking); // everything is touched by the JSON, so no point to track
+                        l.with(core.DisabledTracking); // everything is touched by the JSON, so no point to track
                         // tslint:disable-next-line: no-console
                         return console.log("[hookstate]: current value at path '/" + l.path.join('/') + ": " +
                             (toJsonTrimmed(l.value) + "'"), {

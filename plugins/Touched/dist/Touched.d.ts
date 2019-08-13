@@ -1,5 +1,5 @@
-import { Plugin, PluginTypeMarker } from 'react-hookstate';
-import { InitialExtensions } from 'react-hookstate-initial';
+import { Plugin, PluginTypeMarker } from '@hookstate/core';
+import { InitialExtensions } from '@hookstate/initial';
 export interface TouchedExtensions {
     readonly touched: boolean;
     readonly untouched: boolean;

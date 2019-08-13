@@ -4,7 +4,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
 
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
-var reactHookstate = require('react-hookstate');
+var core = require('@hookstate/core');
 var isEqual = _interopDefault(require('lodash.isequal'));
 var cloneDeep = _interopDefault(require('lodash.clonedeep'));
 
@@ -23,7 +23,7 @@ function Initial(unused) {
                 return result;
             };
             var modified = function (l) {
-                l.with(reactHookstate.DisabledTracking);
+                l.with(core.DisabledTracking);
                 return !isEqual(l.value, getInitial(l.path));
             };
             return {

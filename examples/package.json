@@ -17,6 +17,7 @@
         "@hookstate/core": "0.10.0",
         "@hookstate/initial": "0.10.0",
         "@hookstate/logger": "0.10.0",
+        "@hookstate/mutate": "0.10.0",
         "@hookstate/persistence": "0.10.0",
         "@hookstate/prerender": "0.10.0",
         "@hookstate/touched": "0.10.0",

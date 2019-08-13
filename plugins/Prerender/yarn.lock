@@ -985,6 +985,11 @@
   dependencies:
     "@hapi/hoek" "8.x.x"
 
+"@hookstate/core@^0.10.0":
+  version "0.10.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-0.10.0.tgz#eb5002a1e7faebbe1f79d486fc2ac9a0f3554317"
+  integrity sha512-Sfzfa/mb6PSSm2co6R4/OGnYvk1Zo8X8ur0bXSxKkhZZd14RMs7KQbXeaLE5RJaG5u7h+AZsgsSH+S6RHp2vmQ==
+
 "@jest/console@^24.7.1":
   version "24.7.1"
   resolved "https://registry.yarnpkg.com/@jest/console/-/console-24.7.1.tgz#32a9e42535a97aedfe037e725bd67e954b459545"
@@ -8793,11 +8798,6 @@ react-error-overlay@^5.1.6:
   version "5.1.6"
   resolved "https://registry.yarnpkg.com/react-error-overlay/-/react-error-overlay-5.1.6.tgz#0cd73407c5d141f9638ae1e0c63e7b2bf7e9929d"
   integrity sha512-X1Y+0jR47ImDVr54Ab6V9eGk0Hnu7fVWGeHQSOXHf/C2pF9c6uy3gef8QUeuUiWlNb0i08InPSE5a/KJzNzw1Q==
-
-react-hookstate@^0.10.0:
-  version "0.10.0"
-  resolved "https://registry.yarnpkg.com/react-hookstate/-/react-hookstate-0.10.0.tgz#2e6f6398a90582415832543a79246e2981419a66"
-  integrity sha512-OR9nWF8idg6eFUzvzaKCdE9IvMhTFVdb2uOP3WghOn1PwZrCzckSkie7/VWexGncbZ9aIIbqBbeGQ2KyOHoGaw==
 
 react-is@^16.8.1, react-is@^16.8.4, react-is@^16.8.6:
   version "16.8.6"

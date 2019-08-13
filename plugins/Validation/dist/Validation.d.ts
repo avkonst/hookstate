@@ -1,4 +1,4 @@
-import { Plugin, PluginTypeMarker, Path, StateValueAtPath } from 'react-hookstate';
+import { Plugin, PluginTypeMarker, Path, StateValueAtPath } from '@hookstate/core';
 export declare enum ValidationSeverity {
     WARNING = 1,
     ERROR = 2

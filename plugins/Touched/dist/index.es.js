@@ -1,4 +1,4 @@
-import { DisabledTracking } from 'react-hookstate';
+import { DisabledTracking } from '@hookstate/core';
 
 var PluginID = Symbol('Touched');
 // tslint:disable-next-line: function-name

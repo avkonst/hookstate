@@ -1,4 +1,4 @@
-import { Prerender } from 'react-hookstate';
+import { Prerender } from '@hookstate/core';
 import isEqual from 'lodash.isequal';
 
 // tslint:disable-next-line: function-name

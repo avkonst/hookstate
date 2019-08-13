@@ -2,7 +2,7 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
-var reactHookstate = require('react-hookstate');
+var core = require('@hookstate/core');
 
 var PluginID = Symbol('Touched');
 // tslint:disable-next-line: function-name
@@ -55,7 +55,7 @@ function Touched(unused) {
                     // when the source value is updated.
                     // We do the trick to fix it, we mark the value being 'deeply used',
                     // so any changes for this value or any nested will trigger rerender.
-                    var _1 = l.with(reactHookstate.DisabledTracking).value;
+                    var _1 = l.with(core.DisabledTracking).value;
                     return t;
                 }
                 return l.extended.modified;
