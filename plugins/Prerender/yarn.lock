@@ -6559,11 +6559,6 @@ lodash._reinterpolate@~3.0.0:
   resolved "https://registry.yarnpkg.com/lodash._reinterpolate/-/lodash._reinterpolate-3.0.0.tgz#0ccf2d89166af03b3663c796538b75ac6e114d9d"
   integrity sha1-DM8tiRZq8Ds2Y8eWU4t1rG4RTZ0=
 
-lodash.clonedeep@^4.5.0:
-  version "4.5.0"
-  resolved "https://registry.yarnpkg.com/lodash.clonedeep/-/lodash.clonedeep-4.5.0.tgz#e23f3f9c4f8fbdde872529c1071857a086e5ccef"
-  integrity sha1-4j8/nE+Pvd6HJSnBBxhXoIblzO8=
-
 lodash.isequal@^4.5.0:
   version "4.5.0"
   resolved "https://registry.yarnpkg.com/lodash.isequal/-/lodash.isequal-4.5.0.tgz#415c4478f2bcc30120c22ce10ed3226f7d3e18e0"
@@ -8798,15 +8793,6 @@ react-error-overlay@^5.1.6:
   version "5.1.6"
   resolved "https://registry.yarnpkg.com/react-error-overlay/-/react-error-overlay-5.1.6.tgz#0cd73407c5d141f9638ae1e0c63e7b2bf7e9929d"
   integrity sha512-X1Y+0jR47ImDVr54Ab6V9eGk0Hnu7fVWGeHQSOXHf/C2pF9c6uy3gef8QUeuUiWlNb0i08InPSE5a/KJzNzw1Q==
-
-react-hookstate-initial@^0.10.0:
-  version "0.10.0"
-  resolved "https://registry.yarnpkg.com/react-hookstate-initial/-/react-hookstate-initial-0.10.0.tgz#67f1c6e6c8df81cad04c7d9e7eb6c323996cd080"
-  integrity sha512-W/QHmkIbsYYfeRGWcOWcn7cm17YS9xuUGoYGdV3lgAgSN0IhuMiyiBQWsdwyKgNj76QmL6nlvf8o3rB73omqew==
-  dependencies:
-    lodash.clonedeep "^4.5.0"
-    lodash.isequal "^4.5.0"
-    react-hookstate "^0.10.0"
 
 react-hookstate@^0.10.0:
   version "0.10.0"
