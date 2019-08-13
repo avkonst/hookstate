@@ -2,14 +2,14 @@ import React from 'react';
 import logo from './logo.svg';
 import './App.css';
 
-import { useStateLink, StateLink, createStateLink, Plugin, PluginTypeMarker, PrerenderTransform, DisabledTracking } from './lib/UseStateLink';
+import { useStateLink, StateLink, createStateLink, Plugin, PluginTypeMarker, Prerender, DisabledTracking } from './lib/UseStateLink';
 import { Initial, InitialExtensions } from './lib/plugins/Initial';
 import { Logger } from './lib/plugins/Logger';
 import { Touched, TouchedExtensions } from './lib/plugins/Touched';
 import { Persistence } from './lib/plugins/Persistence';
 import { Validation, ValidationSeverity, ValidationExtensions, ValidationError } from './lib/plugins/Validation';
 import isEqual from 'lodash.isequal';
-import { Prerender } from './lib/plugins/Transform';
+import { EqualsPrerender } from './lib/plugins/Prerender';
 
 JSON.stringify({ x: 5, y: 6, toJSON() { return this.x + this.y; } });
 
@@ -73,27 +73,21 @@ const JsonDump = (props: {link: StateLink<TaskItem[]>}) => {
 }
 
 const ModifiedStatus = (props: {link: StateLink<TaskItem[], InitialExtensions>}) => {
-    const modified = useStateLink(props.link, (l) => {
-        l.with(PrerenderTransform).extended.prerenderTransform()
-        return l.extended.modified
-    });
+    const modified = useStateLink(props.link, EqualsPrerender((l) => l.extended.modified));
     return <p>
         {new Date().toISOString()} Modified: {modified.toString()}
     </p>;
 }
 
 const TouchedStatus = (props: {link: StateLink<TaskItem[], InitialExtensions & TouchedExtensions>}) => {
-    const touched = useStateLink(props.link, (l) => {
-        l.with(PrerenderTransform).extended.prerenderTransform()
-        return l.extended.touched
-    });
+    const touched = useStateLink(props.link, EqualsPrerender((l) => l.extended.touched));
     return <p>
         {new Date().toISOString()} Touched: {touched.toString()}
     </p>;
 }
 
 const ValidStatus = (props: {link: StateLink<TaskItem[], ValidationExtensions>}) => {
-    const errors = useStateLink(props.link, Prerender(l => l.extended.errors));
+    const errors = useStateLink(props.link, EqualsPrerender(l => l.extended.errors));
     return <p>
         {new Date().toISOString()} Valid: {JSON.stringify(errors)}
     </p>;

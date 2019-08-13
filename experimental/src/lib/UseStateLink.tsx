@@ -760,13 +760,13 @@ export function DisabledTracking(): Plugin<{}, {}> {
     }
 }
 
-export interface PrerenderTransformExtensions {
-    prerenderTransform(equals?: (newValue: TransformResult, prevValue: TransformResult) => boolean): void;
+export interface PrerenderExtensions {
+    enablePrerender(equals?: (newValue: TransformResult, prevValue: TransformResult) => boolean): void;
 }
 
 // tslint:disable-next-line: function-name
-export function PrerenderTransform<S, E extends {}>(marker: PluginTypeMarker<S, E>):
-    Plugin<E, PrerenderTransformExtensions> {
+export function Prerender<S, E extends {}>(marker: PluginTypeMarker<S, E>):
+    Plugin<E, PrerenderExtensions> {
 
     function defaultEquals(a: TransformResult, b: TransformResult) {
         return a === b;
@@ -775,9 +775,9 @@ export function PrerenderTransform<S, E extends {}>(marker: PluginTypeMarker<S, 
     return {
         id: PrerenderTransformID,
         instanceFactory: () => ({
-            extensions: ['prerenderTransform'],
+            extensions: ['enablePrerender'],
             extensionsFactory: (l: StateLink<StateValueAtPath, E>) => ({
-                prerenderTransform: (equals) => {
+                enablePrerender: (equals) => {
                     l[PrerenderTransformID] = equals || defaultEquals
                 },
             })
