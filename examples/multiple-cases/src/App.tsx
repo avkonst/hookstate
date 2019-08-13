@@ -1,22 +1,27 @@
 import React from 'react';
-import logo from './logo.svg';
-import './App.css';
 
-import { useStateLink, StateLink, createStateLink, Plugin, PluginTypeMarker, Prerender, DisabledTracking, useStateLinkUnmounted } from './lib/UseStateLink';
-import { Initial, InitialExtensions } from './lib/plugins/Initial';
-import { Logger } from './lib/plugins/Logger';
-import { Touched, TouchedExtensions } from './lib/plugins/Touched';
-import { Persistence } from './lib/plugins/Persistence';
-import { Validation, ValidationSeverity, ValidationExtensions, ValidationError, ValidationForEach } from './lib/plugins/Validation';
+import {
+    createStateLink,
+    useStateLink,
+    useStateLinkUnmounted,
+    StateLink,
+    Plugin,
+    PluginTypeMarker
+} from 'react-hookstate';
+import { Initial, InitialExtensions } from 'react-hookstate-initial';
+import { Logger } from 'react-hookstate-logger';
+import { Touched, TouchedExtensions } from 'react-hookstate-touched';
+import { Persistence } from 'react-hookstate-persistence';
+import { Validation, ValidationForEach, ValidationSeverity, ValidationExtensions } from 'react-hookstate-validation';
+
 import isEqual from 'lodash.isequal';
-import { EqualsPrerender } from './lib/plugins/Prerender';
+import { EqualsPrerender } from 'react-hookstate-prerender';
 
 JSON.stringify({ x: 5, y: 6, toJSON() { return this.x + this.y; } });
 
 const state = createStateLink<TaskItem[]>(Array.from(Array(2).keys()).map((i) => ({
     name: 'initial',
     priority: i,
-    // toJSON(): any { return this.name + this.priority; }
 })))//.with(Persistence('somekey2'));
 
 setInterval(() => {
@@ -30,20 +35,12 @@ interface TaskItem {
 
 const TaskView = (props: { link: StateLink<TaskItem> }) => {
     const pl = props.link
-    .with(Validation(
-        v => v.name.length < 5 ? (v.priority === undefined || v.priority < 3) : true,
-        'Task with short name should not have high priority.',
-        ValidationSeverity.WARNING))
-    // const locallink = props.link;
+        .with(Validation(
+            v => v.name.length < 5 ? (v.priority === undefined || v.priority < 3) : true,
+            'Task with short name should not have high priority.',
+            ValidationSeverity.WARNING))
     const locallink = useStateLink(pl);
     locallink.nested.name.with(Validation(v => v.length !== 0, 'Task name should not be empty'));
-    // const priorityLink = locallink.nested.priority;
-    // const nameLink = locallink.nested.name;
-    // return <p>
-    //     {new Date().toISOString()} {nameLink.value}
-    //     <input value={nameLink.value} onChange={v => nameLink.set(v.target.value)} />
-    //     <input value={nameLink.value} onChange={v => priorityLink.set(pv => Number(pv) + 1)} />
-    // </p>
 
     return <p>
         {new Date().toISOString()} <span />
@@ -116,7 +113,6 @@ const App = () => {
     const vl = useStateLink(state
         // .with(Persistence('somekey2'))
         )
-        // .with(() => ModifiedPlugin<TaskItem[]>())//.with(DisabledTracking)
         .with(Initial)
         .with(Touched)
         // .with(Dup)
@@ -125,45 +121,6 @@ const App = () => {
         .with(ValidationForEach(v => v.name.length < 2,
             'Each task should have short name',
             ValidationSeverity.ERROR))
-        // .with(Validator({
-        //     __validate: (current, link) => undefined,
-        //     '*': {
-        //         __validate: (current, link) => undefined,
-        //     }
-        // }));
-        // .with(Validator(({
-        //     // ((currentValue, link): undefined,
-        //     __validate: (v, l) => undefined,
-        //     // 0: {
-        //     //     __validate: (v, l) => undefined,
-        //     //     name: {
-        //     //         __validate: (v, l) => undefined
-        //     //     }
-        //     // }
-        // })))
-        // .with(Validator(
-        //     Validate((v, l) => undefined, {
-        //         0: Validate((v, l) => undefined, {
-        //             // name: Validate((v, l) => undefined),
-        //             priority: Validate((v, l) => undefined),
-        //             // priority2: Validate((v, l) => undefined, {}),
-        //         })
-        //     })
-            // '*': {
-            //     __validate: (current, link) => undefined,
-            // }
-        // ));
-
-        // .with(LocalPersistence('somekey2'));
-        // .with2()
-        // .with(DisabledTracking)
-    // console.log(vl.extended.initialDup);
-
-    // const b = vl.nested[0].nested.name.extended;
-    // vl.nested[0].nested.name.extended.validate(t => t, '')
-    // vl.extended.initial
-
-    // console.log(vl._[Infinity].value)
 
     return <>
         <p>{new Date().toISOString()} Other App local
