@@ -1,5 +1,5 @@
 {
-    "extends": [ "tslint-react", "tslint-config-airbnb" ],
+    "extends": [ "tslint-react" ],
     "rules": {
         "align": [
             true,
@@ -31,10 +31,7 @@
             120
         ],
         "member-ordering": [
-            true,
-            "public-before-private",
-            "static-before-instance",
-            "variables-before-functions"
+            true
         ],
         "no-any": true,
         "no-arg": true,

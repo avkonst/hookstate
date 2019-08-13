@@ -691,7 +691,7 @@ export function createStateLink<S>(initial: S | (() => S)): StateRef<S, {}> {
     return new StateRefImpl(createState(initial));
 }
 
-/**
+/*
  * Future docs for transformer
  * Forces rerender of a hooked component when result of `watcher`
  * is changed due to the change of the current value in `state`.

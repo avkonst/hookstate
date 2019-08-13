@@ -1,12 +1,13 @@
 {
-    "extends": "./tsconfig.base.json",
+    "extends": "./tsconfig.json",
     "include": [
         "src"
     ],
     "compilerOptions": {
         "jsx": "react",
         "allowJs": false,
-        "declaration": true
+        "declaration": true,
+        "isolatedModules": false
     },
     "exclude": [
         "src/*.test.tsx"

@@ -1,72 +1,49 @@
 import React from 'react';
 import { ObjectStateMutation } from './UseStateObject';
 import { ArrayStateMutation } from './UseStateArray';
-export declare enum ValidationSeverity {
-    WARNING = 1,
-    ERROR = 2
+export interface PluginTypeMarker<S, E extends {}> {
 }
-export interface ArrayExtensions<U> {
-    first(condition?: (e: U) => boolean): U | undefined;
-    firstPartial(condition?: (e: U) => boolean): Partial<U>;
+export interface StateRef<S, E extends {}> {
+    with<I>(plugin: (marker: PluginTypeMarker<S, E>) => Plugin<E, I>): StateRef<S, E & I>;
 }
+export declare type NestedInferredLink<S, E extends {}> = S extends ReadonlyArray<(infer U)> ? ReadonlyArray<StateLink<U, E>> : S extends null ? undefined : S extends object ? {
+    readonly [K in keyof Required<S>]: StateLink<S[K], E>;
+} : undefined;
+export declare type InferredStateMutation<S> = S extends ReadonlyArray<(infer U)> ? ArrayStateMutation<U> : S extends null ? undefined : S extends object ? ObjectStateMutation<S> : undefined;
 export declare type Path = ReadonlyArray<string | number>;
-export interface ValidationErrorMessage {
-    readonly message: string;
-    readonly severity: ValidationSeverity;
-}
-export interface ValidationError extends ValidationErrorMessage {
+export interface StateLink<S, E extends {} = {}> {
     readonly path: Path;
-}
-export declare type NestedInferredLink<S> = S extends (infer Y)[] ? NestedArrayLink<Y> : S extends ReadonlyArray<(infer U)> ? undefined : S extends null ? undefined : S extends object ? NestedObjectLink<S> : undefined;
-export declare type NestedArrayLink<U> = ReadonlyArray<ValueLink<U>> & {
-    at(k: number): ValueLink<U>;
-};
-export declare type NestedObjectLink<S extends object> = {
-    readonly [K in keyof S]: ValueLink<S[K]>;
-} & {
-    at<K extends keyof S>(k: K): ValueLink<S[K]>;
-};
-export declare type InferredLink<S> = S extends (infer Y)[] ? ArrayLink<Y> : S extends ReadonlyArray<(infer U)> ? undefined : S extends null ? undefined : S extends object ? ObjectLink<S> : undefined;
-export interface ReadonlyValueLink<S> {
-    readonly path: Path;
-    readonly initialValue: S | undefined;
     readonly value: S;
-    readonly modified: boolean;
-    readonly unmodified: boolean;
-    readonly valid: boolean;
-    readonly invalid: boolean;
-    readonly errors: ReadonlyArray<ValidationError> & ArrayExtensions<ValidationError>;
-}
-export interface ValueLink<S> extends ReadonlyValueLink<S> {
-    readonly nested: NestedInferredLink<S>;
-    readonly inferred: InferredLink<S>;
+    readonly nested: NestedInferredLink<S, E>;
+    readonly inferred: InferredStateMutation<S>;
+    readonly extended: E;
     set(newValue: React.SetStateAction<S>): void;
+    with<I>(plugin: (marker: PluginTypeMarker<S, E>) => Plugin<E, I>): StateLink<S, E & I>;
 }
-export interface ArrayLink<U> extends ValueLink<U[]>, ArrayStateMutation<U> {
+export declare type ValueLink<S, E extends {} = {}> = StateLink<S, E>;
+export declare type StateValueAtRoot = any;
+export declare type StateValueAtPath = any;
+export declare type TransformResult = any;
+export interface PluginInstance<E extends {}, I extends {}> {
+    onInit?: () => StateValueAtRoot | void;
+    onAttach?: (path: Path, withArgument: PluginInstance<{}, {}>) => void;
+    onSet?: (path: Path, newValue: StateValueAtRoot) => void;
+    extensions: (keyof I)[];
+    extensionsFactory: (thisLink: StateLink<StateValueAtPath, E>) => I;
 }
-export interface ObjectLink<S extends object> extends ValueLink<S>, ObjectStateMutation<S> {
+export interface Plugin<E extends {}, I extends {}> {
+    id: symbol;
+    instanceFactory: (initial: StateValueAtRoot) => PluginInstance<E, I>;
 }
-export interface StateLink<S> {
-    Observer: (props: React.PropsWithChildren<{}>) => JSX.Element;
+export declare function createStateLink<S>(initial: S | (() => S)): StateRef<S, {}>;
+export declare function useStateLink<S, E extends {}>(initialState: StateLink<S, E> | StateRef<S, E>): StateLink<S, E>;
+export declare function useStateLink<S, E extends {}, R>(initialState: StateLink<S, E> | StateRef<S, E>, transform: (state: StateLink<S, E>, prev: R | undefined) => R): R;
+export declare function useStateLink<S, E extends {}>(initialState: S | (() => S)): StateLink<S, E>;
+export declare function useStateLink<S, E extends {}, R>(initialState: S | (() => S), transform: (state: StateLink<S, E>, prev: R | undefined) => R): R;
+export declare function useStateLinkUnmounted<S, E extends {}>(stateRef: StateRef<S, E>): StateLink<S, E>;
+export declare function DisabledTracking(): Plugin<{}, {}>;
+export interface PrerenderExtensions {
+    enablePrerender(equals?: (newValue: TransformResult, prevValue: TransformResult) => boolean): void;
 }
-export declare type ValidationResult = string | ValidationErrorMessage | ReadonlyArray<string | ValidationErrorMessage>;
-export interface ValueProcessingHooks<S> {
-    readonly __validate?: (currentValue: S, link: ReadonlyValueLink<S>) => ValidationResult | undefined;
-    readonly __preset?: (newValue: S, link: ReadonlyValueLink<S>) => S;
-    readonly __compare?: (newValue: S, oldValue: S | undefined, link: ReadonlyValueLink<S>) => boolean | undefined;
-}
-export declare type ObjectProcessingHook<S> = {
-    readonly [K in keyof S]?: InferredProcessingHooks<S[K]>;
-} & ValueProcessingHooks<S>;
-export declare type ArrayProcessingHooks<U> = {
-    readonly [K in number | '*']?: InferredProcessingHooks<U>;
-} & ValueProcessingHooks<ReadonlyArray<U>>;
-export declare type InferredProcessingHooks<S> = S extends ReadonlyArray<(infer U)> ? ArrayProcessingHooks<U> : S extends (infer Y)[] ? ArrayProcessingHooks<Y> : S extends number | string | boolean | null | undefined | symbol ? ValueProcessingHooks<S> : ObjectProcessingHook<S>;
-export interface Settings<S> {
-    readonly skipSettingEqual?: boolean;
-    readonly globalHooks?: ValueProcessingHooks<any>;
-    readonly targetHooks?: InferredProcessingHooks<S>;
-}
-export declare function createStateLink<S>(initial: S | (() => S), settings?: Settings<S>): StateLink<S>;
-export declare function useStateLink<S>(initialState: S | (() => S) | ValueLink<S> | StateLink<S>, settings?: Settings<S>): ValueLink<S>;
+export declare function Prerender<S, E extends {}>(marker: PluginTypeMarker<S, E>): Plugin<E, PrerenderExtensions>;
 export default useStateLink;
