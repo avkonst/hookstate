@@ -1,13 +1,14 @@
 import React from 'react'
 
 import { CssBaseline, Theme, createStyles, makeStyles, AppBar, Toolbar, IconButton, Typography, Button, Box, Grid, Container, FormControl, InputLabel, Select, MenuItem, OutlinedInput, Paper, Tabs, Tab, ButtonGroup } from '@material-ui/core';
-import { navigate, useRoutes, HookRouter } from 'hookrouter';
+import { navigate, useRoutes, HookRouter, A } from 'hookrouter';
 
 import SyntaxHighlighter from 'react-syntax-highlighter';
 
 import { useAsync } from 'react-use';
 import request from 'request';
-import { ExampleComponent } from './examples/getting-started';
+import { ExampleComponent as Example1 } from './examples/getting-started';
+import { ExampleComponent as Example2 } from './examples/getting-started-local';
 
 const docco = require('react-syntax-highlighter/dist/esm/styles/hljs');
 
@@ -78,30 +79,47 @@ const SourceCodeView = (props: { url: string }) => {
 
 interface ExampleMeta {
     name: string,
-    description: string,
+    description: JSX.Element,
     code: string,
     demo: JSX.Element;
 }
 
-const examples: Map<string, ExampleMeta> = new Map();
-examples.set('getting-started', {
-    name: 'Getting Started: Global Application State',
-    description: 'Basic example shows how to create global store and access it in a mounted component and outside of React.',
+const ExampleIds = {
+    GettingStartedGlobal: 'getting-started',
+    GettingStartedLocal: 'getting-started-local'
+}
+
+const ExamplesRepo: Map<string, ExampleMeta> = new Map();
+ExamplesRepo.set(ExampleIds.GettingStartedGlobal, {
+    name: '1. Getting Started: Global Application State',
+    description: <>Basic example shows how to create a global data store and
+        access it within and outside of a React component.
+        Only few lines of code: create state and use it. That is it.
+        In contrast with Redux and Mobx, it is so much less boilerplate code (if any), isn't it?</>,
     code: 'https://raw.githubusercontent.com/avkonst/hookstate/master/examples/src/examples/getting-started.tsx',
-    demo: <ExampleComponent />
+    demo: <Example1 />
 });
-examples.set('getting-started-local', {
-    name: 'Getting Started: Local Form State',
-    description: '',
-    code: 'https://raw.githubusercontent.com/avkonst/hookstate/master/examples/src/examples/getting-started.tsx',
-    demo: <ExampleComponent />
+ExamplesRepo.set(ExampleIds.GettingStartedLocal, {
+    name: '2. Getting Started: Local Component State, eg. Form State',
+    description: <>Local component state can be managed in the same way as the global state.
+        The difference with the <A href={ExampleIds.GettingStartedGlobal}>global state example</A> is
+        that the state is automatically created by <code>useStateLink</code> and
+        saved per component but not globaly.
+        The local state is not preserved when a component is unmounted.
+        It is very similar to the original <code>React.useState</code> functionaly,
+        but has got more features. One of the features is the <code>nested</code> property,
+        which allows to traverse the data in the consistent way and mutate nested properties easier.
+        </>,
+    code: 'https://raw.githubusercontent.com/avkonst/hookstate/master/examples/src/examples/getting-started-local.tsx',
+    demo: <Example2 />
 });
 
 const HomePage = (props: { example?: string }) => {
     const [tab, setTab] = React.useState(2);
     const classes = useStyles();
-    const exampleId = props.example && examples.has(props.example) ? props.example : 'getting-started';
-    const exampleMeta = examples.get(exampleId)!;
+    const exampleId = props.example && ExamplesRepo.has(props.example)
+        ? props.example : ExampleIds.GettingStartedGlobal;
+    const exampleMeta = ExamplesRepo.get(exampleId)!;
 
     function handleChange(event: React.ChangeEvent<{}>, newValue: number) {
         setTab(newValue);
@@ -125,7 +143,7 @@ const HomePage = (props: { example?: string }) => {
                     <Button variant="contained" color="primary" className={classes.button}>Browse plugins</Button>
             </Box>
         </Container>
-        <Container maxWidth="md">
+        <Container maxWidth="md" key={exampleId}>
             <Box paddingTop={2}>
                 <Paper square>
                     <Box padding={2} paddingTop={4}>
@@ -141,7 +159,7 @@ const HomePage = (props: { example?: string }) => {
                                 }}
                             >
                                 {
-                                    Array.from(examples.entries())
+                                    Array.from(ExamplesRepo.entries())
                                         .map(([k, v]) => <MenuItem key={k} value={k}>{v.name}</MenuItem>)
                                 }
                             </Select>
@@ -161,7 +179,11 @@ const HomePage = (props: { example?: string }) => {
                     </Tabs>
                     {exampleMeta.description &&
                         <Box
+                            margin={2}
                             padding={2}
+                            style={{
+                                backgroundColor: 'rgba(0, 0, 200, 0.05)',
+                            }}
                         >
                             <Typography variant="body1" align="left" >
                                 {exampleMeta.description}
@@ -171,24 +193,22 @@ const HomePage = (props: { example?: string }) => {
                     {(tab === 1 || tab === 2) &&
                         <Box
                             margin={2}
+                            padding={2}
                             style={{
-                                backgroundColor: 'rgba(0, 100, 100, 0.05)',
-                                border: 'solid',
-                                borderWidth: '1px',
-                                borderColor: 'rgba(0, 0, 100, 0.1)'
+                                backgroundColor: 'rgba(0, 200, 0, 0.05)',
                             }}
-                            // padding={1}
-                            textAlign="center"
                         >
                             {exampleMeta.demo}
                         </Box>
                     }
                     {(tab === 0 || tab === 2) &&
-                        <Box margin={2} paddingBottom={2}>
+                        <Box margin={2}>
                             <SourceCodeView url={exampleMeta.code} />
                         </Box>
                     }
-                    <p/>
+                    <Box
+                        paddingTop={2}
+                    />
                 </Paper>
             </Box>
         </Container>
