@@ -2,7 +2,7 @@
 
 The flexible, fast and extendable state management for React that is based on hooks.
 
-An alternative to Redux, Mobx, Formik without boilerplate but with predictable behaviour.
+Modern alternative to Redux, Mobx, Formik without boilerplate but with predictable behaviour.
 
 Browse [demos and code samples](https://hookstate.netlify.com) to see what it can do and learn it in few minutes.
 

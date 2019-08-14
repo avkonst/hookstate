@@ -139,7 +139,10 @@ const HomePage = (props: { example?: string }) => {
             @hookstate
         </Typography>
         <Typography variant="h5" gutterBottom={true} align="center">
-            Modern and high-performance state management for React done in type-safe and plugin extendable way.
+            The flexible, fast and extendable state management for React that is based on hooks.
+        </Typography>
+        <Typography variant="h6" gutterBottom={true} align="center">
+            Modern alternative to Redux, Mobx, Formik without boilerplate but with predictable behaviour.
         </Typography>
         <Container maxWidth="md">
             <Box
