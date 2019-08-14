@@ -612,7 +612,7 @@ function useLocalStateLink<S>(initialState: S | (() => S)): StateLinkImpl<S, {}>
     }, value.state);
 }
 
-function useDerivedStateLink<S, E extends {}>(originLink: StateLinkImpl<S, E>): StateLinkImpl<S, E> {
+function useScopedStateLink<S, E extends {}>(originLink: StateLinkImpl<S, E>): StateLinkImpl<S, E> {
     const [, setValue] = React.useState({});
     return useSubscribedStateLink(originLink.state, originLink.path, () => {
         setValue({})
@@ -624,7 +624,7 @@ function useAutoStateLink<S, E extends {}>(
 ): StateLinkImpl<S, E> {
     if (initialState instanceof StateLinkImpl) {
         // eslint-disable-next-line react-hooks/rules-of-hooks
-        return useDerivedStateLink(initialState as StateLinkImpl<S, E>);
+        return useScopedStateLink(initialState as StateLinkImpl<S, E>);
     }
     if (initialState instanceof StateRefImpl) {
         // eslint-disable-next-line react-hooks/rules-of-hooks
