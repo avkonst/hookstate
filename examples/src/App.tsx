@@ -1,6 +1,6 @@
 import React from 'react'
 
-import { CssBaseline, Theme, createStyles, makeStyles, AppBar, Toolbar, IconButton, Typography, Button, Box, Grid, Container, FormControl, InputLabel, Select, MenuItem, OutlinedInput, Paper, Tabs, Tab } from '@material-ui/core';
+import { CssBaseline, Theme, createStyles, makeStyles, AppBar, Toolbar, IconButton, Typography, Button, Box, Grid, Container, FormControl, InputLabel, Select, MenuItem, OutlinedInput, Paper, Tabs, Tab, ButtonGroup } from '@material-ui/core';
 import { navigate, useRoutes, HookRouter } from 'hookrouter';
 
 import SyntaxHighlighter from 'react-syntax-highlighter';
@@ -21,6 +21,9 @@ const useStyles = makeStyles((theme: Theme) =>
         },
         title: {
             flexGrow: 1,
+        },
+        button: {
+            margin: theme.spacing(1),
         },
     }),
 );
@@ -75,21 +78,30 @@ const SourceCodeView = (props: { url: string }) => {
 
 interface ExampleMeta {
     name: string,
-    description: string
+    description: string,
+    code: string,
+    demo: JSX.Element;
 }
 
 const examples: Map<string, ExampleMeta> = new Map();
 examples.set('getting-started', {
     name: 'Getting Started: Global Application State',
-    description: ''
+    description: '',
+    code: 'https://raw.githubusercontent.com/avkonst/hookstate/master/examples/src/examples/getting-started.tsx',
+    demo: <ExampleComponent />
 });
 examples.set('getting-started-local', {
     name: 'Getting Started: Local Form State',
-    description: ''
+    description: '',
+    code: 'https://raw.githubusercontent.com/avkonst/hookstate/master/examples/src/examples/getting-started.tsx',
+    demo: <ExampleComponent />
 });
 
 const HomePage = (props: { example?: string }) => {
     const [tab, setTab] = React.useState(2);
+    const classes = useStyles();
+    const exampleId = props.example && examples.has(props.example) ? props.example : 'getting-started';
+    const exampleMeta = examples.get(exampleId)!;
 
     function handleChange(event: React.ChangeEvent<{}>, newValue: number) {
         setTab(newValue);
@@ -106,32 +118,21 @@ const HomePage = (props: { example?: string }) => {
             <Box
                 paddingTop={2}
                 display="flex"
-                justifyContent="space-evenly"
+                justifyContent="center"
             >
-                <Box>
-                    <Button variant="contained" color="secondary">Why @hookstate</Button>
-                </Box>
-                <Box>
-                    <Button variant="contained" color="primary">See documentation</Button>
-                </Box>
-                <Box>
-                    <Button variant="contained" color="primary">Browse plugins</Button>
-                </Box>
+                    <Button variant="contained" color="secondary" className={classes.button}>Why hookstate</Button>
+                    <Button variant="contained" color="primary" className={classes.button}>See documentation</Button>
+                    <Button variant="contained" color="primary" className={classes.button}>Browse plugins</Button>
             </Box>
         </Container>
         <Container maxWidth="md">
-            {/* <Box
-                display="flex"
-                justifyContent="center"
-                marginTop={2}
-                style={{ border: 'solid', borderWidth: '1px', borderColor: 'mediumblue' }}
-            > */}
-                <Box paddingTop={4}>
-                    <Box paddingBottom={1}>
+            <Box paddingTop={2}>
+                <Paper square>
+                    <Box padding={2} paddingTop={4}>
                         <FormControl fullWidth={true} variant="outlined">
                             <InputLabel htmlFor="example-simple">Selected example:</InputLabel>
                             <Select
-                                value={props.example || 'getting-started'}
+                                value={exampleId}
                                 onChange={(v) => navigate(v.target.value as string)}
                                 input={<OutlinedInput labelWidth={160} name="example" id="example-simple" />}
                                 inputProps={{
@@ -146,48 +147,39 @@ const HomePage = (props: { example?: string }) => {
                             </Select>
                         </FormControl>
                     </Box>
-                    <Paper square>
-                        <Tabs
-                            centered={true}
-                            value={tab}
-                            indicatorColor="primary"
-                            textColor="primary"
-                            onChange={handleChange}
-                            aria-label="disabled tabs example"
+                    <Tabs
+                        centered={true}
+                        value={tab}
+                        indicatorColor="primary"
+                        textColor="primary"
+                        onChange={handleChange}
+                        aria-label="disabled tabs example"
+                    >
+                        <Tab label="View code" />
+                        <Tab label="View demo" />
+                        <Tab label="View both" />
+                    </Tabs>
+                    {(tab === 1 || tab === 2) &&
+                        <Box
+                            style={{
+                                backgroundColor: 'rgba(0, 100, 100, 0.05)',
+                                border: 'solid',
+                                borderWidth: '1px',
+                                borderColor: 'rgba(0, 0, 100, 0.1)'
+                            }}
+                            padding={1}
+                            textAlign="center"
                         >
-                            <Tab label="View code" />
-                            <Tab label="View demo" />
-                            <Tab label="View both" />
-                        </Tabs>
-                        {(tab === 1 || tab === 2) &&
-                            <Box
-                                style={{
-                                    backgroundColor: 'rgba(0, 100, 100, 0.05)',
-                                    border: 'solid',
-                                    borderWidth: '1px',
-                                    borderColor: 'rgba(0, 0, 100, 0.1)'
-                                }}
-                                padding={1}
-                                textAlign="center"
-                            >
-                                <ExampleComponent />
-                            </Box>
-                        }
-                        {(tab === 0 || tab === 2) &&
-                            <Box
-                                padding={1}
-                                style={{
-                                    borderBottom: 'solid',
-                                    borderWidth: '1px',
-                                    borderColor: 'rgba(0, 0, 100, 0.1)' }
-                                }
-                            >
-                                <SourceCodeView url="https://raw.githubusercontent.com/avkonst/hookstate/master/examples/src/examples/getting-started.tsx" />
-                            </Box>
-                        }
-                    </Paper>
-                </Box>
-            {/* </Box> */}
+                            {exampleMeta.demo}
+                        </Box>
+                    }
+                    {(tab === 0 || tab === 2) &&
+                        <Box>
+                            <SourceCodeView url={exampleMeta.code} />
+                        </Box>
+                    }
+                </Paper>
+            </Box>
         </Container>
     </Box>
 }
