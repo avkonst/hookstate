@@ -3,6 +3,7 @@ import React from 'react'
 import { CssBaseline, Theme, createStyles, makeStyles, AppBar, Toolbar, IconButton, Typography, Button, Box, Grid, Container, FormControl, InputLabel, Select, MenuItem, OutlinedInput, Paper, Tabs, Tab, ButtonGroup } from '@material-ui/core';
 import { navigate, useRoutes, HookRouter, A } from 'hookrouter';
 
+// import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter/prism-light';
 import SyntaxHighlighter from 'react-syntax-highlighter';
 
 import { useAsync } from 'react-use';
@@ -10,7 +11,11 @@ import request from 'request';
 import { ExampleComponent as Example1 } from './examples/getting-started';
 import { ExampleComponent as Example2 } from './examples/getting-started-local';
 
-const docco = require('react-syntax-highlighter/dist/esm/styles/hljs');
+// import { prismStyle } from './highlightStyles';
+const highlightStyle = undefined;
+// declare var highlightStyle: any;
+// const highlightStyle = require('react-syntax-highlighter/dist/esm/styles/prism/tomorrow').default;
+// import { default as highlightStyle } from require('react-syntax-highlighter/dist/esm/styles/prism/duotone-light');
 
 const useStyles = makeStyles((theme: Theme) =>
     createStyles({
@@ -70,8 +75,12 @@ const SourceCodeView = (props: { url: string }) => {
         codeString = code.value ? code.value.toString() : `Failure to load code sample from: ${props.url}`;
     }
 
+    console.log(highlightStyle);
+
     return (
-        <SyntaxHighlighter language="typescript" customStyle={docco}>
+        <SyntaxHighlighter
+
+            language="typescript" style={highlightStyle}>
             {codeString}
         </SyntaxHighlighter>
     );
