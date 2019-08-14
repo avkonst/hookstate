@@ -1,7 +1,7 @@
 import React from 'react'
 
-import { CssBaseline, Theme, createStyles, makeStyles, AppBar, Toolbar, IconButton, Typography, Button, Box, Grid, Container } from '@material-ui/core';
-import { navigate, useRoutes } from 'hookrouter';
+import { CssBaseline, Theme, createStyles, makeStyles, AppBar, Toolbar, IconButton, Typography, Button, Box, Grid, Container, FormControl, InputLabel, Select, MenuItem, OutlinedInput, Paper, Tabs, Tab } from '@material-ui/core';
+import { navigate, useRoutes, HookRouter } from 'hookrouter';
 
 import SyntaxHighlighter from 'react-syntax-highlighter';
 
@@ -59,11 +59,11 @@ const SourceCodeView = (props: { url: string }) => {
 
     let codeString = ''
     if (code.loading) {
-        codeString = 'Loading code sample';
+        codeString = `Loading code sample from: ${props.url}`;
     } else if (code.error) {
-        codeString = code.error.toString();
+        codeString = `Failure to load code sample from: ${props.url} (${code.error.toString()})`;
     } else {
-        codeString = code.value ? code.value.toString() : 'Failure to load code sample';
+        codeString = code.value ? code.value.toString() : `Failure to load code sample from: ${props.url}`;
     }
 
     return (
@@ -73,7 +73,28 @@ const SourceCodeView = (props: { url: string }) => {
     );
 };
 
-const HomePage = () => {
+interface ExampleMeta {
+    name: string,
+    description: string
+}
+
+const examples: Map<string, ExampleMeta> = new Map();
+examples.set('getting-started', {
+    name: 'Getting Started: Global Application State',
+    description: ''
+});
+examples.set('getting-started-local', {
+    name: 'Getting Started: Local Form State',
+    description: ''
+});
+
+const HomePage = (props: { example?: string }) => {
+    const [tab, setTab] = React.useState(2);
+
+    function handleChange(event: React.ChangeEvent<{}>, newValue: number) {
+        setTab(newValue);
+    }
+
     return <Box padding={4}>
         <Typography variant="h2" gutterBottom={true} align="center">
             @hookstate
@@ -106,36 +127,73 @@ const HomePage = () => {
                 style={{ border: 'solid', borderWidth: '1px', borderColor: 'mediumblue' }}
             > */}
                 <Box paddingTop={4}>
-                    <Typography variant="h6" gutterBottom={true} >
-                        Getting started example:
-                    </Typography>
-                    <Box
-                        style={{
-                            backgroundColor: 'rgba(0, 100, 100, 0.05)',
-                            border: 'solid', borderWidth: '1px', borderColor: 'rgba(0, 0, 100, 0.1)'
-                        }}
-                        padding={1}
-                        textAlign="center"
-                    >
-                        <ExampleComponent />
+                    <Box paddingBottom={1}>
+                        <FormControl fullWidth={true} variant="outlined">
+                            <InputLabel htmlFor="example-simple">Selected example:</InputLabel>
+                            <Select
+                                value={props.example || 'getting-started'}
+                                onChange={(v) => navigate(v.target.value as string)}
+                                input={<OutlinedInput labelWidth={160} name="example" id="example-simple" />}
+                                inputProps={{
+                                    name: 'example',
+                                    id: 'example-simple',
+                                }}
+                            >
+                                {
+                                    Array.from(examples.entries())
+                                        .map(([k, v]) => <MenuItem key={k} value={k}>{v.name}</MenuItem>)
+                                }
+                            </Select>
+                        </FormControl>
                     </Box>
-                    <Box
-                        style={{
-                            borderBottom: 'solid',
-                            borderWidth: '1px',
-                            borderColor: 'rgba(0, 0, 100, 0.1)' }
+                    <Paper square>
+                        <Tabs
+                            centered={true}
+                            value={tab}
+                            indicatorColor="primary"
+                            textColor="primary"
+                            onChange={handleChange}
+                            aria-label="disabled tabs example"
+                        >
+                            <Tab label="View code" />
+                            <Tab label="View demo" />
+                            <Tab label="View both" />
+                        </Tabs>
+                        {(tab === 1 || tab === 2) &&
+                            <Box
+                                style={{
+                                    backgroundColor: 'rgba(0, 100, 100, 0.05)',
+                                    border: 'solid',
+                                    borderWidth: '1px',
+                                    borderColor: 'rgba(0, 0, 100, 0.1)'
+                                }}
+                                padding={1}
+                                textAlign="center"
+                            >
+                                <ExampleComponent />
+                            </Box>
                         }
-                    >
-                        <SourceCodeView url="https://raw.githubusercontent.com/avkonst/hookstate/master/examples/src/examples/getting-started.tsx" />
-                    </Box>
+                        {(tab === 0 || tab === 2) &&
+                            <Box
+                                padding={1}
+                                style={{
+                                    borderBottom: 'solid',
+                                    borderWidth: '1px',
+                                    borderColor: 'rgba(0, 0, 100, 0.1)' }
+                                }
+                            >
+                                <SourceCodeView url="https://raw.githubusercontent.com/avkonst/hookstate/master/examples/src/examples/getting-started.tsx" />
+                            </Box>
+                        }
+                    </Paper>
                 </Box>
             {/* </Box> */}
         </Container>
     </Box>
 }
 
-const routes = {
-    '/': () => <HomePage />,
+const routes: HookRouter.RouteObject = {
+    '/:example': ({ example }: HookRouter.QueryParams) => <HomePage example={example} />,
 };
 
 export const App = () => {
