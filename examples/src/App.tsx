@@ -1,6 +1,6 @@
 import React from 'react'
 
-import { CssBaseline, Theme, createStyles, makeStyles, AppBar, Toolbar, IconButton, Typography, Button, Box } from '@material-ui/core';
+import { CssBaseline, Theme, createStyles, makeStyles, AppBar, Toolbar, IconButton, Typography, Button, Box, Grid, Container } from '@material-ui/core';
 import { navigate, useRoutes } from 'hookrouter';
 
 import SyntaxHighlighter from 'react-syntax-highlighter';
@@ -81,22 +81,56 @@ const HomePage = () => {
         <Typography variant="h5" gutterBottom={true} align="center">
             Modern and high-performance state management for React done in type-safe and plugin extendable way.
         </Typography>
-        <Box
-            display="flex"
-            justifyContent="center"
-            marginTop={2}
-            style={{ border: 'solid', borderWidth: "1px", borderColor: 'mediumblue' }}
-        >
-            <Box maxWidth="600" paddingTop={2}>
-                <Typography variant="h6" gutterBottom={true} >
-                    Getting started example:
-                </Typography>
-                <Box style={{ backgroundColor: 'rgba(0, 0, 100, 0.1)' }} padding={1} textAlign="center">
-                    <ExampleComponent />
+        <Container maxWidth="md">
+            <Box
+                paddingTop={2}
+                display="flex"
+                justifyContent="space-evenly"
+            >
+                <Box>
+                    <Button variant="contained" color="secondary">Why @hookstate</Button>
                 </Box>
-                <SourceCodeView url="https://raw.githubusercontent.com/avkonst/hookstate/master/examples/src/examples/getting-started.tsx" />
+                <Box>
+                    <Button variant="contained" color="primary">See documentation</Button>
+                </Box>
+                <Box>
+                    <Button variant="contained" color="primary">Browse plugins</Button>
+                </Box>
             </Box>
-        </Box>
+        </Container>
+        <Container maxWidth="md">
+            {/* <Box
+                display="flex"
+                justifyContent="center"
+                marginTop={2}
+                style={{ border: 'solid', borderWidth: '1px', borderColor: 'mediumblue' }}
+            > */}
+                <Box paddingTop={4}>
+                    <Typography variant="h6" gutterBottom={true} >
+                        Getting started example:
+                    </Typography>
+                    <Box
+                        style={{
+                            backgroundColor: 'rgba(0, 100, 100, 0.05)',
+                            border: 'solid', borderWidth: '1px', borderColor: 'rgba(0, 0, 100, 0.1)'
+                        }}
+                        padding={1}
+                        textAlign="center"
+                    >
+                        <ExampleComponent />
+                    </Box>
+                    <Box
+                        style={{
+                            borderBottom: 'solid',
+                            borderWidth: '1px',
+                            borderColor: 'rgba(0, 0, 100, 0.1)' }
+                        }
+                    >
+                        <SourceCodeView url="https://raw.githubusercontent.com/avkonst/hookstate/master/examples/src/examples/getting-started.tsx" />
+                    </Box>
+                </Box>
+            {/* </Box> */}
+        </Container>
     </Box>
 }
 
