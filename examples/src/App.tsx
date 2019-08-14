@@ -86,7 +86,7 @@ interface ExampleMeta {
 const examples: Map<string, ExampleMeta> = new Map();
 examples.set('getting-started', {
     name: 'Getting Started: Global Application State',
-    description: '',
+    description: 'Basic example shows how to create global store and access it in a mounted component and outside of React.',
     code: 'https://raw.githubusercontent.com/avkonst/hookstate/master/examples/src/examples/getting-started.tsx',
     demo: <ExampleComponent />
 });
@@ -159,25 +159,36 @@ const HomePage = (props: { example?: string }) => {
                         <Tab label="View demo" />
                         <Tab label="View both" />
                     </Tabs>
+                    {exampleMeta.description &&
+                        <Box
+                            padding={2}
+                        >
+                            <Typography variant="body1" align="left" >
+                                {exampleMeta.description}
+                            </Typography>
+                        </Box>
+                    }
                     {(tab === 1 || tab === 2) &&
                         <Box
+                            margin={2}
                             style={{
                                 backgroundColor: 'rgba(0, 100, 100, 0.05)',
                                 border: 'solid',
                                 borderWidth: '1px',
                                 borderColor: 'rgba(0, 0, 100, 0.1)'
                             }}
-                            padding={1}
+                            // padding={1}
                             textAlign="center"
                         >
                             {exampleMeta.demo}
                         </Box>
                     }
                     {(tab === 0 || tab === 2) &&
-                        <Box>
+                        <Box margin={2} paddingBottom={2}>
                             <SourceCodeView url={exampleMeta.code} />
                         </Box>
                     }
+                    <p/>
                 </Paper>
             </Box>
         </Container>
