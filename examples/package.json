@@ -36,7 +36,7 @@
     },
     "scripts": {
         "start": "react-scripts start",
-        "build": "react-scripts build && cp .netlify-headers build && cp .netlify-redirects build",
+        "build": "react-scripts build && cp .netlify-headers build/_headers && cp .netlify-redirects/_redirects build",
         "test": "react-scripts test",
         "check-updates": "ncu",
         "apply-updates": "ncu -u"
