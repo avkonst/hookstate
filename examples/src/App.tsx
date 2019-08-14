@@ -147,9 +147,33 @@ const HomePage = (props: { example?: string }) => {
                 display="flex"
                 justifyContent="center"
             >
-                    <Button variant="contained" color="secondary" className={classes.button}>Why hookstate</Button>
-                    <Button variant="contained" color="primary" className={classes.button}>See documentation</Button>
-                    <Button variant="contained" color="primary" className={classes.button}>Browse plugins</Button>
+                    <Button
+                        variant="contained"
+                        color="secondary"
+                        className={classes.button}
+                        onClick={() => {
+                            window.location.href = 'https://github.com/avkonst/hookstate#whyhookstate'
+                        }}
+                    >Why hookstate
+                    </Button>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        className={classes.button}
+                        onClick={() => {
+                            window.location.href = 'https://github.com/avkonst/hookstate#apidocumentation'
+                        }}
+                    >See documentation
+                    </Button>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        className={classes.button}
+                        onClick={() => {
+                            window.location.href = 'https://github.com/avkonst/hookstate#plugins'
+                        }}
+                    >Browse plugins
+                    </Button>
             </Box>
         </Container>
         <Container maxWidth="md" key={exampleId}>
