@@ -81,13 +81,20 @@ const HomePage = () => {
         <Typography variant="h5" gutterBottom={true} align="center">
             Modern and high-performance state management for React done in type-safe and plugin extendable way.
         </Typography>
-        <Typography variant="h6" gutterBottom={true} align="center">
-            Getting started example:
-        </Typography>
-        <Box display="flex" justifyContent="center">
-            <Box maxWidth="600">
-                <ExampleComponent />
-                <SourceCodeView url="https://raw.githubusercontent.com/avkonst/hookstate/master/src/UseStateLink.tsx" />
+        <Box
+            display="flex"
+            justifyContent="center"
+            marginTop={2}
+            style={{ border: 'solid', borderWidth: "1px", borderColor: 'mediumblue' }}
+        >
+            <Box maxWidth="600" paddingTop={2}>
+                <Typography variant="h6" gutterBottom={true} >
+                    Getting started example:
+                </Typography>
+                <Box style={{ backgroundColor: 'rgba(0, 0, 100, 0.1)' }} padding={1} textAlign="center">
+                    <ExampleComponent />
+                </Box>
+                <SourceCodeView url="https://raw.githubusercontent.com/avkonst/hookstate/master/examples/src/examples/getting-started.tsx" />
             </Box>
         </Box>
     </Box>
