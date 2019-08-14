@@ -6,12 +6,22 @@ import React from 'react';
 
 export interface PluginTypeMarker<S, E extends {}> { }
 
-export interface StateRef<S, E extends {}> {
+export interface StateRef<S, E extends {} = {}> {
+    // placed to make sure type inference does not match compatible structure
+    // on useStateLink call
+    __synteticTypeInferenceMarkerRef: symbol;
     with<I>(plugin: (marker: PluginTypeMarker<S, E>) => Plugin<E, I>): StateRef<S, E & I>;
 }
 
+// R captures the type of result of transform function
+export interface StateInf<R> {
+    // placed to make sure type inference does not match empty structure
+    // on useStateLink call
+    __synteticTypeInferenceMarkerInf: symbol;
+}
+
 // TODO add support for Map and Set
-export type NestedInferredLink<S, E extends {}> =
+export type NestedInferredLink<S, E extends {} = {}> =
     S extends ReadonlyArray<(infer U)> ? ReadonlyArray<StateLink<U, E>> :
     S extends null ? undefined :
     S extends object ? { readonly [K in keyof Required<S>]: StateLink<S[K], E>; } :
@@ -206,7 +216,11 @@ class State implements Subscribable {
     }
 }
 
+const SynteticID = Symbol('SynteticTypeInferenceMarker');
+
 class StateRefImpl<S, E extends {}> implements StateRef<S, E> {
+    // tslint:disable-next-line: variable-name
+    public __synteticTypeInferenceMarkerRef = SynteticID;
     public disabledTracking: boolean | undefined;
 
     constructor(public state: State) { }
@@ -220,6 +234,15 @@ class StateRefImpl<S, E extends {}> implements StateRef<S, E> {
         this.state.register(pluginMeta as unknown as Plugin<{}, {}>);
         return this as unknown as StateRef<S, E & I>;
     }
+}
+
+class StateInfImpl<S, E extends {}, R> implements StateInf<R> {
+    // tslint:disable-next-line: variable-name
+    public __synteticTypeInferenceMarkerInf = SynteticID;
+    constructor(
+        public readonly wrapped: StateRefImpl<S, E>,
+        public readonly transform: (state: StateLink<S, E>, prev: R | undefined) => R,
+    ) { }
 }
 
 class StateLinkImpl<S, E extends {}> implements StateLink<S, E>, Subscribable, Subscriber {
@@ -594,7 +617,6 @@ function useDerivedStateLink<S, E extends {}>(originLink: StateLinkImpl<S, E>): 
     return useSubscribedStateLink(originLink.state, originLink.path, () => {
         setValue({})
     }, originLink, originLink.disabledTracking);
-    // note PrerenderTransform strategy is not inherited intentionally
 }
 
 function useAutoStateLink<S, E extends {}>(
@@ -657,9 +679,22 @@ function injectTransform<S, E extends {}, R>(
 ///
 /// EXPORTED IMPLEMENTATIONS
 ///
-
-export function createStateLink<S>(initial: S | (() => S)): StateRef<S, {}> {
-    return new StateRefImpl(createState(initial));
+export function createStateLink<S>(
+    initial: S | (() => S)
+): StateRef<S, {}>;
+export function createStateLink<S, R>(
+    initial: S | (() => S),
+    transform: (state: StateLink<S>, prev: R | undefined) => R
+): StateInf<R>;
+export function createStateLink<S, R>(
+    initial: S | (() => S),
+    transform?: (state: StateLink<S>, prev: R | undefined) => R
+): StateRef<S, {}> | StateInf<R> {
+    const ref =  new StateRefImpl<S, {}>(createState(initial));
+    if (transform) {
+        return new StateInfImpl(ref, transform)
+    }
+    return ref;
 }
 
 /*
@@ -674,39 +709,53 @@ export function createStateLink<S>(initial: S | (() => S)): StateRef<S, {}> {
  * by the watcher.
  */
 
+export function useStateLink<R>(
+    source: StateInf<R>
+): StateInf<R>;
 export function useStateLink<S, E extends {}>(
-    initialState: StateLink<S, E> | StateRef<S, E>
+    source: StateLink<S, E> | StateRef<S, E>
 ): StateLink<S, E>;
 export function useStateLink<S, E extends {}, R>(
-    initialState: StateLink<S, E> | StateRef<S, E>,
+    source: StateLink<S, E> | StateRef<S, E>,
     transform: (state: StateLink<S, E>, prev: R | undefined) => R
 ): R;
 export function useStateLink<S>(
-    initialState: S | (() => S)
+    source: S | (() => S)
 ): StateLink<S>;
 export function useStateLink<S, R>(
-    initialState: S | (() => S),
+    source: S | (() => S),
     transform: (state: StateLink<S>, prev: R | undefined) => R
 ): R;
 export function useStateLink<S, E extends {}, R>(
-    initialState: S | (() => S) | StateLink<S, E> | StateRef<S, E>,
+    source: S | (() => S) | StateLink<S, E> | StateRef<S, E>,
     transform?: (state: StateLink<S, E>, prev: R | undefined) => R
 ): R {
-    const link = useAutoStateLink(initialState);
+    const state = source instanceof StateInfImpl
+        ? source.wrapped as StateRef<S, E>
+        : source;
+    const link = useAutoStateLink(state);
+    if (source instanceof StateInfImpl) {
+        return injectTransform(link, source.transform);
+    }
     if (transform) {
         return injectTransform(link, transform);
     }
     return link as unknown as R;
 }
 
+export function useStateLinkUnmounted<R>(
+    source: StateInf<R>,
+): R;
 export function useStateLinkUnmounted<S, E extends {}>(
-    stateRef: StateRef<S, E>,
+    source: StateRef<S, E>,
 ): StateLink<S, E>;
 export function useStateLinkUnmounted<S, E extends {}, R>(
-    state: StateRef<S, E>,
+    source: StateRef<S, E> | StateInf<R>,
     transform?: (state: StateLink<S, E>) => R
 ): R {
-    const stateRef = state as StateRefImpl<S, E>;
+    const stateRef = source instanceof StateInfImpl
+        ? source.wrapped as StateRefImpl<S, E>
+        : source as StateRefImpl<S, E>;
     const link = new StateLinkImpl<S, E>(
         stateRef.state,
         RootPath,
@@ -716,6 +765,9 @@ export function useStateLinkUnmounted<S, E extends {}, R>(
         },
         stateRef.state.get(RootPath)
     ).with(DisabledTracking) // it does not matter how it is used, it is not subscribed anyway
+    if (source instanceof StateInfImpl) {
+        return source.transform(link, undefined);
+    }
     if (transform) {
         return transform(link);
     }
