@@ -1,0 +1,9 @@
+# the following is neccessary to reduce site duplication and improve SEO result
+# https://hookstate.netlify.com/* https://hookstate.org/:splat 301!
+
+# version.json is cached in the bundle, but checkline path is unknown for the bundle
+# this path is used by the app to check internet connectivity
+/checkline /version.json 200
+
+# the application handles routes internally, including non-existing pages
+/* /index.html 200​
