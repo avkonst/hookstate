@@ -2,7 +2,7 @@
 
 The flexible, fast and extendable state management for React that is based on hooks.
 
-Modern alternative to Redux, Mobx, Formik without boilerplate but with predictable behaviour.
+Modern alternative to Redux, Mobx, Formik without boilerplate but with impressive performance and predictable behavior.
 
 Browse [demos and code samples](https://hookstate.netlify.com) to see what it can do and learn it in few minutes.
 
@@ -10,11 +10,11 @@ Any questions? Just ask by raising a github ticket.
 
 ## Why Hookstate
 
-- Concise, pragmatic but flexible API. Very easy to learn. See ["getting started" code sample](https://hookstate.netlify.com/getting-started).
+- Concise, pragmatic but flexible API. Very easy to learn. See ["Getting Started" code sample](https://hookstate.netlify.com/getting-started).
 - Incredible performance based on unique method for tracking of used/rendered and updated state segments. See [the performance demo](https://hookstate.netlify.com/performance-demo-large-table).
-- First-class Typescript support. Complete type inferrence for any complexity of structures of managed state data.
-- Plugin system to allow for your custom extensions, with several [standard plugins](#plugins) available.
-- Tiny footprint. No external dependencies, except React.
+- First-class Typescript support. Complete type inferrence for any complexity of structures of managed state data. Full intellisense support tested in VS Code.
+- Plugin system enables custom extensions, with several [standard plugins](#plugins) available.
+- Tiny footprint: **2.13KB** gziped. No external dependencies, except React.
 
 ## Installation
 
