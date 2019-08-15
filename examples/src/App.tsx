@@ -105,7 +105,7 @@ const ExamplesRepo: Map<string, ExampleMeta> = new Map();
 ExamplesRepo.set(ExampleIds.GettingStartedGlobal, {
     name: '1. Intro: Global Application State',
     description: <>Create the state and use it
-        within React component and outside. Few lines of code. No bolierplate!</>,
+        within and outside of a React component. Few lines of code. No bolierplate!</>,
     code: 'https://raw.githubusercontent.com/avkonst/hookstate/master/examples/src/examples/getting-started.tsx',
     demo: <Example1 />
 });
