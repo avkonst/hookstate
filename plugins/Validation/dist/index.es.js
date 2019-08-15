@@ -5,19 +5,7 @@ var ValidationSeverity;
 })(ValidationSeverity || (ValidationSeverity = {}));
 var PluginID = Symbol('Validate');
 var emptyErrors = [];
-// tslint:disable-next-line: function-name
-function ValidationForEach(attachRule, message, severity) {
-    if (severity === void 0) { severity = ValidationSeverity.ERROR; }
-    return validationImpl(attachRule, message, severity, true);
-}
-// tslint:disable-next-line: function-name
 function Validation(attachRule, message, severity) {
-    if (severity === void 0) { severity = ValidationSeverity.ERROR; }
-    return validationImpl(attachRule, message, severity, false);
-}
-function validationImpl(attachRule, message, severity, foreach) {
-    // const defaultProcessingHooks: ValueProcessingHooks<any, {}> = { };
-    // const hooksStore = defaultProcessingHooks
     return function () {
         var storeRules = {};
         function getRulesAndNested(path) {
@@ -65,7 +53,7 @@ function validationImpl(attachRule, message, severity, foreach) {
                 if (!r.rule(l.value)) {
                     var err = {
                         path: l.path,
-                        message: r.message,
+                        message: typeof r.message === 'function' ? r.message(l.value) : r.message,
                         severity: r.severity
                     };
                     if (!filter || filter(err)) {
@@ -143,11 +131,16 @@ function validationImpl(attachRule, message, severity, foreach) {
             id: PluginID,
             instanceFactory: function () { return ({
                 get config() {
-                    return { rule: attachRule, message: message, severity: severity, foreach: foreach };
+                    if (attachRule !== undefined && message !== undefined) {
+                        return { rule: attachRule, message: message, severity: severity || ValidationSeverity.ERROR };
+                    }
+                    return undefined;
                 },
                 onAttach: function (path, plugin) {
-                    var r = plugin.config;
-                    addRule(r.foreach ? path.concat('*') : path, r);
+                    var config = plugin.config;
+                    if (config) {
+                        addRule(path, config);
+                    }
                 },
                 extensions: ['valid', 'invalid', 'errors', 'firstError'],
                 extensionsFactory: function (l) { return ({
@@ -179,5 +172,5 @@ function validationImpl(attachRule, message, severity, foreach) {
     };
 }
 
-export { Validation, ValidationForEach, ValidationSeverity };
+export { Validation, ValidationSeverity };
 //# sourceMappingURL=index.es.js.map

@@ -3,15 +3,15 @@ export declare enum ValidationSeverity {
     WARNING = 1,
     ERROR = 2
 }
-export interface ValidationErrorMessage {
-    readonly message: string;
+export interface ValidationRule {
+    readonly message: string | ((value: StateValueAtPath) => string);
+    readonly rule: (v: StateValueAtPath) => boolean;
     readonly severity: ValidationSeverity;
 }
-export interface ValidationRule extends ValidationErrorMessage {
-    rule: (v: StateValueAtPath) => boolean;
-}
-export interface ValidationError extends ValidationErrorMessage {
+export interface ValidationError {
+    readonly message: string;
     readonly path: Path;
+    readonly severity: ValidationSeverity;
 }
 export interface ValidationExtensions {
     readonly validShallow: boolean;
@@ -21,5 +21,6 @@ export interface ValidationExtensions {
     firstError(filter?: (e: ValidationError) => boolean, depth?: number): Partial<ValidationError>;
     errors(filter?: (e: ValidationError) => boolean, depth?: number, first?: boolean): ReadonlyArray<ValidationError>;
 }
-export declare function ValidationForEach<S extends ReadonlyArray<StateValueAtPath>, E extends {}>(attachRule: (value: S[number]) => boolean, message: string, severity?: ValidationSeverity): ((unused: PluginTypeMarker<S, E>) => Plugin<E, ValidationExtensions>);
-export declare function Validation<S, E extends {}>(attachRule: (value: S) => boolean, message: string, severity?: ValidationSeverity): ((unused: PluginTypeMarker<S, E>) => Plugin<E, ValidationExtensions>);
+export declare function Validation<S, E extends {}>(): ((unused: PluginTypeMarker<S, E>) => Plugin<E, ValidationExtensions>);
+export declare function Validation<S, E extends {}>(attachRule: (value: S) => boolean, message: string | ((value: S) => string)): ((unused: PluginTypeMarker<S, E>) => Plugin<E, ValidationExtensions>);
+export declare function Validation<S, E extends {}>(attachRule: (value: S) => boolean, message: string | ((value: S) => string), severity: ValidationSeverity): ((unused: PluginTypeMarker<S, E>) => Plugin<E, ValidationExtensions>);

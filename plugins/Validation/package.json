@@ -1,6 +1,6 @@
 {
     "name": "@hookstate/validation",
-    "version": "0.10.0",
+    "version": "0.10.1",
     "description": "Plugin for @hookstate/core to enable validation of data state.",
     "license": "MIT",
     "author": {
