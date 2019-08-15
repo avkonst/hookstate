@@ -1,4 +1,4 @@
-import { Prerender } from '@hookstate/core';
+import { Prerender, useStateLink } from '@hookstate/core';
 import isEqual from 'lodash.isequal';
 
 // tslint:disable-next-line: function-name
@@ -8,6 +8,10 @@ function EqualsPrerender(transform) {
         return transform(link, prev);
     };
 }
+function ScopedPrerender(props) {
+    var scoped = useStateLink(props.state);
+    return props.children(scoped);
+}
 
-export { EqualsPrerender };
+export { EqualsPrerender, ScopedPrerender };
 //# sourceMappingURL=index.es.js.map

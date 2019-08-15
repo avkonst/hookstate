@@ -1231,10 +1231,15 @@
   dependencies:
     "@hapi/hoek" "8.x.x"
 
-"@hookstate/core@0.10.0", "@hookstate/core@^0.10.0":
+"@hookstate/core@0.10.0":
   version "0.10.0"
   resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-0.10.0.tgz#eb5002a1e7faebbe1f79d486fc2ac9a0f3554317"
   integrity sha512-Sfzfa/mb6PSSm2co6R4/OGnYvk1Zo8X8ur0bXSxKkhZZd14RMs7KQbXeaLE5RJaG5u7h+AZsgsSH+S6RHp2vmQ==
+
+"@hookstate/core@^0.10.0":
+  version "0.10.1"
+  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-0.10.1.tgz#30f56e6c6d3ce03629583dd58cdbfda9219c83a2"
+  integrity sha512-yVuJ5FXknJN3fVPG3dwziIf5wGMgdh0uJPYj2PMp/jVktDS36tnWLS74X44PiHNx8PkME16IgMI9gdjMhEvNGw==
 
 "@hookstate/initial@0.10.0", "@hookstate/initial@^0.10.0":
   version "0.10.0"

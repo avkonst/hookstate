@@ -14,6 +14,11 @@ function EqualsPrerender(transform) {
         return transform(link, prev);
     };
 }
+function ScopedPrerender(props) {
+    var scoped = core.useStateLink(props.state);
+    return props.children(scoped);
+}
 
 exports.EqualsPrerender = EqualsPrerender;
+exports.ScopedPrerender = ScopedPrerender;
 //# sourceMappingURL=index.js.map

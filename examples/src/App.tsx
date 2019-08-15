@@ -9,7 +9,10 @@ import SyntaxHighlighter from 'react-syntax-highlighter';
 import { useAsync } from 'react-use';
 import request from 'request';
 import { ExampleComponent as Example1 } from './examples/getting-started';
-import { ExampleComponent as Example2 } from './examples/getting-started-local';
+import { ExampleComponent as Example2 } from './examples/getting-started-array';
+import { ExampleComponent as Example3 } from './examples/getting-started-object';
+import { ExampleComponent as Example4 } from './examples/getting-started-complex';
+import { ExampleComponent as Example5 } from './examples/getting-started-local';
 
 // import { prismStyle } from './highlightStyles';
 const highlightStyle = undefined;
@@ -100,11 +103,9 @@ const ExampleIds = {
 
 const ExamplesRepo: Map<string, ExampleMeta> = new Map();
 ExamplesRepo.set(ExampleIds.GettingStartedGlobal, {
-    name: '1. Getting Started: Global Application State',
-    description: <>Basic example shows how to create a global data store and
-        access it within and outside of a React component.
-        Only few lines of code: create state and use it. That is it.
-        In contrast with Redux and Mobx, it is so much less boilerplate code (if any), isn't it?</>,
+    name: '1. Intro: Global Application State',
+    description: <>Create the state and use it
+        within React component and outside. Few lines of code. No bolierplate!</>,
     code: 'https://raw.githubusercontent.com/avkonst/hookstate/master/examples/src/examples/getting-started.tsx',
     demo: <Example1 />
 });
@@ -134,14 +135,14 @@ const HomePage = (props: { example?: string }) => {
         setTab(newValue);
     }
 
-    return <Box padding={4}>
-        <Typography variant="h2" gutterBottom={true} align="center">
-            @hookstate
-        </Typography>
-        <Typography variant="h5" gutterBottom={true} align="center">
-            Modern and high-performance state management for React done in type-safe and plugin extendable way.
-        </Typography>
+    return <>
         <Container maxWidth="md">
+            <Box paddingTop={4}>
+                <Typography variant="h4" gutterBottom={true} align="center">
+                    <b>Hookstate</b>: modern and high-performance state management
+                    for React done in type-safe and plugin extendable way.
+                </Typography>
+            </Box>
             <Box
                 paddingTop={2}
                 display="flex"
@@ -245,7 +246,7 @@ const HomePage = (props: { example?: string }) => {
                 </Paper>
             </Box>
         </Container>
-    </Box>
+    </>
 }
 
 const routes: HookRouter.RouteObject = {

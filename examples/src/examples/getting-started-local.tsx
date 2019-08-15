@@ -5,7 +5,7 @@ export const ExampleComponent = () => {
     const state = useStateLink({ priority: 0, taskName: 'Untitled Task' });
     return <>
         <p>
-            <span><b>Counter value: {state.value.priority}</b> </span>
+            <span><b>Priority: {state.value.priority}</b> </span>
             <button onClick={() => state.nested.priority.set(p => p + 1)}>Increase priority</button>
         </p>
         <p>

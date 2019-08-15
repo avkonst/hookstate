@@ -161,9 +161,12 @@ var State = /** @class */ (function () {
     };
     return State;
 }());
+var SynteticID = Symbol('SynteticTypeInferenceMarker');
 var StateRefImpl = /** @class */ (function () {
     function StateRefImpl(state) {
         this.state = state;
+        // tslint:disable-next-line: variable-name
+        this.__synteticTypeInferenceMarkerRef = SynteticID;
     }
     StateRefImpl.prototype.with = function (plugin) {
         var pluginMeta = plugin({});
@@ -175,6 +178,15 @@ var StateRefImpl = /** @class */ (function () {
         return this;
     };
     return StateRefImpl;
+}());
+var StateInfImpl = /** @class */ (function () {
+    function StateInfImpl(wrapped, transform) {
+        this.wrapped = wrapped;
+        this.transform = transform;
+        // tslint:disable-next-line: variable-name
+        this.__synteticTypeInferenceMarkerInf = SynteticID;
+    }
+    return StateInfImpl;
 }());
 var StateLinkImpl = /** @class */ (function () {
     function StateLinkImpl(state, path, onUpdateUsed, valueUntracked) {
@@ -513,17 +525,16 @@ function useLocalStateLink(initialState) {
         setValue({ state: value.state });
     }, value.state);
 }
-function useDerivedStateLink(originLink) {
+function useScopedStateLink(originLink) {
     var _a = React.useState({}), setValue = _a[1];
     return useSubscribedStateLink(originLink.state, originLink.path, function () {
         setValue({});
     }, originLink, originLink.disabledTracking);
-    // note PrerenderTransform strategy is not inherited intentionally
 }
 function useAutoStateLink(initialState) {
     if (initialState instanceof StateLinkImpl) {
         // eslint-disable-next-line react-hooks/rules-of-hooks
-        return useDerivedStateLink(initialState);
+        return useScopedStateLink(initialState);
     }
     if (initialState instanceof StateRefImpl) {
         // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -562,26 +573,38 @@ function injectTransform(link, transform) {
     };
     return result;
 }
-///
-/// EXPORTED IMPLEMENTATIONS
-///
-function createStateLink(initial) {
-    return new StateRefImpl(createState(initial));
+function createStateLink(initial, transform) {
+    var ref = new StateRefImpl(createState(initial));
+    if (transform) {
+        return new StateInfImpl(ref, transform);
+    }
+    return ref;
 }
-function useStateLink(initialState, transform) {
-    var link = useAutoStateLink(initialState);
+function useStateLink(source, transform) {
+    var state = source instanceof StateInfImpl
+        ? source.wrapped
+        : source;
+    var link = useAutoStateLink(state);
+    if (source instanceof StateInfImpl) {
+        return injectTransform(link, source.transform);
+    }
     if (transform) {
         return injectTransform(link, transform);
     }
     return link;
 }
-function useStateLinkUnmounted(state, transform) {
-    var stateRef = state;
+function useStateLinkUnmounted(source, transform) {
+    var stateRef = source instanceof StateInfImpl
+        ? source.wrapped
+        : source;
     var link = new StateLinkImpl(stateRef.state, RootPath, 
     // it is assumed the client discards the state link once it is used
     function () {
         throw new Error('Internal Error: unexpected call');
     }, stateRef.state.get(RootPath)).with(DisabledTracking); // it does not matter how it is used, it is not subscribed anyway
+    if (source instanceof StateInfImpl) {
+        return source.transform(link, undefined);
+    }
     if (transform) {
         return transform(link);
     }
