@@ -36,7 +36,9 @@ export interface StateLink<S, E extends {} = {}> {
     readonly nested: NestedInferredLink<S, E>;
     readonly extended: E;
 
+    get(): S;
     set(newValue: React.SetStateAction<S>): void;
+
     with<I>(plugin: (marker: PluginTypeMarker<S, E>) => Plugin<E, I>): StateLink<S, E & I>;
 }
 // keep temporary for backward compatibility with the previous version
@@ -286,6 +288,10 @@ class StateLinkImpl<S, E extends {}> implements StateLink<S, E>, Subscribable, S
             }
         }
         return this.valueTracked!;
+    }
+
+    get() {
+        return this.value
     }
 
     set(newValue: React.SetStateAction<S>): void {
