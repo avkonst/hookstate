@@ -1,5 +1,5 @@
 import React from 'react';
-import { createStateLink, useStateLink, useStateLinkUnmounted, StateLink } from '@hookstate/core';
+import { createStateLink, useStateLink, useStateLinkUnmounted } from '@hookstate/core';
 
 const store = createStateLink([{ counter: 0 }, { counter: 0 }, { counter: 0 }]);
 

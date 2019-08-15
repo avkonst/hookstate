@@ -1,5 +1,5 @@
 import React from 'react';
-import { createStateLink, useStateLink, useStateLinkUnmounted, StateLink } from '@hookstate/core';
+import { useStateLink, StateLink } from '@hookstate/core';
 
 const TaskView = (props: { state: StateLink<string> }) => {
     const state = useStateLink(props.state);

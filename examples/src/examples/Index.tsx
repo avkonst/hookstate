@@ -8,6 +8,7 @@ import { ExampleComponent as ExampleLocalForm } from './local-form';
 import { ExampleComponent as ExampleGlobalMultiConsumers } from './global-multiple-consumers';
 import { ExampleComponent as ExampleLocalMultiConsumers } from './local-multiple-consumers';
 import { ExampleComponent as ExampleGlobalMultiConsumersFromRoot } from './global-multiple-consumers-from-root';
+import { ExampleComponent as ExamplePerformanceLargeTable } from './performance-demo-large-table';
 import { A } from 'hookrouter';
 
 export interface ExampleMeta {
@@ -25,6 +26,7 @@ export const ExampleIds = {
     GlobalMutlipleConsumers: 'global-multiple-consumers',
     LocalMutlipleConsumers: 'local-multiple-consumers',
     GlobalMutlipleConsumersFromRoot: 'global-multiple-consumers-from-root',
+    PerformanceLargeTable: 'performance-demo-large-table',
 }
 
 const baseUrl = 'https://raw.githubusercontent.com/avkonst/hookstate/master/examples/src/examples/'
@@ -115,4 +117,10 @@ ExamplesRepo.set(ExampleIds.GlobalMutlipleConsumersFromRoot, {
     description: <>.
         </>,
     demo: <ExampleGlobalMultiConsumersFromRoot />
+});
+ExamplesRepo.set(ExampleIds.PerformanceLargeTable, {
+    name: 'Performance Demo: Large Table',
+    description: <>.
+        </>,
+    demo: <ExamplePerformanceLargeTable />
 });
