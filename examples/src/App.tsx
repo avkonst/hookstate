@@ -8,11 +8,7 @@ import SyntaxHighlighter from 'react-syntax-highlighter';
 
 import { useAsync } from 'react-use';
 import request from 'request';
-import { ExampleComponent as Example1 } from './examples/getting-started';
-import { ExampleComponent as Example2 } from './examples/getting-started-array';
-import { ExampleComponent as Example3 } from './examples/getting-started-object';
-import { ExampleComponent as Example4 } from './examples/getting-started-complex';
-import { ExampleComponent as Example5 } from './examples/getting-started-local';
+import { ExamplesRepo, ExampleIds, ExampleCodeUrl } from './examples/Index';
 
 // import { prismStyle } from './highlightStyles';
 const highlightStyle = undefined;
@@ -89,46 +85,11 @@ const SourceCodeView = (props: { url: string }) => {
     );
 };
 
-interface ExampleMeta {
-    name: string,
-    description: JSX.Element,
-    code: string,
-    demo: JSX.Element;
-}
-
-const ExampleIds = {
-    GettingStartedGlobal: 'getting-started',
-    GettingStartedLocal: 'getting-started-local'
-}
-
-const ExamplesRepo: Map<string, ExampleMeta> = new Map();
-ExamplesRepo.set(ExampleIds.GettingStartedGlobal, {
-    name: '1. Intro: Global Application State',
-    description: <>Create the state and use it
-        within and outside of a React component. Few lines of code. No bolierplate!</>,
-    code: 'https://raw.githubusercontent.com/avkonst/hookstate/master/examples/src/examples/getting-started.tsx',
-    demo: <Example1 />
-});
-ExamplesRepo.set(ExampleIds.GettingStartedLocal, {
-    name: '2. Getting Started: Local Component State, eg. Form State',
-    description: <>Local component state can be managed in the same way as the global state.
-        The difference with the <A href={ExampleIds.GettingStartedGlobal}>global state example</A> is
-        that the state is automatically created by <code>useStateLink</code> and
-        saved per component but not globaly.
-        The local state is not preserved when a component is unmounted.
-        It is very similar to the original <code>React.useState</code> functionaly,
-        but has got more features. One of the features is the <code>nested</code> property,
-        which allows to traverse the data in the consistent way and mutate nested properties easier.
-        </>,
-    code: 'https://raw.githubusercontent.com/avkonst/hookstate/master/examples/src/examples/getting-started-local.tsx',
-    demo: <Example2 />
-});
-
 const HomePage = (props: { example?: string }) => {
     const [tab, setTab] = React.useState(2);
     const classes = useStyles();
     const exampleId = props.example && ExamplesRepo.has(props.example)
-        ? props.example : ExampleIds.GettingStartedGlobal;
+        ? props.example : ExampleIds.GlobalPrimitive;
     const exampleMeta = ExamplesRepo.get(exampleId)!;
 
     function handleChange(event: React.ChangeEvent<{}>, newValue: number) {
@@ -186,7 +147,7 @@ const HomePage = (props: { example?: string }) => {
                             <Select
                                 value={exampleId}
                                 onChange={(v) => navigate(v.target.value as string)}
-                                input={<OutlinedInput labelWidth={160} name="example" id="example-simple" />}
+                                input={<OutlinedInput labelWidth={140} name="example" id="example-simple" />}
                                 inputProps={{
                                     name: 'example',
                                     id: 'example-simple',
@@ -237,7 +198,7 @@ const HomePage = (props: { example?: string }) => {
                     }
                     {(tab === 0 || tab === 2) &&
                         <Box margin={2}>
-                            <SourceCodeView url={exampleMeta.code} />
+                            <SourceCodeView url={ExampleCodeUrl(exampleId)} />
                         </Box>
                     }
                     <Box

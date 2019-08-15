@@ -7,17 +7,16 @@ setInterval(() => useStateLinkUnmounted(store).nested[0].set(p => p + 1), 3000)
 
 export const ExampleComponent = () => {
     // type annotations are only to demonstrate how 'nested'
-    // types are unfolder when the state tree is traversed
+    // types are unfolded when the state tree is traversed
     const state: StateLink<number[]> = useStateLink(store);
-    return <>{
-        state.nested.map((elementState: StateLink<number>, elementIndex: number) =>
+    return <>
+        <p>Current state: {JSON.stringify(state.value)}</p>
+        {state.nested.map((elementState: StateLink<number>, elementIndex: number) =>
             <p key={elementIndex}>
-                <span>
-                    <b>Counter #{elementIndex} value: {elementState.value}</b>
-                    {elementIndex === 0 && ' watch +1 every 3 seconds '}
-                </span>
+                <span><b>Counter #{elementIndex} value: {elementState.value} </b></span>
                 <button onClick={() => elementState.set(p => p + 1)}>Increment</button>
+                {elementIndex === 0 && ' watch +1 every 3 seconds'}
             </p>
-        )
-    }</>
+        )}
+    </>
 }
