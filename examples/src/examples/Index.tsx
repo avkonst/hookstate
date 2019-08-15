@@ -128,7 +128,7 @@ ExamplesRepo.set(ExampleIds.GlobalMutlipleConsumersFromRoot, {
 });
 ExamplesRepo.set(ExampleIds.PerformanceLargeTable, {
     name: 'Performance Demo: Large Table',
-    description: <>Watch how Hookstate handles <b><u>1 out of 10000</u> table cells updates <u>every millisecond</u></b>.
+    description: <>Watch how Hookstate updates <b><u>1 out of 10000</u> table cells <u>every millisecond</u></b>.
         Stretch the matrix to 100x100 and set 50 cells to update per every 1ms interval. And "Follow the White Rabbit".
         The used technique is explained in the <ExampleLink id={ExampleIds.GlobalMutlipleConsumersFromRoot} /> example.
         </>,
