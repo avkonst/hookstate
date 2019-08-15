@@ -1231,10 +1231,10 @@
   dependencies:
     "@hapi/hoek" "8.x.x"
 
-"@hookstate/core@0.10.0":
-  version "0.10.0"
-  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-0.10.0.tgz#eb5002a1e7faebbe1f79d486fc2ac9a0f3554317"
-  integrity sha512-Sfzfa/mb6PSSm2co6R4/OGnYvk1Zo8X8ur0bXSxKkhZZd14RMs7KQbXeaLE5RJaG5u7h+AZsgsSH+S6RHp2vmQ==
+"@hookstate/core@0.10.2":
+  version "0.10.2"
+  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-0.10.2.tgz#422aeec25ef50039433999410a8630649da60005"
+  integrity sha512-fRnmDJsAW+5egusTVXeYDtvySDBRoL/11G4dcOiC2ZKqNukn8NbJGoHJJkKxiVJhXUxh3eJYqh6kIrthiqDkPw==
 
 "@hookstate/core@^0.10.0":
   version "0.10.1"
@@ -1271,10 +1271,10 @@
   dependencies:
     "@hookstate/core" "^0.10.0"
 
-"@hookstate/prerender@0.10.0":
-  version "0.10.0"
-  resolved "https://registry.yarnpkg.com/@hookstate/prerender/-/prerender-0.10.0.tgz#7a91d2f7d44e7cfd0fda19fb409c9a7089afa9b2"
-  integrity sha512-Am78k1rBg9BAVHQeYC7KXfVLkAWWDRWw8uGrF8Ok7Da8a6PK9GkgaRQGfcetTVLVvTI8drYLbGl8tzg1Gb0d6g==
+"@hookstate/prerender@0.10.1":
+  version "0.10.1"
+  resolved "https://registry.yarnpkg.com/@hookstate/prerender/-/prerender-0.10.1.tgz#d14e0d53f677f769b0748ba91a6d4387596aa421"
+  integrity sha512-PquvyHP+8E9eObip72u576THimLamW7f+0BIRSWevPTf6YUjKYZY9M/nCfM8i5atsqK63LrxAvBpZZnNq1FF9g==
   dependencies:
     "@hookstate/core" "^0.10.0"
     lodash.isequal "^4.5.0"

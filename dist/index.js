@@ -95,17 +95,24 @@ var State = /** @class */ (function () {
         return result;
     };
     State.prototype.set = function (path, value) {
+        var _this = this;
+        var prevValue = undefined;
         if (path.length === 0) {
+            prevValue = this._value;
             this._value = value;
         }
         var result = this._value;
         path.forEach(function (p, i) {
             if (i === path.length - 1) {
-                if (!(p in result)) {
+                if (p in result) {
+                    prevValue = result[p];
+                }
+                else {
                     // if an array of object is about to be extended by new property
                     // we consider it is the whole object is changed
                     // which is identified by upper path
                     path = path.slice(0, -1);
+                    prevValue = _this.get(path);
                 }
                 result[p] = value;
             }
@@ -114,7 +121,7 @@ var State = /** @class */ (function () {
             }
         });
         var actions = [];
-        this._subscribers.forEach(function (s) { return s.onSet(path, actions); });
+        this._subscribers.forEach(function (s) { return s.onSet(path, actions, prevValue); });
         actions.forEach(function (a) { return a(); });
     };
     State.prototype.extensions = function () {
@@ -154,7 +161,7 @@ var State = /** @class */ (function () {
         if (pluginInstance.onSet) {
             var onSet_1 = pluginInstance.onSet;
             this.subscribe({
-                onSet: function (p) { return onSet_1(p, _this._value); }
+                onSet: function (path, actions, prevValue) { return onSet_1(path, _this._value, prevValue); }
             });
         }
         return;
@@ -298,10 +305,10 @@ var StateLinkImpl = /** @class */ (function () {
     StateLinkImpl.prototype.unsubscribe = function (l) {
         this.subscribers.delete(l);
     };
-    StateLinkImpl.prototype.onSet = function (path, actions) {
-        this.updateIfUsed(path, actions);
+    StateLinkImpl.prototype.onSet = function (path, actions, prevValue) {
+        this.updateIfUsed(path, actions, prevValue);
     };
-    StateLinkImpl.prototype.updateIfUsed = function (path, actions) {
+    StateLinkImpl.prototype.updateIfUsed = function (path, actions, prevValue) {
         var _this = this;
         var update = function () {
             if (_this.disabledTracking && (_this.valueTracked !== undefined || _this.valueUsed === true)) {
@@ -320,12 +327,12 @@ var StateLinkImpl = /** @class */ (function () {
             if (firstChildValue === undefined) {
                 return false;
             }
-            return firstChildValue.updateIfUsed(path, actions);
+            return firstChildValue.updateIfUsed(path, actions, prevValue);
         };
         var updated = update();
         if (!updated && this.subscribers !== undefined) {
             this.subscribers.forEach(function (s) {
-                s.onSet(path, actions);
+                s.onSet(path, actions, prevValue);
             });
         }
         return updated;
@@ -569,7 +576,7 @@ function injectTransform(link, transform) {
         var overidingLink = new StateLinkImpl(link.state, link.path, link.onUpdateUsed, link.state.get(link.path));
         // and we should inject to onUpdate now
         // so the overriding link is used to track used properties
-        link.onSet = function (s, p) { return overidingLink.onSet(s, p); };
+        link.onSet = function (path, actions, prevValue) { return overidingLink.onSet(path, actions, prevValue); };
         var updatedResult = transform(overidingLink, result);
         // if result is not changed, it does not affect the rendering result too
         // so, we skip triggering rerendering in this case

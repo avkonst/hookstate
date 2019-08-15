@@ -27,7 +27,7 @@ export declare type TransformResult = any;
 export interface PluginInstance<E extends {}, I extends {}> {
     onInit?: () => StateValueAtRoot | void;
     onAttach?: (path: Path, withArgument: PluginInstance<{}, {}>) => void;
-    onSet?: (path: Path, newValue: StateValueAtRoot) => void;
+    onSet?: (path: Path, newValue: StateValueAtRoot, prevValue: StateValueAtPath) => void;
     extensions: (keyof I)[];
     extensionsFactory: (thisLink: StateLink<StateValueAtPath, E>) => I;
 }

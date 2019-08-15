@@ -118,10 +118,10 @@ const PerformanceMeter = (props: { matrixState: StateLink<number[][]> }) => {
             return {
                 id: PerformanceViewPluginID,
                 instanceFactory: () => ({
-                    onSet: (path, newMatrixState) => {
+                    onSet: (path, newMatrixState, newCellState) => {
                         // new value can be only number in this example
                         // and path can contain only 2 elements: row and column indexes
-                        totalSum += newMatrixState[path[0]][path[1]];
+                        totalSum += newMatrixState[path[0]][path[1]] - newCellState;
                         totalCalls += 1;
                     },
                     extensions: ['totalSum', 'totalCalls', 'elapsed', 'rate'],
