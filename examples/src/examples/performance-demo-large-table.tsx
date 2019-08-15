@@ -3,7 +3,7 @@ import { useStateLink, StateLink, DisabledTracking } from '@hookstate/core';
 
 const TableCell = (props: { cellState: StateLink<number> }) => {
     const state = useStateLink(props.cellState);
-    return <>{state.value}</>;
+    return <>{state.value.toString(16)}</>;
 }
 
 const MatrixView = (props: { totalRows: number, totalColumns: number, interval: number, callsPerInterval: number }) => {
@@ -36,7 +36,9 @@ const MatrixView = (props: { totalRows: number, totalColumns: number, interval: 
             style={{
                 border: 'solid',
                 borderWidth: 1,
-                borderColor: 'grey'
+                borderColor: 'grey',
+                color: '#00FF00',
+                backgroundColor: 'black'
             }}
         >
             <tbody>
@@ -53,39 +55,50 @@ const MatrixView = (props: { totalRows: number, totalColumns: number, interval: 
 }
 
 export const ExampleComponent = () => {
-    const [totalRows, setRows] = React.useState(50);
-    const [totalColumns, setColumns] = React.useState(50);
-    const [rate, setRate] = React.useState(20);
-    const [timer, setTimer] = React.useState(10);
+    const settings = useStateLink({
+        totalRows: 50,
+        totalColumns: 50,
+        rate: 50,
+        timer: 10
+    }, (s) => ({
+        totalRows: s.value.totalRows,
+        totalColumns: s.value.totalColumns,
+        rate: s.value.rate,
+        timer: s.value.timer,
+        setRows: (f: (p: number) => number) => s.nested.totalRows.set(f),
+        setColumns: (f: (p: number) => number) => s.nested.totalColumns.set(f),
+        setRate: (f: (p: number) => number) => s.nested.rate.set(f),
+        setTimer: (f: (p: number) => number) => s.nested.timer.set(f),
+    }));
 
     return <>
         <div>
-            <p><span>Total rows: {totalRows} </span>
-                <button onClick={() => setRows(p => (p - 10) || 10)}>-10</button>
-                <button onClick={() => setRows(p => p + 10)}>+10</button></p>
-            <p><span>Total columns: {totalColumns} </span>
-                <button onClick={() => setColumns(p => (p - 10) || 10)}>-10</button>
-                <button onClick={() => setColumns(p => p + 10)}>+10</button></p>
-            <p>Total cells: {totalColumns * totalRows}</p>
-            <p><span>Cells to update per timer interval: {rate} </span>
-                <button onClick={() => setRate(p => (p - 1) || 1)}>-1</button>
-                <button onClick={() => setRate(p => p + 1)}>+1</button>
-                <button onClick={() => setRate(p => p > 10 ? (p - 10) : 1)}>-10</button>
-                <button onClick={() => setRate(p => p + 10)}>+10</button>
+            <p><span>Total rows: {settings.totalRows} </span>
+                <button onClick={() => settings.setRows(p => (p - 10) || 10)}>-10</button>
+                <button onClick={() => settings.setRows(p => p + 10)}>+10</button></p>
+            <p><span>Total columns: {settings.totalColumns} </span>
+                <button onClick={() => settings.setColumns(p => (p - 10) || 10)}>-10</button>
+                <button onClick={() => settings.setColumns(p => p + 10)}>+10</button></p>
+            <p>Total cells: {settings.totalColumns * settings.totalRows}</p>
+            <p><span>Cells to update per timer interval: {settings.rate} </span>
+                <button onClick={() => settings.setRate(p => (p - 1) || 1)}>-1</button>
+                <button onClick={() => settings.setRate(p => p + 1)}>+1</button>
+                <button onClick={() => settings.setRate(p => p > 10 ? (p - 10) : 1)}>-10</button>
+                <button onClick={() => settings.setRate(p => p + 10)}>+10</button>
                 </p>
-            <p><span>Timer interval in ms: {timer} </span>
-                <button onClick={() => setTimer(p => p > 1 ? (p - 1) : 1)}>-1</button>
-                <button onClick={() => setTimer(p => p + 1)}>+1</button>
-                <button onClick={() => setTimer(p => p > 10 ? (p - 10) : 1)}>-10</button>
-                <button onClick={() => setTimer(p => p + 10)}>+10</button>
+            <p><span>Timer interval in ms: {settings.timer} </span>
+                <button onClick={() => settings.setTimer(p => p > 1 ? (p - 1) : 1)}>-1</button>
+                <button onClick={() => settings.setTimer(p => p + 1)}>+1</button>
+                <button onClick={() => settings.setTimer(p => p > 10 ? (p - 10) : 1)}>-10</button>
+                <button onClick={() => settings.setTimer(p => p + 10)}>+10</button>
                 </p>
         </div>
         <MatrixView
             key={Math.random()}
-            totalRows={totalRows}
-            totalColumns={totalColumns}
-            interval={timer}
-            callsPerInterval={rate}
+            totalRows={settings.totalRows}
+            totalColumns={settings.totalColumns}
+            interval={settings.timer}
+            callsPerInterval={settings.rate}
         />
     </>;
 }
@@ -93,7 +106,7 @@ export const ExampleComponent = () => {
 const PerformanceViewPluginID = Symbol('PerformanceViewPlugin');
 const PerformanceMeter = (props: { matrixState: StateLink<number[][]> }) => {
     const scopedState = useStateLink(props.matrixState)
-        .with((unused) => {
+        .with(() => {
             // this is custom Hookstate plugin which counts statistics
             let totalSum = 0;
             let totalCalls = 0;
@@ -109,7 +122,7 @@ const PerformanceMeter = (props: { matrixState: StateLink<number[][]> }) => {
                         totalCalls += 1;
                     },
                     extensions: ['totalSum', 'totalCalls', 'elapsed', 'rate'],
-                    extensionsFactory: (l) => ({
+                    extensionsFactory: () => ({
                         totalSum: () => totalSum,
                         totalCalls: () => totalCalls,
                         elapsed: () => Math.floor(elapsed() / 1000),
