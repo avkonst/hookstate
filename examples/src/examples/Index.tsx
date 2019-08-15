@@ -7,6 +7,7 @@ import { ExampleComponent as ExampleGlobalComplex } from './global-complex';
 import { ExampleComponent as ExampleLocalForm } from './local-form';
 import { ExampleComponent as ExampleGlobalMultiConsumers } from './global-multiple-consumers';
 import { ExampleComponent as ExampleLocalMultiConsumers } from './local-multiple-consumers';
+import { ExampleComponent as ExampleGlobalMultiConsumersFromRoot } from './global-multiple-consumers-from-root';
 import { A } from 'hookrouter';
 
 export interface ExampleMeta {
@@ -23,6 +24,7 @@ export const ExampleIds = {
     LocalForm: 'local-form',
     GlobalMutlipleConsumers: 'global-multiple-consumers',
     LocalMutlipleConsumers: 'local-multiple-consumers',
+    GlobalMutlipleConsumersFromRoot: 'global-multiple-consumers-from-root',
 }
 
 const baseUrl = 'https://raw.githubusercontent.com/avkonst/hookstate/master/examples/src/examples/'
@@ -99,8 +101,18 @@ ExamplesRepo.set(ExampleIds.LocalMutlipleConsumers, {
         for <ExampleLink id={ExampleIds.GlobalMutlipleConsumers} title="the global state" />.
         The difference with <ExampleLink id={ExampleIds.GlobalMutlipleConsumers} title="the global state example" /> is
         that the state is created per root component and corresponding 'leaves' of the data
-        are passed to the inside components as properties.
-        Change the data and watch the rerendering of ONLY the affected components.
+        are passed to the inside components as properties. In fact it is possible to use
+        the global state in the root component too and pass the 'leaves' of data to the nested components,
+        and still have rendering optimized
+        (<ExampleLink id={ExampleIds.GlobalMutlipleConsumersFromRoot} title="see the example" />).
+        This can be used to efficiently render large data forms regadless
+        of whether the state is coming from local variable or global.
         </>,
     demo: <ExampleLocalMultiConsumers />
+});
+ExamplesRepo.set(ExampleIds.GlobalMutlipleConsumersFromRoot, {
+    name: 'Combined State: Optimized Rendering',
+    description: <>.
+        </>,
+    demo: <ExampleGlobalMultiConsumersFromRoot />
 });

@@ -1,6 +1,8 @@
 import React from 'react';
 import { createStateLink, useStateLink, useStateLinkUnmounted, StateLink } from '@hookstate/core';
 
+const store = createStateLink({ priority: 0, task: 'Untitled Task' });
+
 const TaskView = (props: { state: StateLink<string> }) => {
     const state = useStateLink(props.state);
     return <div>
@@ -28,7 +30,7 @@ const JsonDump = (props: { state: StateLink<{ priority: number, task: string }> 
 }
 
 export const ExampleComponent = () => {
-    const state = useStateLink({ priority: 0, task: 'Untitled Task' })
+    const state = useStateLink(store)
     return <>
         <JsonDump state={state} />
         <TaskView state={state.nested.task} />
