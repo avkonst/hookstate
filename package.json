@@ -1,7 +1,7 @@
 {
     "name": "@hookstate/core",
     "version": "0.10.1",
-    "description": "Modern and high-performance (data access tracked) state management for react done in type-safe and plugin extendable way.",
+    "description": "The flexible, fast and extendable state management for React that is based on hooks and state usage tracking.",
     "license": "MIT",
     "author": {
         "name": "Andrey Konstantinov"

@@ -36,9 +36,8 @@
     },
     "scripts": {
         "start": "react-scripts start",
-        "build": "react-scripts build",
+        "build": "react-scripts build && cp .netlify-headers build/_headers && cp .netlify-redirects build/_redirects",
         "test": "react-scripts test",
-        "deploy": "rimraf ../docs/* && cp -R build/* ../docs",
         "check-updates": "ncu",
         "apply-updates": "ncu -u"
     },

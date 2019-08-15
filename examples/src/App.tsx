@@ -153,7 +153,7 @@ const HomePage = (props: { example?: string }) => {
                         color="secondary"
                         className={classes.button}
                         onClick={() => {
-                            window.location.href = 'https://github.com/avkonst/hookstate#whyhookstate'
+                            window.location.href = 'https://github.com/avkonst/hookstate#why-hookstate'
                         }}
                     >Why hookstate
                     </Button>
@@ -162,7 +162,7 @@ const HomePage = (props: { example?: string }) => {
                         color="primary"
                         className={classes.button}
                         onClick={() => {
-                            window.location.href = 'https://github.com/avkonst/hookstate#apidocumentation'
+                            window.location.href = 'https://github.com/avkonst/hookstate#api-documentation'
                         }}
                     >See documentation
                     </Button>
