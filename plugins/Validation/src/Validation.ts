@@ -6,17 +6,16 @@ export enum ValidationSeverity {
     ERROR = 2
 }
 
-export interface ValidationErrorMessage {
-    readonly message: string;
+export interface ValidationRule {
+    readonly message: string | ((value: StateValueAtPath) => string)
+    readonly rule: (v: StateValueAtPath) => boolean
     readonly severity: ValidationSeverity;
 }
 
-export interface ValidationRule extends ValidationErrorMessage {
-    rule: (v: StateValueAtPath) => boolean
-}
-
-export interface ValidationError extends ValidationErrorMessage {
+export interface ValidationError {
+    readonly message: string;
     readonly path: Path;
+    readonly severity: ValidationSeverity;
 }
 
 export interface ValidationExtensions {
@@ -41,32 +40,21 @@ const PluginID = Symbol('Validate');
 const emptyErrors: ValidationError[] = []
 
 // tslint:disable-next-line: function-name
-export function ValidationForEach<S extends ReadonlyArray<StateValueAtPath>, E extends {}>(
-    attachRule: (value: S[number]) => boolean,
-    message: string,
-    severity: ValidationSeverity = ValidationSeverity.ERROR
-): ((unused: PluginTypeMarker<S, E>) => Plugin<E, ValidationExtensions>) {
-    return validationImpl(attachRule, message, severity, true)
-}
-
-// tslint:disable-next-line: function-name
+export function Validation<S, E extends {}>(): ((unused: PluginTypeMarker<S, E>) => Plugin<E, ValidationExtensions>);
 export function Validation<S, E extends {}>(
     attachRule: (value: S) => boolean,
-    message: string,
-    severity: ValidationSeverity = ValidationSeverity.ERROR
-): ((unused: PluginTypeMarker<S, E>) => Plugin<E, ValidationExtensions>) {
-    return validationImpl(attachRule, message, severity, false)
-}
-
-function validationImpl<S, E extends {}>(
+    message: string | ((value: S) => string)
+): ((unused: PluginTypeMarker<S, E>) => Plugin<E, ValidationExtensions>);
+export function Validation<S, E extends {}>(
     attachRule: (value: S) => boolean,
-    message: string,
-    severity: ValidationSeverity,
-    foreach: boolean
+    message: string | ((value: S) => string),
+    severity: ValidationSeverity
+): ((unused: PluginTypeMarker<S, E>) => Plugin<E, ValidationExtensions>);
+export function Validation<S, E extends {}>(
+    attachRule?: (value: S) => boolean,
+    message?: string | ((value: S) => string),
+    severity?: ValidationSeverity
 ): ((unused: PluginTypeMarker<S, E>) => Plugin<E, ValidationExtensions>) {
-
-    // const defaultProcessingHooks: ValueProcessingHooks<any, {}> = { };
-    // const hooksStore = defaultProcessingHooks
 
     return () => {
         const storeRules = {};
@@ -122,7 +110,7 @@ function validationImpl<S, E extends {}>(
                 if (!r.rule(l.value)) {
                     const err = {
                         path: l.path,
-                        message: r.message,
+                        message: typeof r.message === 'function' ? r.message(l.value) : r.message,
                         severity: r.severity
                     };
                     if (!filter || filter(err)) {
@@ -199,12 +187,17 @@ function validationImpl<S, E extends {}>(
         return {
             id: PluginID,
             instanceFactory: () => ({
-                get config(): ValidationRule & { foreach: boolean } {
-                    return { rule: attachRule, message: message, severity: severity, foreach: foreach }
+                get config(): ValidationRule | undefined {
+                    if (attachRule !== undefined && message !== undefined) {
+                        return { rule: attachRule, message: message, severity: severity || ValidationSeverity.ERROR }
+                    }
+                    return undefined;
                 },
                 onAttach: (path, plugin) => {
-                    const r = (plugin as unknown as { config: ValidationRule & { foreach: boolean } }).config;
-                    addRule(r.foreach ? path.concat('*') : path, r);
+                    const config = (plugin as unknown as { config: ValidationRule | undefined }).config;
+                    if (config) {
+                        addRule(path, config);
+                    }
                 },
                 extensions: ['valid', 'invalid', 'errors', 'firstError'],
                 extensionsFactory: (l) => ({
