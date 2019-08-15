@@ -1,6 +1,6 @@
 {
     "name": "@hookstate/core",
-    "version": "0.10.0",
+    "version": "0.10.1",
     "description": "Modern and high-performance (data access tracked) state management for react done in type-safe and plugin extendable way.",
     "license": "MIT",
     "author": {
