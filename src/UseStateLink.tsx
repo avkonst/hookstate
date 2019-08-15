@@ -56,7 +56,7 @@ export interface PluginInstance<E extends {}, I extends {}> {
     // it is only applicable for plugins attached via stateref, not via statelink
     onInit?: () => StateValueAtRoot | void,
     onAttach?: (path: Path, withArgument: PluginInstance<{}, {}>) => void,
-    onSet?: (path: Path, newValue: StateValueAtRoot) => void,
+    onSet?: (path: Path, newValue: StateValueAtRoot, prevValue: StateValueAtPath) => void,
 
     extensions: (keyof I)[],
     // thisLink can be anything, not only root link with value of type S
@@ -108,7 +108,7 @@ class ExtensionUnknownError extends Error {
 }
 
 interface Subscriber {
-    onSet(path: Path, actions: (() => void)[]): void;
+    onSet(path: Path, actions: (() => void)[], prevValue: StateValueAtPath): void;
 }
 
 interface Subscribable {
@@ -139,17 +139,22 @@ class State implements Subscribable {
     }
 
     set(path: Path, value: StateValueAtPath) {
+        let prevValue: StateValueAtPath = undefined;
         if (path.length === 0) {
+            prevValue = this._value;
             this._value = value;
         }
         let result = this._value;
         path.forEach((p, i) => {
             if (i === path.length - 1) {
-                if (!(p in result)) {
+                if (p in result) {
+                    prevValue = result[p];
+                } else {
                     // if an array of object is about to be extended by new property
                     // we consider it is the whole object is changed
                     // which is identified by upper path
                     path = path.slice(0, -1)
+                    prevValue = this.get(path);
                 }
                 result[p] = value;
             } else {
@@ -157,7 +162,7 @@ class State implements Subscribable {
             }
         });
         const actions: (() => void)[] = [];
-        this._subscribers.forEach(s => s.onSet(path, actions));
+        this._subscribers.forEach(s => s.onSet(path, actions, prevValue));
         actions.forEach(a => a());
     }
 
@@ -201,7 +206,7 @@ class State implements Subscribable {
         if (pluginInstance.onSet) {
             const onSet = pluginInstance.onSet;
             this.subscribe({
-                onSet: (p) => onSet(p, this._value)
+                onSet: (path, actions, prevValue) => onSet(path, this._value, prevValue)
             })
         }
         return;
@@ -353,11 +358,11 @@ class StateLinkImpl<S, E extends {}> implements StateLink<S, E>, Subscribable, S
         this.subscribers!.delete(l);
     }
 
-    onSet(path: Path, actions: (() => void)[]) {
-        this.updateIfUsed(path, actions)
+    onSet(path: Path, actions: (() => void)[], prevValue: StateValueAtPath) {
+        this.updateIfUsed(path, actions, prevValue)
     }
 
-    updateIfUsed(path: Path, actions: (() => void)[]): boolean {
+    updateIfUsed(path: Path, actions: (() => void)[], prevValue: StateValueAtPath): boolean {
         const update = () => {
             if (this.disabledTracking && (this.valueTracked !== undefined || this.valueUsed === true)) {
                 actions.push(this.onUpdateUsed);
@@ -375,13 +380,13 @@ class StateLinkImpl<S, E extends {}> implements StateLink<S, E>, Subscribable, S
             if (firstChildValue === undefined) {
                 return false;
             }
-            return firstChildValue.updateIfUsed(path, actions);
+            return firstChildValue.updateIfUsed(path, actions, prevValue);
         }
 
         const updated = update();
         if (!updated && this.subscribers !== undefined) {
             this.subscribers.forEach(s => {
-                s.onSet(path, actions)
+                s.onSet(path, actions, prevValue)
             })
         }
         return updated;
@@ -665,7 +670,7 @@ function injectTransform<S, E extends {}, R>(
         )
         // and we should inject to onUpdate now
         // so the overriding link is used to track used properties
-        link.onSet = (s, p) => overidingLink.onSet(s, p);
+        link.onSet = (path, actions, prevValue) => overidingLink.onSet(path, actions, prevValue);
         const updatedResult = transform(overidingLink, result);
         // if result is not changed, it does not affect the rendering result too
         // so, we skip triggering rerendering in this case

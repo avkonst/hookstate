@@ -24,7 +24,10 @@ const MatrixView = (props: { totalRows: number, totalColumns: number, interval: 
                 return Math.floor(Math.random() * (max - min)) + min;
             }
             for (let i = 0; i < props.callsPerInterval; i += 1) {
-                matrixState.nested[randomInt(0, totalRows)].nested[randomInt(0, totalColumns)].set(p => p + 1)
+                matrixState
+                    .nested[randomInt(0, totalRows)]
+                    .nested[randomInt(0, totalColumns)]
+                    .set(p => p + randomInt(0, 5))
             }
         }, props.interval)
         return () => clearInterval(t);
