@@ -1231,10 +1231,10 @@
   dependencies:
     "@hapi/hoek" "8.x.x"
 
-"@hookstate/core@0.10.2":
-  version "0.10.2"
-  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-0.10.2.tgz#422aeec25ef50039433999410a8630649da60005"
-  integrity sha512-fRnmDJsAW+5egusTVXeYDtvySDBRoL/11G4dcOiC2ZKqNukn8NbJGoHJJkKxiVJhXUxh3eJYqh6kIrthiqDkPw==
+"@hookstate/core@0.10.3":
+  version "0.10.3"
+  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-0.10.3.tgz#244a7f903db0386e866b93ecce78b852e7fec55f"
+  integrity sha512-7CQ6fNOzKhyN/z6G1DUcdZQDT5eG+v6jBAV2aMp05jp968b8GnAbYxn9YSfoRm/GUXycB0ZMUViAojtHCJLzHQ==
 
 "@hookstate/core@^0.10.0":
   version "0.10.1"
@@ -1287,10 +1287,10 @@
     "@hookstate/core" "^0.10.0"
     "@hookstate/initial" "^0.10.0"
 
-"@hookstate/validation@0.10.0":
-  version "0.10.0"
-  resolved "https://registry.yarnpkg.com/@hookstate/validation/-/validation-0.10.0.tgz#ea43d1ddf3101c3ff7f4dc3514495fcc4c74f4bf"
-  integrity sha512-AZ3EVq3+5VROigsY9YG8o1peCcSUD0umXYpkOfw2DcVJZ8gKTruVGpnISCfPVpxFqqUIma8f33QFZ0u3FEvZ8A==
+"@hookstate/validation@0.10.1":
+  version "0.10.1"
+  resolved "https://registry.yarnpkg.com/@hookstate/validation/-/validation-0.10.1.tgz#f5f521e59925240678bd6642bf042e82480f2ca2"
+  integrity sha512-DoADH8HhIxGuWon32sZYp0mtJaUt+8YAb/WBKNEInUSnmEvd+92ifDeiAuAjk9yR865Qu2WwWi5jFgyRqZvSWg==
   dependencies:
     "@hookstate/core" "^0.10.0"
 

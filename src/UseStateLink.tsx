@@ -540,8 +540,10 @@ class StateLinkImpl<S, E extends {}> implements StateLink<S, E>, Subscribable, S
 
     // tslint:disable-next-line: no-any
     private proxyWrap(objectToWrap: any,
+        // tslint:disable-next-line: no-any
         getter: (target: any, key: PropertyKey) => any,
         onInvalidUsage: (op: string) => never,
+        // tslint:disable-next-line: no-any
         setter?: (target: any, p: PropertyKey, value: any, receiver: any) => boolean
     ) {
         return new Proxy(objectToWrap, {

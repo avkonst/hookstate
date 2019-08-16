@@ -17,6 +17,7 @@ export interface StateLink<S, E extends {} = {}> {
     readonly value: S;
     readonly nested: NestedInferredLink<S, E>;
     readonly extended: E;
+    get(): S;
     set(newValue: React.SetStateAction<S>): void;
     with<I>(plugin: (marker: PluginTypeMarker<S, E>) => Plugin<E, I>): StateLink<S, E & I>;
 }

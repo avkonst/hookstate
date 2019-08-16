@@ -155,7 +155,7 @@ var State = /** @class */ (function () {
         if (pluginInstance.onSet) {
             var onSet_1 = pluginInstance.onSet;
             this.subscribe({
-                onSet: function (path, actions, prevValue) { return onSet_1(path, _this._value, prevValue); }
+                onSet: function (p, actions, prevValue) { return onSet_1(p, _this._value, prevValue); }
             });
         }
         return;
@@ -229,6 +229,9 @@ var StateLinkImpl = /** @class */ (function () {
         enumerable: true,
         configurable: true
     });
+    StateLinkImpl.prototype.get = function () {
+        return this.value;
+    };
     StateLinkImpl.prototype.set = function (newValue) {
         // inferred() function checks for the nullability of the current value:
         // If value is not null | undefined, it resolves to ArrayLink or ObjectLink
@@ -384,7 +387,12 @@ var StateLinkImpl = /** @class */ (function () {
     };
     StateLinkImpl.prototype.valueArrayImpl = function () {
         var _this = this;
-        var getter = function (target, key) {
+        // const getter = ;
+        return this.proxyWrap(this.valueUntracked, function (target, key) {
+            if (typeof key === 'symbol') {
+                // allow clients to associate hidden cache with state values
+                return target[key];
+            }
             if (key === 'length') {
                 return target.length;
             }
@@ -396,9 +404,15 @@ var StateLinkImpl = /** @class */ (function () {
                 return undefined;
             }
             return (_this.nested)[index].value;
-        };
-        return this.proxyWrap(this.valueUntracked, getter, function (o) {
+        }, function (o) {
             throw new StateLinkInvalidUsageError(o, _this.path);
+        }, function (target, key, value) {
+            if (typeof key === 'symbol') {
+                // allow clients to associate hidden cache with state values
+                target[key] = value;
+                return true;
+            }
+            throw new StateLinkInvalidUsageError('set', _this.path);
         });
     };
     StateLinkImpl.prototype.nestedObjectImpl = function () {
@@ -426,18 +440,25 @@ var StateLinkImpl = /** @class */ (function () {
     };
     StateLinkImpl.prototype.valueObjectImpl = function () {
         var _this = this;
-        var getter = function (target, key) {
+        return this.proxyWrap(this.valueUntracked, function (target, key) {
             if (typeof key === 'symbol') {
-                return undefined;
+                // allow clients to associate hidden cache with state values
+                return target[key];
             }
             return (_this.nested)[key].value;
-        };
-        return this.proxyWrap(this.valueUntracked, getter, function (o) {
+        }, function (o) {
             throw new StateLinkInvalidUsageError(o, _this.path);
+        }, function (target, key, value) {
+            if (typeof key === 'symbol') {
+                // allow clients to associate hidden cache with state values
+                target[key] = value;
+                return true;
+            }
+            throw new StateLinkInvalidUsageError('set', _this.path);
         });
     };
     // tslint:disable-next-line: no-any
-    StateLinkImpl.prototype.proxyWrap = function (objectToWrap, getter, onInvalidUsage) {
+    StateLinkImpl.prototype.proxyWrap = function (objectToWrap, getter, onInvalidUsage, setter) {
         return new Proxy(objectToWrap, {
             getPrototypeOf: function (target) {
                 return Object.getPrototypeOf(target);
@@ -470,9 +491,9 @@ var StateLinkImpl = /** @class */ (function () {
                 return p in target;
             },
             get: getter,
-            set: function (target, p, value, receiver) {
+            set: setter || (function (target, p, value, receiver) {
                 return onInvalidUsage('set');
-            },
+            }),
             deleteProperty: function (target, p) {
                 return onInvalidUsage('deleteProperty');
             },
