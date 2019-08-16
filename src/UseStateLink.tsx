@@ -208,7 +208,7 @@ class State implements Subscribable {
         if (pluginInstance.onSet) {
             const onSet = pluginInstance.onSet;
             this.subscribe({
-                onSet: (path, actions, prevValue) => onSet(path, this._value, prevValue)
+                onSet: (p, actions, prevValue) => onSet(p, this._value, prevValue)
             })
         }
         return;
@@ -451,22 +451,38 @@ class StateLinkImpl<S, E extends {}> implements StateLink<S, E>, Subscribable, S
     }
 
     private valueArrayImpl(): S {
-        const getter = (target: object, key: PropertyKey) => {
-            if (key === 'length') {
-                return (target as []).length;
+        // const getter = ;
+        return this.proxyWrap(
+            this.valueUntracked as unknown as object,
+            (target: object, key: PropertyKey) => {
+                if (typeof key === 'symbol') {
+                    // allow clients to associate hidden cache with state values
+                    return target[key];
+                }
+                if (key === 'length') {
+                    return (target as []).length;
+                }
+                if (key in Array.prototype) {
+                    return Array.prototype[key];
+                }
+                const index = Number(key);
+                if (!Number.isInteger(index)) {
+                    return undefined;
+                }
+                return (this.nested)![index].value;
+            },
+            o => {
+                throw new StateLinkInvalidUsageError(o, this.path)
+            },
+            (target: object, key: PropertyKey, value: StateValueAtPath) => {
+                if (typeof key === 'symbol') {
+                    // allow clients to associate hidden cache with state values
+                    target[key] = value;
+                    return true;
+                }
+                throw new StateLinkInvalidUsageError('set', this.path)
             }
-            if (key in Array.prototype) {
-                return Array.prototype[key];
-            }
-            const index = Number(key);
-            if (!Number.isInteger(index)) {
-                return undefined;
-            }
-            return (this.nested)![index].value;
-        };
-        return this.proxyWrap(this.valueUntracked as unknown as object, getter, o => {
-            throw new StateLinkInvalidUsageError(o, this.path)
-        }) as unknown as S;
+        ) as unknown as S;
     }
 
     private nestedObjectImpl(): NestedInferredLink<S, E> {
@@ -499,20 +515,34 @@ class StateLinkImpl<S, E extends {}> implements StateLink<S, E>, Subscribable, S
     }
 
     private valueObjectImpl(): S {
-        const getter = (target: object, key: PropertyKey) => {
-            if (typeof key === 'symbol') {
-                return undefined;
+        return this.proxyWrap(
+            this.valueUntracked as unknown as object,
+            (target: object, key: PropertyKey) => {
+                if (typeof key === 'symbol') {
+                    // allow clients to associate hidden cache with state values
+                    return target[key];
+                }
+                return (this.nested)![key].value;
+            },
+            o => {
+                throw new StateLinkInvalidUsageError(o, this.path)
+            },
+            (target: object, key: PropertyKey, value: StateValueAtPath) => {
+                if (typeof key === 'symbol') {
+                    // allow clients to associate hidden cache with state values
+                    target[key] = value;
+                    return true;
+                }
+                throw new StateLinkInvalidUsageError('set', this.path)
             }
-            return (this.nested)![key].value;
-        };
-        return this.proxyWrap(this.valueUntracked as unknown as object, getter, o => {
-            throw new StateLinkInvalidUsageError(o, this.path)
-        }) as unknown as S;
+        ) as unknown as S;
     }
 
     // tslint:disable-next-line: no-any
-    private proxyWrap(objectToWrap: any, getter: (target: any, key: PropertyKey) => any,
-        onInvalidUsage: (op: string) => never
+    private proxyWrap(objectToWrap: any,
+        getter: (target: any, key: PropertyKey) => any,
+        onInvalidUsage: (op: string) => never,
+        setter?: (target: any, p: PropertyKey, value: any, receiver: any) => boolean
     ) {
         return new Proxy(objectToWrap, {
             getPrototypeOf: (target) => {
@@ -546,9 +576,9 @@ class StateLinkImpl<S, E extends {}> implements StateLink<S, E>, Subscribable, S
                 return p in target;
             },
             get: getter,
-            set: (target, p, value, receiver) => {
+            set: setter || ((target, p, value, receiver) => {
                 return onInvalidUsage('set')
-            },
+            }),
             deleteProperty: (target, p) => {
                 return onInvalidUsage('deleteProperty')
             },
