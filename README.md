@@ -44,7 +44,7 @@ You can also wrap the state reference by your custom state access interface usin
 
 ### `useStateLinkUnmounted`
 
-This function opens access to the state. It **can** be used outside of a React component. The first argument should be a result of the [`createStateLink`](createstatelink) function. For example:
+This function opens access to the state. It **can** be used outside of a React component. The first argument should be a result of the [`createStateLink`](#createstatelink) function. For example:
 
 ```tsx
 setTimeout(() => useStateLinkUnmounted(stateRef)
@@ -63,7 +63,7 @@ You can also wrap the [state link](#statelink) by your custom state access inter
 ### `useStateLink`
 
 This function opens access to the state. It **must** be used within a functional React component. The first argument should be one of the following:
-- **global state**: a result of the [`createStateLink`](createstatelink) function. For example:
+- **global state**: a result of the [`createStateLink`](#createstatelink) function. For example:
 
     ```tsx
     export const ExampleComponent = () => {
@@ -73,7 +73,7 @@ This function opens access to the state. It **must** be used within a functional
         </button>
     }
     ```
-- **local state**: initial variable to assign to the local (per component) state. It similar to the original `React.createState`, but the result [`StateLink`](statelink) variable has got more features. For example:
+- **local state**: initial variable to assign to the local (per component) state. It similar to the original `React.createState`, but the result [`StateLink`](#statelink) variable has got more features. For example:
 
     ```tsx
     export const ExampleComponent = () => {
@@ -83,7 +83,7 @@ This function opens access to the state. It **must** be used within a functional
         </button>
     }
     ```
-- **scoped state**: a result of the [`useStateLink`](usestatelink) function, called by a parent component. This scenario is discussed below in more details. For example:
+- **scoped state**: a result of the [`useStateLink`](#usestatelink) function, called by a parent component. This scenario is discussed below in more details. For example:
 
     ```tsx
     const TaskViewer = (props: { taskState: StateLink<Task> }) => {
@@ -107,13 +107,13 @@ You can also wrap the [state link](#statelink) by your custom state access inter
 The `StateLink` variable has got the following methods and properties:
 
 - `get()` (or `value` is the same) - returns the instance of data in the state
-- `set(...)` or `set((prevState) => ...)` - function which allows to mutate the state value. If `path === []`, it is similar to the `setState` variable returned by `React.useState` hook. If `path !== []`, it sets only the segment of the state value, pointed out by the path. The `set` function will not accept partial updates, however there is the `Mutate` [plugin](#plugins), which adds helpful methods to mutate arrays and objects.
+- `set(...)` or `set((prevState) => ...)` - function which allows to mutate the state value. If `path === []`, it is similar to the `setState` variable returned by `React.useState` hook. If `path !== []`, it sets only the segment of the state value, pointed out by the path. The `set` function will not accept partial updates. It can be done by combining `set` with `nested`. There is the `Mutate` [plugin](#plugins), which adds helpful methods to mutate arrays and objects.
 - `nested` 'converts' a statelink of an object to an object of nested state links OR a statelink of an array to an array of nested state links elements.
-This allows to 'walk' the tree and access/mutate nested compex data in very convenient way. The typescript support for `nested` will handle correctly any complexy of the state structure. The result of `nested` reports the same object keys as the object/array being 'walked'. However, nested state links object will have ANY property defined (although not every will pass Typescript compiler check). It is very convenient to create 'editor-like' components for properties, which can be undefined. For example:
+This allows to 'walk' the tree and access/mutate nested compex data in very convenient way. The result of `nested` for primitive values is `undefined`. The typescript support for `nested` will handle correctly any complexy of the state structure. The result of `Object.keys(state.nested)` is the same as `Object.keys(state.get())`. However, nested state links object will have ANY property defined (although not every will pass Typescript compiler check). It is very convenient to create 'editor-like' components for properties, which can be undefined. For example:
 
     ```tsx
     const PriorityEditor = (props: { priorityState: StateLink<number> }) => {
-        return <p>Current priority: {priorityState.get() !== undefined ? priority.get() : 'unknown'}
+        return <p>Current priority: {priorityState.get() === undefined ? 'unknown' : priority.get()}
             <button onClick={() => priorityState.set(prevPriority =>
                 (prevPriority || 0) + 1 // here the value might be not defined, but we can set it!
             )}>
@@ -131,9 +131,9 @@ This allows to 'walk' the tree and access/mutate nested compex data in very conv
 
     ```tsx
     const state = useStateLink([{ name: 'First Task' }])
-    state.path === []
-    state.nested[0].path === [0]
-    state.nested[0].nested.name.path === [0, 'name']
+    state.path IS []
+    state.nested[0].path IS [0]
+    state.nested[0].nested.name.path IS [0, 'name']
     ```
 
 ### Transform argument
