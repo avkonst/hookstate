@@ -24,7 +24,7 @@ export const ExampleComponent = () => {
 function TaskEditor(props: { taskState: StateLink<Task, InitialExtensions> }) {
     const taskState = useStateLink(props.taskState);
     return <p>
-        Render time: {(new Date()).toISOString()} <br/>
+        Last render at: {(new Date()).toISOString()} <br/>
         Is this task modified: {taskState.extended.modified.toString()} <br/>
         <input
             value={taskState.nested.name.get()}
@@ -39,7 +39,7 @@ function ModifiedStatus(props: { state: StateLink<Task[], InitialExtensions> }) 
         // it skips rendering when modified status is not changed
         EqualsPrerender((s) => s.extended.modified));
     return <p>
-        Render time: {(new Date()).toISOString()} <br/>
+        Last render at: {(new Date()).toISOString()} <br/>
         Is whole current state modified (vs the initial): {modified.toString()} <br/>
         The <b>initial</b> state: {JSON.stringify(props.state.extended.initial)}
     </p>

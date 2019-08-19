@@ -26,7 +26,7 @@ export const ExampleComponent = () => {
 function TaskEditor(props: { taskState: StateLink<Task, TouchedExtensions> }) {
     const taskState = useStateLink(props.taskState);
     return <p>
-        Render time: {(new Date()).toISOString()} <br/>
+        Last render at: {(new Date()).toISOString()} <br/>
         Is this task touched: {taskState.extended.touched.toString()} <br/>
         <input
             value={taskState.nested.name.get()}
@@ -41,7 +41,7 @@ function ModifiedStatus(props: { state: StateLink<Task[], TouchedExtensions> }) 
         // it skips rendering when touched status is not changed
         EqualsPrerender((s) => s.extended.touched));
     return <p>
-        Render time: {(new Date()).toISOString()} <br/>
+        Last render at: {(new Date()).toISOString()} <br/>
         Is whole current state touched: {touched.toString()} <br/>
     </p>
 }

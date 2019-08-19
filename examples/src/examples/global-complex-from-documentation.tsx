@@ -29,7 +29,7 @@ function TaskEditor(props: { taskState: StateLink<Task> }) {
     // optional scoped state for performance, could use props.taskState everywhere instead
     const taskState = useStateLink(props.taskState);
     return <p>
-        Render time: {(new Date()).toISOString()} <br/>
+        Last render at: {(new Date()).toISOString()} <br/>
         Task state: {JSON.stringify(taskState.get())}<br/>
         <input
             value={taskState.nested.name.get()}
@@ -45,7 +45,7 @@ function JsonDump(props: { state: StateLink<Task[]> }) {
     // optional scoped state for performance, could use props.state everywhere instead
     const state = useStateLink(props.state);
     return <p>
-        Render time: {(new Date()).toISOString()} <br/>
+        Last render at: {(new Date()).toISOString()} <br/>
         Current state: {JSON.stringify(state.value)}
     </p>
 }
