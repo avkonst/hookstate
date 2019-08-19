@@ -95,8 +95,8 @@ ExamplesRepo.set(ExampleIds.PerformanceLargeTable, {
     name: 'Performance Demo: Large Table',
     description: <>Watch how Hookstate updates <b><u>1 out of 10000</u> table cells <u>every millisecond</u></b>.
         Stretch the matrix to 100x100 and set 50 cells to update per every 1ms interval. And "Follow the White Rabbit".
-        The used <b>scoped state</b> technique is explained in
-        <a href="https://github.com/avkonst/hookstate#usestatelink">the documentation</a>.
+        The used <b>scoped state</b> technique is explained
+        in <a href="https://github.com/avkonst/hookstate#usestatelink">the documentation</a>.
         </>,
     demo: <ExamplePerformanceLargeTable />
 });
