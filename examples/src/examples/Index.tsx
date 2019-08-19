@@ -10,6 +10,7 @@ import { ExampleComponent as ExampleGlobalMultiConsumersFromRoot } from './globa
 
 import { ExampleComponent as ExamplePluginInitial } from './plugin-initial';
 import { ExampleComponent as ExamplePluginTouched } from './plugin-touched';
+import { ExampleComponent as ExamplePluginLogger } from './plugin-logger';
 
 import { A } from 'hookrouter';
 
@@ -29,6 +30,7 @@ export const ExampleIds = {
     GlobalMutlipleConsumersFromRoot: 'global-multiple-consumers-from-root',
     PluginInitial: 'plugin-initial',
     PluginTouched: 'plugin-touched',
+    PluginLogger: 'plugin-logger',
 }
 
 const baseUrl = 'https://raw.githubusercontent.com/avkonst/hookstate/master/examples/src/examples/'
@@ -114,4 +116,9 @@ ExamplesRepo.set(ExampleIds.PluginTouched, {
     name: 'Plugin: Touched',
     description: <></>,
     demo: <ExamplePluginTouched />
+});
+ExamplesRepo.set(ExampleIds.PluginLogger, {
+    name: 'Plugin: Logger',
+    description: <></>,
+    demo: <ExamplePluginLogger />
 });

@@ -15,9 +15,7 @@ export const ExampleComponent = () => {
         {state.nested.map((taskState, taskIndex) =>
             <TaskEditor key={taskIndex} taskState={taskState} />
         )}
-        <p><button
-            onClick={() => state.set(tasks => tasks.concat([{ name: 'Untitled' }]))}
-        >
+        <p><button onClick={() => state.set(tasks => tasks.concat([{ name: 'Untitled' }]))}>
             Add task
         </button></p>
     </>
