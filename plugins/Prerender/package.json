@@ -1,6 +1,6 @@
 {
     "name": "@hookstate/prerender",
-    "version": "0.10.1",
+    "version": "0.10.2",
     "description": "Plugin for @hookstate/core to enable optimized rerendering of transformed data state.",
     "license": "MIT",
     "author": {
@@ -32,15 +32,13 @@
         "apply-updates": "ncu -u",
         "prepare": "yarn build"
     },
-    "dependencies": {
-        "@hookstate/core": "^0.10.0",
-        "lodash.isequal": "^4.5.0"
-    },
+    "dependencies": {},
     "peerDependencies": {
         "@hookstate/core": "^0.10.0",
         "lodash.isequal": "4.5.0"
     },
     "devDependencies": {
+        "@hookstate/core": "^0.10.0",
         "@testing-library/react": "8.0.5",
         "@testing-library/react-hooks": "1.1.0",
         "@types/jest": "24.0.15",
@@ -51,6 +49,7 @@
         "babel-core": "6.26.3",
         "babel-runtime": "6.26.0",
         "cross-env": "5.2.0",
+        "lodash.isequal": "^4.5.0",
         "npm-check-updates": "3.1.8",
         "react": "16.8.6",
         "react-dom": "16.8.6",
