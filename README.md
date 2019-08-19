@@ -237,7 +237,7 @@ const TotalHighestPriorityTasksComponent = (props: { tasksState: StateLink<Task[
 
 The above will rerender only when the result of the aggregation is changed. This allows to achieve advanced optimizations for rendering of various aggregated views.
 
-The second argument of the `transform` callback is defined and equals to the result of the last transform call, when the `transform` is called by Hookstate to check if the component should rerender. If the core `Prerender` plugin is enabled and the result of the transform is the same as the last result, Hooks state will skip rerendering of the component. This is used by `EqualsPrerender` [plugin](#plugins), which works with complex data structures the same way as we optimized using primitive result number.
+The second argument of the `transform` callback is defined and equals to the result of the last transform call, when the `transform` is called by Hookstate to check if the component should rerender. If the core `Prerender` plugin is enabled and the result of the transform is the same as the last result, Hookstate will skip rerendering the component. This is used by `EqualsPrerender` [plugin](#plugins), which works with complex data structures the same way as we optimized rerendering of the primitive result number.
 
 ## Plugins
 
