@@ -241,4 +241,8 @@ The second argument of the `transform` callback is defined and equals to the res
 
 ## Plugins
 
-To be done.
+> Please, submit pull request if you would like yours plugin to be included in the list.
+
+Plugin | Description | Example | Package | Version
+-|-|-|-|-
+Initial | Enable access to an initial value of a [`StateLink`](#statelink) and allows to check if the current value of the [`StateLink`](#statelink) is modified comparing with the initial value. | [Demo](https://hookstate.netlify.com/plugin-initial) | `@hookstate/initial` | [![npm version](https://badge.fury.io/js/%40hookstate%2Finitial.svg)](https://badge.fury.io/js/%40hookstate%2Finitial)
