@@ -77,8 +77,9 @@ export interface Plugin<E extends {}, I extends {}> {
 //
 
 class StateLinkInvalidUsageError extends Error {
-    constructor(op: string, path: Path) {
-        super(`StateLink is used incorrectly. Attempted '${op}' at '/${path.join('/')}'`)
+    constructor(op: string, path: Path, hint?: string) {
+        super(`StateLink is used incorrectly. Attempted '${op}' at '/${path.join('/')}'` +
+            hint ? `. Hint: ${hint}` : '')
     }
 }
 
@@ -480,7 +481,9 @@ class StateLinkImpl<S, E extends {}> implements StateLink<S, E>, Subscribable, S
                     target[key] = value;
                     return true;
                 }
-                throw new StateLinkInvalidUsageError('set', this.path)
+                throw new StateLinkInvalidUsageError('set', this.path,
+                    `use StateLink.set(...) API: replace 'state[${key}] = value' by ` +
+                    `'state.nested[${key}].set(value)' to update an element in the state array`)
             }
         ) as unknown as S;
     }
@@ -533,7 +536,9 @@ class StateLinkImpl<S, E extends {}> implements StateLink<S, E>, Subscribable, S
                     target[key] = value;
                     return true;
                 }
-                throw new StateLinkInvalidUsageError('set', this.path)
+                throw new StateLinkInvalidUsageError('set', this.path,
+                    `use StateLink.set(...) API: replace 'state.${key} = value' by ` +
+                    `'state.nested.${key}.set(value)' to update a property in the state object`)
             }
         ) as unknown as S;
     }

@@ -40,7 +40,7 @@ const ButtonAppBar = () => {
             <AppBar position="static">
                 <Toolbar>
                     <Typography variant="h6" className={classes.title}>
-                        @hookstate
+                        <A href="/" style={{ color: 'white' }}>Hookstate</A>
                     </Typography>
                     <Button
                         color="inherit"

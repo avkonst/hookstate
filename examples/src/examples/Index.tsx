@@ -4,6 +4,7 @@ import { ExampleComponent as ExampleGlobalPrimitive } from './getting-started';
 import { ExampleComponent as ExampleGlobalArray } from './global-array';
 import { ExampleComponent as ExampleGlobalObject } from './global-object';
 import { ExampleComponent as ExampleGlobalComplex } from './global-complex';
+import { ExampleComponent as ExampleGlobalComplexFromDocumentation } from './global-complex-from-documentation';
 import { ExampleComponent as ExampleLocalForm } from './local-form';
 import { ExampleComponent as ExampleGlobalMultiConsumers } from './global-multiple-consumers';
 import { ExampleComponent as ExampleLocalMultiConsumers } from './local-multiple-consumers';
@@ -22,6 +23,7 @@ export const ExampleIds = {
     GlobalObject: 'global-object',
     GlobalArray: 'global-array',
     GlobalComplex: 'global-complex',
+    GlobalComplexFromDocumentation: 'global-complex-from-documentation',
     LocalForm: 'local-form',
     GlobalMutlipleConsumers: 'global-multiple-consumers',
     LocalMutlipleConsumers: 'local-multiple-consumers',
@@ -72,6 +74,12 @@ ExamplesRepo.set(ExampleIds.GlobalComplex, {
         of <ExampleLink id={ExampleIds.GlobalObject} /> and <ExampleLink id={ExampleIds.GlobalArray} /> examples.
         </>,
     demo: <ExampleGlobalComplex />
+});
+ExamplesRepo.set(ExampleIds.GlobalComplexFromDocumentation, {
+    name: 'Global State: Documented example',
+    description: <>This example is the example from
+    the <a href="https://github.com/avkonst/hookstate#api-documentation">API documentation</a>.</>,
+    demo: <ExampleGlobalComplexFromDocumentation />
 });
 ExamplesRepo.set(ExampleIds.LocalForm, {
     name: 'Local State: Form Sample',
