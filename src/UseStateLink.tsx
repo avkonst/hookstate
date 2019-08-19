@@ -745,18 +745,6 @@ export function createStateLink<S, R>(
     return ref;
 }
 
-/*
- * Future docs for transformer
- * Forces rerender of a hooked component when result of `watcher`
- * is changed due to the change of the current value in `state`.
- * Change of the result is determined by the default tripple equality operator.
- * @param state state to watch for
- * @param watcher state-to-result redusing function. The second argument `prev` is
- * defined only when the `watcher` is invokded in reaction event after state is updated.
- * If the watcher returns the same value as the `prev`, the rerendering is not forced
- * by the watcher.
- */
-
 export function useStateLink<R>(
     source: StateInf<R>
 ): StateInf<R>;
