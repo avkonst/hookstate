@@ -115,31 +115,37 @@ ExamplesRepo.set(ExampleIds.PerformanceLargeTable, {
 });
 ExamplesRepo.set(ExampleIds.PluginInitial, {
     name: 'Plugin: Initial / Modified',
-    description: <></>,
+    description: <>Code sample and demo for
+    the <a href="https://github.com/avkonst/hookstate#plugins">Initial plugin</a>.</>,
     demo: <ExamplePluginInitial />
 });
 ExamplesRepo.set(ExampleIds.PluginTouched, {
     name: 'Plugin: Touched',
-    description: <></>,
+    description: <>Code sample and demo for
+    the <a href="https://github.com/avkonst/hookstate#plugins">Touched plugin</a>.</>,
     demo: <ExamplePluginTouched />
 });
-ExamplesRepo.set(ExampleIds.PluginLogger, {
-    name: 'Plugin: Logger',
-    description: <></>,
-    demo: <ExamplePluginLogger />
+ExamplesRepo.set(ExampleIds.PluginValidation, {
+    name: 'Plugin: Validation',
+    description: <>Code sample and demo for
+    the <a href="https://github.com/avkonst/hookstate#plugins">Validation plugin</a>.</>,
+    demo: <ExamplePluginValidation />
 });
 ExamplesRepo.set(ExampleIds.PluginPersistence, {
     name: 'Plugin: Persistence, Local Storage',
-    description: <></>,
+    description: <>Code sample and demo for
+    the <a href="https://github.com/avkonst/hookstate#plugins">Persistence plugin</a>.</>,
     demo: <ExamplePluginPersistence />
 });
 ExamplesRepo.set(ExampleIds.PluginMutate, {
     name: 'Plugin: Mutate',
-    description: <></>,
+    description: <>Code sample and demo for
+    the <a href="https://github.com/avkonst/hookstate#plugins">Mutate plugin</a>.</>,
     demo: <ExamplePluginMutate />
 });
-ExamplesRepo.set(ExampleIds.PluginValidation, {
-    name: 'Plugin: Validation',
-    description: <></>,
-    demo: <ExamplePluginValidation />
+ExamplesRepo.set(ExampleIds.PluginLogger, {
+    name: 'Plugin: Logger',
+    description: <>Code sample and demo for
+    the <a href="https://github.com/avkonst/hookstate#plugins">Logger plugin</a>.</>,
+    demo: <ExamplePluginLogger />
 });
