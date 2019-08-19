@@ -145,19 +145,19 @@ function Validation(attachRule, message, severity) {
                         addRule(path, config);
                     }
                 },
-                extensions: ['valid', 'invalid', 'errors', 'firstError'],
+                extensions: ['valid', 'validShallow', 'invalid', 'invalidShallow', 'errors', 'firstError'],
                 extensionsFactory: function (l) { return ({
                     get validShallow() {
-                        return getErrors(l, 1).length === 0;
+                        return getErrors(l, 1, undefined, true).length === 0;
                     },
                     get valid() {
-                        return getErrors(l, Number.MAX_SAFE_INTEGER).length === 0;
+                        return getErrors(l, Number.MAX_SAFE_INTEGER, undefined, true).length === 0;
                     },
                     get invalidShallow() {
-                        return getErrors(l, 1).length !== 0;
+                        return getErrors(l, 1, undefined, true).length !== 0;
                     },
                     get invalid() {
-                        return getErrors(l, Number.MAX_SAFE_INTEGER).length !== 0;
+                        return getErrors(l, Number.MAX_SAFE_INTEGER, undefined, true).length !== 0;
                     },
                     errors: function (filter, depth, first) {
                         return getErrors(l, depth === undefined ? Number.MAX_SAFE_INTEGER : depth, filter, first);
@@ -167,7 +167,7 @@ function Validation(attachRule, message, severity) {
                         if (r.length === 0) {
                             return {};
                         }
-                        return r;
+                        return r[0];
                     },
                 }); }
             }); }

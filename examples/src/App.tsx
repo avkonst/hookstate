@@ -74,8 +74,6 @@ const SourceCodeView = (props: { url: string }) => {
         codeString = code.value ? code.value.toString() : `Failure to load code sample from: ${props.url}`;
     }
 
-    console.log(highlightStyle);
-
     return (
         <SyntaxHighlighter
             // TODO tsx highlighter is broken

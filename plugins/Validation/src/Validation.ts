@@ -199,19 +199,19 @@ export function Validation<S, E extends {}>(
                         addRule(path, config);
                     }
                 },
-                extensions: ['valid', 'invalid', 'errors', 'firstError'],
+                extensions: ['valid', 'validShallow', 'invalid', 'invalidShallow', 'errors', 'firstError'],
                 extensionsFactory: (l) => ({
                     get validShallow(): boolean {
-                        return getErrors(l, 1).length === 0
+                        return getErrors(l, 1, undefined, true).length === 0
                     },
                     get valid(): boolean {
-                        return getErrors(l, Number.MAX_SAFE_INTEGER).length === 0
+                        return getErrors(l, Number.MAX_SAFE_INTEGER, undefined, true).length === 0
                     },
                     get invalidShallow(): boolean {
-                        return getErrors(l, 1).length !== 0
+                        return getErrors(l, 1, undefined, true).length !== 0
                     },
                     get invalid(): boolean {
-                        return getErrors(l, Number.MAX_SAFE_INTEGER).length !== 0
+                        return getErrors(l, Number.MAX_SAFE_INTEGER, undefined, true).length !== 0
                     },
                     errors(filter?: (e: ValidationError) => boolean,
                         depth?: number,
@@ -223,7 +223,7 @@ export function Validation<S, E extends {}>(
                         if (r.length === 0) {
                             return {};
                         }
-                        return r;
+                        return r[0];
                     },
                 })
             })

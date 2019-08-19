@@ -11,6 +11,9 @@ import { ExampleComponent as ExampleGlobalMultiConsumersFromRoot } from './globa
 import { ExampleComponent as ExamplePluginInitial } from './plugin-initial';
 import { ExampleComponent as ExamplePluginTouched } from './plugin-touched';
 import { ExampleComponent as ExamplePluginLogger } from './plugin-logger';
+import { ExampleComponent as ExamplePluginPersistence } from './plugin-persistence';
+import { ExampleComponent as ExamplePluginMutate } from './plugin-mutate';
+import { ExampleComponent as ExamplePluginValidation } from './plugin-validation';
 
 import { A } from 'hookrouter';
 
@@ -31,6 +34,9 @@ export const ExampleIds = {
     PluginInitial: 'plugin-initial',
     PluginTouched: 'plugin-touched',
     PluginLogger: 'plugin-logger',
+    PluginPersistence: 'plugin-persistence',
+    PluginMutate: 'plugin-mutate',
+    PluginValidation: 'plugin-validation'
 }
 
 const baseUrl = 'https://raw.githubusercontent.com/avkonst/hookstate/master/examples/src/examples/'
@@ -121,4 +127,19 @@ ExamplesRepo.set(ExampleIds.PluginLogger, {
     name: 'Plugin: Logger',
     description: <></>,
     demo: <ExamplePluginLogger />
+});
+ExamplesRepo.set(ExampleIds.PluginPersistence, {
+    name: 'Plugin: Persistence, Local Storage',
+    description: <></>,
+    demo: <ExamplePluginPersistence />
+});
+ExamplesRepo.set(ExampleIds.PluginMutate, {
+    name: 'Plugin: Mutate',
+    description: <></>,
+    demo: <ExamplePluginMutate />
+});
+ExamplesRepo.set(ExampleIds.PluginValidation, {
+    name: 'Plugin: Validation',
+    description: <></>,
+    demo: <ExamplePluginValidation />
 });

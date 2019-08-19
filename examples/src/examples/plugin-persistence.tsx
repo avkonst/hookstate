@@ -1,15 +1,15 @@
 import React from 'react';
-import { useStateLink } from '@hookstate/core';
-import { Logger } from '@hookstate/logger';
+import { useStateLink, createStateLink } from '@hookstate/core';
+import { Persistence } from '@hookstate/persistence';
 
 interface Task { name: string }
 
+const stateRef = createStateLink([{ name: 'First Task' }, { name: 'Second Task' }] as Task[])
+    .with(Persistence('plugin-persisted-data-key')); // localStorage key to load from / save to
+
 export const ExampleComponent = () => {
-    const state = useStateLink([{ name: 'First Task' }, { name: 'Second Task' }] as Task[])
-        .with(Logger); // enable the plugin
-    state.extended.log()
+    const state = useStateLink(stateRef)
     return <>
-        <p>Open the development console to see the logging</p>
         {state.nested.map((taskState, taskIndex) => {
             return <p key={taskIndex}>
                 <input
