@@ -10,11 +10,11 @@ const MatrixView = (props: { totalRows: number, totalColumns: number, interval: 
     const totalRows = props.totalRows;
     const totalColumns = props.totalColumns;
     // we use local per component state,
-    // but the same would be for the global state
+    // but the same result would be for the global state
     // if it was created by createStateLink
     const matrixState = useStateLink(
         Array.from(Array(totalRows).keys())
-            .map(i => Array.from(Array(totalColumns).keys()).map(i => 0)));
+            .map(i => Array.from(Array(totalColumns).keys()).map(j => 0)));
     // schedule interval updates
     useEffect(() => {
         const t = setInterval(() => {
@@ -107,7 +107,7 @@ export const ExampleComponent = () => {
 }
 
 const PerformanceViewPluginID = Symbol('PerformanceViewPlugin');
-const PerformanceMeter = (props: { matrixState: StateLink<number[][]> }) => {
+function PerformanceMeter(props: { matrixState: StateLink<number[][]> }) {
     const scopedState = useStateLink(props.matrixState)
         .with(() => {
             // this is custom Hookstate plugin which counts statistics

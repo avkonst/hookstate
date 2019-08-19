@@ -13,7 +13,7 @@ Any questions? Just ask by raising a github ticket.
 ## Why Hookstate
 
 - Concise, pragmatic but flexible API. Very easy to learn. See ["Getting Started" code sample](https://hookstate.netlify.com/getting-started).
-- Incredible performance based on unique method for tracking of used/rendered and updated state segments. See [the performance demo](https://hookstate.netlify.com/performance-demo-large-table).
+- Incredible performance based on unique method for tracking of used/rendered and updated state segments. See the performance demos [with huge table state](https://hookstate.netlify.com/performance-demo-large-table) and [with huge form state](https://hookstate.netlify.com/performance-demo-large-form).
 - First-class Typescript support. Complete type inferrence for any complexity of structures of managed state data. Full intellisense support tested in VS Code.
 - Plugin system enables custom extensions, with several [standard plugins](#plugins) available.
 - Tiny footprint: **2.13KB** gziped. No external dependencies, except React.
@@ -94,7 +94,8 @@ This function opens access to the state. It **must** be used within a functional
 
 The `useStateLink` forces a component to rerender everytime when any segment/part of the state data is changed **AND only if** this segement was used by the component.
 
-A segment/part of the state is considered as **not used** by a parent's state link, if it is only used by a **scoped state** link. This gives great rendering performance of nested components for large data sets. It is demonstrated in [this example for global state](https://hookstate.netlify.com/global-complex-from-documentation), [this example for local state](https://hookstate.netlify.com/local-complex-from-documentation) and [this performance demo](https://hookstate.netlify.com/performance-demo-large-table).
+A segment/part of the state is considered as **not used** by a parent's state link, if it is only used by a **scoped state** link. This gives great rendering performance of nested components for large data sets. It is demonstrated in [this example for global state](https://hookstate.netlify.com/global-complex-from-documentation), [this example for local state](https://hookstate.netlify.com/local-complex-from-documentation), [this performance demo with large table state](https://hookstate.netlify.com/performance-demo-large-table)
+and [this performance demo with large form state](https://hookstate.netlify.com/performance-demo-large-form).
 
 The **global state** can be consumed by:
 - multiple components as demonstrated in [this example](https://hookstate.netlify.com/global-multiple-consumers)

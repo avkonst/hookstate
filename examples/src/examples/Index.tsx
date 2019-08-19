@@ -5,6 +5,7 @@ import { ExampleComponent as ExampleLocalPrimitive } from './local-getting-start
 import { ExampleComponent as ExampleGlobalComplexFromDocumentation } from './global-complex-from-documentation';
 import { ExampleComponent as ExampleLocalComplexFromDocumentation } from './local-complex-from-documentation';
 import { ExampleComponent as ExamplePerformanceLargeTable } from './performance-demo-large-table';
+import { ExampleComponent as ExamplePerformanceLargeForm } from './performance-demo-large-form';
 import { ExampleComponent as ExampleGlobalMultiConsumers } from './global-multiple-consumers';
 import { ExampleComponent as ExampleGlobalMultiConsumersFromRoot } from './global-multiple-consumers-from-root';
 import { ExampleComponent as ExampleGlobalMultiConsumersStateFragment } from './global-multiple-consumers-statefragment';
@@ -31,6 +32,7 @@ export const ExampleIds = {
     GlobalComplexFromDocumentation: 'global-complex-from-documentation',
     LocalComplexFromDocumentation: 'local-complex-from-documentation',
     PerformanceLargeTable: 'performance-demo-large-table',
+    PerformanceLargeForm: 'performance-demo-large-form',
     GlobalMutlipleConsumers: 'global-multiple-consumers',
     GlobalMutlipleConsumersFromRoot: 'global-multiple-consumers-from-root',
     GlobalMutlipleConsumersStateFragment: 'global-multiple-consumers-statefragment',
@@ -120,13 +122,22 @@ ExamplesRepo.set(ExampleIds.GlobalMutlipleConsumersStateFragment, {
     demo: <ExampleGlobalMultiConsumersStateFragment />
 });
 ExamplesRepo.set(ExampleIds.PerformanceLargeTable, {
-    name: 'Performance Demo: Large Table',
+    name: 'Performance Demo: Huge Table',
     description: <>Watch how Hookstate updates <b><u>1 out of 10000</u> table cells <u>every millisecond</u></b>.
         Stretch the matrix to 100x100 and set 50 cells to update per every 1ms interval. And "Follow the White Rabbit".
-        The used <b>scoped state</b> technique is explained
+        The used <u>scoped state</u> technique is explained
         in <a href="https://github.com/avkonst/hookstate#usestatelink">the documentation</a>.
         </>,
     demo: <ExamplePerformanceLargeTable />
+});
+ExamplesRepo.set(ExampleIds.PerformanceLargeForm, {
+    name: 'Performance Demo: Huge Form',
+    description: <>Watch how Hookstate updates form state with 5000 fields
+        on every keystroke without any performance lag.
+        The used <u>scoped state</u> technique is explained
+        in <a href="https://github.com/avkonst/hookstate#usestatelink">the documentation</a>.
+        </>,
+    demo: <ExamplePerformanceLargeForm />
 });
 ExamplesRepo.set(ExampleIds.PluginInitial, {
     name: 'Plugin: Initial / Modified',
