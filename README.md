@@ -30,7 +30,7 @@ yarn add @hookstate/core
 
 ### `createStateLink`
 
-This function creates a reference to a **global** state. The first argument is the initial value to assign to the state. For example:
+This function creates a reference to a **global** state. The first argument is the initial value to assign to the state. For example ([see it running](https://hookstate.netlify.com/global-complex-from-documentation)):
 
 ```tsx
 interface Task { name: string; priority?: number }
@@ -44,7 +44,7 @@ You can also wrap the state reference by your custom state access interface usin
 
 ### `useStateLinkUnmounted`
 
-This function opens access to the state. It **can** be used outside of a React component. The first argument should be a result of the [`createStateLink`](#createstatelink) function. For example:
+This function opens access to the state. It **can** be used outside of a React component. The first argument should be a result of the [`createStateLink`](#createstatelink) function. For example ([see it running](https://hookstate.netlify.com/global-complex-from-documentation)):
 
 ```tsx
 setTimeout(() => useStateLinkUnmounted(stateRef)
@@ -63,7 +63,7 @@ You can also wrap the [state link](#statelink) by your custom state access inter
 ### `useStateLink`
 
 This function opens access to the state. It **must** be used within a functional React component. The first argument should be one of the following:
-- **global state**: a result of the [`createStateLink`](#createstatelink) function. For example:
+- **global state**: a result of the [`createStateLink`](#createstatelink) function. For example ([see it running](https://hookstate.netlify.com/global-complex-from-documentation)):
 
     ```tsx
     export const ExampleComponent = () => {
@@ -73,7 +73,7 @@ This function opens access to the state. It **must** be used within a functional
         </button>
     }
     ```
-- **local state**: initial variable to assign to the local (per component) state. It similar to the original `React.createState`, but the result [`StateLink`](#statelink) variable has got more features. For example:
+- **local state**: initial variable to assign to the local (per component) state. It similar to the original `React.createState`, but the result [`StateLink`](#statelink) variable has got more features. For example ([see it running](https://hookstate.netlify.com/local-complex-from-documentation)):
 
     ```tsx
     export const ExampleComponent = () => {
@@ -83,7 +83,7 @@ This function opens access to the state. It **must** be used within a functional
         </button>
     }
     ```
-- **scoped state**: a result of the [`useStateLink`](#usestatelink) function, called by a parent component. This scenario is discussed below in more details. For example:
+- **scoped state**: a result of the [`useStateLink`](#usestatelink) function, called by a parent component either for a **global state**, for **local state** or it's parent **scoped state**. This is discussed in more details below. For example ([see it running for global state](https://hookstate.netlify.com/global-complex-from-documentation) or for [local state](https://hookstate.netlify.com/local-complex-from-documentation)):
 
     ```tsx
     const TaskViewer = (props: { taskState: StateLink<Task> }) => {
@@ -94,7 +94,14 @@ This function opens access to the state. It **must** be used within a functional
 
 The `useStateLink` forces a component to rerender everytime when any segment/part of the state is changed **AND** only if the component used this segment/part of the state.
 
-The result variable is of type [`StateLink`](#statelink).
+A segment/part of the state is considered as NOT used by a parent state link, if it is only used by a **scoped state** link. This gives great rendering peroformance of nested components for large data sets. It is demonstrated in [this example for global state](https://hookstate.netlify.com/global-complex-from-documentation), [this example for local state](https://hookstate.netlify.com/local-complex-from-documentation) and [this performance demo](https://hookstate.netlify.com/performance-demo-large-table).
+
+The **global state** can be consumed by:
+- multiple components as demonstrated in [this example](https://hookstate.netlify.com/global-multiple-consumers)
+- or by a 'parent' component passing `nested` links to it's children as demonstarted in [this example](https://hookstate.netlify.com/global-multiple-consumers-from-root) or [this example](https://hookstate.netlify.com/global-complex-from-documentation)
+- or any combination of the above two options
+
+The result of `useStateLink` is of type [`StateLink`](#statelink).
 
 The result state link inherits all the plugins attached to the provided state reference (**global state** mode) or to the parent component state link (**scoped state** mode).
 
@@ -230,7 +237,7 @@ const TotalHighestPriorityTasksComponent = (props: { tasksState: StateLink<Task[
 
 The above will rerender only when the result of the aggregation is changed. This allows to achieve advanced optimizations for rendering of various aggregated views.
 
-The second argument of the `transform` callback is defined and equals to the result of the last transform call, when the `transform` is called to checks if the component should rerender. If the core `Prerender` plugin is enabled and the result of the transform is the same as the last result, Hooks state will skip rerendering of the component. This is used by `EqualsPrerender` [plugin](#plugins), which works with complex data structures the same way as we optimized using primitive result number.
+The second argument of the `transform` callback is defined and equals to the result of the last transform call, when the `transform` is called by Hookstate to check if the component should rerender. If the core `Prerender` plugin is enabled and the result of the transform is the same as the last result, Hooks state will skip rerendering of the component. This is used by `EqualsPrerender` [plugin](#plugins), which works with complex data structures the same way as we optimized using primitive result number.
 
 ## Plugins
 
