@@ -986,9 +986,9 @@
     "@hapi/hoek" "8.x.x"
 
 "@hookstate/core@^0.10.0":
-  version "0.10.0"
-  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-0.10.0.tgz#eb5002a1e7faebbe1f79d486fc2ac9a0f3554317"
-  integrity sha512-Sfzfa/mb6PSSm2co6R4/OGnYvk1Zo8X8ur0bXSxKkhZZd14RMs7KQbXeaLE5RJaG5u7h+AZsgsSH+S6RHp2vmQ==
+  version "0.10.3"
+  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-0.10.3.tgz#244a7f903db0386e866b93ecce78b852e7fec55f"
+  integrity sha512-7CQ6fNOzKhyN/z6G1DUcdZQDT5eG+v6jBAV2aMp05jp968b8GnAbYxn9YSfoRm/GUXycB0ZMUViAojtHCJLzHQ==
 
 "@jest/console@^24.7.1":
   version "24.7.1"
