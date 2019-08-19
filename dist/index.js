@@ -40,8 +40,9 @@ function __extends(d, b) {
 //
 var StateLinkInvalidUsageError = /** @class */ (function (_super) {
     __extends(StateLinkInvalidUsageError, _super);
-    function StateLinkInvalidUsageError(op, path) {
-        return _super.call(this, "StateLink is used incorrectly. Attempted '" + op + "' at '/" + path.join('/') + "'") || this;
+    function StateLinkInvalidUsageError(op, path, hint) {
+        return _super.call(this, "StateLink is used incorrectly. Attempted '" + op + "' at '/" + path.join('/') + "'" +
+            hint ? ". Hint: " + hint : '') || this;
     }
     return StateLinkInvalidUsageError;
 }(Error));
@@ -418,7 +419,8 @@ var StateLinkImpl = /** @class */ (function () {
                 target[key] = value;
                 return true;
             }
-            throw new StateLinkInvalidUsageError('set', _this.path);
+            throw new StateLinkInvalidUsageError('set', _this.path, "use StateLink.set(...) API: replace 'state[" + key + "] = value' by " +
+                ("'state.nested[" + key + "].set(value)' to update an element in the state array"));
         });
     };
     StateLinkImpl.prototype.nestedObjectImpl = function () {
@@ -460,11 +462,16 @@ var StateLinkImpl = /** @class */ (function () {
                 target[key] = value;
                 return true;
             }
-            throw new StateLinkInvalidUsageError('set', _this.path);
+            throw new StateLinkInvalidUsageError('set', _this.path, "use StateLink.set(...) API: replace 'state." + key + " = value' by " +
+                ("'state.nested." + key + ".set(value)' to update a property in the state object"));
         });
     };
     // tslint:disable-next-line: no-any
-    StateLinkImpl.prototype.proxyWrap = function (objectToWrap, getter, onInvalidUsage, setter) {
+    StateLinkImpl.prototype.proxyWrap = function (objectToWrap, 
+    // tslint:disable-next-line: no-any
+    getter, onInvalidUsage, 
+    // tslint:disable-next-line: no-any
+    setter) {
         return new Proxy(objectToWrap, {
             getPrototypeOf: function (target) {
                 return Object.getPrototypeOf(target);

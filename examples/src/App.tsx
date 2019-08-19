@@ -78,8 +78,8 @@ const SourceCodeView = (props: { url: string }) => {
 
     return (
         <SyntaxHighlighter
-
-            language="typescript" style={highlightStyle}>
+            // TODO tsx highlighter is broken
+            language="jsx" style={highlightStyle}>
             {codeString}
         </SyntaxHighlighter>
     );
