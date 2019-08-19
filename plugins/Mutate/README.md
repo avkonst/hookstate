@@ -32,10 +32,8 @@ There the following array mutation actions available:
 
 ### Object state
 
-
 There the following object mutation actions available:
 
 - `set([...])` or `set((prevState) => [...])` sets new value of the object state. It has got the same behaviour as the second value returned from the `React.useState` function
 - `merge({...})` or `merge((prevState) => ({...}))` sets new value of the object state, updating the specified properties
 - `update(propertyKey, newPropertyValue)` or `update(propertyKey, (prevPropertyValue) => newPropertyValue)` sets new value of the object state, updating the specified property
-
