@@ -71,7 +71,14 @@ ExamplesRepo.set(ExampleIds.LocalComplexFromDocumentation, {
 });
 ExamplesRepo.set(ExampleIds.GlobalMutlipleConsumers, {
     name: 'Global State: Multiple Direct Consumers',
-    description: <>Demonstrates how multiple components can consume a global state directly.</>,
+    description: <>Demonstrates how multiple components can consume a global state directly.
+        If the components consume nested elements of an array or nested properties of an object,
+        it is more convenient
+        and more performant to pass nested states as properties from a parent component.
+        This is demonstrated
+        in <ExampleLink id={ExampleIds.GlobalComplexFromDocumentation} /> for array and
+        in <ExampleLink id={ExampleIds.GlobalMutlipleConsumersFromRoot} /> for object.
+    </>,
     demo: <ExampleGlobalMultiConsumers />
 });
 ExamplesRepo.set(ExampleIds.GlobalMutlipleConsumersFromRoot, {
