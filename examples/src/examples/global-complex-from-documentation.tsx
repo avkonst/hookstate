@@ -45,7 +45,7 @@ function JsonDump(props: { state: StateLink<Task[]> }) {
     // optional scoped state for performance, could use props.state everywhere instead
     const state = useStateLink(props.state);
     return <p>
-        <span>{(new Date()).toISOString()} </span>
-        <span>Current state: {JSON.stringify(state.value)}</span>
+        Render time: {(new Date()).toISOString()} <br/>
+        Current state: {JSON.stringify(state.value)}
     </p>
 }

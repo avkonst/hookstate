@@ -4,7 +4,7 @@ import { useStateLink } from '@hookstate/core';
 export const ExampleComponent = () => {
     const state = useStateLink(0);
     return <p>
-        <span><b>Counter value: {state.value}</b> (watch +1 every 3 seconds) </span>
+        <span><b>Counter value: {state.value}</b> </span>
         <button onClick={() => state.set(p => p + 1)}>Increment</button>
     </p>
 }

@@ -6,7 +6,7 @@ const store = createStateLink({ priority: 0, task: 'Untitled Task' });
 const TaskView = () => {
     const state = useStateLink(store);
     return <p>
-        <span>{(new Date()).toISOString()} </span>
+        Render time: {(new Date()).toISOString()} <br/>
         <span>Task name: {state.value.task} </span>
         <input value={state.value.task} onChange={e => state.nested.task.set(e.target.value)}/>
     </p>
@@ -15,7 +15,7 @@ const TaskView = () => {
 const PriorityView = () => {
     const state = useStateLink(store);
     return <p>
-        <span>{(new Date()).toISOString()} </span>
+        Render time: {(new Date()).toISOString()} <br/>
         <span>Task priority: {state.value.priority} </span>
         <button onClick={() => state.nested.priority.set(p => p + 1)}>Increase priority</button>
     </p>
@@ -24,8 +24,8 @@ const PriorityView = () => {
 const JsonDump = () => {
     const state = useStateLink(store);
     return <p>
-        <span>{(new Date()).toISOString()} </span>
-        <span>Current state: {JSON.stringify(state.value)}</span>
+        Render time: {(new Date()).toISOString()} <br/>
+        Current state: {JSON.stringify(state.value)}
     </p>
 }
 

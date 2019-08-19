@@ -1241,7 +1241,7 @@
   resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-0.10.1.tgz#30f56e6c6d3ce03629583dd58cdbfda9219c83a2"
   integrity sha512-yVuJ5FXknJN3fVPG3dwziIf5wGMgdh0uJPYj2PMp/jVktDS36tnWLS74X44PiHNx8PkME16IgMI9gdjMhEvNGw==
 
-"@hookstate/initial@0.10.0", "@hookstate/initial@^0.10.0":
+"@hookstate/initial@^0.10.0":
   version "0.10.0"
   resolved "https://registry.yarnpkg.com/@hookstate/initial/-/initial-0.10.0.tgz#f1374a93ed195f5642d5d26c10597ac5a1dfeef5"
   integrity sha512-7IHCBeEC8GWGR6ZZNZozs3aVG6PN3hkO0JowGqhYWUgl+GZbR0eBFjxdr7ss86hu1GzKJ/6SZ1BreybZ0ui/Vg==
@@ -1250,7 +1250,7 @@
     lodash.clonedeep "^4.5.0"
     lodash.isequal "^4.5.0"
 
-"@hookstate/logger@0.10.0":
+"@hookstate/logger@^0.10.0":
   version "0.10.0"
   resolved "https://registry.yarnpkg.com/@hookstate/logger/-/logger-0.10.0.tgz#5d6ac6dd3186176c263a64e5853cc666cf9bc11f"
   integrity sha512-jidcDFfOY/9JBvB7F1yBXx/8HOfLZTrMQuWchAubYyjinWvbF3xLRWOnr4r6IjumDEG3Ry8WQtCEnBVuSEBoaQ==
@@ -1287,7 +1287,7 @@
     "@hookstate/core" "^0.10.0"
     "@hookstate/initial" "^0.10.0"
 
-"@hookstate/validation@0.10.1":
+"@hookstate/validation@^0.10.1":
   version "0.10.1"
   resolved "https://registry.yarnpkg.com/@hookstate/validation/-/validation-0.10.1.tgz#f5f521e59925240678bd6642bf042e82480f2ca2"
   integrity sha512-DoADH8HhIxGuWon32sZYp0mtJaUt+8YAb/WBKNEInUSnmEvd+92ifDeiAuAjk9yR865Qu2WwWi5jFgyRqZvSWg==

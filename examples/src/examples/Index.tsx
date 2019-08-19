@@ -8,6 +8,9 @@ import { ExampleComponent as ExamplePerformanceLargeTable } from './performance-
 import { ExampleComponent as ExampleGlobalMultiConsumers } from './global-multiple-consumers';
 import { ExampleComponent as ExampleGlobalMultiConsumersFromRoot } from './global-multiple-consumers-from-root';
 
+import { ExampleComponent as ExamplePluginInitial } from './plugin-initial';
+import { ExampleComponent as ExamplePluginTouched } from './plugin-touched';
+
 import { A } from 'hookrouter';
 
 export interface ExampleMeta {
@@ -24,6 +27,8 @@ export const ExampleIds = {
     PerformanceLargeTable: 'performance-demo-large-table',
     GlobalMutlipleConsumers: 'global-multiple-consumers',
     GlobalMutlipleConsumersFromRoot: 'global-multiple-consumers-from-root',
+    PluginInitial: 'plugin-initial',
+    PluginTouched: 'plugin-touched',
 }
 
 const baseUrl = 'https://raw.githubusercontent.com/avkonst/hookstate/master/examples/src/examples/'
@@ -99,4 +104,14 @@ ExamplesRepo.set(ExampleIds.PerformanceLargeTable, {
         in <a href="https://github.com/avkonst/hookstate#usestatelink">the documentation</a>.
         </>,
     demo: <ExamplePerformanceLargeTable />
+});
+ExamplesRepo.set(ExampleIds.PluginInitial, {
+    name: 'Plugin: Initial / Modified',
+    description: <></>,
+    demo: <ExamplePluginInitial />
+});
+ExamplesRepo.set(ExampleIds.PluginTouched, {
+    name: 'Plugin: Touched',
+    description: <></>,
+    demo: <ExamplePluginTouched />
 });
