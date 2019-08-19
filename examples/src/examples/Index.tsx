@@ -79,7 +79,7 @@ ExamplesRepo.set(ExampleIds.GlobalMutlipleConsumersFromRoot, {
     description: <>The same demo as in the <ExampleLink id={ExampleIds.GlobalMutlipleConsumers} /> example,
         but the global state is consumed by a 'parent' component and 'leaves' of the state
         are passed to the nested components as properties. Nested components
-        use <a href="https://github.com/avkonst/hookstate#usestatelink">scoped state</a>to
+        use <a href="https://github.com/avkonst/hookstate#usestatelink">scoped state</a> to
         optimize rendering performance.
         </>,
     demo: <ExampleGlobalMultiConsumersFromRoot />
