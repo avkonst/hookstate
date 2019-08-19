@@ -16,7 +16,6 @@ import React from 'react';
 // import { Validation, ValidationForEach, ValidationSeverity, ValidationExtensions } from '@hookstate/validation';
 
 // import isEqual from 'lodash.isequal';
-// import { EqualsPrerender } from '@hookstate/prerender';
 
 // JSON.stringify({ x: 5, y: 6, toJSON() { return this.x + this.y; } });
 

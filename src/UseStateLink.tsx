@@ -119,8 +119,8 @@ interface Subscribable {
     unsubscribe(l: Subscriber): void;
 }
 
-const DisabledTrackingID = Symbol('DisabledTracking');
-const PrerenderID = Symbol('Prerender');
+const DisabledTrackingID = Symbol('DisabledTrackingID');
+const StateMemoID = Symbol('StateMemoID');
 
 const HiddenPluginId = Symbol('PluginID');
 const RootPath: Path = [];
@@ -697,10 +697,11 @@ function injectTransform<S, E extends {}, R>(
     }
 
     const result = transform(link, undefined);
-    const prerenderEquals: ((a: R, b: R) => boolean) | undefined = link[PrerenderID];
-    if (prerenderEquals === undefined) {
+    const stateMemoEquals: ((a: R, b: R) => boolean) | undefined = link[StateMemoID];
+    if (stateMemoEquals === undefined) {
         return result;
     }
+    delete link[StateMemoID];
 
     injectedOnUpdateUsed = () => {
         // need to create new one to make sure
@@ -717,7 +718,7 @@ function injectTransform<S, E extends {}, R>(
         const updatedResult = transform(overidingLink, result);
         // if result is not changed, it does not affect the rendering result too
         // so, we skip triggering rerendering in this case
-        if (!prerenderEquals(updatedResult, result)) {
+        if (!stateMemoEquals(updatedResult, result)) {
             originOnUpdateUsed();
         }
     }
@@ -763,12 +764,12 @@ export function useStateLink<S, R>(
     transform: (state: StateLink<S>, prev: R | undefined) => R
 ): R;
 export function useStateLink<S, E extends {}, R>(
-    source: S | (() => S) | StateLink<S, E> | StateRef<S, E>,
+    source: S | (() => S) | StateLink<S, E> | StateRef<S, E> | StateInf<R>,
     transform?: (state: StateLink<S, E>, prev: R | undefined) => R
 ): R {
     const state = source instanceof StateInfImpl
         ? source.wrapped as StateRef<S, E>
-        : source;
+        : source as (S | (() => S) | StateLink<S, E> | StateRef<S, E>);
     const link = useAutoStateLink(state);
     if (source instanceof StateInfImpl) {
         return injectTransform(link, source.transform);
@@ -810,6 +811,60 @@ export function useStateLinkUnmounted<S, E extends {}, R>(
     return link as unknown as R;
 }
 
+export function StateFragment<R>(
+    props: {
+        state: StateInf<R>,
+        children: (state: R) => React.ReactElement,
+    }
+): React.ReactElement;
+export function StateFragment<S, E extends {}>(
+    props: {
+        state: StateLink<S, E> | StateRef<S, E>,
+        children: (state: StateLink<S, E>) => React.ReactElement,
+    }
+): React.ReactElement;
+export function StateFragment<S, E extends {}, R>(
+    props: {
+        state: StateLink<S, E> | StateRef<S, E>,
+        transform: (state: StateLink<S, E>, prev: R | undefined) => R,
+        children: (state: R) => React.ReactElement,
+    }
+): React.ReactElement;
+export function StateFragment<S>(
+    props: {
+        state: S | (() => S),
+        children: (state: StateLink<S, {}>) => React.ReactElement,
+    }
+): React.ReactElement;
+export function StateFragment<S, R>(
+    props: {
+        state: S | (() => S),
+        transform: (state: StateLink<S>, prev: R | undefined) => R,
+        children: (state: R) => React.ReactElement,
+    }
+): React.ReactElement;
+export function StateFragment<S, E extends {}, R>(
+    props: {
+        state: S | (() => S) | StateLink<S, E> | StateRef<S, E> | StateInf<R>,
+        transform?: (state: StateLink<S, E>, prev: R | undefined) => R,
+        children: (state: StateLink<S, E> | R) => React.ReactElement,
+    }
+): React.ReactElement {
+    // tslint:disable-next-line: no-any
+    type AnyArgument = any; // typesafety is guaranteed by overloaded functions above
+    const scoped = useStateLink<S, {}>(props.state as AnyArgument, props.transform as AnyArgument);
+    return props.children(scoped as AnyArgument);
+}
+
+export function StateMemo<S, E extends {}, R>(
+    transform: (state: StateLink<S, E>, prev: R | undefined) => R,
+    equals?: (next: R, prev: R) => boolean) {
+    return (link: StateLink<S, E>, prev: R | undefined) => {
+        link[StateMemoID] = equals || ((n: R, p: R) => (n === p))
+        return transform(link, prev);
+    }
+}
+
 // tslint:disable-next-line: function-name
 export function DisabledTracking(): Plugin<{}, {}> {
     return {
@@ -817,31 +872,6 @@ export function DisabledTracking(): Plugin<{}, {}> {
         instanceFactory: () => ({
             extensions: [],
             extensionsFactory: () => ({})
-        })
-    }
-}
-
-export interface PrerenderExtensions {
-    enablePrerender(equals?: (newValue: TransformResult, prevValue: TransformResult) => boolean): void;
-}
-
-// tslint:disable-next-line: function-name
-export function Prerender<S, E extends {}>(marker: PluginTypeMarker<S, E>):
-    Plugin<E, PrerenderExtensions> {
-
-    function defaultEquals(a: TransformResult, b: TransformResult) {
-        return a === b;
-    }
-
-    return {
-        id: PrerenderID,
-        instanceFactory: () => ({
-            extensions: ['enablePrerender'],
-            extensionsFactory: (l: StateLink<StateValueAtPath, E>) => ({
-                enablePrerender: (equals) => {
-                    l[PrerenderID] = equals || defaultEquals
-                },
-            })
         })
     }
 }

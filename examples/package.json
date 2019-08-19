@@ -3,12 +3,11 @@
     "version": "0.1.0",
     "private": true,
     "dependencies": {
-        "@hookstate/core": "0.10.3",
+        "@hookstate/core": "0.10.5",
         "@hookstate/initial": "0.10.1",
         "@hookstate/logger": "0.10.1",
         "@hookstate/mutate": "0.10.1",
         "@hookstate/persistence": "0.10.1",
-        "@hookstate/prerender": "0.10.2",
         "@hookstate/touched": "0.10.1",
         "@hookstate/validation": "0.10.4",
         "@material-ui/core": "4.3.2",

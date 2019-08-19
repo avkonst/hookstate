@@ -92,9 +92,9 @@ This function opens access to the state. It **must** be used within a functional
     }
     ```
 
-The `useStateLink` forces a component to rerender everytime when any segment/part of the state is changed **AND** only if the component used this segment/part of the state.
+The `useStateLink` forces a component to rerender everytime when any segment/part of the state data is changed **AND only if** this segement was used by the component.
 
-A segment/part of the state is considered as NOT used by a parent state link, if it is only used by a **scoped state** link. This gives great rendering peroformance of nested components for large data sets. It is demonstrated in [this example for global state](https://hookstate.netlify.com/global-complex-from-documentation), [this example for local state](https://hookstate.netlify.com/local-complex-from-documentation) and [this performance demo](https://hookstate.netlify.com/performance-demo-large-table).
+A segment/part of the state is considered as **not used** by a parent's state link, if it is only used by a **scoped state** link. This gives great rendering performance of nested components for large data sets. It is demonstrated in [this example for global state](https://hookstate.netlify.com/global-complex-from-documentation), [this example for local state](https://hookstate.netlify.com/local-complex-from-documentation) and [this performance demo](https://hookstate.netlify.com/performance-demo-large-table).
 
 The **global state** can be consumed by:
 - multiple components as demonstrated in [this example](https://hookstate.netlify.com/global-multiple-consumers)
@@ -108,6 +108,8 @@ The result state link inherits all the plugins attached to the provided state re
 You can attach more [plugins](#plugins) using `with` method of the state link.
 
 You can also wrap the [state link](#statelink) by your custom state access interface using the second [`transform` argument](#transform-argument).
+
+You can also use the state (**global**, **local** or **scoped**) via `StateFragment` React component. It is particularly useful for creating **scoped state** links, as demonstrated in [this](https://hookstate.netlify.com/global-multiple-consumers-statefragment) and [this](https://hookstate.netlify.com/plugin-initial-statefragment) examples.
 
 ### `StateLink`
 
@@ -143,7 +145,7 @@ This allows to 'walk' the tree and access/mutate nested compex data in very conv
     state.nested[0].nested.name.path IS [0, 'name']
     ```
 
-### Transform argument
+### `Transform` argument
 
 `createStateLink`, `useStateLinkUnmounted` and `useStateLink` functions accept the second argument, which allows to wrap the state link by custom state access interface. The transform argument is a callback which receives the original [state link](#statelink) variable and should return any custom state access instance.
 
@@ -208,7 +210,7 @@ Examples for all possible combinations:
     }
     ```
 
-### Transform argument as state value aggregation
+### `Transform` argument with `StateMemo`
 
 You can apply the transform argument to reduce the the state value down to an aggregated value. It works for local, global and scoped states. For example:
 
@@ -224,20 +226,21 @@ const TotalHighestPriorityTasksComponent = (props: { tasksState: StateLink<Task[
 The above will rerender when any task changes a priority or when tasks are added or removed. However, because there is no point to rerender this component when it's aggregated result in the transformation is not changed, we can optimize it:
 
 ```tsx
-import { StateLink, Prerender, useStateLink } from '@hookstate/core';
+import { StateLink, StateMemo, useStateLink } from '@hookstate/core';
 
 const TotalHighestPriorityTasksComponent = (props: { tasksState: StateLink<Task[]> }) => {
-    const totalTasksWithZeroPriority = useStateLink(props.tasksState, s => {
-        s.with(Prerender).extended.enablePrerender() // use tripple equals to diff the result
+    const totalTasksWithZeroPriority = useStateLink(props.tasksState, StateMemo(s => {
         return s.get().filter(t => t.priority === undefined || t.priority === 0).length;
-    })
+    }))
     return <p>Total zero priority tasks: {totalTasksWithZeroPriority}</p>
 }
 ```
 
 The above will rerender only when the result of the aggregation is changed. This allows to achieve advanced optimizations for rendering of various aggregated views.
 
-The second argument of the `transform` callback is defined and equals to the result of the last transform call, when the `transform` is called by Hookstate to check if the component should rerender. If the core `Prerender` plugin is enabled and the result of the transform is the same as the last result, Hookstate will skip rerendering the component. This is used by `EqualsPrerender` [plugin](#plugins), which works with complex data structures the same way as we optimized rerendering of the primitive result number.
+`StateMemo` usage is demonstarted in [this](https://hookstate.netlify.com/plugin-initial), [this](https://hookstate.netlify.com/plugin-initial-statefragment) and [this](https://hookstate.netlify.com/plugin-touched) examples.
+
+The second argument of the `transform` callback is defined and equals to the result of the last transform call, when the `transform` is called by Hookstate to check if the component should rerender. If the core `StateMemo` plugin is used and the result of the transform is the same as the last result, Hookstate will skip rerendering the component. `StateMemo` can be invoked with the second argument, which is equality operator used to compare the new and the previous results of the `transform` callback. By default, tripple equality (===) is used.
 
 ## Plugins
 

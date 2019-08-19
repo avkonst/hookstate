@@ -7,8 +7,10 @@ import { ExampleComponent as ExampleLocalComplexFromDocumentation } from './loca
 import { ExampleComponent as ExamplePerformanceLargeTable } from './performance-demo-large-table';
 import { ExampleComponent as ExampleGlobalMultiConsumers } from './global-multiple-consumers';
 import { ExampleComponent as ExampleGlobalMultiConsumersFromRoot } from './global-multiple-consumers-from-root';
+import { ExampleComponent as ExampleGlobalMultiConsumersStateFragment } from './global-multiple-consumers-statefragment';
 
 import { ExampleComponent as ExamplePluginInitial } from './plugin-initial';
+import { ExampleComponent as ExamplePluginInitialStateFragment } from './plugin-initial-statefragment';
 import { ExampleComponent as ExamplePluginTouched } from './plugin-touched';
 import { ExampleComponent as ExamplePluginLogger } from './plugin-logger';
 import { ExampleComponent as ExamplePluginPersistence } from './plugin-persistence';
@@ -19,8 +21,8 @@ import { A } from 'hookrouter';
 
 export interface ExampleMeta {
     name: string,
-    description: JSX.Element,
-    demo: JSX.Element;
+    description: React.ReactElement,
+    demo: React.ReactElement;
 }
 
 export const ExampleIds = {
@@ -31,7 +33,9 @@ export const ExampleIds = {
     PerformanceLargeTable: 'performance-demo-large-table',
     GlobalMutlipleConsumers: 'global-multiple-consumers',
     GlobalMutlipleConsumersFromRoot: 'global-multiple-consumers-from-root',
+    GlobalMutlipleConsumersStateFragment: 'global-multiple-consumers-statefragment',
     PluginInitial: 'plugin-initial',
+    PluginInitialStateFragment: 'plugin-initial-statefragment',
     PluginTouched: 'plugin-touched',
     PluginLogger: 'plugin-logger',
     PluginPersistence: 'plugin-persistence',
@@ -48,6 +52,8 @@ const ExampleLink = (props: {id: string, title?: string}) =>
 
 const StateLinkHref = () =>
     <code><a href="https://github.com/avkonst/hookstate#statelink">StateLink</a></code>
+const StateFragmentHref = () =>
+    <code><a href="https://github.com/avkonst/hookstate#usestatelink">StateFragment</a></code>
 
 export const ExamplesRepo: Map<string, ExampleMeta> = new Map();
 ExamplesRepo.set(ExampleIds.GlobalPrimitive, {
@@ -83,7 +89,7 @@ ExamplesRepo.set(ExampleIds.LocalComplexFromDocumentation, {
     demo: <ExampleLocalComplexFromDocumentation />
 });
 ExamplesRepo.set(ExampleIds.GlobalMutlipleConsumers, {
-    name: 'Global State: Multiple Direct Consumers',
+    name: 'Global State: Multiple Consumers via Direct Usage',
     description: <>Demonstrates how multiple components can consume a global state directly.
         If the components consume nested elements of an array or nested properties of an object,
         it is more convenient
@@ -95,7 +101,7 @@ ExamplesRepo.set(ExampleIds.GlobalMutlipleConsumers, {
     demo: <ExampleGlobalMultiConsumers />
 });
 ExamplesRepo.set(ExampleIds.GlobalMutlipleConsumersFromRoot, {
-    name: 'Global State: Parent Consumer, Scoped State Children',
+    name: 'Global State: Mutliple Consumers via Scoped State Children',
     description: <>The same demo as in the <ExampleLink id={ExampleIds.GlobalMutlipleConsumers} /> example,
         but the global state is consumed by a 'parent' component and 'leaves' of the state
         are passed to the nested components as properties. Nested components
@@ -103,6 +109,15 @@ ExamplesRepo.set(ExampleIds.GlobalMutlipleConsumersFromRoot, {
         optimize rendering performance.
         </>,
     demo: <ExampleGlobalMultiConsumersFromRoot />
+});
+ExamplesRepo.set(ExampleIds.GlobalMutlipleConsumersStateFragment, {
+    name: 'Global State: Mutliple Consumers via State Fragment Children',
+    description: <>The same demo as in the <ExampleLink id={ExampleIds.GlobalMutlipleConsumersFromRoot} /> example,
+        but the scoped state is created using <StateFragmentHref /> in
+        place. <a href="https://github.com/avkonst/hookstate#usestatelink">Scoped state</a> is used to
+        optimize rendering performance.
+        </>,
+    demo: <ExampleGlobalMultiConsumersStateFragment />
 });
 ExamplesRepo.set(ExampleIds.PerformanceLargeTable, {
     name: 'Performance Demo: Large Table',
@@ -118,6 +133,15 @@ ExamplesRepo.set(ExampleIds.PluginInitial, {
     description: <>Code sample and demo for
     the <a href="https://github.com/avkonst/hookstate#plugins">Initial plugin</a>.</>,
     demo: <ExamplePluginInitial />
+});
+ExamplesRepo.set(ExampleIds.PluginInitialStateFragment, {
+    name: 'Plugin: Initial / Modified + State Fragment',
+    description: <>Code sample and demo for
+    the <a href="https://github.com/avkonst/hookstate#plugins">Initial plugin</a>.
+    The same demo as in the <ExampleLink id={ExampleIds.PluginInitial} /> example,
+    but the <a href="https://github.com/avkonst/hookstate#usestatelink">scoped state</a> is created
+    using <StateFragmentHref /> component</>,
+    demo: <ExamplePluginInitialStateFragment />
 });
 ExamplesRepo.set(ExampleIds.PluginTouched, {
     name: 'Plugin: Touched',

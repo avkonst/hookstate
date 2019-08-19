@@ -45,9 +45,28 @@ export declare function useStateLink<S>(source: S | (() => S)): StateLink<S>;
 export declare function useStateLink<S, R>(source: S | (() => S), transform: (state: StateLink<S>, prev: R | undefined) => R): R;
 export declare function useStateLinkUnmounted<R>(source: StateInf<R>): R;
 export declare function useStateLinkUnmounted<S, E extends {}>(source: StateRef<S, E>): StateLink<S, E>;
+export declare function StateFragment<R>(props: {
+    state: StateInf<R>;
+    children: (state: R) => React.ReactElement;
+}): React.ReactElement;
+export declare function StateFragment<S, E extends {}>(props: {
+    state: StateLink<S, E> | StateRef<S, E>;
+    children: (state: StateLink<S, E>) => React.ReactElement;
+}): React.ReactElement;
+export declare function StateFragment<S, E extends {}, R>(props: {
+    state: StateLink<S, E> | StateRef<S, E>;
+    transform: (state: StateLink<S, E>, prev: R | undefined) => R;
+    children: (state: R) => React.ReactElement;
+}): React.ReactElement;
+export declare function StateFragment<S>(props: {
+    state: S | (() => S);
+    children: (state: StateLink<S, {}>) => React.ReactElement;
+}): React.ReactElement;
+export declare function StateFragment<S, R>(props: {
+    state: S | (() => S);
+    transform: (state: StateLink<S>, prev: R | undefined) => R;
+    children: (state: R) => React.ReactElement;
+}): React.ReactElement;
+export declare function StateMemo<S, E extends {}, R>(transform: (state: StateLink<S, E>, prev: R | undefined) => R, equals?: (next: R, prev: R) => boolean): (link: StateLink<S, E>, prev: R | undefined) => R;
 export declare function DisabledTracking(): Plugin<{}, {}>;
-export interface PrerenderExtensions {
-    enablePrerender(equals?: (newValue: TransformResult, prevValue: TransformResult) => boolean): void;
-}
-export declare function Prerender<S, E extends {}>(marker: PluginTypeMarker<S, E>): Plugin<E, PrerenderExtensions>;
 export default useStateLink;

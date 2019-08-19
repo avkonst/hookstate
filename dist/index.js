@@ -77,8 +77,8 @@ var ExtensionUnknownError = /** @class */ (function (_super) {
     }
     return ExtensionUnknownError;
 }(Error));
-var DisabledTrackingID = Symbol('DisabledTracking');
-var PrerenderID = Symbol('Prerender');
+var DisabledTrackingID = Symbol('DisabledTrackingID');
+var StateMemoID = Symbol('StateMemoID');
 var HiddenPluginId = Symbol('PluginID');
 var RootPath = [];
 var State = /** @class */ (function () {
@@ -594,10 +594,11 @@ function injectTransform(link, transform) {
         return originOnUpdateUsed();
     };
     var result = transform(link, undefined);
-    var prerenderEquals = link[PrerenderID];
-    if (prerenderEquals === undefined) {
+    var stateMemoEquals = link[StateMemoID];
+    if (stateMemoEquals === undefined) {
         return result;
     }
+    delete link[StateMemoID];
     injectedOnUpdateUsed = function () {
         // need to create new one to make sure
         // it does not pickup the stale cache of the original link after mutation
@@ -608,7 +609,7 @@ function injectTransform(link, transform) {
         var updatedResult = transform(overidingLink, result);
         // if result is not changed, it does not affect the rendering result too
         // so, we skip triggering rerendering in this case
-        if (!prerenderEquals(updatedResult, result)) {
+        if (!stateMemoEquals(updatedResult, result)) {
             originOnUpdateUsed();
         }
     };
@@ -651,6 +652,16 @@ function useStateLinkUnmounted(source, transform) {
     }
     return link;
 }
+function StateFragment(props) {
+    var scoped = useStateLink(props.state, props.transform);
+    return props.children(scoped);
+}
+function StateMemo(transform, equals) {
+    return function (link, prev) {
+        link[StateMemoID] = equals || (function (n, p) { return (n === p); });
+        return transform(link, prev);
+    };
+}
 // tslint:disable-next-line: function-name
 function DisabledTracking() {
     return {
@@ -661,26 +672,10 @@ function DisabledTracking() {
         }); }
     };
 }
-// tslint:disable-next-line: function-name
-function Prerender(marker) {
-    function defaultEquals(a, b) {
-        return a === b;
-    }
-    return {
-        id: PrerenderID,
-        instanceFactory: function () { return ({
-            extensions: ['enablePrerender'],
-            extensionsFactory: function (l) { return ({
-                enablePrerender: function (equals) {
-                    l[PrerenderID] = equals || defaultEquals;
-                },
-            }); }
-        }); }
-    };
-}
 
 exports.DisabledTracking = DisabledTracking;
-exports.Prerender = Prerender;
+exports.StateFragment = StateFragment;
+exports.StateMemo = StateMemo;
 exports.createStateLink = createStateLink;
 exports.useStateLink = useStateLink;
 exports.useStateLinkUnmounted = useStateLinkUnmounted;

@@ -871,10 +871,10 @@
   dependencies:
     "@hapi/hoek" "8.x.x"
 
-"@hookstate/core@0.10.3":
-  version "0.10.3"
-  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-0.10.3.tgz#244a7f903db0386e866b93ecce78b852e7fec55f"
-  integrity sha512-7CQ6fNOzKhyN/z6G1DUcdZQDT5eG+v6jBAV2aMp05jp968b8GnAbYxn9YSfoRm/GUXycB0ZMUViAojtHCJLzHQ==
+"@hookstate/core@0.10.5":
+  version "0.10.5"
+  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-0.10.5.tgz#782aead7928e8ca809e7ae6feee84697b8b76569"
+  integrity sha512-RgbhfLhi07GzWIDHxSkqSUE2MWiFuVH1DVjoG7lUANmSYuGWFXMdIo4li7HmbxCpHZ21jP+4lwQRWeddHfyfYg==
 
 "@hookstate/initial@0.10.1":
   version "0.10.1"
@@ -895,11 +895,6 @@
   version "0.10.1"
   resolved "https://registry.yarnpkg.com/@hookstate/persistence/-/persistence-0.10.1.tgz#580ee20ee8ae1e0e6e76465ebcb614d3a4f614a9"
   integrity sha512-NEOLDOU/w+DWZUBOpGrd3WBzXtaFoBuPqTTs/K20MbKgG0EEc0c2kz5cgXrx1UuNXZT7MiWgYIKlgU3PZRs5xw==
-
-"@hookstate/prerender@0.10.2":
-  version "0.10.2"
-  resolved "https://registry.yarnpkg.com/@hookstate/prerender/-/prerender-0.10.2.tgz#d36f79858862d25ecc44cacc3d00940bd724bc01"
-  integrity sha512-pzWMnHHyfhf6kfVmSaD6TI8CmjOaGDd+YfX1wkpGxqvJ8v+iKDgGpMf3nhIK5QGodjYGcv26JOdEJqM258siUw==
 
 "@hookstate/touched@0.10.1":
   version "0.10.1"
