@@ -26,8 +26,6 @@
   </a>
 </p>
 
-<br/>
-
 ## Preface
 
 Hookstate is a modern alternative to Redux, Mobx, Formik without boilerplate but with impressive performance and predictable behavior.
