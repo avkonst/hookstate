@@ -1,9 +1,9 @@
-<h1 align="center" style="font-size: 4em; color: #3f51b5">
+<h1 align="center">
   Hookstate
 </h1>
 
 <p align="center">
-  The flexible, fast and extendable state management<br/>for React that is based on hooks.
+  Modern, high-performance and extendable state management<br/>for React that is based on hooks.
 </p>
 <br/>
 
@@ -15,14 +15,16 @@
 </p>
 
 <p align="center">
+  <img src="https://badgen.net/badge/icon/typescript/green?icon=typescript&label">
   <a href="https://www.npmjs.com/package/@hookstate/core">
-      <img src="https://badgen.net/bundlephobia/minzip/@hookstate/core">
+      <img src="https://badgen.net/bundlephobia/minzip/@hookstate/core?label=size&color=green" />
+  </a>
+  <img src="https://badgen.net/badge/dependencies/none/green" />
+<a href="./LICENSE">
+    <img src="https://badgen.net/github/license/avkonst/hookstate?color=green" />
   </a>
   <a href="https://www.npmjs.com/package/@hookstate/core">
-    <img src="https://img.shields.io/npm/v/@hookstate/core.svg?maxAge=300&label=version&colorB=007ec6&maxAge=300">
-  </a>
-  <a href="./LICENSE">
-    <img src="https://img.shields.io/npm/l/@hookstate/core.svg?maxAge=300">
+    <img src="https://img.shields.io/npm/v/@hookstate/core.svg?maxAge=300&label=version&colorB=007ec6&maxAge=300" />
   </a>
 </p>
 
@@ -40,7 +42,7 @@ Any questions? Just ask by raising a github ticket.
 - Incredible performance based on unique method for tracking of used/rendered and updated state segments. See the performance demos [with huge table state](https://hookstate.netlify.com/performance-demo-large-table) and [with huge form state](https://hookstate.netlify.com/performance-demo-large-form).
 - First-class Typescript support. Complete type inferrence for any complexity of structures of managed state data. Full intellisense support tested in VS Code.
 - Plugin system enables custom extensions, with several [standard plugins](#plugins) available.
-- Tiny footprint: **2.13KB** gziped. No external dependencies, except React.
+- Tiny footprint: **2.13KB** gziped by create-react-app. No external dependencies, except React.
 
 ## Installation
 
