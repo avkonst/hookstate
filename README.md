@@ -3,7 +3,7 @@
 </h1>
 
 <p align="center">
-  Modern, high-performance and extendable state management<br/>for React that is based on hooks.
+  The flexible, fast and extendable state management<br/>for React that is based on hooks.
 </p>
 <br/>
 
