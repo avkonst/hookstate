@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { ExampleComponent as ExampleGlobalPrimitive } from './global-getting-started';
+import { ExampleComponent as ExampleGlobalPrimitiveInterface } from './global-getting-started-interface';
 import { ExampleComponent as ExampleLocalPrimitive } from './local-getting-started';
 import { ExampleComponent as ExampleGlobalComplexFromDocumentation } from './global-complex-from-documentation';
 import { ExampleComponent as ExampleLocalComplexFromDocumentation } from './local-complex-from-documentation';
@@ -28,6 +29,7 @@ export interface ExampleMeta {
 
 export const ExampleIds = {
     GlobalPrimitive: 'global-getting-started',
+    GlobalPrimitiveInterface: 'global-getting-started-interface',
     LocalPrimitive: 'local-getting-started',
     GlobalComplexFromDocumentation: 'global-complex-from-documentation',
     LocalComplexFromDocumentation: 'local-complex-from-documentation',
@@ -63,6 +65,12 @@ ExamplesRepo.set(ExampleIds.GlobalPrimitive, {
     description: <>Create the state and use it
         within and outside of a React component. Few lines of code. No bolierplate!</>,
     demo: <ExampleGlobalPrimitive />
+});
+ExamplesRepo.set(ExampleIds.GlobalPrimitiveInterface, {
+    name: 'Global State: Primitive Data, Explicit Interface',
+    description: <>Create the state, wrap it by a custom access interface and use it
+        within and outside of a React component.</>,
+    demo: <ExampleGlobalPrimitiveInterface />
 });
 ExamplesRepo.set(ExampleIds.LocalPrimitive, {
     name: 'Local State: Primitive Data, Quick Start',

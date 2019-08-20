@@ -38,7 +38,7 @@ export interface Plugin<E extends {}, I extends {}> {
 }
 export declare function createStateLink<S>(initial: S | (() => S)): StateRef<S, {}>;
 export declare function createStateLink<S, R>(initial: S | (() => S), transform: (state: StateLink<S>, prev: R | undefined) => R): StateInf<R>;
-export declare function useStateLink<R>(source: StateInf<R>): StateInf<R>;
+export declare function useStateLink<R>(source: StateInf<R>): R;
 export declare function useStateLink<S, E extends {}>(source: StateLink<S, E> | StateRef<S, E>): StateLink<S, E>;
 export declare function useStateLink<S, E extends {}, R>(source: StateLink<S, E> | StateRef<S, E>, transform: (state: StateLink<S, E>, prev: R | undefined) => R): R;
 export declare function useStateLink<S>(source: S | (() => S)): StateLink<S>;

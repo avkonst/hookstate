@@ -748,7 +748,7 @@ export function createStateLink<S, R>(
 
 export function useStateLink<R>(
     source: StateInf<R>
-): StateInf<R>;
+): R;
 export function useStateLink<S, E extends {}>(
     source: StateLink<S, E> | StateRef<S, E>
 ): StateLink<S, E>;

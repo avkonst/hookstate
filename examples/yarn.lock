@@ -871,10 +871,10 @@
   dependencies:
     "@hapi/hoek" "8.x.x"
 
-"@hookstate/core@0.10.5":
-  version "0.10.5"
-  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-0.10.5.tgz#782aead7928e8ca809e7ae6feee84697b8b76569"
-  integrity sha512-RgbhfLhi07GzWIDHxSkqSUE2MWiFuVH1DVjoG7lUANmSYuGWFXMdIo4li7HmbxCpHZ21jP+4lwQRWeddHfyfYg==
+"@hookstate/core@0.10.6":
+  version "0.10.6"
+  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-0.10.6.tgz#c3620f3c44be88a81eebae04c02ec893b5f1614d"
+  integrity sha512-7NMumz76LPfyhofoyFKgMwLO34mAhJ3KcSkDJ6EiE+KUGQ14G5Ck94ghgNKyG9/tp0BMX0IeN9cokQEHvKY/yQ==
 
 "@hookstate/initial@0.10.1":
   version "0.10.1"
