@@ -1,6 +1,6 @@
-<p align="center" style="font-size: 4em; color: #3f51b5">
+<h1 align="center" style="font-size: 4em; color: #3f51b5">
   Hookstate
-</p>
+</h1>
 
 <p align="center">
   The flexible, fast and extendable state management<br/>for React that is based on hooks.
