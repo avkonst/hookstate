@@ -1,10 +1,36 @@
-# @hookstate/core
+<p align="center" style="font-size: 4em; color: #3f51b5">
+  Hookstate
+</p>
 
-[![npm version](https://badge.fury.io/js/%40hookstate%2Fcore.svg)](https://badge.fury.io/js/%40hookstate%2Fcore) [![license](https://img.shields.io/github/license/avkonst/hookstate)](https://img.shields.io/github/license/avkonst/hookstate)
+<p align="center">
+  The flexible, fast and extendable state management<br/>for React that is based on hooks.
+</p>
+<br/>
 
-The flexible, fast and extendable state management for React that is based on hooks.
+<p align="center">
+  <a href="#why-hookstate">Why?</a> •
+  <a href="https://hookstate.netlify.com/">Demos / Examples</a> •
+  <a href="#api-documentation">Documentation</a> •
+  <a href="#plugins">Plugins</a>
+</p>
 
-Modern alternative to Redux, Mobx, Formik without boilerplate but with impressive performance and predictable behavior.
+<p align="center">
+  <a href="https://www.npmjs.com/package/@hookstate/core">
+      <img src="https://badgen.net/bundlephobia/minzip/@hookstate/core">
+  </a>
+  <a href="https://www.npmjs.com/package/@hookstate/core">
+    <img src="https://img.shields.io/npm/v/@hookstate/core.svg?maxAge=300&label=version&colorB=007ec6&maxAge=300">
+  </a>
+  <a href="./LICENSE">
+    <img src="https://img.shields.io/npm/l/@hookstate/core.svg?maxAge=300">
+  </a>
+</p>
+
+<br/>
+
+## Preface
+
+Hookstate is a modern alternative to Redux, Mobx, Formik without boilerplate but with impressive performance and predictable behavior.
 
 Browse [demos and code samples](https://hookstate.netlify.com) to see what it can do and learn it in few minutes.
 
