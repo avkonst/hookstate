@@ -1,5 +1,4 @@
 var PluginID = Symbol('LocalPersistence');
-var emptyInstance = {};
 // tslint:disable-next-line: function-name
 function Persistence(localStorageKey) {
     return function () {
@@ -18,9 +17,7 @@ function Persistence(localStorageKey) {
                     },
                     onSet: function (p, v) {
                         localStorage.setItem(localStorageKey, JSON.stringify(v));
-                    },
-                    extensions: [],
-                    extensionsFactory: function (l) { return emptyInstance; }
+                    }
                 };
             }
         };

@@ -1,72 +1,76 @@
 import React from 'react';
-export interface PluginTypeMarker<S, E extends {}> {
-}
-export interface StateRef<S, E extends {} = {}> {
+export interface StateRef<S> {
     __synteticTypeInferenceMarkerRef: symbol;
-    with<I>(plugin: (marker: PluginTypeMarker<S, E>) => Plugin<E, I>): StateRef<S, E & I>;
+    with(plugin: () => Plugin): StateRef<S>;
 }
 export interface StateInf<R> {
     __synteticTypeInferenceMarkerInf: symbol;
+    with(plugin: () => Plugin): StateInf<R>;
 }
-export declare type NestedInferredLink<S, E extends {} = {}> = S extends ReadonlyArray<(infer U)> ? ReadonlyArray<StateLink<U, E>> : S extends null ? undefined : S extends object ? {
-    readonly [K in keyof Required<S>]: StateLink<S[K], E>;
+export declare type NestedInferredLink<S> = S extends ReadonlyArray<(infer U)> ? ReadonlyArray<StateLink<U>> : S extends null ? undefined : S extends object ? {
+    readonly [K in keyof Required<S>]: StateLink<S[K]>;
 } : undefined;
 export declare type Path = ReadonlyArray<string | number>;
-export interface StateLink<S, E extends {} = {}> {
+export interface StateLink<S> {
     readonly path: Path;
     readonly value: S;
-    readonly nested: NestedInferredLink<S, E>;
-    readonly extended: E;
+    readonly nested: NestedInferredLink<S>;
     get(): S;
     set(newValue: React.SetStateAction<S>): void;
-    with<I>(plugin: (marker: PluginTypeMarker<S, E>) => Plugin<E, I>): StateLink<S, E & I>;
+    with(plugin: () => Plugin): StateLink<S>;
+    with(pluginId: symbol): [StateLink<S> & StateLinkPlugable<S>, PluginInstance];
 }
-export declare type ValueLink<S, E extends {} = {}> = StateLink<S, E>;
+export declare type ValueLink<S> = StateLink<S>;
+export interface StateLinkPlugable<S> {
+    getUntracked(): S;
+    setUntracked(newValue: React.SetStateAction<S>): Path;
+    update(path: Path): void;
+    updateBatch(paths: Path[]): void;
+}
 export declare type StateValueAtRoot = any;
 export declare type StateValueAtPath = any;
 export declare type TransformResult = any;
-export interface PluginInstance<E extends {}, I extends {}> {
+export interface PluginInstance {
     onInit?: () => StateValueAtRoot | void;
-    onAttach?: (path: Path, withArgument: PluginInstance<{}, {}>) => void;
-    onSet?: (path: Path, newValue: StateValueAtRoot, prevValue: StateValueAtPath) => void;
-    extensions: (keyof I)[];
-    extensionsFactory: (thisLink: StateLink<StateValueAtPath, E>) => I;
+    onAttach?: (path: Path, withArgument: PluginInstance) => void;
+    onPreset?: (path: Path, newValue: StateValueAtRoot, prevValue: StateValueAtPath, prevState: StateValueAtRoot) => void;
+    onSet?: (path: Path, newValue: StateValueAtRoot) => void;
 }
-export interface Plugin<E extends {}, I extends {}> {
+export interface Plugin {
     id: symbol;
-    instanceFactory: (initial: StateValueAtRoot) => PluginInstance<E, I>;
+    instanceFactory: (initial: StateValueAtRoot) => PluginInstance;
 }
-export declare function createStateLink<S>(initial: S | (() => S)): StateRef<S, {}>;
+export declare function createStateLink<S>(initial: S | (() => S)): StateRef<S>;
 export declare function createStateLink<S, R>(initial: S | (() => S), transform: (state: StateLink<S>, prev: R | undefined) => R): StateInf<R>;
 export declare function useStateLink<R>(source: StateInf<R>): R;
-export declare function useStateLink<S, E extends {}>(source: StateLink<S, E> | StateRef<S, E>): StateLink<S, E>;
-export declare function useStateLink<S, E extends {}, R>(source: StateLink<S, E> | StateRef<S, E>, transform: (state: StateLink<S, E>, prev: R | undefined) => R): R;
+export declare function useStateLink<S>(source: StateLink<S> | StateRef<S>): StateLink<S>;
+export declare function useStateLink<S, R>(source: StateLink<S> | StateRef<S>, transform: (state: StateLink<S>, prev: R | undefined) => R): R;
 export declare function useStateLink<S>(source: S | (() => S)): StateLink<S>;
 export declare function useStateLink<S, R>(source: S | (() => S), transform: (state: StateLink<S>, prev: R | undefined) => R): R;
 export declare function useStateLinkUnmounted<R>(source: StateInf<R>): R;
-export declare function useStateLinkUnmounted<S, E extends {}>(source: StateRef<S, E>): StateLink<S, E>;
+export declare function useStateLinkUnmounted<S>(source: StateRef<S>): StateLink<S>;
 export declare function StateFragment<R>(props: {
     state: StateInf<R>;
     children: (state: R) => React.ReactElement;
 }): React.ReactElement;
-export declare function StateFragment<S, E extends {}>(props: {
-    state: StateLink<S, E> | StateRef<S, E>;
-    children: (state: StateLink<S, E>) => React.ReactElement;
+export declare function StateFragment<S>(props: {
+    state: StateLink<S> | StateRef<S>;
+    children: (state: StateLink<S>) => React.ReactElement;
 }): React.ReactElement;
 export declare function StateFragment<S, E extends {}, R>(props: {
-    state: StateLink<S, E> | StateRef<S, E>;
-    transform: (state: StateLink<S, E>, prev: R | undefined) => R;
+    state: StateLink<S> | StateRef<S>;
+    transform: (state: StateLink<S>, prev: R | undefined) => R;
     children: (state: R) => React.ReactElement;
 }): React.ReactElement;
 export declare function StateFragment<S>(props: {
     state: S | (() => S);
-    children: (state: StateLink<S, {}>) => React.ReactElement;
+    children: (state: StateLink<S>) => React.ReactElement;
 }): React.ReactElement;
 export declare function StateFragment<S, R>(props: {
     state: S | (() => S);
     transform: (state: StateLink<S>, prev: R | undefined) => R;
     children: (state: R) => React.ReactElement;
 }): React.ReactElement;
-export declare function StateMemo<S, E extends {}, R>(transform: (state: StateLink<S, E>, prev: R | undefined) => R, equals?: (next: R, prev: R) => boolean): (link: StateLink<S, E>, prev: R | undefined) => R;
-export declare function DisabledTracking(): Plugin<{}, {}>;
+export declare function StateMemo<S, R>(transform: (state: StateLink<S>, prev: R | undefined) => R, equals?: (next: R, prev: R) => boolean): (link: StateLink<S>, prev: R | undefined) => R;
+export declare function DisabledTracking(): Plugin;
 export default useStateLink;

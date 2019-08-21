@@ -985,10 +985,10 @@
   dependencies:
     "@hapi/hoek" "8.x.x"
 
-"@hookstate/core@^0.10.0":
-  version "0.10.3"
-  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-0.10.3.tgz#244a7f903db0386e866b93ecce78b852e7fec55f"
-  integrity sha512-7CQ6fNOzKhyN/z6G1DUcdZQDT5eG+v6jBAV2aMp05jp968b8GnAbYxn9YSfoRm/GUXycB0ZMUViAojtHCJLzHQ==
+"@hookstate/core@1.0.0-alpha.0":
+  version "1.0.0-alpha.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-1.0.0-alpha.0.tgz#414b237d57c081c7c3d22ce3cb841e7b6aef6ba5"
+  integrity sha512-sif0TqTSFh2RShsla5PQiY79u/2BixYas5DNSKerRqTmfI7bnB9taDJ4ra/0BovkZn0rBvY3taE2hCoLQ9DoDQ==
 
 "@jest/console@^24.7.1":
   version "24.7.1"

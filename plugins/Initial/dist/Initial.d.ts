@@ -1,7 +1,8 @@
-import { Plugin, PluginTypeMarker, StateValueAtPath } from '@hookstate/core';
-export interface InitialExtensions {
-    readonly initial: StateValueAtPath | undefined;
-    readonly modified: boolean;
-    readonly unmodified: boolean;
+import { Plugin, StateLink } from '@hookstate/core';
+export interface InitialExtensions<S> {
+    readonly get: () => S | undefined;
+    readonly modified: () => boolean;
+    readonly unmodified: () => boolean;
 }
-export declare function Initial<S, E extends {}>(unused: PluginTypeMarker<S, E>): Plugin<E, InitialExtensions>;
+export declare function Initial(): Plugin;
+export declare function Initial<S>(self: StateLink<S>): InitialExtensions<S>;

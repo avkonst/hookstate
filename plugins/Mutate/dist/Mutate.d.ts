@@ -25,4 +25,4 @@ export interface ObjectStateMutation<S extends object> extends ValueStateMutatio
     merge: React.Dispatch<SetPartialStateAction<S>>;
     update<K extends keyof S>(key: K, value: React.SetStateAction<S[K]>): void;
 }
-export declare function Mutate<S, E>(state: StateLink<S, E>): InferredStateMutation<S>;
+export declare function Mutate<S>(state: StateLink<S>): InferredStateMutation<S>;

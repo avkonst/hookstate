@@ -3,7 +3,6 @@ import {
     Path,
     DisabledTracking,
     Plugin,
-    PluginTypeMarker,
     StateLink,
     StateValueAtPath,
     StateValueAtRoot
@@ -12,47 +11,49 @@ import {
 import isEqual from 'lodash.isequal';
 import cloneDeep from 'lodash.clonedeep';
 
-export interface InitialExtensions {
-    // unfortunately, there is no way in typescript to
-    // express generic type parameter, which would change
-    // on the result of nested statelink call
-    readonly initial: StateValueAtPath | undefined;
-    readonly modified: boolean;
-    readonly unmodified: boolean;
+export interface InitialExtensions<S> {
+    readonly get: () => S | undefined;
+    readonly modified: () => boolean;
+    readonly unmodified: () => boolean;
+}
+
+class InitialPluginInstance {
+    private initialState: StateValueAtRoot;
+    constructor(initialValue: StateValueAtRoot) {
+        this.initialState = cloneDeep(initialValue);
+    }
+    getInitial = (path: Path) => {
+        let result = this.initialState;
+        path.forEach(p => {
+            result = result && result[p];
+        });
+        return result;
+    }
+    getModified = (l: StateLink<StateValueAtPath>): boolean => {
+        l.with(DisabledTracking)
+        return !isEqual(l.value, this.getInitial(l.path))
+    }
 }
 
 const PluginID = Symbol('Initial');
 
 // tslint:disable-next-line: function-name
-export function Initial<S, E extends {}>(unused: PluginTypeMarker<S, E>): Plugin<E, InitialExtensions> {
-    return {
-        id: PluginID,
-        instanceFactory: (initialValue: StateValueAtRoot) => {
-            const initialState: StateValueAtRoot = cloneDeep(initialValue);
-            const getInitial = (path: Path) => {
-                let result = initialState;
-                path.forEach(p => {
-                    result = result && result[p];
-                });
-                return result;
-            }
-            const modified = (l: StateLink<StateValueAtPath, E>): boolean => {
-                l.with(DisabledTracking)
-                return !isEqual(l.value, getInitial(l.path))
-            }
-            return {
-                extensions: ['initial', 'modified', 'unmodified'],
-                extensionsFactory: (l) => ({
-                    get initial() {
-                        return getInitial(l.path)
-                    },
-                    get modified() {
-                        return modified(l);
-                    },
-                    get unmodified() {
-                        return !modified(l)
-                    },
-                })
+export function Initial(): Plugin;
+export function Initial<S>(self: StateLink<S>): InitialExtensions<S>;
+export function Initial<S>(self?: StateLink<S>): Plugin | InitialExtensions<S> {
+    if (self) {
+        const [link, instance] = self.with(PluginID);
+        const inst = instance as InitialPluginInstance;
+        return {
+            get: () => inst.getInitial(link.path),
+            modified: () => inst.getModified(link),
+            unmodified: () => !inst.getModified(link)
+        }
+    } else {
+        return {
+            id: PluginID,
+            instanceFactory: (initialValue: StateValueAtRoot) => {
+                return new InitialPluginInstance(initialValue) as {}
             }
         }
     }

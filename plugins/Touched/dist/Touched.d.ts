@@ -1,7 +1,7 @@
-import { Plugin, PluginTypeMarker } from '@hookstate/core';
-import { InitialExtensions } from '@hookstate/initial';
+import { Plugin, StateLink } from '@hookstate/core';
 export interface TouchedExtensions {
-    readonly touched: boolean;
-    readonly untouched: boolean;
+    readonly touched: () => boolean;
+    readonly untouched: () => boolean;
 }
-export declare function Touched<S, E extends InitialExtensions>(unused: PluginTypeMarker<S, E>): Plugin<E, TouchedExtensions>;
+export declare function Touched(): Plugin;
+export declare function Touched<S>(self: StateLink<S>): TouchedExtensions;

@@ -985,19 +985,15 @@
   dependencies:
     "@hapi/hoek" "8.x.x"
 
-"@hookstate/core@^0.10.0":
-  version "0.10.0"
-  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-0.10.0.tgz#eb5002a1e7faebbe1f79d486fc2ac9a0f3554317"
-  integrity sha512-Sfzfa/mb6PSSm2co6R4/OGnYvk1Zo8X8ur0bXSxKkhZZd14RMs7KQbXeaLE5RJaG5u7h+AZsgsSH+S6RHp2vmQ==
+"@hookstate/core@1.0.0-alpha.0":
+  version "1.0.0-alpha.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-1.0.0-alpha.0.tgz#414b237d57c081c7c3d22ce3cb841e7b6aef6ba5"
+  integrity sha512-sif0TqTSFh2RShsla5PQiY79u/2BixYas5DNSKerRqTmfI7bnB9taDJ4ra/0BovkZn0rBvY3taE2hCoLQ9DoDQ==
 
-"@hookstate/initial@^0.10.0":
-  version "0.10.0"
-  resolved "https://registry.yarnpkg.com/@hookstate/initial/-/initial-0.10.0.tgz#f1374a93ed195f5642d5d26c10597ac5a1dfeef5"
-  integrity sha512-7IHCBeEC8GWGR6ZZNZozs3aVG6PN3hkO0JowGqhYWUgl+GZbR0eBFjxdr7ss86hu1GzKJ/6SZ1BreybZ0ui/Vg==
-  dependencies:
-    "@hookstate/core" "^0.10.0"
-    lodash.clonedeep "^4.5.0"
-    lodash.isequal "^4.5.0"
+"@hookstate/initial@1.0.0-alpha.0":
+  version "1.0.0-alpha.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/initial/-/initial-1.0.0-alpha.0.tgz#61a80e6552f18aa9669f1992e1317c74616b1adc"
+  integrity sha512-+UbrfSXTtp9r8qfqM73hNxuwx6RCZN18QM0px2lkVPC6Gv/kHn1Y4aif1DcqoJv+zQyEFVCa/ieZ71cEF6CFJQ==
 
 "@jest/console@^24.7.1":
   version "24.7.1"
@@ -6572,16 +6568,6 @@ lodash._reinterpolate@~3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/lodash._reinterpolate/-/lodash._reinterpolate-3.0.0.tgz#0ccf2d89166af03b3663c796538b75ac6e114d9d"
   integrity sha1-DM8tiRZq8Ds2Y8eWU4t1rG4RTZ0=
-
-lodash.clonedeep@^4.5.0:
-  version "4.5.0"
-  resolved "https://registry.yarnpkg.com/lodash.clonedeep/-/lodash.clonedeep-4.5.0.tgz#e23f3f9c4f8fbdde872529c1071857a086e5ccef"
-  integrity sha1-4j8/nE+Pvd6HJSnBBxhXoIblzO8=
-
-lodash.isequal@^4.5.0:
-  version "4.5.0"
-  resolved "https://registry.yarnpkg.com/lodash.isequal/-/lodash.isequal-4.5.0.tgz#415c4478f2bcc30120c22ce10ed3226f7d3e18e0"
-  integrity sha1-QVxEePK8wwEgwizhDtMib30+GOA=
 
 lodash.memoize@^4.1.2:
   version "4.1.2"

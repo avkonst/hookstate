@@ -1,9 +1,9 @@
 import { DisabledTracking } from '@hookstate/core';
 
-var PluginID = Symbol('Logger');
-// tslint:disable-next-line: function-name
-function Logger(unused) {
-    var toJsonTrimmed = function (s) {
+var LoggerPluginInstance = /** @class */ (function () {
+    function LoggerPluginInstance() {
+    }
+    LoggerPluginInstance.prototype.toJsonTrimmed = function (s) {
         var limit = 100;
         var r = JSON.stringify(s);
         if (r.length > 100) {
@@ -11,43 +11,50 @@ function Logger(unused) {
         }
         return r;
     };
+    LoggerPluginInstance.prototype.getAtPath = function (v, path) {
+        var result = v;
+        path.forEach(function (p) {
+            result = result[p];
+        });
+        return result;
+    };
+    LoggerPluginInstance.prototype.onInit = function () {
+        // tslint:disable-next-line: no-console
+        console.log("[hookstate]: logger attached");
+    };
+    LoggerPluginInstance.prototype.onSet = function (p, v) {
+        var newValue = this.getAtPath(v, p);
+        // tslint:disable-next-line: no-console
+        console.log("[hookstate]: new value set at path '/" + p.join('/') + "': " +
+            ("" + this.toJsonTrimmed(newValue)), {
+            path: p,
+            value: newValue
+        });
+    };
+    LoggerPluginInstance.prototype.log = function (l) {
+        l.with(DisabledTracking); // everything is touched by the JSON, so no point to track
+        // tslint:disable-next-line: no-console
+        return console.log("[hookstate]: current value at path '/" + l.path.join('/') + ": " +
+            (this.toJsonTrimmed(l.value) + "'"), {
+            path: l.path,
+            value: l.value
+        });
+    };
+    return LoggerPluginInstance;
+}());
+var PluginID = Symbol('Logger');
+function Logger(self) {
+    if (self) {
+        var _a = self.with(PluginID), link_1 = _a[0], instance = _a[1];
+        var inst_1 = instance;
+        return {
+            log: function () { return inst_1.log(link_1); }
+        };
+    }
     return {
         id: PluginID,
         instanceFactory: function () {
-            var getAtPath = function (v, path) {
-                var result = v;
-                path.forEach(function (p) {
-                    result = result[p];
-                });
-                return result;
-            };
-            return {
-                onInit: function () {
-                    // tslint:disable-next-line: no-console
-                    console.log("[hookstate]: logger attached");
-                },
-                onSet: function (p, v) {
-                    var newValue = getAtPath(v, p);
-                    // tslint:disable-next-line: no-console
-                    console.log("[hookstate]: new value set at path '/" + p.join('/') + "': " +
-                        ("" + toJsonTrimmed(newValue)), {
-                        path: p,
-                        value: newValue
-                    });
-                },
-                extensions: ['log'],
-                extensionsFactory: function (l) { return ({
-                    log: function () {
-                        l.with(DisabledTracking); // everything is touched by the JSON, so no point to track
-                        // tslint:disable-next-line: no-console
-                        return console.log("[hookstate]: current value at path '/" + l.path.join('/') + ": " +
-                            (toJsonTrimmed(l.value) + "'"), {
-                            path: l.path,
-                            value: l.value
-                        });
-                    }
-                }); }
-            };
+            return new LoggerPluginInstance();
         }
     };
 }

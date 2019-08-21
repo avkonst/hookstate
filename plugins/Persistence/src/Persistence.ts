@@ -1,14 +1,10 @@
 
-import { Plugin, PluginTypeMarker, StateValueAtRoot } from '@hookstate/core';
+import { Plugin, StateValueAtRoot } from '@hookstate/core';
 
 const PluginID = Symbol('LocalPersistence');
 
-const emptyInstance = {};
-
 // tslint:disable-next-line: function-name
-export function Persistence<S, E extends {}>(localStorageKey: string):
-    ((unsued: PluginTypeMarker<S, E>) => Plugin<E, {}>) {
-
+export function Persistence(localStorageKey: string): (() => Plugin) {
     return () => {
         return {
             id: PluginID,
@@ -25,9 +21,7 @@ export function Persistence<S, E extends {}>(localStorageKey: string):
                     },
                     onSet: (p, v) => {
                         localStorage.setItem(localStorageKey, JSON.stringify(v));
-                    },
-                    extensions: [],
-                    extensionsFactory: (l) => emptyInstance
+                    }
                 }
             }
         }
