@@ -89,6 +89,7 @@ export const ExampleComponent = () => {
 
 const PerformanceViewPluginID = Symbol('PerformanceViewPlugin');
 function PerformanceMeter(props: { matrixState: StateLink<number[][]> }) {
+    // const workaround = useStateLink(0);
     const scopedState = useStateLink(props.matrixState)
         .with(() => {
             // this is custom Hookstate plugin which counts statistics
@@ -102,10 +103,10 @@ function PerformanceMeter(props: { matrixState: StateLink<number[][]> }) {
                     onSet: (path, newMatrixState, newCellState) => {
                         // new value can be only number in this example
                         // and path can contain only 2 elements: row and column indexes
-                        if (path.length !== 0) {
-                            totalSum += newMatrixState[path[0]][path[1]] - newCellState;
-                            totalCalls += 1;
-                        }
+                        totalSum += newMatrixState[path[0]][path[1]] - newCellState;
+                        totalCalls += 1;
+
+                        // workaround.set(p => p + 1)
                     },
                     extensions: ['totalSum', 'totalCalls', 'elapsed', 'rate'],
                     extensionsFactory: () => ({
@@ -125,6 +126,7 @@ function PerformanceMeter(props: { matrixState: StateLink<number[][]> }) {
         <p><span>Elapsed: {scopedState.extended.elapsed()}s</span></p>
         <p><span>Total cells sum: {scopedState.extended.totalSum()}</span></p>
         <p><span>Total matrix state updates: {scopedState.extended.totalCalls()}</span></p>
+        {/* <p><span>Total matrix state updates (workaround): {workaround.get()}</span></p> */}
         <p><span>Average update rate: {scopedState.extended.rate()}cells/s</span></p>
     </Fragment>;
 }
