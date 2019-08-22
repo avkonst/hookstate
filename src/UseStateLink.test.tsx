@@ -117,6 +117,7 @@ test('object: should rerender unused when new element', async () => {
     });
 
     act(() => {
+        // tslint:disable-next-line: no-string-literal
         result.current.nested['field3'].set(1);
     });
     expect(renderTimes).toStrictEqual(2);
@@ -129,6 +130,7 @@ test('object: should rerender unused when new element', async () => {
     expect(Object.keys(result.current.get())).toEqual(['field1', 'field2', 'field3']);
     expect(result.current.get().field1).toStrictEqual(0);
     expect(result.current.get().field2).toStrictEqual('str');
+    // tslint:disable-next-line: no-string-literal
     expect(result.current.get()['field3']).toStrictEqual(1);
 });
 
