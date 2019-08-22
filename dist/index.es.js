@@ -36,7 +36,7 @@ var StateLinkInvalidUsageError = /** @class */ (function (_super) {
     __extends(StateLinkInvalidUsageError, _super);
     function StateLinkInvalidUsageError(op, path, hint) {
         return _super.call(this, "StateLink is used incorrectly. Attempted '" + op + "' at '/" + path.join('/') + "'" +
-            hint ? ". Hint: " + hint : '') || this;
+            (hint ? ". Hint: " + hint : '')) || this;
     }
     return StateLinkInvalidUsageError;
 }(Error));
@@ -74,6 +74,7 @@ var State = /** @class */ (function () {
         this._value = _value;
         this._subscribers = new Set();
         this._presetSubscribers = new Set();
+        this._setSubscribers = new Set();
         this._plugins = new Map();
     }
     State.prototype.get = function (path) {
@@ -85,18 +86,26 @@ var State = /** @class */ (function () {
     };
     State.prototype.set = function (path, value) {
         var _this = this;
+        this._presetSubscribers.forEach(function (cb) {
+            var presetResult = cb(path, _this._value, value);
+            if (presetResult !== undefined) {
+                // plugin overrides the current value
+                // could be used for immutable later on
+                _this._value = presetResult;
+            }
+        });
         if (path.length === 0) {
             this._value = value;
         }
         var result = this._value;
+        var returnPath = path;
         path.forEach(function (p, i) {
             if (i === path.length - 1) {
-                _this._presetSubscribers.forEach(function (cb) { return cb(path, value, result[p], _this._value); });
                 if (!(p in result)) {
                     // if an array of object is about to be extended by new property
                     // we consider it is the whole object is changed
                     // which is identified by upper path
-                    path = path.slice(0, -1);
+                    returnPath = path.slice(0, -1);
                 }
                 result[p] = value;
             }
@@ -104,7 +113,8 @@ var State = /** @class */ (function () {
                 result = result[p];
             }
         });
-        return path;
+        this._setSubscribers.forEach(function (cb) { return cb(path, _this._value, value); });
+        return returnPath;
     };
     State.prototype.update = function (path) {
         var actions = [];
@@ -127,7 +137,6 @@ var State = /** @class */ (function () {
         throw new PluginUnknownError(pluginId);
     };
     State.prototype.register = function (plugin, path) {
-        var _this = this;
         var existingInstance = this._plugins.get(plugin.id);
         if (existingInstance) {
             return;
@@ -143,13 +152,23 @@ var State = /** @class */ (function () {
                 this._value = initValue;
             }
         }
-        if (pluginInstance.onSet) {
-            this.subscribe({
-                onSet: function (p) { return pluginInstance.onSet(p, _this._value); }
+        if (pluginInstance.onPreset) {
+            this._presetSubscribers.add(function () {
+                var args = [];
+                for (var _i = 0; _i < arguments.length; _i++) {
+                    args[_i] = arguments[_i];
+                }
+                return pluginInstance.onPreset.apply(pluginInstance, args);
             });
         }
-        if (pluginInstance.onPreset) {
-            this._presetSubscribers.add(pluginInstance.onPreset);
+        if (pluginInstance.onSet) {
+            this._setSubscribers.add(function () {
+                var args = [];
+                for (var _i = 0; _i < arguments.length; _i++) {
+                    args[_i] = arguments[_i];
+                }
+                return pluginInstance.onSet.apply(pluginInstance, args);
+            });
         }
         return;
     };
@@ -233,27 +252,6 @@ var StateLinkImpl = /** @class */ (function () {
         return this.value;
     };
     StateLinkImpl.prototype.setUntracked = function (newValue) {
-        // inferred() function checks for the nullability of the current value:
-        // If value is not null | undefined, it resolves to ArrayLink or ObjectLink
-        // which can not take null | undefined as a value.
-        // However, it is possible that a user of this StateLink
-        // may call set(null | undefined).
-        // In this case this null will leak via setValue(prevValue => ...)
-        // to mutation actions for array or object,
-        // which breaks the guarantee of ArrayStateMutation and ObjectStateMutation to not link nullable value.
-        // Currently this causes a crash within ObjectStateMutation or ArrayStateMutation mutation actions.
-        // This behavior is left intentionally to make it equivivalent to the following:
-        // Example (plain JS):
-        //    let myvar: { a: string, b: string } = { a: '', b: '' }
-        //    myvar = undefined;
-        //    myvar.a = '' // <-- crash here
-        //    myvar = { a: '', b: '' } // <-- OK
-        // Example (using value links):
-        //    let myvar = useStateLink({ a: '', b: '' } as { a: string, b: string } | undefined);
-        //    let myvar_a = myvar.nested.a; // get value link to a property
-        //    myvar.set(undefined);
-        //    myvar_a.set('') // <-- crash here
-        //    myvar.set({ a: '', b: '' }) // <-- OK
         if (typeof newValue === 'function') {
             newValue = newValue(this.state.get(this.path));
         }
@@ -458,7 +456,8 @@ var StateLinkImpl = /** @class */ (function () {
             },
             isExtensible: function (target) {
                 // should satisfy the invariants:
-                // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy/handler/isExtensible#Invariants
+                // https://developer.mozilla.org/en-US/docs/Web/JavaScript/
+                // Reference/Global_Objects/Proxy/handler/isExtensible#Invariants
                 return Object.isExtensible(target);
             },
             preventExtensions: function (target) {

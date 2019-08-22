@@ -1,6 +1,6 @@
 import React from 'react';
 import { useStateLink } from '@hookstate/core';
-import { Validation, ValidationSeverity } from '@hookstate/validation';
+import { Validation } from '@hookstate/validation';
 
 interface Task { name: string }
 

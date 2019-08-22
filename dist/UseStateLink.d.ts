@@ -13,16 +13,19 @@ export declare type NestedInferredLink<S> = S extends ReadonlyArray<(infer U)> ?
 export declare type Path = ReadonlyArray<string | number>;
 export interface StateLink<S> {
     readonly path: Path;
-    readonly value: S;
     readonly nested: NestedInferredLink<S>;
+    /**
+     * @deprecated use get()
+     */
+    readonly value: S;
     get(): S;
     set(newValue: React.SetStateAction<S>): void;
+    getUntracked(): S;
+    setUntracked(newValue: React.SetStateAction<S>): Path;
     with(plugin: () => Plugin): StateLink<S>;
     with(pluginId: symbol): [StateLink<S> & StateLinkPlugable<S>, PluginInstance];
 }
 export interface StateLinkPlugable<S> {
-    getUntracked(): S;
-    setUntracked(newValue: React.SetStateAction<S>): Path;
     update(path: Path): void;
     updateBatch(paths: Path[]): void;
 }
@@ -31,8 +34,8 @@ export declare type StateValueAtPath = any;
 export declare type TransformResult = any;
 export interface PluginInstance {
     readonly onInit?: () => StateValueAtRoot | void;
-    readonly onPreset?: (path: Path, newValue: StateValueAtRoot, prevValue: StateValueAtPath, prevState: StateValueAtRoot) => void;
-    readonly onSet?: (path: Path, newValue: StateValueAtRoot) => void;
+    readonly onPreset?: (path: Path, prevState: StateValueAtRoot, newValue: StateValueAtPath) => void | StateValueAtRoot;
+    readonly onSet?: (path: Path, newState: StateValueAtRoot, newValue: StateValueAtPath) => void;
 }
 export interface Plugin {
     readonly id: symbol;
