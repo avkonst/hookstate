@@ -176,8 +176,6 @@ This allows to 'walk' the tree and access/mutate nested compex data in very conv
         } />
     }
     ```
-- `getUntracked()` - the same as `get()`, but it does not 'mark' the data as *used*. It means a component will not rerender if the returned value is changed in the state. You should know what you are doing with it, use at your own risk.
-- `setUntracked(...)` or `setUntracked((prevState) => ...)` - the same as `set(...)` or or `set((prevState) => ...)`, but it does not 'mark' the data as changed. It means components using the set part of the state will not rerender. You should know what you are doing with it, use at your own risk.
 
 ### `Transform` argument
 
@@ -290,4 +288,5 @@ Validation | Enables validation and error / warning messages for a state. Useful
 Persistence | Enables persistence of managed states to browser's local storage. | [Demo](https://hookstate.netlify.com/plugin-persistence) | `@hookstate/persistence` | [![npm version](https://img.shields.io/npm/v/@hookstate/persistence.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/persistence)
 Mutate | Adds mutate actions specific for arrays (push, pop, insert, remove, swap, etc..), objects (merge, etc.), strings and numbers. | [Demo](https://hookstate.netlify.com/plugin-mutate) | `@hookstate/mutate` | [![npm version](https://img.shields.io/npm/v/@hookstate/mutate.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/mutate)
 Logger | Logs state updates and current value of a [`StateLink`](#statelink) to the development console. | [Demo](https://hookstate.netlify.com/plugin-logger) | `@hookstate/logger` | [![npm version](https://img.shields.io/npm/v/@hookstate/logger.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/logger)
-DisabledTracking | Turns off state usage tracking for a specific `StateLink`, which disables rendering optimizations for the component, which created the state link. |  | `@hookstate/core` | [![npm version](https://img.shields.io/npm/v/@hookstate/core.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/core)
+Untracked | Turns off optimizations for a StateLink by stopping tracking of it's value usage and assuming the entire state is *used* if StateLink's value is accessed at least once. |  | `@hookstate/core` | [![npm version](https://img.shields.io/npm/v/@hookstate/core.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/core)
+Degraded | Turns off optimizations for a StateLink by stopping tracking of it's value usage and assuming the entire state is *used* if StateLink's value is accessed at least once. |  | `@hookstate/core` | [![npm version](https://img.shields.io/npm/v/@hookstate/core.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/core)

@@ -40,16 +40,14 @@ export interface StateLink<S> {
     get(): S;
     set(newValue: React.SetStateAction<S>): void;
 
-    getUntracked(): S;
-    setUntracked(newValue: React.SetStateAction<S>): Path;
-
     with(plugin: () => Plugin): StateLink<S>;
     with(pluginId: symbol): [StateLink<S> & StateLinkPlugable<S>, PluginInstance];
 }
 
 export interface StateLinkPlugable<S> {
-    update(path: Path): void;
-    updateBatch(paths: Path[]): void;
+    getUntracked(): S;
+    setUntracked(newValue: React.SetStateAction<S>): Path;
+    update(path: Path | Path[]): void;
 }
 
 // type alias to highlight the places where we are dealing with root state value
@@ -126,8 +124,8 @@ interface Subscribable {
     unsubscribe(l: Subscriber): void;
 }
 
-const DisabledTrackingID = Symbol('DisabledTrackingID');
-const StateMemoID = Symbol('StateMemoID');
+const DegradedID = Symbol('Degraded');
+const StateMemoID = Symbol('StateMemo');
 
 const RootPath: Path = [];
 
@@ -233,6 +231,11 @@ class State implements Subscribable {
     unsubscribe(l: Subscriber) {
         this._subscribers.delete(l);
     }
+
+    toJSON() {
+        throw new StateLinkInvalidUsageError('toJSON', RootPath,
+        'did you mean to searialize the value of the StateLink but not the StateLink itself');
+    }
 }
 
 const SynteticID = Symbol('SynteticTypeInferenceMarker');
@@ -246,7 +249,7 @@ class StateRefImpl<S> implements StateRef<S> {
 
     with(plugin: () => Plugin): StateRef<S> {
         const pluginMeta = plugin()
-        if (pluginMeta.id === DisabledTrackingID) {
+        if (pluginMeta.id === DegradedID) {
             this.disabledTracking = true;
             return this;
         }
@@ -258,10 +261,12 @@ class StateRefImpl<S> implements StateRef<S> {
 class StateInfImpl<S, R> implements StateInf<R> {
     // tslint:disable-next-line: variable-name
     public __synteticTypeInferenceMarkerInf = SynteticID;
+
     constructor(
         public readonly wrapped: StateRefImpl<S>,
         public readonly transform: (state: StateLink<S>, prev: R | undefined) => R,
     ) { }
+
     with(plugin: () => Plugin): StateInf<R> {
         this.wrapped.with(plugin);
         return this;
@@ -326,12 +331,12 @@ class StateLinkImpl<S> implements StateLink<S>,
         this.state.update(this.setUntracked(newValue));
     }
 
-    update(path: Path) {
-        this.state.update(path)
-    }
-
-    updateBatch(paths: Path[]) {
-        this.state.updateBatch(paths)
+    update(path: Path | Path[]) {
+        if (path.length === 0 || !Array.isArray(path[0])) {
+            this.state.update(path as Path)
+        } else {
+            this.state.updateBatch(path as Path[])
+        }
     }
 
     with(plugin: () => Plugin): StateLink<S>;
@@ -340,7 +345,7 @@ class StateLinkImpl<S> implements StateLink<S>,
         StateLink<S> | [StateLink<S> & StateLinkPlugable<S>, PluginInstance] {
         if (typeof plugin === 'function') {
             const pluginMeta = plugin();
-            if (pluginMeta.id === DisabledTrackingID) {
+            if (pluginMeta.id === DegradedID) {
                 this.disabledTracking = true;
                 return this;
             }
@@ -858,10 +863,18 @@ export function StateMemo<S, R>(
     }
 }
 
+/**
+ * @deprecated: use DisabledOptimization instead
+ */
 // tslint:disable-next-line: function-name
 export function DisabledTracking(): Plugin {
+    return Degraded()
+}
+
+// tslint:disable-next-line: function-name
+export function Degraded(): Plugin {
     return {
-        id: DisabledTrackingID,
+        id: DegradedID,
         instanceFactory: () => ({})
     }
 }
