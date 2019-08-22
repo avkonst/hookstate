@@ -72,8 +72,8 @@ var PluginUnknownError = /** @class */ (function (_super) {
     }
     return PluginUnknownError;
 }(Error));
-var DisabledTrackingID = Symbol('DisabledTrackingID');
-var StateMemoID = Symbol('StateMemoID');
+var DegradedID = Symbol('Degraded');
+var StateMemoID = Symbol('StateMemo');
 var RootPath = [];
 var State = /** @class */ (function () {
     function State(_value) {
@@ -184,6 +184,9 @@ var State = /** @class */ (function () {
     State.prototype.unsubscribe = function (l) {
         this._subscribers.delete(l);
     };
+    State.prototype.toJSON = function () {
+        throw new StateLinkInvalidUsageError('toJSON', RootPath, 'did you mean to searialize the value of the StateLink but not the StateLink itself');
+    };
     return State;
 }());
 var SynteticID = Symbol('SynteticTypeInferenceMarker');
@@ -195,7 +198,7 @@ var StateRefImpl = /** @class */ (function () {
     }
     StateRefImpl.prototype.with = function (plugin) {
         var pluginMeta = plugin();
-        if (pluginMeta.id === DisabledTrackingID) {
+        if (pluginMeta.id === DegradedID) {
             this.disabledTracking = true;
             return this;
         }
@@ -267,15 +270,17 @@ var StateLinkImpl = /** @class */ (function () {
         this.state.update(this.setUntracked(newValue));
     };
     StateLinkImpl.prototype.update = function (path) {
-        this.state.update(path);
-    };
-    StateLinkImpl.prototype.updateBatch = function (paths) {
-        this.state.updateBatch(paths);
+        if (path.length === 0 || !Array.isArray(path[0])) {
+            this.state.update(path);
+        }
+        else {
+            this.state.updateBatch(path);
+        }
     };
     StateLinkImpl.prototype.with = function (plugin) {
         if (typeof plugin === 'function') {
             var pluginMeta = plugin();
-            if (pluginMeta.id === DisabledTrackingID) {
+            if (pluginMeta.id === DegradedID) {
                 this.disabledTracking = true;
                 return this;
             }
@@ -646,14 +651,22 @@ function StateMemo(transform, equals) {
         return transform(link, prev);
     };
 }
+/**
+ * @deprecated: use DisabledOptimization instead
+ */
 // tslint:disable-next-line: function-name
 function DisabledTracking() {
+    return Degraded();
+}
+// tslint:disable-next-line: function-name
+function Degraded() {
     return {
-        id: DisabledTrackingID,
+        id: DegradedID,
         instanceFactory: function () { return ({}); }
     };
 }
 
+exports.Degraded = Degraded;
 exports.DisabledTracking = DisabledTracking;
 exports.StateFragment = StateFragment;
 exports.StateMemo = StateMemo;

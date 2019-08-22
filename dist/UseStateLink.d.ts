@@ -20,14 +20,13 @@ export interface StateLink<S> {
     readonly value: S;
     get(): S;
     set(newValue: React.SetStateAction<S>): void;
-    getUntracked(): S;
-    setUntracked(newValue: React.SetStateAction<S>): Path;
     with(plugin: () => Plugin): StateLink<S>;
     with(pluginId: symbol): [StateLink<S> & StateLinkPlugable<S>, PluginInstance];
 }
 export interface StateLinkPlugable<S> {
-    update(path: Path): void;
-    updateBatch(paths: Path[]): void;
+    getUntracked(): S;
+    setUntracked(newValue: React.SetStateAction<S>): Path;
+    update(path: Path | Path[]): void;
 }
 export declare type StateValueAtRoot = any;
 export declare type StateValueAtPath = any;
@@ -73,5 +72,9 @@ export declare function StateFragment<S, R>(props: {
     children: (state: R) => React.ReactElement;
 }): React.ReactElement;
 export declare function StateMemo<S, R>(transform: (state: StateLink<S>, prev: R | undefined) => R, equals?: (next: R, prev: R) => boolean): (link: StateLink<S>, prev: R | undefined) => R;
+/**
+ * @deprecated: use DisabledOptimization instead
+ */
 export declare function DisabledTracking(): Plugin;
+export declare function Degraded(): Plugin;
 export default useStateLink;
