@@ -66,7 +66,7 @@ export interface PluginInstance {
     // it is only applicable for plugins attached via stateref, not via statelink
     readonly onInit?: () => StateValueAtRoot | void,
     readonly onPreset?: (path: Path, prevState: StateValueAtRoot,
-        prevValue: StateValueAtPath, newValue: StateValueAtPath) => void,
+        newValue: StateValueAtPath) => void | StateValueAtRoot,
     readonly onSet?: (path: Path, newState: StateValueAtRoot,
         newValue: StateValueAtPath) => void,
 };
@@ -118,10 +118,8 @@ interface Subscriber {
     onSet(path: Path, actions: (() => void)[]): void;
 }
 
-type PresetCallback = (path: Path, prevState: StateValueAtRoot,
-    prevValue: StateValueAtPath, newValue: StateValueAtPath) => void;
-type SetCallback = (path: Path, newState: StateValueAtRoot,
-    newValue: StateValueAtPath) => void;
+type PresetCallback = (path: Path, prevState: StateValueAtRoot, newValue: StateValueAtPath) => void | StateValueAtRoot;
+type SetCallback = (path: Path, newState: StateValueAtRoot, newValue: StateValueAtPath) => void;
 
 interface Subscribable {
     subscribe(l: Subscriber): void;
@@ -151,6 +149,14 @@ class State implements Subscribable {
     }
 
     set(path: Path, value: StateValueAtPath): Path {
+        this._presetSubscribers.forEach(cb => {
+            const presetResult = cb(path, this._value, value)
+            if (presetResult !== undefined) {
+                // plugin overrides the current value
+                // could be used for immutable later on
+                this._value = presetResult
+            }
+        })
         if (path.length === 0) {
             this._value = value;
         }
@@ -164,13 +170,12 @@ class State implements Subscribable {
                     // which is identified by upper path
                     returnPath = path.slice(0, -1)
                 }
-                this._presetSubscribers.forEach(cb => cb(path, this._value, result[p], value))
                 result[p] = value;
-                this._setSubscribers.forEach(cb => cb(path, this._value, value))
             } else {
                 result = result[p];
             }
         });
+        this._setSubscribers.forEach(cb => cb(path, this._value, value))
         return returnPath;
     }
 
