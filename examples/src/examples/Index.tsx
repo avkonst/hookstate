@@ -18,6 +18,7 @@ import { ExampleComponent as ExamplePluginLogger } from './plugin-logger';
 import { ExampleComponent as ExamplePluginPersistence } from './plugin-persistence';
 import { ExampleComponent as ExamplePluginMutate } from './plugin-mutate';
 import { ExampleComponent as ExamplePluginValidation } from './plugin-validation';
+import { ExampleComponent as ExamplePluginUntracked } from './plugin-untracked';
 
 import { A } from 'hookrouter';
 
@@ -44,7 +45,8 @@ export const ExampleIds = {
     PluginLogger: 'plugin-logger',
     PluginPersistence: 'plugin-persistence',
     PluginMutate: 'plugin-mutate',
-    PluginValidation: 'plugin-validation'
+    PluginValidation: 'plugin-validation',
+    PluginUntracked: 'plugin-untracked'
 }
 
 const baseUrl = 'https://raw.githubusercontent.com/avkonst/hookstate/master/examples/src/examples/'
@@ -185,6 +187,12 @@ ExamplesRepo.set(ExampleIds.PluginMutate, {
     description: <>Code sample and demo for
     the <a href="https://github.com/avkonst/hookstate#plugins">Mutate plugin</a>.</>,
     demo: <ExamplePluginMutate />
+});
+ExamplesRepo.set(ExampleIds.PluginUntracked, {
+    name: 'Plugin: Untracked',
+    description: <>Code sample and demo for
+    the <a href="https://github.com/avkonst/hookstate#plugins">Untracked plugin</a>.</>,
+    demo: <ExamplePluginUntracked />
 });
 ExamplesRepo.set(ExampleIds.PluginLogger, {
     name: 'Plugin: Logger',

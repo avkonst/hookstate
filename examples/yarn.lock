@@ -871,10 +871,10 @@
   dependencies:
     "@hapi/hoek" "8.x.x"
 
-"@hookstate/core@1.0.2":
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-1.0.2.tgz#13183e61e9ba3639d56e52ee788f0c6d643b283e"
-  integrity sha512-m8ZCo7jiLNHqkj1Bs2iYNiiAYSeDo2a8QSkrikCQKTnl2tVH8CISPulmqzE7P9IQizctFOlC97JgptNtXq5pZg==
+"@hookstate/core@1.0.3":
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-1.0.3.tgz#52daa266d2976116465e3bfc67d9bfc5ab4e4f96"
+  integrity sha512-PqflTRc3DiIFtYJnr67eoX6S2w47H352X0nplFZeqHS9Yr8d/7w0yqkprVmshzC5ptXJw+l5U+dVAJx7K8VYtA==
 
 "@hookstate/initial@1.0.0":
   version "1.0.0"
@@ -900,6 +900,11 @@
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/@hookstate/touched/-/touched-1.0.0.tgz#25d7db8b3acf9af1c1ff85edf89a3b6ff5397dab"
   integrity sha512-/xm9BnZZiAchqj1cvzi1CFE6X+qLP1pVl4PstZ6y+MgMdf7siqfiFRZC2bBF54l2pi6KsMqc6ClDnn1DKOJY7w==
+
+"@hookstate/untracked@1.0.3":
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/@hookstate/untracked/-/untracked-1.0.3.tgz#833e957d535870f2c56bf15ec2c0b716d2136f57"
+  integrity sha512-KeUWLHMdj/+NGVUEKNbzO8lRM8Esr95o7WSu6IT6ry8w7yeorghmWeQVDFPoXc3l5R0s8DEVdtwp8MXmWW+vUA==
 
 "@hookstate/validation@1.0.0":
   version "1.0.0"
