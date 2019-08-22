@@ -80,7 +80,7 @@ export interface Plugin {
 class StateLinkInvalidUsageError extends Error {
     constructor(op: string, path: Path, hint?: string) {
         super(`StateLink is used incorrectly. Attempted '${op}' at '/${path.join('/')}'` +
-            hint ? `. Hint: ${hint}` : '')
+            (hint ? `. Hint: ${hint}` : ''))
     }
 }
 
