@@ -20,7 +20,6 @@ export interface StateLink<S> {
     with(plugin: () => Plugin): StateLink<S>;
     with(pluginId: symbol): [StateLink<S> & StateLinkPlugable<S>, PluginInstance];
 }
-export declare type ValueLink<S> = StateLink<S>;
 export interface StateLinkPlugable<S> {
     getUntracked(): S;
     setUntracked(newValue: React.SetStateAction<S>): Path;

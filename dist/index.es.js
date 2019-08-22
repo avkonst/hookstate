@@ -236,7 +236,7 @@ var StateLinkImpl = /** @class */ (function () {
         // inferred() function checks for the nullability of the current value:
         // If value is not null | undefined, it resolves to ArrayLink or ObjectLink
         // which can not take null | undefined as a value.
-        // However, it is possible that a user of this ValueLink
+        // However, it is possible that a user of this StateLink
         // may call set(null | undefined).
         // In this case this null will leak via setValue(prevValue => ...)
         // to mutation actions for array or object,
@@ -457,7 +457,9 @@ var StateLinkImpl = /** @class */ (function () {
                 return onInvalidUsage('setPrototypeOf');
             },
             isExtensible: function (target) {
-                return false;
+                // should satisfy the invariants:
+                // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy/handler/isExtensible#Invariants
+                return Object.isExtensible(target);
             },
             preventExtensions: function (target) {
                 return onInvalidUsage('preventExtensions');
