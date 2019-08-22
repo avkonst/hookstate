@@ -9,6 +9,10 @@ import SyntaxHighlighter from 'react-syntax-highlighter';
 import { useAsync } from 'react-use';
 import request from 'request';
 import { ExamplesRepo, ExampleIds, ExampleCodeUrl } from './examples/Index';
+import { fontSize } from '@material-ui/system';
+
+const packageJson = require('../package.json');
+const packageDependencies = packageJson.dependencies
 
 // import { prismStyle } from './highlightStyles';
 const highlightStyle = undefined;
@@ -32,6 +36,15 @@ const useStyles = makeStyles((theme: Theme) =>
         },
     }),
 );
+
+const VersionInfo = () => {
+    const packs = Object.keys(packageDependencies)
+        .filter(i => i.startsWith('@hookstate/'));
+    const labels = packs.map((p, i) => <span key={p}>
+        {p}: {packageDependencies[p]} {i !== packs.length - 1 && ' | '}
+    </span>)
+    return <p style={{ fontSize: '0.5em' }}>Version info:<br/>{labels}</p>;
+}
 
 const ButtonAppBar = () => {
     const classes = useStyles();
@@ -204,6 +217,7 @@ const HomePage = (props: { example?: string }) => {
                     />
                 </Paper>
             </Box>
+            <VersionInfo />
         </Container>
     </>
 }
