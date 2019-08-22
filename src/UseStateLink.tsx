@@ -40,8 +40,6 @@ export interface StateLink<S> {
     with(plugin: () => Plugin): StateLink<S>;
     with(pluginId: symbol): [StateLink<S> & StateLinkPlugable<S>, PluginInstance];
 }
-// keep temporary for backward compatibility with the previous version
-export type ValueLink<S> = StateLink<S>;
 
 export interface StateLinkPlugable<S> {
     getUntracked(): S;
@@ -308,7 +306,7 @@ class StateLinkImpl<S> implements StateLink<S>,
         // inferred() function checks for the nullability of the current value:
         // If value is not null | undefined, it resolves to ArrayLink or ObjectLink
         // which can not take null | undefined as a value.
-        // However, it is possible that a user of this ValueLink
+        // However, it is possible that a user of this StateLink
         // may call set(null | undefined).
         // In this case this null will leak via setValue(prevValue => ...)
         // to mutation actions for array or object,

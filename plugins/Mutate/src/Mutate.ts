@@ -52,7 +52,7 @@ function createArrayStateMutation<U>(
     // All actions (except set) should crash if prevValue is null or undefined.
     // It is intentional behavior.
     // Although this situation is not allowed by type checking of the typescript,
-    // it is still possible to get null coming from ValueLink (see notes in the ValueLinkImpl)
+    // it is still possible to get null coming from StateLink (see notes in the StateLinkImpl)
     return {
         set: setValue,
         merge: (other) => {
@@ -125,7 +125,7 @@ function createObjectStateMutation<S extends object>(
     // All actions (except set and merge with empty object) should crash
     // if prevValue is null or undefined. It is intentional behavior.
     // Although this situation is not allowed by type checking of the typescript,
-    // it is still possible to get null coming from ValueLink (see notes in the ValueLinkImpl)
+    // it is still possible to get null coming from StateLink (see notes in the StateLinkImpl)
     const merge = (value: SetPartialStateAction<S>) => {
         setValue((prevValue) => {
             const extractedValue = extractValue(prevValue, value);
