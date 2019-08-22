@@ -47,162 +47,113 @@ function extractValue<S, R>(prevValue: S, value: R | ((prevValue: S) => R)): R {
     return value;
 }
 
-function createArrayStateMutation<U>(
-    setValue: React.Dispatch<React.SetStateAction<U[]>>): ArrayStateMutation<U> {
+function createArrayStateMutation<U>(state: StateLink<U[]>): ArrayStateMutation<U> {
     // All actions (except set) should crash if prevValue is null or undefined.
     // It is intentional behavior.
-    // Although this situation is not allowed by type checking of the typescript,
-    // it is still possible to get null coming from StateLink (see notes in the StateLinkImpl)
     return {
-        set: setValue,
+        set: (newValue) => state.set(newValue),
         merge: (other) => {
-            setValue((prevValue) => {
-                const copy = prevValue.slice();
-                const source = extractValue(copy, other);
+            state.set((prevValue) => {
+                const source = extractValue(prevValue, other);
                 Object.keys(source).sort().forEach(i => {
                     const index = Number(i);
-                    copy[index] = source[index];
+                    prevValue[index] = source[index];
                 });
-                return copy;
+                return prevValue;
             });
         },
-        update: (key, value) => {
-            setValue((prevValue) => {
-                const copy = prevValue.slice();
-                copy[key] = extractValue(copy[key], value);
-                return copy;
-            });
-        },
+        update: (key, value) => state.nested[key].set(value),
         concat: (other) => {
             if (other) {
-                setValue((prevValue) => {
-                    const copy = prevValue.slice();
-                    return copy.concat(extractValue(copy, other));
+                state.set((prevValue) => {
+                    return prevValue.concat(extractValue(prevValue, other));
                 });
             }
         },
         push: (elem) => {
-            setValue((prevValue) => {
-                const copy = prevValue.slice();
-                copy.push(elem);
-                return copy;
+            state.set((prevValue) => {
+                prevValue.push(elem);
+                return prevValue;
             });
         },
         pop: () => {
-            setValue((prevValue) => {
-                const copy = prevValue.slice();
-                copy.pop();
-                return copy;
+            state.set((prevValue) => {
+                prevValue.pop();
+                return prevValue;
             });
         },
         insert: (index, elem) => {
-            setValue((prevValue) => {
-                const copy = prevValue.slice();
-                copy.splice(index, 0, elem);
-                return copy;
+            state.set((prevValue) => {
+                prevValue.splice(index, 0, elem);
+                return prevValue;
             });
         },
         remove: (index) => {
-            setValue((prevValue) => {
-                const copy = prevValue.slice();
-                copy.splice(index, 1);
-                return copy;
+            state.set((prevValue) => {
+                prevValue.splice(index, 1);
+                return prevValue;
             });
         },
         swap: (index1, index2) => {
-            setValue((prevValue) => {
-                const copy = prevValue.slice();
-                copy[index1] = prevValue[index2];
-                copy[index2] = prevValue[index1];
-                return copy;
-            });
+            const p1 = state.nested[index1].get();
+            const p2 = state.nested[index2].get();
+            state.nested[index1].set(p2);
+            state.nested[index2].set(p1);
         }
     };
 }
 
-function createObjectStateMutation<S extends object>(
-    setValue: React.Dispatch<React.SetStateAction<S>>): ObjectStateMutation<S> {
-    // All actions (except set and merge with empty object) should crash
-    // if prevValue is null or undefined. It is intentional behavior.
-    // Although this situation is not allowed by type checking of the typescript,
-    // it is still possible to get null coming from StateLink (see notes in the StateLinkImpl)
-    const merge = (value: SetPartialStateAction<S>) => {
-        setValue((prevValue) => {
-            const extractedValue = extractValue(prevValue, value);
-            const keys = Object.keys(extractedValue);
-            if (keys.length === 0) {
-                // empty object to merge with
-                return prevValue;
-            }
-            // this causes the intended crash if merging with
-            // the prevously set to undefined | null value
-            // eslint-disable-next-line
-            const _unused = prevValue[keys[0]];
-            return {
-                ...(prevValue
-                    // this causes the intended crash if merging with
-                    // the prevously set to undefined | null value
-                    // and the block with _unused variable is optimized out
-                    // by a bundler like webpack, minify, etc.
-                    || Object.keys(prevValue)),
-                ...extractedValue,
-            };
-        });
-    };
+function createObjectStateMutation<S extends object>(state: StateLink<S>): ObjectStateMutation<S> {
+    // All actions (except set) should crash if prevValue is null or undefined.
+    // It is intentional behavior.
     return {
-        set: setValue,
-        merge: merge,
-        update: (key, value) => merge((prevValue) => {
-            const partialResult: Partial<S> = {};
-            partialResult[key] = extractValue(
-                // this causes the intended crash if updating the property of
-                // the prevously set to undefined | null value
-                prevValue[key],
-                value);
-            return partialResult;
-        })
+        set: (v) => state.set(v),
+        merge: (value: SetPartialStateAction<S>) => {
+            state.set((prevValue) => {
+                const extractedValue = extractValue(prevValue, value);
+                Object.keys(extractedValue).forEach(key => {
+                    prevValue[key] = extractValue[key]
+                })
+                return prevValue
+            });
+        },
+        update: (key, value) => state.nested[key as string].set(value)
     };
 }
 
-function createStringStateMutation<S>(
-    setValue: React.Dispatch<React.SetStateAction<S>>): StringStateMutation<S> {
+function createStringStateMutation<S>(state: StateLink<S>): StringStateMutation<S> {
     // reserved for future extensions
     return {
-        set: setValue
+        set: v => state.set(v)
     };
 }
 
-function createNumberStateMutation<S>(
-    setValue: React.Dispatch<React.SetStateAction<S>>): NumberStateMutation<S> {
+function createNumberStateMutation<S>(state: StateLink<S>): NumberStateMutation<S> {
     // reserved for future extensions
     return {
-        set: setValue
+        set: v => state.set(v)
     };
 }
 
-function createValueStateMutation<S>(
-    setValue: React.Dispatch<React.SetStateAction<S>>): ValueStateMutation<S> {
+function createValueStateMutation<S>(state: StateLink<S>): ValueStateMutation<S> {
     return {
-        set: setValue
+        set: v => state.set(v)
     };
 }
 
 // tslint:disable-next-line: function-name
 export function Mutate<S>(state: StateLink<S>): InferredStateMutation<S> {
     if (Array.isArray(state.value)) {
-        return createArrayStateMutation((newValue) =>
-            state.set(newValue as StateValueAtPath)) as unknown as InferredStateMutation<S>
+        return createArrayStateMutation(state as unknown as StateLink<StateValueAtPath>) as
+            unknown as InferredStateMutation<S>
     } else if (typeof state.value === 'object' && state.value !== null) {
-        return createObjectStateMutation((newValue) =>
-            state.set(newValue as StateValueAtPath)) as unknown as InferredStateMutation<S>;
+        return createObjectStateMutation(state as StateLink<StateValueAtPath>) as
+            unknown as InferredStateMutation<S>;
     } else if (typeof state.value === 'string') {
-        return createStringStateMutation((newValue) =>
-            state.set(newValue as StateValueAtPath)) as unknown as InferredStateMutation<S>;
+        return createStringStateMutation(state) as unknown as InferredStateMutation<S>;
     } else if (typeof state.value === 'number') {
-        return createNumberStateMutation((newValue) =>
-            state.set(newValue as StateValueAtPath)) as unknown as InferredStateMutation<S>;
+        return createNumberStateMutation(state) as unknown as InferredStateMutation<S>;
     } else {
-        return createValueStateMutation((newValue) =>
-            state.set(newValue as StateValueAtPath)) as unknown as InferredStateMutation<S>;
+        return createValueStateMutation(state) as unknown as InferredStateMutation<S>;
     }
 }
