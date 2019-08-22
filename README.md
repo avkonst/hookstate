@@ -46,7 +46,7 @@ Any questions? Just ask by raising a github ticket.
 - Incredible performance based on unique method for tracking of used/rendered and updated state segments. See the performance demos [with huge table state](https://hookstate.netlify.com/performance-demo-large-table) and [with huge form state](https://hookstate.netlify.com/performance-demo-large-form).
 - First-class Typescript support. Complete type inferrence for any complexity of structures of managed state data. Full intellisense support tested in VS Code.
 - Plugin system enables custom extensions, with several [standard plugins](#plugins) available.
-- Tiny footprint: **2.13KB** gziped by create-react-app. No external dependencies, except React.
+- Tiny footprint: **2.4KB** gziped by create-react-app. No external dependencies, except React.
 
 ## Installation
 
@@ -176,8 +176,8 @@ This allows to 'walk' the tree and access/mutate nested compex data in very conv
         } />
     }
     ```
-- `getUntracked()` - the same as `get()`, but it does not 'mark' the data as being used. A component will not rerender if the returned value is changed in the state. Use at your own risk.
-- `setUntracked(...)` or `setUntracked((prevState) => ...)` - the same as `set(...)` or or `set((prevState) => ...)`, but it does not 'mark' the data as changed. Components using the changed part of the state will not rerender. Use at your own risk.
+- `getUntracked()` - the same as `get()`, but it does not 'mark' the data as *used*. It means a component will not rerender if the returned value is changed in the state. You should know what you are doing with it, use at your own risk.
+- `setUntracked(...)` or `setUntracked((prevState) => ...)` - the same as `set(...)` or or `set((prevState) => ...)`, but it does not 'mark' the data as changed. It means components using the set part of the state will not rerender. You should know what you are doing with it, use at your own risk.
 
 ### `Transform` argument
 
