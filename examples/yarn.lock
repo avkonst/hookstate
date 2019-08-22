@@ -901,10 +901,10 @@
   resolved "https://registry.yarnpkg.com/@hookstate/touched/-/touched-1.0.0-alpha.0.tgz#ae6915f203e9ff65d603a62b4932c05d370836aa"
   integrity sha512-NEmWkm1EtYVTZq61Y6bDAcsbw54ama+GChlBliTgK1PC3ojv9QkuG5dFr8RtfgCOzbs2xWb/GpcODZt8p4L1IA==
 
-"@hookstate/validation@1.0.0-alpha.1":
-  version "1.0.0-alpha.1"
-  resolved "https://registry.yarnpkg.com/@hookstate/validation/-/validation-1.0.0-alpha.1.tgz#0d57e8d4972e26589565c4850301dffd56b64bfb"
-  integrity sha512-ZnOgZhVdXTQeaMUiIjJdgTahg+8LrVvnFAdptKGaXuCbLJsDkjyMy+GP34ZuI+0zW5sLIw5p3RELdC1PeQXCNA==
+"@hookstate/validation@1.0.0-alpha.2":
+  version "1.0.0-alpha.2"
+  resolved "https://registry.yarnpkg.com/@hookstate/validation/-/validation-1.0.0-alpha.2.tgz#be1e800e01143210250b800fd7399c406be8b00e"
+  integrity sha512-098uEpntNo90ddK49Zu23NL0mkN6eaALPRq42UmsMVR27zXpxvS+CgXui2arPE0YZctyJyzauLZpkCTEBwNjGw==
 
 "@jest/console@^24.7.1", "@jest/console@^24.9.0":
   version "24.9.0"

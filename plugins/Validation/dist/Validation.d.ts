@@ -1,13 +1,5 @@
-import { Plugin, Path, StateLink, StateValueAtPath } from '@hookstate/core';
-export declare enum ValidationSeverity {
-    WARNING = 1,
-    ERROR = 2
-}
-export interface ValidationRule {
-    readonly message: string | ((value: StateValueAtPath) => string);
-    readonly rule: (v: StateValueAtPath) => boolean;
-    readonly severity: ValidationSeverity;
-}
+import { Plugin, Path, StateLink } from '@hookstate/core';
+export declare type ValidationSeverity = 'error' | 'warning';
 export interface ValidationError {
     readonly message: string;
     readonly path: Path;

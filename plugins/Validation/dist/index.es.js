@@ -1,8 +1,3 @@
-var ValidationSeverity;
-(function (ValidationSeverity) {
-    ValidationSeverity[ValidationSeverity["WARNING"] = 1] = "WARNING";
-    ValidationSeverity[ValidationSeverity["ERROR"] = 2] = "ERROR";
-})(ValidationSeverity || (ValidationSeverity = {}));
 var PluginID = Symbol('Validate');
 var emptyErrors = [];
 var ValidationPluginInstance = /** @class */ (function () {
@@ -139,7 +134,7 @@ function Validation(self) {
                 inst_1.addRule(l_1.path, {
                     rule: r,
                     message: m,
-                    severity: s || ValidationSeverity.ERROR
+                    severity: s || 'error'
                 });
             },
             validShallow: function () {
@@ -172,5 +167,5 @@ function Validation(self) {
     };
 }
 
-export { Validation, ValidationSeverity };
+export { Validation };
 //# sourceMappingURL=index.es.js.map

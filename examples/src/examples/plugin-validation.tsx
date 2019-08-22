@@ -14,7 +14,7 @@ export const ExampleComponent = () => {
             'There should be at least 3 tasks in the list');
     Validation(state).validate(tasks => tasks.length < 4,
             'There are too many tasks',
-            ValidationSeverity.WARNING)
+            'warning')
 
     return <>
         <p>
@@ -25,7 +25,7 @@ export const ExampleComponent = () => {
             What is the first error or warning?: <u>{JSON.stringify(Validation(state).firstError())}</u> <br/>
             What is the first error (ignoring warnings and nested errors)?: <u>{
                 JSON.stringify(Validation(state).firstError(
-                    i => i.severity === ValidationSeverity.ERROR, 1))}</u> <br/>
+                    i => i.severity === 'error', 1))}</u> <br/>
         </p>
         {state.nested.map((taskState, taskIndex) => {
             // attaching validation to any element in the array applies it to every

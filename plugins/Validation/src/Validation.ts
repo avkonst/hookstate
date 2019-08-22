@@ -1,16 +1,7 @@
 
 import { Plugin, Path, StateLink, StateValueAtPath, PluginInstance } from '@hookstate/core';
 
-export enum ValidationSeverity {
-    WARNING = 1,
-    ERROR = 2
-}
-
-export interface ValidationRule {
-    readonly message: string | ((value: StateValueAtPath) => string)
-    readonly rule: (v: StateValueAtPath) => boolean
-    readonly severity: ValidationSeverity;
-}
+export type ValidationSeverity = 'error' | 'warning';
 
 export interface ValidationError {
     readonly message: string;
@@ -40,6 +31,12 @@ export interface ValidationExtensions<S> {
 const PluginID = Symbol('Validate');
 
 const emptyErrors: ValidationError[] = []
+
+interface ValidationRule {
+    readonly message: string | ((value: StateValueAtPath) => string)
+    readonly rule: (v: StateValueAtPath) => boolean
+    readonly severity: ValidationSeverity;
+}
 
 class ValidationPluginInstance<S> {
     private storeRules = {};
@@ -185,7 +182,7 @@ export function Validation<S>(self?: StateLink<S>): Plugin | ValidationExtension
                 inst.addRule(l.path, {
                     rule: r,
                     message: m,
-                    severity: s || ValidationSeverity.ERROR
+                    severity: s || 'error'
                 })
             },
             validShallow(): boolean {

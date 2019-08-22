@@ -2,10 +2,6 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
-(function (ValidationSeverity) {
-    ValidationSeverity[ValidationSeverity["WARNING"] = 1] = "WARNING";
-    ValidationSeverity[ValidationSeverity["ERROR"] = 2] = "ERROR";
-})(exports.ValidationSeverity || (exports.ValidationSeverity = {}));
 var PluginID = Symbol('Validate');
 var emptyErrors = [];
 var ValidationPluginInstance = /** @class */ (function () {
@@ -142,7 +138,7 @@ function Validation(self) {
                 inst_1.addRule(l_1.path, {
                     rule: r,
                     message: m,
-                    severity: s || exports.ValidationSeverity.ERROR
+                    severity: s || 'error'
                 });
             },
             validShallow: function () {
