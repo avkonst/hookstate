@@ -30,20 +30,24 @@ export type Path = ReadonlyArray<string | number>;
 
 export interface StateLink<S> {
     readonly path: Path;
-    readonly value: S;
-
     readonly nested: NestedInferredLink<S>;
+
+    /**
+     * @deprecated use get()
+     */
+    readonly value: S;
 
     get(): S;
     set(newValue: React.SetStateAction<S>): void;
+
+    getUntracked(): S;
+    setUntracked(newValue: React.SetStateAction<S>): Path;
 
     with(plugin: () => Plugin): StateLink<S>;
     with(pluginId: symbol): [StateLink<S> & StateLinkPlugable<S>, PluginInstance];
 }
 
 export interface StateLinkPlugable<S> {
-    getUntracked(): S;
-    setUntracked(newValue: React.SetStateAction<S>): Path;
     update(path: Path): void;
     updateBatch(paths: Path[]): void;
 }
@@ -61,9 +65,10 @@ export interface PluginInstance {
     // it overrides the current / initial value in the state
     // it is only applicable for plugins attached via stateref, not via statelink
     readonly onInit?: () => StateValueAtRoot | void,
-    readonly onPreset?: (path: Path, newValue: StateValueAtRoot,
-        prevValue: StateValueAtPath, prevState: StateValueAtRoot) => void,
-    readonly onSet?: (path: Path, newValue: StateValueAtRoot) => void,
+    readonly onPreset?: (path: Path, prevState: StateValueAtRoot,
+        prevValue: StateValueAtPath, newValue: StateValueAtPath) => void,
+    readonly onSet?: (path: Path, newState: StateValueAtRoot,
+        newValue: StateValueAtPath) => void,
 };
 
 export interface Plugin {
@@ -113,8 +118,10 @@ interface Subscriber {
     onSet(path: Path, actions: (() => void)[]): void;
 }
 
-type PresetCallback = (path: Path, newValue: StateValueAtPath,
-        prevValue: StateValueAtPath, prevState: StateValueAtRoot) => void;
+type PresetCallback = (path: Path, prevState: StateValueAtRoot,
+    prevValue: StateValueAtPath, newValue: StateValueAtPath) => void;
+type SetCallback = (path: Path, newState: StateValueAtRoot,
+    newValue: StateValueAtPath) => void;
 
 interface Subscribable {
     subscribe(l: Subscriber): void;
@@ -129,6 +136,7 @@ const RootPath: Path = [];
 class State implements Subscribable {
     private _subscribers: Set<Subscriber> = new Set();
     private _presetSubscribers: Set<PresetCallback> = new Set();
+    private _setSubscribers: Set<SetCallback> = new Set();
 
     private _plugins: Map<symbol, PluginInstance> = new Map();
 
@@ -147,21 +155,23 @@ class State implements Subscribable {
             this._value = value;
         }
         let result = this._value;
+        let returnPath = path;
         path.forEach((p, i) => {
             if (i === path.length - 1) {
-                this._presetSubscribers.forEach(cb => cb(path, value, result[p], this._value))
                 if (!(p in result)) {
                     // if an array of object is about to be extended by new property
                     // we consider it is the whole object is changed
                     // which is identified by upper path
-                    path = path.slice(0, -1)
+                    returnPath = path.slice(0, -1)
                 }
+                this._presetSubscribers.forEach(cb => cb(path, this._value, result[p], value))
                 result[p] = value;
+                this._setSubscribers.forEach(cb => cb(path, this._value, value))
             } else {
                 result = result[p];
             }
         });
-        return path;
+        return returnPath;
     }
 
     update(path: Path) {
@@ -202,13 +212,11 @@ class State implements Subscribable {
                 this._value = initValue;
             }
         }
-        if (pluginInstance.onSet) {
-            this.subscribe({
-                onSet: (p) => pluginInstance.onSet!(p, this._value)
-            })
-        }
         if (pluginInstance.onPreset) {
-            this._presetSubscribers.add(pluginInstance.onPreset)
+            this._presetSubscribers.add((...args) => pluginInstance.onPreset!(...args))
+        }
+        if (pluginInstance.onSet) {
+            this._setSubscribers.add((...args) => pluginInstance.onSet!(...args))
         }
         return;
     }
@@ -303,27 +311,6 @@ class StateLinkImpl<S> implements StateLink<S>,
     }
 
     setUntracked(newValue: React.SetStateAction<S>): Path {
-        // inferred() function checks for the nullability of the current value:
-        // If value is not null | undefined, it resolves to ArrayLink or ObjectLink
-        // which can not take null | undefined as a value.
-        // However, it is possible that a user of this StateLink
-        // may call set(null | undefined).
-        // In this case this null will leak via setValue(prevValue => ...)
-        // to mutation actions for array or object,
-        // which breaks the guarantee of ArrayStateMutation and ObjectStateMutation to not link nullable value.
-        // Currently this causes a crash within ObjectStateMutation or ArrayStateMutation mutation actions.
-        // This behavior is left intentionally to make it equivivalent to the following:
-        // Example (plain JS):
-        //    let myvar: { a: string, b: string } = { a: '', b: '' }
-        //    myvar = undefined;
-        //    myvar.a = '' // <-- crash here
-        //    myvar = { a: '', b: '' } // <-- OK
-        // Example (using value links):
-        //    let myvar = useStateLink({ a: '', b: '' } as { a: string, b: string } | undefined);
-        //    let myvar_a = myvar.nested.a; // get value link to a property
-        //    myvar.set(undefined);
-        //    myvar_a.set('') // <-- crash here
-        //    myvar.set({ a: '', b: '' }) // <-- OK
         if (typeof newValue === 'function') {
             newValue = (newValue as ((prevValue: S) => S))(this.state.get(this.path));
         }
@@ -558,7 +545,8 @@ class StateLinkImpl<S> implements StateLink<S>,
             },
             isExtensible: (target) => {
                 // should satisfy the invariants:
-                // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy/handler/isExtensible#Invariants
+                // https://developer.mozilla.org/en-US/docs/Web/JavaScript/
+                // Reference/Global_Objects/Proxy/handler/isExtensible#Invariants
                 return Object.isExtensible(target);
             },
             preventExtensions: (target) => {

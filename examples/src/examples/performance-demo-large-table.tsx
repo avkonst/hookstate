@@ -120,7 +120,7 @@ function PerformanceMeter(props: { matrixState: StateLink<number[][]> }) {
         .with(() => ({
             id: PerformanceViewPluginID,
             instanceFactory: () => ({
-                onPreset: (path, newCellValue, prevCellValue) => {
+                onPreset: (path, prevState, prevCellValue, newCellValue) => {
                     if (path.length === 2) {
                         // new value can be only number in this example
                         // and path can contain only 2 elements: row and column indexes
