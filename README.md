@@ -148,7 +148,16 @@ The `StateLink` variable has got the following methods and properties:
 
 - `get()` (or `value` is the same) - returns the instance of data in the state
 - `set(...)` or `set((prevState) => ...)` - function which allows to mutate the state value. If `path === []`, it is similar to the `setState` variable returned by `React.useState` hook. If `path !== []`, it sets only the segment of the state value, pointed out by the path. The `set` function will not accept partial updates. It can be done by combining `set` with `nested`. There is the `Mutate` [plugin](#plugins), which adds helpful methods to mutate arrays and objects.
-- `nested` 'converts' a statelink of an object to an object of nested state links OR a statelink of an array to an array of nested state links elements.
+- `path` 'Javascript' object 'path' to an element relative to the root object in the state. For example:
+
+    ```tsx
+    const state = useStateLink([{ name: 'First Task' }])
+    state.path IS []
+    state.nested[0].path IS [0]
+    state.nested[0].nested.name.path IS [0, 'name']
+    ```
+    
+- `nested` 'converts' a `StateLink` of an object to an object of nested `StateLink`s OR a `StateLink` of an array to an array of nested `StateLink` elements.
 This allows to 'walk' the tree and access/mutate nested compex data in very convenient way. The result of `nested` for primitive values is `undefined`. The typescript support for `nested` will handle correctly any complexy of the state structure. The result of `Object.keys(state.nested)` is the same as `Object.keys(state.get())`. However, nested state links object will have ANY property defined (although not every will pass Typescript compiler check). It is very convenient to create 'editor-like' components for properties, which can be undefined. For example:
 
     ```tsx
@@ -166,14 +175,6 @@ This allows to 'walk' the tree and access/mutate nested compex data in very conv
             taskState.nested.priority // it will be always defined, but it's value might be not defined
         } />
     }
-    ```
-- `path` 'Javascript' object 'path' to an element relative to the root object in the state. For example:
-
-    ```tsx
-    const state = useStateLink([{ name: 'First Task' }])
-    state.path IS []
-    state.nested[0].path IS [0]
-    state.nested[0].nested.name.path IS [0, 'name']
     ```
 
 ### `Transform` argument
@@ -271,7 +272,9 @@ The above will rerender only when the result of the aggregation is changed. This
 
 `StateMemo` usage is demonstarted in [this](https://hookstate.netlify.com/plugin-initial), [this](https://hookstate.netlify.com/plugin-initial-statefragment) and [this](https://hookstate.netlify.com/plugin-touched) examples.
 
-The second argument of the `transform` callback is defined and equals to the result of the last transform call, when the `transform` is called by Hookstate to check if the component should rerender. If the core `StateMemo` plugin is used and the result of the transform is the same as the last result, Hookstate will skip rerendering the component. `StateMemo` can be invoked with the second argument, which is equality operator used to compare the new and the previous results of the `transform` callback. By default, tripple equality (===) is used.
+`StateMemo` can be invoked with the second argument, which is equality operator used to compare the new and the previous results of the `transform` callback. By default, tripple equality (===) is used. If new and previous are equal, Hookstate will skip rerendering the component on state chage.
+
+The second argument of the `transform` callback is defined and equals to the result of the last transform call, when the `transform` is called by Hookstate to check if the component should rerender. If the core `StateMemo` plugin is used with default equality operator and the result of the transform is the same as the last result, Hookstate will skip rerendering the component.
 
 ## Plugins
 
