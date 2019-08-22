@@ -557,7 +557,9 @@ class StateLinkImpl<S> implements StateLink<S>,
                 return onInvalidUsage('setPrototypeOf')
             },
             isExtensible: (target) => {
-                return false;
+                // should satisfy the invariants:
+                // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy/handler/isExtensible#Invariants
+                return Object.isExtensible(target);
             },
             preventExtensions: (target) => {
                 return onInvalidUsage('preventExtensions')
