@@ -7,7 +7,7 @@ interface Task { name: string }
 export const ExampleComponent = () => {
     const state = useStateLink([{ name: 'First Task' }, { name: 'Second Task' }] as Task[])
         .with(Logger); // enable the plugin
-    state.extended.log()
+    Logger(state).log()
     return <>
         <p>Open the development console to see the logging</p>
         {state.nested.map((taskState, taskIndex) => {

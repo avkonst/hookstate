@@ -4,7 +4,7 @@ import { useStateLink, StateLink } from '@hookstate/core';
 interface Task { name: string; priority?: number }
 
 export const ExampleComponent = () => {
-    const state: StateLink<Task[]> = useStateLink([{ name: 'First Task' } as Task]);
+    const state: StateLink<Task[]> = useStateLink([{ name: 'First Task' }, { name: 'Second Task' }] as Task[]);
     return <>
         <JsonDump state={state} />
         {state.nested.map((taskState: StateLink<Task>, taskIndex) =>

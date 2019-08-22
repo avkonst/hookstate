@@ -8,12 +8,12 @@ export const ExampleComponent = () => {
     return <>
         <StateFragment
             state={state}
-            transform={StateMemo((s) => s.extended.modified)}
+            transform={StateMemo((s) => Initial(s).modified())}
         >{(modified: boolean) => {
             return <p>
                 Last render at: {(new Date()).toISOString()} <br/>
                 Is whole current state modified (vs the initial): {modified.toString()} <br/>
-                The <b>initial</b> state: {JSON.stringify(state.extended.initial)}
+                The <b>initial</b> state: {JSON.stringify(Initial(state).get())}
             </p>
         }}
         </StateFragment>
@@ -21,7 +21,7 @@ export const ExampleComponent = () => {
             <StateFragment key={taskIndex} state={taskState}>{scopedTaskState => {
                 return <p>
                     Last render at: {(new Date()).toISOString()} <br/>
-                    Is this task modified: {scopedTaskState.extended.modified.toString()} <br/>
+                    Is this task modified: {Initial(scopedTaskState).modified().toString()} <br/>
                     <input
                         value={scopedTaskState.get()}
                         onChange={e => scopedTaskState.set(e.target.value)}

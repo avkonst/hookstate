@@ -108,40 +108,38 @@ export const ExampleComponent = () => {
 
 const PerformanceViewPluginID = Symbol('PerformanceViewPlugin');
 function PerformanceMeter(props: { matrixState: StateLink<number[][]> }) {
+    const stats = React.useRef({
+        totalSum: 0,
+        totalCalls: 0,
+        startTime: (new Date()).getTime()
+    })
+    const elapsedMs = () => (new Date()).getTime() - stats.current.startTime;
+    const elapsed = () => Math.floor(elapsedMs() / 1000);
+    const rate = Math.floor(stats.current.totalCalls / elapsedMs() * 1000);
     const scopedState = useStateLink(props.matrixState)
-        .with(() => {
-            // this is custom Hookstate plugin which counts statistics
-            let totalSum = 0;
-            let totalCalls = 0;
-            let startTime = (new Date()).getTime();
-            const elapsed = () => (new Date()).getTime() - startTime;
-            return {
-                id: PerformanceViewPluginID,
-                instanceFactory: () => ({
-                    onSet: (path, newMatrixState, newCellState) => {
+        .with(() => ({
+            id: PerformanceViewPluginID,
+            instanceFactory: () => ({
+                onPreset: (path, newCellValue, prevCellValue) => {
+                    if (path.length === 2) {
                         // new value can be only number in this example
                         // and path can contain only 2 elements: row and column indexes
-                        totalSum += newMatrixState[path[0]][path[1]] - newCellState;
-                        totalCalls += 1;
-                    },
-                    extensions: ['totalSum', 'totalCalls', 'elapsed', 'rate'],
-                    extensionsFactory: () => ({
-                        totalSum: () => totalSum,
-                        totalCalls: () => totalCalls,
-                        elapsed: () => Math.floor(elapsed() / 1000),
-                        rate: () => Math.floor(totalCalls / elapsed() * 1000)
-                    })
-                })
-            }
-        })
+                        stats.current.totalSum += newCellValue - prevCellValue;
+                    }
+                },
+                onSet: () => {
+                    stats.current.totalCalls += 1;
+                }
+            })
+        }))
     // mark the value of the whole matrix as 'used' by this component
     scopedState.with(DisabledTracking);
     const valueExplicitlyUsed = scopedState.value;
 
     return <>
-        <p><span>Elapsed: {scopedState.extended.elapsed()}s</span></p>
-        <p><span>Total cells sum: {scopedState.extended.totalSum()}</span></p>
-        <p><span>Total matrix state updates: {scopedState.extended.totalCalls()}</span></p>
-        <p><span>Average update rate: {scopedState.extended.rate()}cells/s</span></p>
+        <p><span>Elapsed: {elapsed()}s</span></p>
+        <p><span>Total cells sum: {stats.current.totalSum}</span></p>
+        <p><span>Total matrix state updates: {stats.current.totalCalls}</span></p>
+        <p><span>Average update rate: {rate}cells/s</span></p>
     </>;
 }

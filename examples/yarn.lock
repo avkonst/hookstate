@@ -871,40 +871,40 @@
   dependencies:
     "@hapi/hoek" "8.x.x"
 
-"@hookstate/core@0.10.6":
-  version "0.10.6"
-  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-0.10.6.tgz#c3620f3c44be88a81eebae04c02ec893b5f1614d"
-  integrity sha512-7NMumz76LPfyhofoyFKgMwLO34mAhJ3KcSkDJ6EiE+KUGQ14G5Ck94ghgNKyG9/tp0BMX0IeN9cokQEHvKY/yQ==
+"@hookstate/core@1.0.0-alpha.0":
+  version "1.0.0-alpha.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-1.0.0-alpha.0.tgz#414b237d57c081c7c3d22ce3cb841e7b6aef6ba5"
+  integrity sha512-sif0TqTSFh2RShsla5PQiY79u/2BixYas5DNSKerRqTmfI7bnB9taDJ4ra/0BovkZn0rBvY3taE2hCoLQ9DoDQ==
 
-"@hookstate/initial@0.10.1":
-  version "0.10.1"
-  resolved "https://registry.yarnpkg.com/@hookstate/initial/-/initial-0.10.1.tgz#67fa091890bfe89aad45d0a57cb6579f16d1d9b8"
-  integrity sha512-ratOlQbDl3Ebo53VQ42JafVTcGCSkYUmmDY40f0etS4oukfmTX21VVm0YuKSmwqXdTMs56FGDGJE4cMN84Y0Sg==
+"@hookstate/initial@1.0.0-alpha.0":
+  version "1.0.0-alpha.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/initial/-/initial-1.0.0-alpha.0.tgz#61a80e6552f18aa9669f1992e1317c74616b1adc"
+  integrity sha512-+UbrfSXTtp9r8qfqM73hNxuwx6RCZN18QM0px2lkVPC6Gv/kHn1Y4aif1DcqoJv+zQyEFVCa/ieZ71cEF6CFJQ==
 
-"@hookstate/logger@0.10.1":
-  version "0.10.1"
-  resolved "https://registry.yarnpkg.com/@hookstate/logger/-/logger-0.10.1.tgz#5a35180e9730987b1d9c2772eb626b4ac4b6da2f"
-  integrity sha512-OEFwHqNaItXzFcJT98vf67hn1KnkOC6fOhljpxnSKj3QuJnpZ1cQE2uBi7NwT2IkfJ1ZZj8ERFRtgtPYVKo90g==
+"@hookstate/logger@1.0.0-alpha.0":
+  version "1.0.0-alpha.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/logger/-/logger-1.0.0-alpha.0.tgz#b58941833282d12ef71c4d7fcbfdbc76adff8328"
+  integrity sha512-mKc3JISGG3rh9MeHL73atggH8FnYHggliuS8/FZWCGmKoB3iX4iy1YHbTNbUfWBo5kGVO/cqX4MyoZVW5OoddQ==
 
-"@hookstate/mutate@0.10.1":
-  version "0.10.1"
-  resolved "https://registry.yarnpkg.com/@hookstate/mutate/-/mutate-0.10.1.tgz#1449dd1731e3900529d958cbdffd065a8fb06492"
-  integrity sha512-y04ZOfVpbZsPX9cH+Dh0acGF9Tcwzb32VwONGR0OsmUWGe0WDfE54qwnWf1WeFG1jkT08ybKbrTMQpJjY+MiVg==
+"@hookstate/mutate@1.0.0-alpha.0":
+  version "1.0.0-alpha.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/mutate/-/mutate-1.0.0-alpha.0.tgz#bd67983138061dd120f592b3988359b65867267d"
+  integrity sha512-lZwtAHqQvQdbL+YzcyH6q6ZtI/S3eqpoEyT3jGs/k+WFoHB+tDyxzP0OPm9EMpYTSI8Ji9xk6j5Z0AiZrMZAkg==
 
-"@hookstate/persistence@0.10.1":
-  version "0.10.1"
-  resolved "https://registry.yarnpkg.com/@hookstate/persistence/-/persistence-0.10.1.tgz#580ee20ee8ae1e0e6e76465ebcb614d3a4f614a9"
-  integrity sha512-NEOLDOU/w+DWZUBOpGrd3WBzXtaFoBuPqTTs/K20MbKgG0EEc0c2kz5cgXrx1UuNXZT7MiWgYIKlgU3PZRs5xw==
+"@hookstate/persistence@1.0.0-alpha.0":
+  version "1.0.0-alpha.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/persistence/-/persistence-1.0.0-alpha.0.tgz#2157d87ba1095e31442dfa38a530e7903079bf2c"
+  integrity sha512-0Jkn9dCFON/Flnb69hxdTYh2fzzJhjw+4VLpS+rfPgzA+xrsH9wn270dyo5t6duke/MslSZt4iROAeUWaGoSug==
 
-"@hookstate/touched@0.10.1":
-  version "0.10.1"
-  resolved "https://registry.yarnpkg.com/@hookstate/touched/-/touched-0.10.1.tgz#adbeff36541072fbf60c4cf2c69430de88fa50b1"
-  integrity sha512-jIj9t1qRSPfKysBHMWllR2r5IZL449WJS/iuuSjsFPukU0QKD3j9P0RC7rQplThTPHq/mWlA4WT+FAOoG/MKIQ==
+"@hookstate/touched@1.0.0-alpha.0":
+  version "1.0.0-alpha.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/touched/-/touched-1.0.0-alpha.0.tgz#ae6915f203e9ff65d603a62b4932c05d370836aa"
+  integrity sha512-NEmWkm1EtYVTZq61Y6bDAcsbw54ama+GChlBliTgK1PC3ojv9QkuG5dFr8RtfgCOzbs2xWb/GpcODZt8p4L1IA==
 
-"@hookstate/validation@0.10.4":
-  version "0.10.4"
-  resolved "https://registry.yarnpkg.com/@hookstate/validation/-/validation-0.10.4.tgz#d4c19e067ae1f46c1747b39d0b188d8397ca0fde"
-  integrity sha512-grOx4TmxOg5vBWoPGvtBUxL1RBZ5OxZ3DiJIjXl51pq8HG/XpuRhmrpDVJ8kOrwKx4sdVe0hKhfvjhFtv4Ecgw==
+"@hookstate/validation@1.0.0-alpha.0":
+  version "1.0.0-alpha.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/validation/-/validation-1.0.0-alpha.0.tgz#c94b3ee7f645ea253a6e1319c9422116956fc3b5"
+  integrity sha512-hwT4vhxvJOtq3gzlCZdhiIyVSDpvcyju+uuDn6XR3PGu53d89wTy9QuaVyr2a/40p+M4eg+wWyUJL292wPuMrg==
 
 "@jest/console@^24.7.1", "@jest/console@^24.9.0":
   version "24.9.0"
