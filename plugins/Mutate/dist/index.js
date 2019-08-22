@@ -70,9 +70,9 @@ function createObjectStateMutation(state) {
         set: function (v) { return state.set(v); },
         merge: function (value) {
             state.set(function (prevValue) {
-                var extractedValue = extractValue(prevValue, value);
-                Object.keys(extractedValue).forEach(function (key) {
-                    prevValue[key] = extractValue[key];
+                var source = extractValue(prevValue, value);
+                Object.keys(source).forEach(function (key) {
+                    prevValue[key] = source[key];
                 });
                 return prevValue;
             });
