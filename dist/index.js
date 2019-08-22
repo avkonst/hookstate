@@ -46,21 +46,31 @@ var StateLinkInvalidUsageError = /** @class */ (function (_super) {
     }
     return StateLinkInvalidUsageError;
 }(Error));
-var ExtensionInvalidRegistrationError = /** @class */ (function (_super) {
-    __extends(ExtensionInvalidRegistrationError, _super);
-    function ExtensionInvalidRegistrationError(id, path) {
-        return _super.call(this, "Extension with onInit, which overrides initial value, " +
+function extractSymbol(s) {
+    var result = s.toString();
+    var symstr = 'Symbol(';
+    if (result.startsWith(symstr) && result.endsWith(')')) {
+        result = result.substring(symstr.length, result.length - 1);
+    }
+    return result;
+}
+var PluginInvalidRegistrationError = /** @class */ (function (_super) {
+    __extends(PluginInvalidRegistrationError, _super);
+    function PluginInvalidRegistrationError(id, path) {
+        return _super.call(this, "Plugin with onInit, which overrides initial value, " +
             "should be attached to StateRef instance, but not to StateLink instance. " +
-            ("Attempted 'with " + id.toString() + "' at '/" + path.join('/') + "'")) || this;
+            ("Attempted 'with(" + extractSymbol(id) + ")' at '/" + path.join('/') + "'")) || this;
     }
-    return ExtensionInvalidRegistrationError;
+    return PluginInvalidRegistrationError;
 }(Error));
-var ExtensionUnknownError = /** @class */ (function (_super) {
-    __extends(ExtensionUnknownError, _super);
-    function ExtensionUnknownError(ext) {
-        return _super.call(this, "Extension '" + ext + "' is unknown'") || this;
+var PluginUnknownError = /** @class */ (function (_super) {
+    __extends(PluginUnknownError, _super);
+    function PluginUnknownError(s) {
+        return _super.call(this, "Plugin '" + extractSymbol(s) + "' has not been attached to the StateRef or StateLink. " +
+            "Hint: you might need to register the required plugin using 'with' method. " +
+            "See https://github.com/avkonst/hookstate#plugins for more details") || this;
     }
-    return ExtensionUnknownError;
+    return PluginUnknownError;
 }(Error));
 var DisabledTrackingID = Symbol('DisabledTrackingID');
 var StateMemoID = Symbol('StateMemoID');
@@ -120,7 +130,7 @@ var State = /** @class */ (function () {
         if (existingInstance) {
             return existingInstance;
         }
-        throw new ExtensionUnknownError(pluginId.toString());
+        throw new PluginUnknownError(pluginId);
     };
     State.prototype.register = function (plugin, path) {
         var _this = this;
@@ -137,7 +147,7 @@ var State = /** @class */ (function () {
             var initValue = pluginInstance.onInit();
             if (initValue !== undefined) {
                 if (path) {
-                    throw new ExtensionInvalidRegistrationError(plugin.id, path);
+                    throw new PluginInvalidRegistrationError(plugin.id, path);
                 }
                 this._value = initValue;
             }

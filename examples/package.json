@@ -3,7 +3,7 @@
     "version": "0.1.0",
     "private": true,
     "dependencies": {
-        "@hookstate/core": "1.0.0-alpha.1",
+        "@hookstate/core": "1.0.0-alpha.2",
         "@hookstate/initial": "1.0.0-alpha.0",
         "@hookstate/logger": "1.0.0-alpha.0",
         "@hookstate/mutate": "1.0.0-alpha.0",

@@ -87,17 +87,28 @@ class StateLinkInvalidUsageError extends Error {
     }
 }
 
-class ExtensionInvalidRegistrationError extends Error {
+function extractSymbol(s: symbol) {
+    let result = s.toString();
+    const symstr = 'Symbol('
+    if (result.startsWith(symstr) && result.endsWith(')')) {
+        result = result.substring(symstr.length, result.length - 1)
+    }
+    return result;
+}
+
+class PluginInvalidRegistrationError extends Error {
     constructor(id: symbol, path: Path) {
-        super(`Extension with onInit, which overrides initial value, ` +
+        super(`Plugin with onInit, which overrides initial value, ` +
         `should be attached to StateRef instance, but not to StateLink instance. ` +
-        `Attempted 'with ${id.toString()}' at '/${path.join('/')}'`)
+        `Attempted 'with(${extractSymbol(id)})' at '/${path.join('/')}'`)
     }
 }
 
-class ExtensionUnknownError extends Error {
-    constructor(ext: string) {
-        super(`Extension '${ext}' is unknown'`)
+class PluginUnknownError extends Error {
+    constructor(s: symbol) {
+        super(`Plugin '${extractSymbol(s)}' has not been attached to the StateRef or StateLink. ` +
+            `Hint: you might need to register the required plugin using 'with' method. ` +
+            `See https://github.com/avkonst/hookstate#plugins for more details`)
     }
 }
 
@@ -175,7 +186,7 @@ class State implements Subscribable {
         if (existingInstance) {
             return existingInstance;
         }
-        throw new ExtensionUnknownError(pluginId.toString())
+        throw new PluginUnknownError(pluginId)
     }
 
     register(plugin: Plugin, path?: Path | undefined) {
@@ -192,7 +203,7 @@ class State implements Subscribable {
             const initValue = pluginInstance.onInit()
             if (initValue !== undefined) {
                 if (path) {
-                    throw new ExtensionInvalidRegistrationError(plugin.id, path);
+                    throw new PluginInvalidRegistrationError(plugin.id, path);
                 }
                 this._value = initValue;
             }
