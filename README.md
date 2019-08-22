@@ -146,7 +146,7 @@ You can also use the state (**global**, **local** or **scoped**) via `StateFragm
 
 The `StateLink` variable has got the following methods and properties:
 
-- `get()` (or `value` is the same) - returns the instance of data in the state
+- `get()` - returns the instance of data in the state
 - `set(...)` or `set((prevState) => ...)` - function which allows to mutate the state value. If `path === []`, it is similar to the `setState` variable returned by `React.useState` hook. If `path !== []`, it sets only the segment of the state value, pointed out by the path. The `set` function will not accept partial updates. It can be done by combining `set` with `nested`. There is the `Mutate` [plugin](#plugins), which adds helpful methods to mutate arrays and objects.
 - `path` 'Javascript' object 'path' to an element relative to the root object in the state. For example:
 
@@ -156,7 +156,7 @@ The `StateLink` variable has got the following methods and properties:
     state.nested[0].path IS [0]
     state.nested[0].nested.name.path IS [0, 'name']
     ```
-    
+
 - `nested` 'converts' a `StateLink` of an object to an object of nested `StateLink`s OR a `StateLink` of an array to an array of nested `StateLink` elements.
 This allows to 'walk' the tree and access/mutate nested compex data in very convenient way. The result of `nested` for primitive values is `undefined`. The typescript support for `nested` will handle correctly any complexy of the state structure. The result of `Object.keys(state.nested)` is the same as `Object.keys(state.get())`. However, nested state links object will have ANY property defined (although not every will pass Typescript compiler check). It is very convenient to create 'editor-like' components for properties, which can be undefined. For example:
 
@@ -176,6 +176,8 @@ This allows to 'walk' the tree and access/mutate nested compex data in very conv
         } />
     }
     ```
+- `getUntracked()` - the same as `get()`, but it does not 'mark' the data as being used. A component will not rerender if the returned value is changed in the state. Use at your own risk.
+- `setUntracked(...)` or `setUntracked((prevState) => ...)` - the same as `set(...)` or or `set((prevState) => ...)`, but it does not 'mark' the data as changed. Components using the changed part of the state will not rerender. Use at your own risk.
 
 ### `Transform` argument
 
