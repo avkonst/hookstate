@@ -62,18 +62,18 @@ export interface PluginInstance {
     // if returns defined value,
     // it overrides the current / initial value in the state
     // it is only applicable for plugins attached via stateref, not via statelink
-    onInit?: () => StateValueAtRoot | void,
-    onAttach?: (path: Path, withArgument: PluginInstance) => void,
-    onPreset?: (path: Path, newValue: StateValueAtRoot,
+    readonly onInit?: () => StateValueAtRoot | void,
+    readonly onAttach?: (path: Path, withArgument: PluginInstance) => void,
+    readonly onPreset?: (path: Path, newValue: StateValueAtRoot,
         prevValue: StateValueAtPath, prevState: StateValueAtRoot) => void,
-    onSet?: (path: Path, newValue: StateValueAtRoot) => void,
+    readonly onSet?: (path: Path, newValue: StateValueAtRoot) => void,
 };
 
 export interface Plugin {
-    id: symbol;
+    readonly id: symbol;
     // initial value may not be of the same type as the target value type,
     // because it is coming from the state and represents the type of the root value
-    instanceFactory: (initial: StateValueAtRoot) => PluginInstance;
+    readonly instanceFactory: (initial: StateValueAtRoot) => PluginInstance;
 }
 
 //
@@ -116,7 +116,6 @@ interface Subscribable {
 const DisabledTrackingID = Symbol('DisabledTrackingID');
 const StateMemoID = Symbol('StateMemoID');
 
-const HiddenPluginId = Symbol('PluginID');
 const RootPath: Path = [];
 
 class State implements Subscribable {
@@ -202,9 +201,8 @@ class State implements Subscribable {
             pluginInstance.onAttach(path || RootPath, pluginInstance)
         }
         if (pluginInstance.onSet) {
-            const onSet = pluginInstance.onSet;
             this.subscribe({
-                onSet: (p) => onSet(p, this._value)
+                onSet: (p) => pluginInstance.onSet!(p, this._value)
             })
         }
         if (pluginInstance.onPreset) {

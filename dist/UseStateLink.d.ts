@@ -31,14 +31,14 @@ export declare type StateValueAtRoot = any;
 export declare type StateValueAtPath = any;
 export declare type TransformResult = any;
 export interface PluginInstance {
-    onInit?: () => StateValueAtRoot | void;
-    onAttach?: (path: Path, withArgument: PluginInstance) => void;
-    onPreset?: (path: Path, newValue: StateValueAtRoot, prevValue: StateValueAtPath, prevState: StateValueAtRoot) => void;
-    onSet?: (path: Path, newValue: StateValueAtRoot) => void;
+    readonly onInit?: () => StateValueAtRoot | void;
+    readonly onAttach?: (path: Path, withArgument: PluginInstance) => void;
+    readonly onPreset?: (path: Path, newValue: StateValueAtRoot, prevValue: StateValueAtPath, prevState: StateValueAtRoot) => void;
+    readonly onSet?: (path: Path, newValue: StateValueAtRoot) => void;
 }
 export interface Plugin {
-    id: symbol;
-    instanceFactory: (initial: StateValueAtRoot) => PluginInstance;
+    readonly id: symbol;
+    readonly instanceFactory: (initial: StateValueAtRoot) => PluginInstance;
 }
 export declare function createStateLink<S>(initial: S | (() => S)): StateRef<S>;
 export declare function createStateLink<S, R>(initial: S | (() => S), transform: (state: StateLink<S>, prev: R | undefined) => R): StateInf<R>;

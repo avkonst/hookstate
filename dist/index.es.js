@@ -140,9 +140,8 @@ var State = /** @class */ (function () {
             pluginInstance.onAttach(path || RootPath, pluginInstance);
         }
         if (pluginInstance.onSet) {
-            var onSet_1 = pluginInstance.onSet;
             this.subscribe({
-                onSet: function (p) { return onSet_1(p, _this._value); }
+                onSet: function (p) { return pluginInstance.onSet(p, _this._value); }
             });
         }
         if (pluginInstance.onPreset) {
