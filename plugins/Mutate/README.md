@@ -1,9 +1,9 @@
 # @hookstate/mutate
 
-[![npm version](https://badge.fury.io/js/%40hookstate%2Fmutate.svg)](https://badge.fury.io/js/%40hookstate%2Fmutate) [![license](https://img.shields.io/github/license/avkonst/hookstate)](https://img.shields.io/github/license/avkonst/hookstate)
+[![license](https://img.shields.io/github/license/avkonst/hookstate)](https://img.shields.io/github/license/avkonst/hookstate) [![npm version](https://img.shields.io/npm/v/@hookstate/mutate.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/mutate)
 
 
-Plugin for @hookstate/core to add mutate actions specific for arrays, objects, strings and numbers.
+Plugin for @hookstate/core to add mutate actions specific for arrays, objects, strings and numbers. See [demo](https://hookstate.netlify.com/plugin-mutate).
 
 ## API Documentation
 

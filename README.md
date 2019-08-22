@@ -15,16 +15,20 @@
 </p>
 
 <p align="center">
-  <img src="https://badgen.net/badge/icon/typescript/green?icon=typescript&label">
+  <a href="./">
+    <img src="https://badgen.net/badge/icon/typescript/green?icon=typescript&label">
+  </a>
   <a href="https://www.npmjs.com/package/@hookstate/core">
       <img src="https://badgen.net/bundlephobia/minzip/@hookstate/core?label=size&color=green" />
   </a>
-  <img src="https://badgen.net/badge/dependencies/none/green" />
-<a href="./LICENSE">
+  <a href="https://www.npmjs.com/package/@hookstate/core">
+    <img src="https://badgen.net/badge/dependencies/none/green" />
+  </a>
+  <a href="./LICENSE">
     <img src="https://badgen.net/github/license/avkonst/hookstate?color=green" />
   </a>
   <a href="https://www.npmjs.com/package/@hookstate/core">
-    <img src="https://img.shields.io/npm/v/@hookstate/core.svg?maxAge=300&label=version&colorB=007ec6&maxAge=300" />
+    <img src="https://img.shields.io/npm/v/@hookstate/core.svg?maxAge=300&label=version&colorB=007ec6" />
   </a>
 </p>
 
@@ -275,10 +279,10 @@ The second argument of the `transform` callback is defined and equals to the res
 
 Plugin | Description | Example | Package | Version
 -|-|-|-|-
-Initial | Enables access to an initial value of a [`StateLink`](#statelink) and allows to check if the current value of the [`StateLink`](#statelink) is modified (compares with the initial value). Helps with tracking of *modified* form field(s). | [Demo](https://hookstate.netlify.com/plugin-initial) | `@hookstate/initial` | [![npm version](https://badge.fury.io/js/%40hookstate%2Finitial.svg)](https://badge.fury.io/js/%40hookstate%2Finitial)
-Touched | Helps with tracking of *touched* form field(s). | [Demo](https://hookstate.netlify.com/plugin-touched) | `@hookstate/touched` | [![npm version](https://badge.fury.io/js/%40hookstate%2Ftouched.svg)](https://badge.fury.io/js/%40hookstate%2Ftouched)
-Validation | Enables validation and error / warning messages for a state. Usefull for validation of form fields and form states. | [Demo](https://hookstate.netlify.com/plugin-validation) | `@hookstate/validation` | [![npm version](https://badge.fury.io/js/%40hookstate%2Fvalidation.svg)](https://badge.fury.io/js/%40hookstate%2Fvalidation)
-Persistence | Enables persistence of managed states to browser's local storage. | [Demo](https://hookstate.netlify.com/plugin-persistence) | `@hookstate/persistence` | [![npm version](https://badge.fury.io/js/%40hookstate%2Fpersistence.svg)](https://badge.fury.io/js/%40hookstate%2Fpersistence)
-Mutate | Adds mutate actions specific for arrays (push, pop, insert, remove, swap, etc..), objects (merge, etc.), strings and numbers. | [Demo](https://hookstate.netlify.com/plugin-mutate) | `@hookstate/mutate` | [![npm version](https://badge.fury.io/js/%40hookstate%2Fmutate.svg)](https://badge.fury.io/js/%40hookstate%2Fmutate)
-Logger | Logs state updates and current value of a [`StateLink`](#statelink) to the development console. | [Demo](https://hookstate.netlify.com/plugin-logger) | `@hookstate/logger` | [![npm version](https://badge.fury.io/js/%40hookstate%2Flogger.svg)](https://badge.fury.io/js/%40hookstate%2Flogger)
-DisabledTracking | Turns off state usage tracking for a specific `StateLink`, which disables rendering optimizations for the component, which created the state link. |  | `@hookstate/core` | [![npm version](https://badge.fury.io/js/%40hookstate%2Fcore.svg)](https://badge.fury.io/js/%40hookstate%2Fcore)
+Initial | Enables access to an initial value of a [`StateLink`](#statelink) and allows to check if the current value of the [`StateLink`](#statelink) is modified (compares with the initial value). Helps with tracking of *modified* form field(s). | [Demo](https://hookstate.netlify.com/plugin-initial) | `@hookstate/initial` | [![npm version](https://img.shields.io/npm/v/@hookstate/initial.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/initial)
+Touched | Helps with tracking of *touched* form field(s). | [Demo](https://hookstate.netlify.com/plugin-touched) | `@hookstate/touched` | [![npm version](https://img.shields.io/npm/v/@hookstate/touched.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/touched)
+Validation | Enables validation and error / warning messages for a state. Usefull for validation of form fields and form states. | [Demo](https://hookstate.netlify.com/plugin-validation) | `@hookstate/validation` | [![npm version](https://img.shields.io/npm/v/@hookstate/validation.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/validation)
+Persistence | Enables persistence of managed states to browser's local storage. | [Demo](https://hookstate.netlify.com/plugin-persistence) | `@hookstate/persistence` | [![npm version](https://img.shields.io/npm/v/@hookstate/persistence.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/persistence)
+Mutate | Adds mutate actions specific for arrays (push, pop, insert, remove, swap, etc..), objects (merge, etc.), strings and numbers. | [Demo](https://hookstate.netlify.com/plugin-mutate) | `@hookstate/mutate` | [![npm version](https://img.shields.io/npm/v/@hookstate/mutate.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/mutate)
+Logger | Logs state updates and current value of a [`StateLink`](#statelink) to the development console. | [Demo](https://hookstate.netlify.com/plugin-logger) | `@hookstate/logger` | [![npm version](https://img.shields.io/npm/v/@hookstate/logger.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/logger)
+DisabledTracking | Turns off state usage tracking for a specific `StateLink`, which disables rendering optimizations for the component, which created the state link. |  | `@hookstate/core` | [![npm version](https://img.shields.io/npm/v/@hookstate/core.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/core)

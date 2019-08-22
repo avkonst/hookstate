@@ -1,5 +1,5 @@
 # @hookstate/validation
 
-[![npm version](https://badge.fury.io/js/%40hookstate%2Fvalidation.svg)](https://badge.fury.io/js/%40hookstate%2Fvalidation) [![license](https://img.shields.io/github/license/avkonst/hookstate)](https://img.shields.io/github/license/avkonst/hookstate)
+[![license](https://img.shields.io/github/license/avkonst/hookstate)](https://img.shields.io/github/license/avkonst/hookstate) [![npm version](https://img.shields.io/npm/v/@hookstate/validation.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/validation)
 
-Plugin for @hookstate/core to enable validation of data state.
+Plugin for @hookstate/core to enable validation of data state. See [demo](https://hookstate.netlify.com/plugin-validation).

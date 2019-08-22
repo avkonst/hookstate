@@ -1,5 +1,5 @@
 # @hookstate/initial
 
-[![npm version](https://badge.fury.io/js/%40hookstate%2Finitial.svg)](https://badge.fury.io/js/%40hookstate%2Finitial) [![license](https://img.shields.io/github/license/avkonst/hookstate)](https://img.shields.io/github/license/avkonst/hookstate)
+[![license](https://img.shields.io/github/license/avkonst/hookstate)](https://img.shields.io/github/license/avkonst/hookstate) [![npm version](https://img.shields.io/npm/v/@hookstate/initial.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/initial)
 
-Plugin for @hookstate/core to enable access to initial state value and to modified status.
+Plugin for @hookstate/core to enable access to initial state value and to modified status. See [demo](https://hookstate.netlify.com/plugin-initial).
