@@ -871,40 +871,40 @@
   dependencies:
     "@hapi/hoek" "8.x.x"
 
-"@hookstate/core@1.0.0-alpha.2":
-  version "1.0.0-alpha.2"
-  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-1.0.0-alpha.2.tgz#46f7f297d06df478ec2e5834550f6c59d063f916"
-  integrity sha512-oafNdAWa2N2u91LwSKaRKZE+qYvfE2T8/4z01a5B2wR3KP5zxElB4POAaCE5N6iCl9wNUP3MoGn0WhOLTDsm+w==
+"@hookstate/core@1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-1.0.0.tgz#197649244d7e3773e0f6b0498d345d7e71fcb868"
+  integrity sha512-HLIOFgSLCcvKJWuYSELsr/kHEnanG4n9IibEwtmwfOguYK8KASgVdYX/QxBaqB7iBJjbpBozmESuQrz0vQYMHg==
 
-"@hookstate/initial@1.0.0-alpha.0":
-  version "1.0.0-alpha.0"
-  resolved "https://registry.yarnpkg.com/@hookstate/initial/-/initial-1.0.0-alpha.0.tgz#61a80e6552f18aa9669f1992e1317c74616b1adc"
-  integrity sha512-+UbrfSXTtp9r8qfqM73hNxuwx6RCZN18QM0px2lkVPC6Gv/kHn1Y4aif1DcqoJv+zQyEFVCa/ieZ71cEF6CFJQ==
+"@hookstate/initial@1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/initial/-/initial-1.0.0.tgz#82ac7dc5d67f846c2958e0dc71c87786005a872f"
+  integrity sha512-/oNWiNcuxIpgLhJfjjcjMR4clMjCFfokxwv5ongD3MwJvATd10fDrysztKxlaFKgef8VzfTH2PaYah5HndeTGQ==
 
-"@hookstate/logger@1.0.0-alpha.0":
-  version "1.0.0-alpha.0"
-  resolved "https://registry.yarnpkg.com/@hookstate/logger/-/logger-1.0.0-alpha.0.tgz#b58941833282d12ef71c4d7fcbfdbc76adff8328"
-  integrity sha512-mKc3JISGG3rh9MeHL73atggH8FnYHggliuS8/FZWCGmKoB3iX4iy1YHbTNbUfWBo5kGVO/cqX4MyoZVW5OoddQ==
+"@hookstate/logger@1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/logger/-/logger-1.0.0.tgz#aa1f2cdfabc0f4aae874882add3b1ff8d756e542"
+  integrity sha512-LdpkPT2N//kMO2iJIiEVgycYAhsNDQMOt85A4ohVBQ18vbFvHojek69Z5pWYqz5iznd4AVN8+0hPYOzmurtkOA==
 
-"@hookstate/mutate@1.0.0-alpha.0":
-  version "1.0.0-alpha.0"
-  resolved "https://registry.yarnpkg.com/@hookstate/mutate/-/mutate-1.0.0-alpha.0.tgz#bd67983138061dd120f592b3988359b65867267d"
-  integrity sha512-lZwtAHqQvQdbL+YzcyH6q6ZtI/S3eqpoEyT3jGs/k+WFoHB+tDyxzP0OPm9EMpYTSI8Ji9xk6j5Z0AiZrMZAkg==
+"@hookstate/mutate@1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/mutate/-/mutate-1.0.0.tgz#9c73ff1a9b70df86556a0edba54808ee7979e8ff"
+  integrity sha512-cQ5OD63NPjkr5EfI8CJPipNCQfgIIH0V7IUZgcezt7DwN+MK3RiLUD0JDciJllV31l6j2sJODu4+OmsCZtafug==
 
-"@hookstate/persistence@1.0.0-alpha.0":
-  version "1.0.0-alpha.0"
-  resolved "https://registry.yarnpkg.com/@hookstate/persistence/-/persistence-1.0.0-alpha.0.tgz#2157d87ba1095e31442dfa38a530e7903079bf2c"
-  integrity sha512-0Jkn9dCFON/Flnb69hxdTYh2fzzJhjw+4VLpS+rfPgzA+xrsH9wn270dyo5t6duke/MslSZt4iROAeUWaGoSug==
+"@hookstate/persistence@1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/persistence/-/persistence-1.0.0.tgz#01f7c73d0c23e85f1355d76f606893608c54c52d"
+  integrity sha512-F6tPxeyn6t3HKPcE7hBK2+8Kd+DypeBADld5Z1w6CJzuM95RU1uZvTDNLM4AMaxpVbQh5zl4JuWpiRYFMDbgvA==
 
-"@hookstate/touched@1.0.0-alpha.0":
-  version "1.0.0-alpha.0"
-  resolved "https://registry.yarnpkg.com/@hookstate/touched/-/touched-1.0.0-alpha.0.tgz#ae6915f203e9ff65d603a62b4932c05d370836aa"
-  integrity sha512-NEmWkm1EtYVTZq61Y6bDAcsbw54ama+GChlBliTgK1PC3ojv9QkuG5dFr8RtfgCOzbs2xWb/GpcODZt8p4L1IA==
+"@hookstate/touched@1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/touched/-/touched-1.0.0.tgz#25d7db8b3acf9af1c1ff85edf89a3b6ff5397dab"
+  integrity sha512-/xm9BnZZiAchqj1cvzi1CFE6X+qLP1pVl4PstZ6y+MgMdf7siqfiFRZC2bBF54l2pi6KsMqc6ClDnn1DKOJY7w==
 
-"@hookstate/validation@1.0.0-alpha.2":
-  version "1.0.0-alpha.2"
-  resolved "https://registry.yarnpkg.com/@hookstate/validation/-/validation-1.0.0-alpha.2.tgz#be1e800e01143210250b800fd7399c406be8b00e"
-  integrity sha512-098uEpntNo90ddK49Zu23NL0mkN6eaALPRq42UmsMVR27zXpxvS+CgXui2arPE0YZctyJyzauLZpkCTEBwNjGw==
+"@hookstate/validation@1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/validation/-/validation-1.0.0.tgz#42cb3d632691cdb2f3f17e01ed25dade163cefe0"
+  integrity sha512-1ILmiMXKbHqpGpNV7Q+JeEFQ9LYJZS2WwLUVZ2B5UxVk4dxzToTBNJ5siO9k3RclxMFlrtyEORntN+O+iic2nw==
 
 "@jest/console@^24.7.1", "@jest/console@^24.9.0":
   version "24.9.0"

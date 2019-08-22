@@ -136,9 +136,6 @@ var State = /** @class */ (function () {
         var _this = this;
         var existingInstance = this._plugins.get(plugin.id);
         if (existingInstance) {
-            if (existingInstance.onAttach) {
-                existingInstance.onAttach(path || RootPath, plugin.instanceFactory(this._value));
-            }
             return;
         }
         var pluginInstance = plugin.instanceFactory(this._value);
@@ -151,9 +148,6 @@ var State = /** @class */ (function () {
                 }
                 this._value = initValue;
             }
-        }
-        if (pluginInstance.onAttach) {
-            pluginInstance.onAttach(path || RootPath, pluginInstance);
         }
         if (pluginInstance.onSet) {
             this.subscribe({

@@ -1,6 +1,6 @@
 {
     "name": "@hookstate/persistence",
-    "version": "1.0.0-alpha.0",
+    "version": "1.0.0",
     "description": "Plugin for @hookstate/core to enable persistence of managed data states to browser's local storage.",
     "license": "MIT",
     "author": {
@@ -34,10 +34,10 @@
     },
     "dependencies": {},
     "peerDependencies": {
-        "@hookstate/core": "^1.0.0-alpha.2"
+        "@hookstate/core": "^1.0.0"
     },
     "devDependencies": {
-        "@hookstate/core": "^1.0.0-alpha.2",
+        "@hookstate/core": "^1.0.0",
         "@testing-library/react": "8.0.5",
         "@testing-library/react-hooks": "1.1.0",
         "@types/jest": "24.0.15",

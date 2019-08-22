@@ -32,7 +32,6 @@ export declare type StateValueAtPath = any;
 export declare type TransformResult = any;
 export interface PluginInstance {
     readonly onInit?: () => StateValueAtRoot | void;
-    readonly onAttach?: (path: Path, withArgument: PluginInstance) => void;
     readonly onPreset?: (path: Path, newValue: StateValueAtRoot, prevValue: StateValueAtPath, prevState: StateValueAtRoot) => void;
     readonly onSet?: (path: Path, newValue: StateValueAtRoot) => void;
 }

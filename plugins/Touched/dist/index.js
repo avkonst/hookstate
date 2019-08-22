@@ -74,14 +74,12 @@ function Touched(self) {
             untouched: function () { return !inst_1.touched(link_1); }
         };
     }
-    else {
-        return {
-            id: PluginID,
-            instanceFactory: function () {
-                return new TouchedPluginInstance();
-            }
-        };
-    }
+    return {
+        id: PluginID,
+        instanceFactory: function () {
+            return new TouchedPluginInstance();
+        }
+    };
 }
 
 exports.Touched = Touched;

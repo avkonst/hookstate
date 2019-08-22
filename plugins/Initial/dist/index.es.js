@@ -31,14 +31,12 @@ function Initial(self) {
             unmodified: function () { return !inst_1.getModified(link_1); }
         };
     }
-    else {
-        return {
-            id: PluginID,
-            instanceFactory: function (initialValue) {
-                return new InitialPluginInstance(initialValue);
-            }
-        };
-    }
+    return {
+        id: PluginID,
+        instanceFactory: function (initialValue) {
+            return new InitialPluginInstance(initialValue);
+        }
+    };
 }
 
 export { Initial };
