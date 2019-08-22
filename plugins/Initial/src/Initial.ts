@@ -12,9 +12,9 @@ import isEqual from 'lodash.isequal';
 import cloneDeep from 'lodash.clonedeep';
 
 export interface InitialExtensions<S> {
-    readonly get: () => S | undefined;
-    readonly modified: () => boolean;
-    readonly unmodified: () => boolean;
+    get(): S | undefined;
+    modified(): boolean;
+    unmodified(): boolean;
 }
 
 class InitialPluginInstance {
@@ -49,12 +49,11 @@ export function Initial<S>(self?: StateLink<S>): Plugin | InitialExtensions<S> {
             modified: () => inst.getModified(link),
             unmodified: () => !inst.getModified(link)
         }
-    } else {
-        return {
-            id: PluginID,
-            instanceFactory: (initialValue: StateValueAtRoot) => {
-                return new InitialPluginInstance(initialValue) as {}
-            }
+    }
+    return {
+        id: PluginID,
+        instanceFactory: (initialValue: StateValueAtRoot) => {
+            return new InitialPluginInstance(initialValue) as {}
         }
     }
 }

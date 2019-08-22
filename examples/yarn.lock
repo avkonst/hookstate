@@ -871,10 +871,10 @@
   dependencies:
     "@hapi/hoek" "8.x.x"
 
-"@hookstate/core@1.0.0-alpha.1":
-  version "1.0.0-alpha.1"
-  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-1.0.0-alpha.1.tgz#48a5c3c65dabe23d1fc639400a4c985350837dce"
-  integrity sha512-j1IMMjoDdlsrdsqlL3okrMElY42ZRXyu97YDK/wftHgDGmXVg0AeNP3fBFIy7GJg4o7ZbWfmgeIidH4JytX4XA==
+"@hookstate/core@1.0.0-alpha.2":
+  version "1.0.0-alpha.2"
+  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-1.0.0-alpha.2.tgz#46f7f297d06df478ec2e5834550f6c59d063f916"
+  integrity sha512-oafNdAWa2N2u91LwSKaRKZE+qYvfE2T8/4z01a5B2wR3KP5zxElB4POAaCE5N6iCl9wNUP3MoGn0WhOLTDsm+w==
 
 "@hookstate/initial@1.0.0-alpha.0":
   version "1.0.0-alpha.0"
@@ -901,10 +901,10 @@
   resolved "https://registry.yarnpkg.com/@hookstate/touched/-/touched-1.0.0-alpha.0.tgz#ae6915f203e9ff65d603a62b4932c05d370836aa"
   integrity sha512-NEmWkm1EtYVTZq61Y6bDAcsbw54ama+GChlBliTgK1PC3ojv9QkuG5dFr8RtfgCOzbs2xWb/GpcODZt8p4L1IA==
 
-"@hookstate/validation@1.0.0-alpha.0":
-  version "1.0.0-alpha.0"
-  resolved "https://registry.yarnpkg.com/@hookstate/validation/-/validation-1.0.0-alpha.0.tgz#c94b3ee7f645ea253a6e1319c9422116956fc3b5"
-  integrity sha512-hwT4vhxvJOtq3gzlCZdhiIyVSDpvcyju+uuDn6XR3PGu53d89wTy9QuaVyr2a/40p+M4eg+wWyUJL292wPuMrg==
+"@hookstate/validation@1.0.0-alpha.1":
+  version "1.0.0-alpha.1"
+  resolved "https://registry.yarnpkg.com/@hookstate/validation/-/validation-1.0.0-alpha.1.tgz#0d57e8d4972e26589565c4850301dffd56b64bfb"
+  integrity sha512-ZnOgZhVdXTQeaMUiIjJdgTahg+8LrVvnFAdptKGaXuCbLJsDkjyMy+GP34ZuI+0zW5sLIw5p3RELdC1PeQXCNA==
 
 "@jest/console@^24.7.1", "@jest/console@^24.9.0":
   version "24.9.0"

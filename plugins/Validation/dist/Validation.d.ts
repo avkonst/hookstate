@@ -13,15 +13,14 @@ export interface ValidationError {
     readonly path: Path;
     readonly severity: ValidationSeverity;
 }
-export interface ValidationExtensions {
-    readonly validShallow: () => boolean;
-    readonly valid: () => boolean;
-    readonly invalidShallow: () => boolean;
-    readonly invalid: () => boolean;
+export interface ValidationExtensions<S> {
+    validate(attachRule: (value: S) => boolean, message: string | ((value: S) => string), severity?: ValidationSeverity): void;
+    validShallow(): boolean;
+    valid(): boolean;
+    invalidShallow(): boolean;
+    invalid(): boolean;
     firstError(filter?: (e: ValidationError) => boolean, depth?: number): Partial<ValidationError>;
     errors(filter?: (e: ValidationError) => boolean, depth?: number, first?: boolean): ReadonlyArray<ValidationError>;
 }
-export declare function Validation(): (() => Plugin);
-export declare function Validation<S>(attachRule: (value: S) => boolean, message: string | ((value: S) => string)): (() => Plugin);
-export declare function Validation<S>(attachRule: (value: S) => boolean, message: string | ((value: S) => string), severity: ValidationSeverity): (() => Plugin);
-export declare function Validation<S>(self: StateLink<S>): ValidationExtensions;
+export declare function Validation(): Plugin;
+export declare function Validation<S>(self: StateLink<S>): ValidationExtensions<S>;

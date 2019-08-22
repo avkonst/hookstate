@@ -63,7 +63,6 @@ export interface PluginInstance {
     // it overrides the current / initial value in the state
     // it is only applicable for plugins attached via stateref, not via statelink
     readonly onInit?: () => StateValueAtRoot | void,
-    readonly onAttach?: (path: Path, withArgument: PluginInstance) => void,
     readonly onPreset?: (path: Path, newValue: StateValueAtRoot,
         prevValue: StateValueAtPath, prevState: StateValueAtRoot) => void,
     readonly onSet?: (path: Path, newValue: StateValueAtRoot) => void,
@@ -192,9 +191,6 @@ class State implements Subscribable {
     register(plugin: Plugin, path?: Path | undefined) {
         const existingInstance = this._plugins.get(plugin.id)
         if (existingInstance) {
-            if (existingInstance.onAttach) {
-                existingInstance.onAttach(path || RootPath, plugin.instanceFactory(this._value))
-            }
             return;
         }
         const pluginInstance = plugin.instanceFactory(this._value);
@@ -207,9 +203,6 @@ class State implements Subscribable {
                 }
                 this._value = initValue;
             }
-        }
-        if (pluginInstance.onAttach) {
-            pluginInstance.onAttach(path || RootPath, pluginInstance)
         }
         if (pluginInstance.onSet) {
             this.subscribe({

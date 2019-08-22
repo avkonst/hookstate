@@ -5,7 +5,7 @@ import { Touched } from '@hookstate/touched';
 
 export const ExampleComponent = () => {
     const state = useStateLink(['First Task', 'Second Task'])
-        // .with(Initial)  // enable the plugin, Touched depends on
+        .with(Initial)  // enable the plugin, Touched depends on
         .with(Touched); // enable the plugin
     return <>
         <ModifiedStatus state={state} />

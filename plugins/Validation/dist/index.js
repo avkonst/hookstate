@@ -9,10 +9,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
 var PluginID = Symbol('Validate');
 var emptyErrors = [];
 var ValidationPluginInstance = /** @class */ (function () {
-    function ValidationPluginInstance(attachRule, message, severity) {
-        this.attachRule = attachRule;
-        this.message = message;
-        this.severity = severity;
+    function ValidationPluginInstance() {
         this.storeRules = {};
     }
     ValidationPluginInstance.prototype.getRulesAndNested = function (path) {
@@ -134,34 +131,20 @@ var ValidationPluginInstance = /** @class */ (function () {
         }
         return consistentResult();
     };
-    Object.defineProperty(ValidationPluginInstance.prototype, "config", {
-        get: function () {
-            if (this.attachRule !== undefined && this.message !== undefined) {
-                return {
-                    rule: this.attachRule,
-                    message: this.message,
-                    severity: this.severity || exports.ValidationSeverity.ERROR
-                };
-            }
-            return undefined;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    ValidationPluginInstance.prototype.onAttach = function (path, withArgument) {
-        var config = withArgument.config;
-        if (config) {
-            this.addRule(path, config);
-        }
-    };
     return ValidationPluginInstance;
 }());
-function Validation(attachRuleOrSelf, message, severity) {
-    if (attachRuleOrSelf && typeof attachRuleOrSelf !== 'function') {
-        var self_1 = attachRuleOrSelf;
-        var _a = self_1.with(PluginID), l_1 = _a[0], instance = _a[1];
+function Validation(self) {
+    if (self) {
+        var _a = self.with(PluginID), l_1 = _a[0], instance = _a[1];
         var inst_1 = instance;
         return {
+            validate: function (r, m, s) {
+                inst_1.addRule(l_1.path, {
+                    rule: r,
+                    message: m,
+                    severity: s || exports.ValidationSeverity.ERROR
+                });
+            },
             validShallow: function () {
                 return inst_1.getErrors(l_1, 1, undefined, true).length === 0;
             },
@@ -186,11 +169,9 @@ function Validation(attachRuleOrSelf, message, severity) {
             },
         };
     }
-    return function () {
-        return {
-            id: PluginID,
-            instanceFactory: function () { return new ValidationPluginInstance(attachRuleOrSelf, message, severity); }
-        };
+    return {
+        id: PluginID,
+        instanceFactory: function () { return new ValidationPluginInstance(); }
     };
 }
 

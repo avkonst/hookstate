@@ -18,11 +18,14 @@ export interface ValidationError {
     readonly severity: ValidationSeverity;
 }
 
-export interface ValidationExtensions {
-    readonly validShallow: () => boolean,
-    readonly valid: () => boolean,
-    readonly invalidShallow: () => boolean,
-    readonly invalid: () => boolean,
+export interface ValidationExtensions<S> {
+    validate(attachRule: (value: S) => boolean,
+        message: string | ((value: S) => string),
+        severity?: ValidationSeverity): void,
+    validShallow(): boolean,
+    valid(): boolean,
+    invalidShallow(): boolean,
+    invalid(): boolean,
     firstError(
         filter?: (e: ValidationError) => boolean,
         depth?: number
@@ -38,13 +41,8 @@ const PluginID = Symbol('Validate');
 
 const emptyErrors: ValidationError[] = []
 
-class ValidationPluginInstance<S> implements PluginInstance {
+class ValidationPluginInstance<S> {
     private storeRules = {};
-
-    constructor(
-        private readonly attachRule?: (value: S) => boolean,
-        private readonly message?: string | ((value: S) => string),
-        private readonly severity?: ValidationSeverity) { }
 
     getRulesAndNested(path: Path): [ValidationRule[], string[]] {
         let result = this.storeRules;
@@ -173,50 +171,23 @@ class ValidationPluginInstance<S> implements PluginInstance {
         }
         return consistentResult();
     }
-
-    get config(): ValidationRule | undefined {
-        if (this.attachRule !== undefined && this.message !== undefined) {
-            return {
-                rule: this.attachRule,
-                message: this.message,
-                severity: this.severity || ValidationSeverity.ERROR
-            }
-        }
-        return undefined;
-    }
-
-    onAttach(path: Path, withArgument: PluginInstance) {
-        const config = (withArgument as ValidationPluginInstance<StateValueAtPath>).config;
-        if (config) {
-            this.addRule(path, config);
-        }
-    }
 }
 
 // tslint:disable-next-line: function-name
-export function Validation(): (() => Plugin);
-export function Validation<S>(
-    attachRule: (value: S) => boolean,
-    message: string | ((value: S) => string)
-): (() => Plugin);
-export function Validation<S>(
-    attachRule: (value: S) => boolean,
-    message: string | ((value: S) => string),
-    severity: ValidationSeverity
-): (() => Plugin);
-export function Validation<S>(
-    self: StateLink<S>
-): ValidationExtensions;
-export function Validation<S>(
-    attachRuleOrSelf?: ((value: S) => boolean) | StateLink<S>,
-    message?: string | ((value: S) => string),
-    severity?: ValidationSeverity
-): (() => Plugin) | ValidationExtensions {
-    if (attachRuleOrSelf && typeof attachRuleOrSelf !== 'function') {
-        const self = attachRuleOrSelf as StateLink<S>;
+export function Validation(): Plugin;
+export function Validation<S>(self: StateLink<S>): ValidationExtensions<S>;
+export function Validation<S>(self?: StateLink<S>): Plugin | ValidationExtensions<S> {
+    if (self) {
         const [l, instance] = self.with(PluginID);
         const inst = instance as ValidationPluginInstance<S>;
         return {
+            validate: (r, m, s) => {
+                inst.addRule(l.path, {
+                    rule: r,
+                    message: m,
+                    severity: s || ValidationSeverity.ERROR
+                })
+            },
             validShallow(): boolean {
                 return inst.getErrors(l, 1, undefined, true).length === 0
             },
@@ -229,12 +200,10 @@ export function Validation<S>(
             invalid(): boolean {
                 return inst.getErrors(l, Number.MAX_SAFE_INTEGER, undefined, true).length !== 0
             },
-            errors(filter?: (e: ValidationError) => boolean,
-                depth?: number,
-                first?: boolean): ReadonlyArray<ValidationError> {
+            errors: (filter, depth, first) => {
                 return inst.getErrors(l, depth === undefined ? Number.MAX_SAFE_INTEGER : depth, filter, first);
             },
-            firstError(filter?: (e: ValidationError) => boolean, depth?: number) {
+            firstError: (filter, depth) => {
                 const r = inst.getErrors(l, depth === undefined ? Number.MAX_SAFE_INTEGER : depth, filter, true);
                 if (r.length === 0) {
                     return {};
@@ -243,10 +212,8 @@ export function Validation<S>(
             },
         }
     }
-    return () => {
-        return {
-            id: PluginID,
-            instanceFactory: () => new ValidationPluginInstance(attachRuleOrSelf, message, severity)
-        }
+    return {
+        id: PluginID,
+        instanceFactory: () => new ValidationPluginInstance() as {}
     }
 }

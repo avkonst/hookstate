@@ -7,13 +7,14 @@ interface Task { name: string }
 export const ExampleComponent = () => {
     const state = useStateLink([{ name: 'First Task' }, { name: 'Second Task' }] as Task[])
         // enable the plugin
-        .with(Validation())
-        // or can enable providing the rule directly for the root object in the state
-        .with(Validation((tasks: Task[]) => tasks.length >= 3,
-            'There should be at least 3 tasks in the list'))
-        .with(Validation((tasks: Task[]) => tasks.length < 4,
+        .with(Validation)
+
+    // configure rules
+    Validation(state).validate(tasks => tasks.length >= 3,
+            'There should be at least 3 tasks in the list');
+    Validation(state).validate(tasks => tasks.length < 4,
             'There are too many tasks',
-            ValidationSeverity.WARNING))
+            ValidationSeverity.WARNING)
 
     return <>
         <p>
@@ -28,8 +29,8 @@ export const ExampleComponent = () => {
         </p>
         {state.nested.map((taskState, taskIndex) => {
             // attaching validation to any element in the array applies it to every
-            taskState.nested.name
-                .with(Validation((taskName: string) => taskName.length > 0, 'Task name should not be empty'))
+            Validation(taskState.nested.name).validate(
+                taskName => taskName.length > 0, 'Task name should not be empty')
             return <p key={taskIndex}>
                 Is this task valid?: {Validation(taskState).valid().toString()} <br/>
                 Is the name of the task valid?: {Validation(taskState.nested.name).valid().toString()} <br/>

@@ -4,8 +4,8 @@ import { Path, Plugin, PluginInstance, StateLink, DisabledTracking, StateValueAt
 import { Initial } from '@hookstate/initial';
 
 export interface TouchedExtensions {
-    readonly touched: () => boolean;
-    readonly untouched: () => boolean;
+    touched(): boolean;
+    untouched(): boolean;
 }
 
 const PluginID = Symbol('Touched');
@@ -79,12 +79,11 @@ export function Touched<S>(self?: StateLink<S>): Plugin | TouchedExtensions {
             touched: () => inst.touched(link),
             untouched: () => !inst.touched(link)
         }
-    } else {
-        return {
-            id: PluginID,
-            instanceFactory: () => {
-                return new TouchedPluginInstance();
-            }
+    }
+    return {
+        id: PluginID,
+        instanceFactory: () => {
+            return new TouchedPluginInstance();
         }
     }
 }
