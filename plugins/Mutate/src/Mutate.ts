@@ -110,9 +110,9 @@ function createObjectStateMutation<S extends object>(state: StateLink<S>): Objec
         set: (v) => state.set(v),
         merge: (value: SetPartialStateAction<S>) => {
             state.set((prevValue) => {
-                const extractedValue = extractValue(prevValue, value);
-                Object.keys(extractedValue).forEach(key => {
-                    prevValue[key] = extractValue[key]
+                const source = extractValue(prevValue, value);
+                Object.keys(source).forEach(key => {
+                    prevValue[key] = source[key]
                 })
                 return prevValue
             });
