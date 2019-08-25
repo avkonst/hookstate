@@ -21,6 +21,7 @@
         "@types/react-dom": "16.9.0",
         "@types/react-syntax-highlighter": "10.2.1",
         "@types/request-promise": "4.1.44",
+        "core-js": "3.2.1",
         "hookrouter": "1.2.3",
         "lodash.clonedeep": "4.5.0",
         "lodash.isequal": "4.5.0",

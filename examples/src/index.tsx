@@ -1,3 +1,10 @@
+import 'core-js/features/map';
+import 'core-js/features/set';
+import 'core-js/features/array';
+import 'core-js/features/array/includes';
+import 'core-js/features/array/flat';
+import 'core-js/web/url-search-params';
+
 import React from 'react';
 import ReactDOM from 'react-dom';
 import App from './App';
