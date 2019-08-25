@@ -27,6 +27,7 @@
         "npm-check-updates": "3.1.21",
         "react": "16.9.0",
         "react-dom": "16.9.0",
+        "react-ga": "2.6.0",
         "react-scripts": "3.1.1",
         "react-syntax-highlighter": "11.0.2",
         "react-use": "11.0.0",

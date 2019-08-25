@@ -9,7 +9,8 @@ import SyntaxHighlighter from 'react-syntax-highlighter';
 import { useAsync } from 'react-use';
 import request from 'request';
 import { ExamplesRepo, ExampleIds, ExampleCodeUrl } from './examples/Index';
-import { fontSize } from '@material-ui/system';
+
+import ReactGA from 'react-ga';
 
 const packageJson = require('../package.json');
 const packageDependencies = packageJson.dependencies
@@ -59,6 +60,10 @@ const ButtonAppBar = () => {
                         color="inherit"
                         variant="outlined"
                         onClick={() => {
+                            ReactGA.event({
+                                category: 'button-click',
+                                action: 'fork-me-on-github'
+                            });
                             window.open('https://github.com/avkonst/hookstate', '_blank')
                         }}
                     >
@@ -125,6 +130,10 @@ const HomePage = (props: { example?: string }) => {
                         color="secondary"
                         className={classes.button}
                         onClick={() => {
+                            ReactGA.event({
+                                category: 'button-click',
+                                action: 'why-hookstate'
+                            });
                             window.location.href = 'https://github.com/avkonst/hookstate#why-hookstate'
                         }}
                     >Why hookstate
@@ -134,6 +143,10 @@ const HomePage = (props: { example?: string }) => {
                         color="primary"
                         className={classes.button}
                         onClick={() => {
+                            ReactGA.event({
+                                category: 'button-click',
+                                action: 'api-documentation'
+                            });
                             window.location.href = 'https://github.com/avkonst/hookstate#api-documentation'
                         }}
                     >See documentation
@@ -143,6 +156,10 @@ const HomePage = (props: { example?: string }) => {
                         color="primary"
                         className={classes.button}
                         onClick={() => {
+                            ReactGA.event({
+                                category: 'button-click',
+                                action: 'plugins'
+                            });
                             window.location.href = 'https://github.com/avkonst/hookstate#plugins'
                         }}
                     >Browse plugins
@@ -157,7 +174,14 @@ const HomePage = (props: { example?: string }) => {
                             <InputLabel htmlFor="example-simple">Selected example:</InputLabel>
                             <Select
                                 value={exampleId}
-                                onChange={(v) => navigate(v.target.value as string)}
+                                onChange={(v) => {
+                                    const exampleId = v.target.value as string;
+                                    ReactGA.event({
+                                        category: 'example-select',
+                                        action: exampleId,
+                                    });
+                                    navigate(exampleId)
+                                }}
                                 input={<OutlinedInput labelWidth={140} name="example" id="example-simple" />}
                                 inputProps={{
                                     name: 'example',
