@@ -8,9 +8,10 @@ import SyntaxHighlighter from 'react-syntax-highlighter';
 
 import { useAsync } from 'react-use';
 import request from 'request';
-import { ExamplesRepo, ExampleIds, ExampleCodeUrl } from './examples/Index';
+import { ExamplesRepo, ExampleCodeUrl } from './examples/Index';
 
 import ReactGA from 'react-ga';
+import ExampleIds from './examples/ids';
 
 const packageJson = require('../package.json');
 const packageDependencies = packageJson.dependencies

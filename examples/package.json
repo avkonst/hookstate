@@ -38,7 +38,7 @@
     },
     "scripts": {
         "start": "react-scripts start",
-        "build": "react-scripts build && cp .netlify-headers build/_headers && cp .netlify-redirects build/_redirects",
+        "build": "react-scripts build && cp .netlify-headers build/_headers && cp .netlify-redirects build/_redirects && node sitemap.js",
         "test": "react-scripts test",
         "check-updates": "ncu",
         "apply-updates": "ncu -u"
@@ -58,5 +58,7 @@
             "last 1 safari version"
         ]
     },
-    "devDependencies": {}
+    "devDependencies": {
+        "sitemap": "4.1.1"
+    }
 }

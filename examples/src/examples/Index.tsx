@@ -21,32 +21,12 @@ import { ExampleComponent as ExamplePluginValidation } from './plugin-validation
 import { ExampleComponent as ExamplePluginUntracked } from './plugin-untracked';
 
 import { A } from 'hookrouter';
+import ExampleIds from './ids';
 
 export interface ExampleMeta {
     name: string,
     description: React.ReactElement,
     demo: React.ReactElement;
-}
-
-export const ExampleIds = {
-    GlobalPrimitive: 'global-getting-started',
-    GlobalPrimitiveInterface: 'global-getting-started-interface',
-    LocalPrimitive: 'local-getting-started',
-    GlobalComplexFromDocumentation: 'global-complex-from-documentation',
-    LocalComplexFromDocumentation: 'local-complex-from-documentation',
-    PerformanceLargeTable: 'performance-demo-large-table',
-    PerformanceLargeForm: 'performance-demo-large-form',
-    GlobalMutlipleConsumers: 'global-multiple-consumers',
-    GlobalMutlipleConsumersFromRoot: 'global-multiple-consumers-from-root',
-    GlobalMutlipleConsumersStateFragment: 'global-multiple-consumers-statefragment',
-    PluginInitial: 'plugin-initial',
-    PluginInitialStateFragment: 'plugin-initial-statefragment',
-    PluginTouched: 'plugin-touched',
-    PluginLogger: 'plugin-logger',
-    PluginPersistence: 'plugin-persistence',
-    PluginMutate: 'plugin-mutate',
-    PluginValidation: 'plugin-validation',
-    PluginUntracked: 'plugin-untracked'
 }
 
 const baseUrl = 'https://raw.githubusercontent.com/avkonst/hookstate/master/examples/src/examples/'
