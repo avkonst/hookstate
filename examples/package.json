@@ -41,6 +41,7 @@
         "start": "react-scripts start",
         "build": "react-scripts build && cp .netlify-headers build/_headers && cp .netlify-redirects build/_redirects && node sitemap.js",
         "test": "react-scripts test",
+        "serve": "serve -s build",
         "check-updates": "ncu",
         "apply-updates": "ncu -u"
     },
