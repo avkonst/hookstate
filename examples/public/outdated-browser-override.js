@@ -27,14 +27,15 @@ outdatedBrowserRework({
     textColor: 'white',
     browserSupport: {
         // see https://caniuse.com/#search=proxy
+        // see https://caniuse.com/#feat=es6 (need Set and Map)
         'Chrome': 49,
         'Edge': 12,
         'Safari': 10,
         'Mobile Safari': 10,
         'Firefox': 18,
         'Opera': 36,
-        // 'Vivaldi': false,
-        // 'Yandex': false,
+        'Vivaldi': { major: 2, minor: 7 }, // do not really know the minimal version, put the latest as of August 2019
+        'Yandex': { major: 19, minor: 9 }, // do not really know the minimal version, put the latest as of August 2019
         'IE': false
     },
     messages: {
