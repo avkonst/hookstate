@@ -10,6 +10,15 @@
     <link rel="stylesheet" href="/outdated-browser-override.css" />
     <script src="/outdated-browser.min.js"></script>
 	<script>
+        try {
+            localStorage.clear("outdated-browser");
+        } catch (err) {
+            // ignore
+        }
+        function outdatedBrowserMarker() {
+            localStorage.setItem("outdated-browser", "true")
+        }
+        var imgTag = '<img src="/favicon.ico" style="visibility: hidden;" height="0" width="0" onload="outdatedBrowserMarker()" />';
         outdatedBrowserRework({
             fullScreen: true,
             backgroundColor: '#1a283a',
@@ -24,13 +33,11 @@
                 'Opera': 36,
                 // 'Vivaldi': false,
                 // 'Yandex': false,
-                // 'IE': false
+                'IE': false
             },
-            // requireChromeOnAndroid: false,
-            // isUnknownBrowserOK: false,
             messages: {
                 en: {
-                    outOfDate: "This website requires newer version of your browser",
+                    outOfDate: (imgTag + "This website requires newer version of your browser"),
                     unsupported: "This website may not support your browser",
                     update: {
                         web: "<b>Update your browser</b> to view this website correctly" +
