@@ -77,7 +77,10 @@ var ValidationPluginInstance = /** @class */ (function () {
             return consistentResult();
         }
         if (Array.isArray(nestedInst)) {
-            if (nestedRulesKeys.includes('*')) {
+            // only validation for all array elements is supported
+            // because of this limitation, it is expected that the first element is '*'
+            // if any rules are defined
+            if (nestedRulesKeys[0] === '*') {
                 for (var i = 0; i < nestedInst.length; i += 1) {
                     var n = nestedInst[i];
                     result = result.concat(Validation(n)

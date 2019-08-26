@@ -886,10 +886,10 @@
   resolved "https://registry.yarnpkg.com/@hookstate/untracked/-/untracked-1.0.3.tgz#833e957d535870f2c56bf15ec2c0b716d2136f57"
   integrity sha512-KeUWLHMdj/+NGVUEKNbzO8lRM8Esr95o7WSu6IT6ry8w7yeorghmWeQVDFPoXc3l5R0s8DEVdtwp8MXmWW+vUA==
 
-"@hookstate/validation@1.0.0":
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/@hookstate/validation/-/validation-1.0.0.tgz#42cb3d632691cdb2f3f17e01ed25dade163cefe0"
-  integrity sha512-1ILmiMXKbHqpGpNV7Q+JeEFQ9LYJZS2WwLUVZ2B5UxVk4dxzToTBNJ5siO9k3RclxMFlrtyEORntN+O+iic2nw==
+"@hookstate/validation@1.0.1":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@hookstate/validation/-/validation-1.0.1.tgz#755477990ba4e49ac103765541847d8e03828b11"
+  integrity sha512-K/DxiYS6JZBnRGcoPP+yGtgD98uilNTfjg8y4lVKSo/YVs1+2Pb6WdKwHsaKSg53VOvhsflfCGD7cD1/iwWVig==
 
 "@jest/console@^24.7.1", "@jest/console@^24.9.0":
   version "24.9.0"
@@ -7758,7 +7758,7 @@ osenv@^0.1.4, osenv@^0.1.5:
     os-homedir "^1.0.0"
     os-tmpdir "^1.0.0"
 
-outdated-browser-rework@^2.9.0:
+outdated-browser-rework@2.9.0:
   version "2.9.0"
   resolved "https://registry.yarnpkg.com/outdated-browser-rework/-/outdated-browser-rework-2.9.0.tgz#b10bea739ed799a6e51ff1fffe7e4dcd68b1e003"
   integrity sha512-JtHxFB1h9iN7MQmeK0TUPKLUBDKA1h3YB4UJ2lbv+ixvHjiMlzZ+IphpysoaB3YqBGU33/2i5L0Wufp8Issc1g==
