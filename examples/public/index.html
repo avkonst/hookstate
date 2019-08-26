@@ -11,12 +11,17 @@
     <script src="/outdated-browser.min.js"></script>
 	<script>
         try {
-            localStorage.clear("outdated-browser");
+            window.localStorage.clear("outdated-browser");
         } catch (err) {
             // ignore
         }
         function outdatedBrowserMarker() {
-            localStorage.setItem("outdated-browser", "true")
+            try {
+                window.console.log('Outdated / Unsupported browser detected');
+                window.localStorage.setItem("outdated-browser", "true");
+            } catch (err) {
+                // ignore
+            }
         }
         var imgTag = '<img src="/favicon.ico" style="visibility: hidden;" height="0" width="0" onload="outdatedBrowserMarker()" />';
         outdatedBrowserRework({
@@ -38,7 +43,7 @@
             messages: {
                 en: {
                     outOfDate: (imgTag + "This website requires newer version of your browser"),
-                    unsupported: "This website may not support your browser",
+                    unsupported: (imgTag + "This website may not support your browser"),
                     update: {
                         web: "<b>Update your browser</b> to view this website correctly" +
                         "<br/>or <b>dismiss the message</b> and continue as it works",
