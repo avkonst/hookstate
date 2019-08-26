@@ -6,12 +6,13 @@ try {
 function outdatedBrowserMarker() {
     try {
         window.console.warn('Outdated / Unsupported browser detected');
+        // fallback for < IE7
         // replace root message, in case the outdated-browser message does not work and not visible
         var rootElement = document.getElementById("root");
         if (rootElement) {
             rootElement.innerHTML = rootElement.innerHTML +
             '<p style="font-family: sans-serif; text-align: center; text-transform: uppercase">This web application may not support your browser</p>' +
-            '<p style="font-family: sans-serif; text-align: center; "><b>Update your browser</b> to view this resource correctly' +
+            '<p style="font-family: sans-serif; text-align: center; "><b><a href="https://browser-update.org/update-browser.html">Update your browser</a></b> to view this resource correctly' +
                 "<br/>or <b>dismiss the message</b> and continue as it works</p>";
         }
         window.localStorage.setItem("outdated-browser", "true");
@@ -43,12 +44,12 @@ outdatedBrowserRework({
             update: {
                 web: ("<b>Update your browser</b> to view this resource correctly" +
                 "<br/>or <b>dismiss the message</b> and continue as it works"),
-                googlePlay: ("<b>Install Chrome from Google Play</b> to view this resource correctly" +
+                googlePlay: ("<b>Update your browser</b> to view this resource correctly" +
                 "<br/>or <b>dismiss the message</b> and continue as it works"),
                 appStore: ("<b>Update iOS from the Settings App</b> to view this resource correctly" +
                 "<br/>or <b>dismiss the message</b> and continue as it works")
             },
-            url: "http://outdatedbrowser.com/",
+            url: "https://browser-update.org/update-browser.html",
             callToAction: 'Update browser',
             close: "Close"
         }
