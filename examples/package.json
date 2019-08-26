@@ -37,6 +37,7 @@
         "typescript": "3.5.3"
     },
     "scripts": {
+        "prestart": "cp node_modules/outdated-browser-rework/dist/outdated-browser-rework.min.js public/outdated-browser.min.js && cp node_modules/outdated-browser-rework/dist/style.css public/outdated-browser.css",
         "start": "react-scripts start",
         "build": "react-scripts build && cp .netlify-headers build/_headers && cp .netlify-redirects build/_redirects && node sitemap.js",
         "test": "react-scripts test",
@@ -59,6 +60,7 @@
         ]
     },
     "devDependencies": {
+        "outdated-browser-rework": "2.9.0",
         "sitemap": "4.1.1"
     }
 }

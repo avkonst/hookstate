@@ -6,10 +6,47 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#000000" />
     <meta name="google-site-verification" content="eaIOc1znGqK7MdAijzUjjgi13atGAcYFrlPJ0A1r6JE" />
-    <!--
-      manifest.json provides metadata used when your web app is installed on a
-      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
-    -->
+    <link rel="stylesheet" href="/outdated-browser.css" />
+    <link rel="stylesheet" href="/outdated-browser-override.css" />
+    <script src="/outdated-browser.min.js"></script>
+	<script>
+        outdatedBrowserRework({
+            fullScreen: true,
+            backgroundColor: '#1a283a',
+            textColor: 'white',
+            browserSupport: {
+                // see https://caniuse.com/#search=proxy
+                'Chrome': 49,
+                'Edge': 12,
+                'Safari': 10,
+                'Mobile Safari': 10,
+                'Firefox': 18,
+                'Opera': 36,
+                // 'Vivaldi': false,
+                // 'Yandex': false,
+                // 'IE': false
+            },
+            // requireChromeOnAndroid: false,
+            // isUnknownBrowserOK: false,
+            messages: {
+                en: {
+                    outOfDate: "This website requires newer version of your browser",
+                    unsupported: "This website may not support your browser",
+                    update: {
+                        web: "<b>Update your browser</b> to view this website correctly" +
+                        "<br/>or <b>dismiss the message</b> and continue as it works",
+                        googlePlay: "<b>Install Chrome from Google Play</b> to view this website correctly" +
+                        "<br/>or <b>dismiss the message</b> and continue as it works",
+                        appStore: "<b>Update iOS from the Settings App</b> to view this website correctly" +
+                        "<br/>or <b>dismiss the message</b> and continue as it works"
+                    },
+                    url: "http://outdatedbrowser.com/",
+                    callToAction: 'Update browser',
+                    close: "Close"
+                }
+            }
+        });
+	</script>
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
     <!--
       Notice the use of %PUBLIC_URL% in the tags above.
@@ -24,16 +61,7 @@
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root">Loading @hookstate...</div>
-    <!--
-      This HTML file is a template.
-      If you open it directly in the browser, you will see an empty page.
-
-      You can add webfonts, meta tags, or analytics to this file.
-      The build step will place the bundled scripts into the <body> tag.
-
-      To begin the development, run `npm start` or `yarn start`.
-      To create a production bundle, use `npm run build` or `yarn build`.
-    -->
+    <div id="root">Loading Hookstate...</div>
+    <div id="outdated"></div>
   </body>
 </html>
