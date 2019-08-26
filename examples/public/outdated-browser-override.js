@@ -1,16 +1,19 @@
 try {
-    window.localStorage.clear("outdated-browser");
+    window.localStorage.removeItem("outdated-browser");
 } catch (err) {
     // ignore
 }
 function outdatedBrowserMarker() {
     try {
-        window.console.log('Outdated / Unsupported browser detected');
+        window.console.warn('Outdated / Unsupported browser detected');
         // replace root message, in case the outdated-browser message does not work and not visible
-        document.getElementById("root").innerHTML = document.getElementById("root").innerHTML +
-        '<p style="font-family: sans-serif; text-align: center; text-transform: uppercase">This website may not support your browser</p>' +
-        '<p style="font-family: sans-serif; text-align: center; "><b><a href="http://outdatedbrowser.com/">Update your browser</a></b> to view this website correctly' +
+        var rootElement = document.getElementById("root");
+        if (rootElement) {
+            rootElement.innerHTML = rootElement.innerHTML +
+            '<p style="font-family: sans-serif; text-align: center; text-transform: uppercase">This web application may not support your browser</p>' +
+            '<p style="font-family: sans-serif; text-align: center; "><b><a href="http://outdatedbrowser.com/">Update your browser</a></b> to view this website correctly' +
                 "<br/>or <b>dismiss the message</b> and continue as it works</p>";
+        }
         window.localStorage.setItem("outdated-browser", "true");
     } catch (err) {
         // ignore
@@ -35,8 +38,8 @@ outdatedBrowserRework({
     },
     messages: {
         en: {
-            outOfDate: (imgTag + "This website requires newer version of your browser"),
-            unsupported: (imgTag + "This website may not support your browser"),
+            outOfDate: (imgTag + "This web application requires newer version of your browser"),
+            unsupported: (imgTag + "This web application may not support your browser"),
             update: {
                 web: ("<b>Update your browser</b> to view this website correctly" +
                 "<br/>or <b>dismiss the message</b> and continue as it works"),
