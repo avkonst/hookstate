@@ -11,7 +11,7 @@ function outdatedBrowserMarker() {
         if (rootElement) {
             rootElement.innerHTML = rootElement.innerHTML +
             '<p style="font-family: sans-serif; text-align: center; text-transform: uppercase">This web application may not support your browser</p>' +
-            '<p style="font-family: sans-serif; text-align: center; "><b><a href="http://outdatedbrowser.com/">Update your browser</a></b> to view this website correctly' +
+            '<p style="font-family: sans-serif; text-align: center; "><b>Update your browser</b> to view this resource correctly' +
                 "<br/>or <b>dismiss the message</b> and continue as it works</p>";
         }
         window.localStorage.setItem("outdated-browser", "true");
@@ -41,11 +41,11 @@ outdatedBrowserRework({
             outOfDate: (imgTag + "This web application requires newer version of your browser"),
             unsupported: (imgTag + "This web application may not support your browser"),
             update: {
-                web: ("<b>Update your browser</b> to view this website correctly" +
+                web: ("<b>Update your browser</b> to view this resource correctly" +
                 "<br/>or <b>dismiss the message</b> and continue as it works"),
-                googlePlay: ("<b>Install Chrome from Google Play</b> to view this website correctly" +
+                googlePlay: ("<b>Install Chrome from Google Play</b> to view this resource correctly" +
                 "<br/>or <b>dismiss the message</b> and continue as it works"),
-                appStore: ("<b>Update iOS from the Settings App</b> to view this website correctly" +
+                appStore: ("<b>Update iOS from the Settings App</b> to view this resource correctly" +
                 "<br/>or <b>dismiss the message</b> and continue as it works")
             },
             url: "http://outdatedbrowser.com/",
