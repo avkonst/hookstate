@@ -159,22 +159,10 @@ var State = /** @class */ (function () {
             }
         }
         if (pluginInstance.onPreset) {
-            this._presetSubscribers.add(function () {
-                var args = [];
-                for (var _i = 0; _i < arguments.length; _i++) {
-                    args[_i] = arguments[_i];
-                }
-                return pluginInstance.onPreset.apply(pluginInstance, args);
-            });
+            this._presetSubscribers.add(function (p, s, v) { return pluginInstance.onPreset(p, s, v); });
         }
         if (pluginInstance.onSet) {
-            this._setSubscribers.add(function () {
-                var args = [];
-                for (var _i = 0; _i < arguments.length; _i++) {
-                    args[_i] = arguments[_i];
-                }
-                return pluginInstance.onSet.apply(pluginInstance, args);
-            });
+            this._setSubscribers.add(function (p, s, v) { return pluginInstance.onSet(p, s, v); });
         }
         return;
     };

@@ -1,6 +1,6 @@
 {
     "name": "@hookstate/proxy-polyfill",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Plugin for @hookstate/core to enable the library to work in older browsers, for example IE11.",
     "license": "MIT",
     "author": {
