@@ -47,7 +47,7 @@ Any questions? Just ask by raising a github ticket.
 - First-class Typescript support. Complete type inferrence for any complexity of structures of managed state data. Full intellisense support tested in VS Code.
 - Plugin system enables custom extensions, with several [standard plugins](#plugins) available.
 - Tiny footprint: **2.4KB** gziped by create-react-app. No external dependencies, except React.
-- Support for older browsers, for example IE11, via [the polyfill plugin](@plugins).
+- Support for older browsers, for example IE11, via [the polyfill plugin](#plugins).
 
 ## Installation
 
