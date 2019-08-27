@@ -1,6 +1,6 @@
 {
     "name": "@hookstate/mutate",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "description": "Plugin for @hookstate/core to add mutate actions specific for arrays, objects, strings and numbers.",
     "license": "MIT",
     "author": {

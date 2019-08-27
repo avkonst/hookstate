@@ -1,0 +1,8 @@
+{
+    "npmClient": "yarn",
+    "nohoist": "**",
+    "version": "independent",
+    "packages": [
+        "./*/**"
+    ]
+}

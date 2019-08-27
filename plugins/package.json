@@ -1,0 +1,20 @@
+{
+    "name": "plugins",
+    "private": true,
+    "scripts": {
+        "postinstall": "lerna exec yarn install",
+        "build": "lerna exec \"yarn build\"",
+        "publish-major": "lerna exec \"yarn publish --major --no-git-tag-version\"",
+        "publish-minor": "lerna exec \"yarn publish --minor --no-git-tag-version\"",
+        "publish-patch": "lerna exec \"yarn publish --patch --no-git-tag-version\"",
+        "clean": "lerna exec yarn clean",
+        "lint": "lerna exec yarn lint",
+        "check-updates": "ncu && lerna exec yarn check-updates",
+        "apply-updates": "ncu -u && lerna exec yarn apply-updates"
+    },
+    "devDependencies": {
+        "lerna": "3.13.4",
+        "npm-check-updates": "3.1.8",
+        "yarn": "1.15.2"
+    }
+}
