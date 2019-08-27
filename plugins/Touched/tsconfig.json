@@ -2,6 +2,11 @@
     "compilerOptions": {
         "outDir": "build/dist",
         "target": "es5",
+        "lib": [
+            "dom",
+            "dom.iterable",
+            "esnext"
+        ],
         "sourceMap": true,
         "noImplicitReturns": true,
         "noImplicitThis": true,
