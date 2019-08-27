@@ -13,23 +13,15 @@ var LoggerPluginInstance = /** @class */ (function () {
         }
         return r;
     };
-    LoggerPluginInstance.prototype.getAtPath = function (v, path) {
-        var result = v;
-        path.forEach(function (p) {
-            result = result[p];
-        });
-        return result;
-    };
     LoggerPluginInstance.prototype.onInit = function () {
         // tslint:disable-next-line: no-console
         console.log("[hookstate]: logger attached");
     };
-    LoggerPluginInstance.prototype.onSet = function (p, v) {
-        var newValue = this.getAtPath(v, p);
+    LoggerPluginInstance.prototype.onSet = function (path, newState, newValue) {
         // tslint:disable-next-line: no-console
-        console.log("[hookstate]: new value set at path '/" + p.join('/') + "': " +
+        console.log("[hookstate]: new value set at path '/" + path.join('/') + "': " +
             ("" + this.toJsonTrimmed(newValue)), {
-            path: p,
+            path: path,
             value: newValue
         });
     };
