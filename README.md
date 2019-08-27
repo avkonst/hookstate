@@ -58,10 +58,11 @@ yarn add @hookstate/core
 
 ## Browser support
 
-The library requires the target environment to support:
-- ES5, Map and Set (All are available long time ago, including IE11)
-- Symbol (Polyfill is available: [`es6-proxy`](https://www.npmjs.com/package/es6-symbol))
-- Proxy (Polyfill is not available, not supported by IE11, but the library will work with [`Degraded` plugin](#plugins) and if `nested` property of the [`StateLink`](#statelink) is not used. This requirement can be relaxed in the future.)
+It supports all recent browsers and works where React works. If you need to polyfill, for example for IE11, you need to make sure the following is supported by the target environment:
+- ES5, `Map` and `Set` (All are available long time ago, including IE11)
+- `Symbol` (You likely already have got one from the [`react-app-polyfill`](https://www.npmjs.com/package/react-app-polyfill). If you do not import [`react-app-polyfill`](https://www.npmjs.com/package/react-app-polyfill), you can get the standalone [`es6-proxy`](https://www.npmjs.com/package/es6-symbol))
+- `Number.isInteger` (Polyfill is available from [`core-js/features/number/is-integer`](https://www.npmjs.com/package/core-js))
+- `Proxy` (Sufficient for the library polyfill is available from [`@hookstate/proxy-polyfill`](#plugins))
 
 ## API Documentation
 
@@ -297,3 +298,4 @@ Mutate | Adds mutate actions specific for arrays (push, pop, insert, remove, swa
 Logger | Logs state updates and current value of a [`StateLink`](#statelink) to the development console. | [Demo](https://hookstate.netlify.com/plugin-logger) | `@hookstate/logger` | [![npm version](https://img.shields.io/npm/v/@hookstate/logger.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/logger)
 Untracked | Enables access to `StateLink`'s `get` and `set` methods which do not track usage or state update. It means these operations do not influence rendering at all. Applicable in specific usecases. You should understand what you are doing when you use it. | [Demo](https://hookstate.netlify.com/plugin-untracked) | `@hookstate/untracked` | [![npm version](https://img.shields.io/npm/v/@hookstate/untracked.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/untracked)
 Degraded | Turns off optimizations for a StateLink by stopping tracking of it's value usage and assuming the entire state is *used* if StateLink's value is accessed at least once. |  | `@hookstate/core` | [![npm version](https://img.shields.io/npm/v/@hookstate/core.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/core)
+Proxy Polyfill | Makes the Hookstate working in older browsers, for example IE11. All features are supported with two known differences in polyfilled behaviour: 1) `StateLink.nested[key]` will return `undefined` if `StateLink.get()[key]` is also `undefined` property. 2) `StateLink.get()[key] = 'some new value'` will not throw but will mutate the object in the state without notifying any of rendered components or plugins. | [Demo](https://github.com/avkonst/hookstate/tree/master/experimental/ie11) | `@hookstate/proxy-polyfill` | [![npm version](https://img.shields.io/npm/v/@hookstate/proxy-polyfill.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/proxy-polyfill)
