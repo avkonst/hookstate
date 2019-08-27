@@ -851,45 +851,45 @@
   dependencies:
     "@hapi/hoek" "8.x.x"
 
-"@hookstate/core@1.0.3":
-  version "1.0.3"
-  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-1.0.3.tgz#52daa266d2976116465e3bfc67d9bfc5ab4e4f96"
-  integrity sha512-PqflTRc3DiIFtYJnr67eoX6S2w47H352X0nplFZeqHS9Yr8d/7w0yqkprVmshzC5ptXJw+l5U+dVAJx7K8VYtA==
-
-"@hookstate/initial@1.0.1":
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/@hookstate/initial/-/initial-1.0.1.tgz#1a903d64d06391510aeb4e2a35446bb91f063299"
-  integrity sha512-HCiCLNu+8MOVeXG9H0eOVH+QeI1B0izic29MkIIUcr2e1Gu1Sg+M7/1syhXAhwSgUMj6jf+gSYdZp1L6yZZozQ==
-
-"@hookstate/logger@1.0.1":
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/@hookstate/logger/-/logger-1.0.1.tgz#310cc01885878abf4fb3e071331fd40496322839"
-  integrity sha512-3UlCYQioQ9GbS3zM72VsP13wP+xmG0TLxXsscCMJGiVfOsEO+c/sn4d8Pjzq0sTlBhebQVe6nnedXCq3tj6cBg==
-
-"@hookstate/mutate@1.0.3":
-  version "1.0.3"
-  resolved "https://registry.yarnpkg.com/@hookstate/mutate/-/mutate-1.0.3.tgz#9d9d4ac307010a470820522ba11048144e168032"
-  integrity sha512-jBIrW6MkdAzy7BeC2CC45gTGZUTg1XDMyM4m9nvhhZRiPlaHBNDmzjE1f9zWXtez2ZuTlOoYvBGe/n6e3frgOg==
-
-"@hookstate/persistence@1.0.1":
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/@hookstate/persistence/-/persistence-1.0.1.tgz#11676eae61acf04cc3a214ad4d7fc60a63552a20"
-  integrity sha512-3VSBgWvcytipdZzKLB3uEecLSNXhZfKsG3c2JdZfWH4AgQdZdYpo8t8YWKg4Hn8x3TUx+qhdE5OJhFkfR8YiOw==
-
-"@hookstate/touched@1.0.1":
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/@hookstate/touched/-/touched-1.0.1.tgz#fec3406df4e00c25bc77ec1cb39f800b1a1d1851"
-  integrity sha512-/f3zwsIyn4PccY3OiOMEy6v0JyYq8ZdKyX0DAqNU6pkt51ho5o3ycUgcQ+6NfpeaMmOfYKZkzeHCyj7py7pzhA==
-
-"@hookstate/untracked@1.0.4":
+"@hookstate/core@1.0.4":
   version "1.0.4"
-  resolved "https://registry.yarnpkg.com/@hookstate/untracked/-/untracked-1.0.4.tgz#5d55592554234764589435fd514b6fd8e4e2086d"
-  integrity sha512-k5T4dux0ACbZ6aFG1gp+8atxpg7PTtgSIYstSz6g6peapxmVAhBmCILx7rgQ3cgfKeRHptmNcnPPKaVWwczJKA==
+  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-1.0.4.tgz#409607734ff84f70094940be8d8182222b42f165"
+  integrity sha512-1DCKdpe0PH7h9B7pRInVBQxdsb4Z+Hmfo01jZFFiqLGtbu0rJdGAUTxv2TxwdHi8m3nYOGZsj/BSjPwbRo2MEw==
 
-"@hookstate/validation@1.0.5":
+"@hookstate/initial@1.0.2":
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/@hookstate/initial/-/initial-1.0.2.tgz#284ca5269e6dcf53e1c75f6ff70e479c8b34e0a2"
+  integrity sha512-Ryl/96eRbdH1iIIoWvgFoi4vr+Ovgk1QF05rOBqZxF2HygETLJYGY9y3esn9o89fbNa4upH/rDBaVtuhCT0/CA==
+
+"@hookstate/logger@1.0.2":
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/@hookstate/logger/-/logger-1.0.2.tgz#c669739e58683e809e8c6df259afb537974929c7"
+  integrity sha512-cn0mwKi+jVKPsFl0VHP10U2lHh3pzcuOlwmKZPNoItcPXVtM4p8XhjjiXqGxXGqR4tPu6RmiTQD48Lh/u4x+8Q==
+
+"@hookstate/mutate@1.0.4":
+  version "1.0.4"
+  resolved "https://registry.yarnpkg.com/@hookstate/mutate/-/mutate-1.0.4.tgz#e99cc86e7a625ce8928aae68cd42e140b9d828f4"
+  integrity sha512-pCOwLKFsfqOECRD3L5XDsl150Sz2dzffF3W7/7bNSEVCiLrbcO/77s3olcSr14Vq+Rdp3PDRFugymrbvdT286g==
+
+"@hookstate/persistence@1.0.2":
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/@hookstate/persistence/-/persistence-1.0.2.tgz#97fb74aee56e58ae52463b8020b163d5ef92037b"
+  integrity sha512-GsCN5sxosyDNsdtaPdd9RBZJIPEyuvXDHCilKpMvg2kUIN2WcG0hitY7WyPSTbbbInEW0iKx23hc9b8iYacy7A==
+
+"@hookstate/touched@1.0.2":
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/@hookstate/touched/-/touched-1.0.2.tgz#76939c5e49fda90b3b2a52d87c945cd1007bb857"
+  integrity sha512-wpsboEL0559tZBeEB/YVzK3Ub7Qp5fHZZz/V/VA4BY7nglW4LXLwTQZ6P3VZu3oUhk9MlVkZG8qmmrvllka2zQ==
+
+"@hookstate/untracked@1.0.5":
   version "1.0.5"
-  resolved "https://registry.yarnpkg.com/@hookstate/validation/-/validation-1.0.5.tgz#2aa641576f6d901fff26573dc43f7f393810277f"
-  integrity sha512-YozvGXhGCvbNAOtM04Rmh32uebdTnXkJ5fmIh5VF0OjAwgTN7xZZzuxa5hKn97V4sOAWGcJL7V+pB9IFNM/23w==
+  resolved "https://registry.yarnpkg.com/@hookstate/untracked/-/untracked-1.0.5.tgz#b02f44ba63c5c7728b2616bf628909cf37f2bf88"
+  integrity sha512-dHnaFghnbrIZMKw4FRdXYy3fhOsGacfQUPgKykJOxW4wpE4KQa2U+sfS/17oAijOGolFLW1sXbmdqMkp5CM6hg==
+
+"@hookstate/validation@1.0.6":
+  version "1.0.6"
+  resolved "https://registry.yarnpkg.com/@hookstate/validation/-/validation-1.0.6.tgz#6e02709426a564c8015070d64bb7f1a62d440585"
+  integrity sha512-RSacC0oU9eGQrvlY9Xpa55yQGwV0uORIOdToSr+7TpH5Ay66xwdOTyEqazvXe/tfeLc415uDpSRFwnIYABr0JA==
 
 "@jest/console@^24.7.1", "@jest/console@^24.9.0":
   version "24.9.0"
