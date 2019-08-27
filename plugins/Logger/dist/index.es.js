@@ -1,5 +1,3 @@
-import { DisabledTracking } from '@hookstate/core';
-
 var LoggerPluginInstance = /** @class */ (function () {
     function LoggerPluginInstance() {
     }
@@ -32,12 +30,11 @@ var LoggerPluginInstance = /** @class */ (function () {
         });
     };
     LoggerPluginInstance.prototype.log = function (l) {
-        l.with(DisabledTracking); // everything is touched by the JSON, so no point to track
         // tslint:disable-next-line: no-console
         return console.log("[hookstate]: current value at path '/" + l.path.join('/') + ": " +
-            (this.toJsonTrimmed(l.value) + "'"), {
+            (this.toJsonTrimmed(l.getUntracked()) + "'"), {
             path: l.path,
-            value: l.value
+            value: l.getUntracked()
         });
     };
     return LoggerPluginInstance;

@@ -6,7 +6,8 @@ import {
     StateValueAtRoot,
     StateValueAtPath,
     PluginInstance,
-    StateLink
+    StateLink,
+    StateLinkPlugable
 } from '@hookstate/core';
 
 export interface LoggerExtensions {
@@ -23,39 +24,29 @@ class LoggerPluginInstance implements PluginInstance {
         return r;
     }
 
-    getAtPath(v: StateValueAtRoot, path: Path) {
-        let result = v;
-        path.forEach(p => {
-            result = result[p];
-        });
-        return result;
-    }
-
     onInit() {
         // tslint:disable-next-line: no-console
         console.log(`[hookstate]: logger attached`);
     }
-    onSet(p: Path, v: StateValueAtRoot) {
-        const newValue = this.getAtPath(v, p);
+    onSet(path: Path, newState: StateValueAtRoot, newValue: StateValueAtPath) {
         // tslint:disable-next-line: no-console
         console.log(
-            `[hookstate]: new value set at path '/${p.join('/')}': ` +
+            `[hookstate]: new value set at path '/${path.join('/')}': ` +
             `${this.toJsonTrimmed(newValue)}`,
             {
-                path: p,
+                path: path,
                 value: newValue
             });
     }
 
-    log(l: StateValueAtPath) {
-        l.with(DisabledTracking); // everything is touched by the JSON, so no point to track
+    log(l: StateLink<StateValueAtPath> & StateLinkPlugable<StateValueAtPath>) {
         // tslint:disable-next-line: no-console
         return console.log(
             `[hookstate]: current value at path '/${l.path.join('/')}: ` +
-            `${this.toJsonTrimmed(l.value)}'`,
+            `${this.toJsonTrimmed(l.getUntracked())}'`,
             {
                 path: l.path,
-                value: l.value
+                value: l.getUntracked()
             });
     }
 }
