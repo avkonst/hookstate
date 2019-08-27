@@ -1,7 +1,7 @@
 import 'core-js/web/url-search-params';
-import 'core-js/features/object/entries';
-import 'core-js/features/object/values';
-import 'core-js/features/array/from';
+// import 'core-js/features/object/entries';
+// import 'core-js/features/object/values';
+// import 'core-js/features/array/from';
 
 import React from 'react';
 import ReactDOM from 'react-dom';
