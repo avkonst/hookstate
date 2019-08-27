@@ -4,6 +4,10 @@ var ValidationPluginInstance = /** @class */ (function () {
     function ValidationPluginInstance() {
         this.storeRules = {};
     }
+    // same as Array.from(Object.values()) but does not require ES6.
+    ValidationPluginInstance.prototype.arrayFromObjectValues = function (obj) {
+        return Object.keys(obj).map(function (key) { return obj[key]; });
+    };
     ValidationPluginInstance.prototype.getRulesAndNested = function (path) {
         var result = this.storeRules;
         path.forEach(function (p) {
@@ -12,7 +16,7 @@ var ValidationPluginInstance = /** @class */ (function () {
             }
             result = result && (result[p]);
         });
-        return [result && result[PluginID] ? Array.from(result[PluginID].values()) : [],
+        return [result && result[PluginID] ? this.arrayFromObjectValues(result[PluginID]) : [],
             result ? Object.keys(result) : []];
     };
     ValidationPluginInstance.prototype.addRule = function (path, r) {

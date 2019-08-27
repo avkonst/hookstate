@@ -41,6 +41,10 @@ interface ValidationRule {
 class ValidationPluginInstance<S> {
     private storeRules = {};
 
+    // same as Array.from(Object.values()) but does not require ES6.
+    arrayFromObjectValues(obj: object) {
+        return Object.keys(obj).map(key => obj[key])
+    }
     getRulesAndNested(path: Path): [ValidationRule[], string[]] {
         let result = this.storeRules;
         path.forEach(p => {
@@ -49,7 +53,7 @@ class ValidationPluginInstance<S> {
             }
             result = result && (result[p])
         });
-        return [result && result[PluginID] ? Array.from(result[PluginID].values()) : [],
+        return [result && result[PluginID] ? this.arrayFromObjectValues(result[PluginID]) : [],
             result ? Object.keys(result) : []];
     }
     addRule(path: Path, r: ValidationRule) {
