@@ -216,10 +216,10 @@ class State implements Subscribable {
             }
         }
         if (pluginInstance.onPreset) {
-            this._presetSubscribers.add((...args) => pluginInstance.onPreset!(...args))
+            this._presetSubscribers.add((p, s, v) => pluginInstance.onPreset!(p, s, v))
         }
         if (pluginInstance.onSet) {
-            this._setSubscribers.add((...args) => pluginInstance.onSet!(...args))
+            this._setSubscribers.add((p, s, v) => pluginInstance.onSet!(p, s, v))
         }
         return;
     }
