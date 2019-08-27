@@ -5,9 +5,9 @@ var ValidationPluginInstance = /** @class */ (function () {
         this.storeRules = {};
     }
     // same as Array.from(Object.values()) but does not require ES6.
-    ValidationPluginInstance.prototype.arrayFromObjectValues = function (obj) {
-        return Object.keys(obj).map(function (key) { return obj[key]; });
-    };
+    // arrayFromObjectValues(obj: object) {
+    //     return Object.keys(obj).map(key => obj[key])
+    // }
     ValidationPluginInstance.prototype.getRulesAndNested = function (path) {
         var result = this.storeRules;
         path.forEach(function (p) {
@@ -16,7 +16,7 @@ var ValidationPluginInstance = /** @class */ (function () {
             }
             result = result && (result[p]);
         });
-        return [result && result[PluginID] ? this.arrayFromObjectValues(result[PluginID]) : [],
+        return [result && result[PluginID] ? Array.from(Object.values(result[PluginID])) : [],
             result ? Object.keys(result) : []];
     };
     ValidationPluginInstance.prototype.addRule = function (path, r) {
@@ -80,7 +80,7 @@ var ValidationPluginInstance = /** @class */ (function () {
             // only validation for all array elements is supported
             // because of this limitation, it is expected that the first element is '*'
             // if any rules are defined
-            if (nestedRulesKeys[0] === '*') {
+            if (nestedRulesKeys.includes('*')) {
                 for (var i = 0; i < nestedInst.length; i += 1) {
                     var n = nestedInst[i];
                     result = result.concat(Validation(n)
