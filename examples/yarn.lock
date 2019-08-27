@@ -856,40 +856,40 @@
   resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-1.0.3.tgz#52daa266d2976116465e3bfc67d9bfc5ab4e4f96"
   integrity sha512-PqflTRc3DiIFtYJnr67eoX6S2w47H352X0nplFZeqHS9Yr8d/7w0yqkprVmshzC5ptXJw+l5U+dVAJx7K8VYtA==
 
-"@hookstate/initial@1.0.0":
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/@hookstate/initial/-/initial-1.0.0.tgz#82ac7dc5d67f846c2958e0dc71c87786005a872f"
-  integrity sha512-/oNWiNcuxIpgLhJfjjcjMR4clMjCFfokxwv5ongD3MwJvATd10fDrysztKxlaFKgef8VzfTH2PaYah5HndeTGQ==
-
-"@hookstate/logger@1.0.0":
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/@hookstate/logger/-/logger-1.0.0.tgz#aa1f2cdfabc0f4aae874882add3b1ff8d756e542"
-  integrity sha512-LdpkPT2N//kMO2iJIiEVgycYAhsNDQMOt85A4ohVBQ18vbFvHojek69Z5pWYqz5iznd4AVN8+0hPYOzmurtkOA==
-
-"@hookstate/mutate@1.0.2":
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/@hookstate/mutate/-/mutate-1.0.2.tgz#192fd1c3b0db56c20f45ed651df7958f0ce344fd"
-  integrity sha512-mTbyGOGvo0lxxOrpErgLDv/89z3G3ClCLfsGoWHfWAA0WbH5Yq0NkW2eZ+AdB/ia/GzqhrlM4B/hwbLAc384tA==
-
-"@hookstate/persistence@1.0.0":
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/@hookstate/persistence/-/persistence-1.0.0.tgz#01f7c73d0c23e85f1355d76f606893608c54c52d"
-  integrity sha512-F6tPxeyn6t3HKPcE7hBK2+8Kd+DypeBADld5Z1w6CJzuM95RU1uZvTDNLM4AMaxpVbQh5zl4JuWpiRYFMDbgvA==
-
-"@hookstate/touched@1.0.0":
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/@hookstate/touched/-/touched-1.0.0.tgz#25d7db8b3acf9af1c1ff85edf89a3b6ff5397dab"
-  integrity sha512-/xm9BnZZiAchqj1cvzi1CFE6X+qLP1pVl4PstZ6y+MgMdf7siqfiFRZC2bBF54l2pi6KsMqc6ClDnn1DKOJY7w==
-
-"@hookstate/untracked@1.0.3":
-  version "1.0.3"
-  resolved "https://registry.yarnpkg.com/@hookstate/untracked/-/untracked-1.0.3.tgz#833e957d535870f2c56bf15ec2c0b716d2136f57"
-  integrity sha512-KeUWLHMdj/+NGVUEKNbzO8lRM8Esr95o7WSu6IT6ry8w7yeorghmWeQVDFPoXc3l5R0s8DEVdtwp8MXmWW+vUA==
-
-"@hookstate/validation@1.0.1":
+"@hookstate/initial@1.0.1":
   version "1.0.1"
-  resolved "https://registry.yarnpkg.com/@hookstate/validation/-/validation-1.0.1.tgz#755477990ba4e49ac103765541847d8e03828b11"
-  integrity sha512-K/DxiYS6JZBnRGcoPP+yGtgD98uilNTfjg8y4lVKSo/YVs1+2Pb6WdKwHsaKSg53VOvhsflfCGD7cD1/iwWVig==
+  resolved "https://registry.yarnpkg.com/@hookstate/initial/-/initial-1.0.1.tgz#1a903d64d06391510aeb4e2a35446bb91f063299"
+  integrity sha512-HCiCLNu+8MOVeXG9H0eOVH+QeI1B0izic29MkIIUcr2e1Gu1Sg+M7/1syhXAhwSgUMj6jf+gSYdZp1L6yZZozQ==
+
+"@hookstate/logger@1.0.1":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@hookstate/logger/-/logger-1.0.1.tgz#310cc01885878abf4fb3e071331fd40496322839"
+  integrity sha512-3UlCYQioQ9GbS3zM72VsP13wP+xmG0TLxXsscCMJGiVfOsEO+c/sn4d8Pjzq0sTlBhebQVe6nnedXCq3tj6cBg==
+
+"@hookstate/mutate@1.0.3":
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/@hookstate/mutate/-/mutate-1.0.3.tgz#9d9d4ac307010a470820522ba11048144e168032"
+  integrity sha512-jBIrW6MkdAzy7BeC2CC45gTGZUTg1XDMyM4m9nvhhZRiPlaHBNDmzjE1f9zWXtez2ZuTlOoYvBGe/n6e3frgOg==
+
+"@hookstate/persistence@1.0.1":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@hookstate/persistence/-/persistence-1.0.1.tgz#11676eae61acf04cc3a214ad4d7fc60a63552a20"
+  integrity sha512-3VSBgWvcytipdZzKLB3uEecLSNXhZfKsG3c2JdZfWH4AgQdZdYpo8t8YWKg4Hn8x3TUx+qhdE5OJhFkfR8YiOw==
+
+"@hookstate/touched@1.0.1":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@hookstate/touched/-/touched-1.0.1.tgz#fec3406df4e00c25bc77ec1cb39f800b1a1d1851"
+  integrity sha512-/f3zwsIyn4PccY3OiOMEy6v0JyYq8ZdKyX0DAqNU6pkt51ho5o3ycUgcQ+6NfpeaMmOfYKZkzeHCyj7py7pzhA==
+
+"@hookstate/untracked@1.0.4":
+  version "1.0.4"
+  resolved "https://registry.yarnpkg.com/@hookstate/untracked/-/untracked-1.0.4.tgz#5d55592554234764589435fd514b6fd8e4e2086d"
+  integrity sha512-k5T4dux0ACbZ6aFG1gp+8atxpg7PTtgSIYstSz6g6peapxmVAhBmCILx7rgQ3cgfKeRHptmNcnPPKaVWwczJKA==
+
+"@hookstate/validation@1.0.5":
+  version "1.0.5"
+  resolved "https://registry.yarnpkg.com/@hookstate/validation/-/validation-1.0.5.tgz#2aa641576f6d901fff26573dc43f7f393810277f"
+  integrity sha512-YozvGXhGCvbNAOtM04Rmh32uebdTnXkJ5fmIh5VF0OjAwgTN7xZZzuxa5hKn97V4sOAWGcJL7V+pB9IFNM/23w==
 
 "@jest/console@^24.7.1", "@jest/console@^24.9.0":
   version "24.9.0"
@@ -9245,10 +9245,10 @@ react-transition-group@^4.0.0:
     loose-envify "^1.4.0"
     prop-types "^15.6.2"
 
-react-use@11.0.0:
-  version "11.0.0"
-  resolved "https://registry.yarnpkg.com/react-use/-/react-use-11.0.0.tgz#bc91875e879b9a6ad23319fbbf1fe3519a865e45"
-  integrity sha512-0cFuoLZkvcQP7SS93NTWa17qjCzfwf30aUVKdknjXSYJref5b1lb9PzQqmblQ2aQ7zSp9AAyuDRoevdgYS8uKA==
+react-use@11.3.2:
+  version "11.3.2"
+  resolved "https://registry.yarnpkg.com/react-use/-/react-use-11.3.2.tgz#037fc5d25e89f00068cfa3d981f3aa7c6755a4ad"
+  integrity sha512-dTM7Hj5gP2VCjMbv42b0YF5QdD8PeOaNA+dGrGKbqWhwq2Gq4IDPvh6XYPL1jDRBztpKwcktTamdK1PTjrUpgw==
   dependencies:
     "@types/react-wait" "^0.3.0"
     copy-to-clipboard "^3.1.0"
@@ -9256,6 +9256,7 @@ react-use@11.0.0:
     react-fast-compare "^2.0.4"
     react-wait "^0.3.0"
     screenfull "^4.1.0"
+    set-harmonic-interval "^1.0.0"
     throttle-debounce "^2.0.1"
     ts-easing "^0.2.0"
 
@@ -9922,6 +9923,11 @@ set-blocking@^2.0.0, set-blocking@~2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/set-blocking/-/set-blocking-2.0.0.tgz#045f9782d011ae9a6803ddd382b24392b3d890f7"
   integrity sha1-BF+XgtARrppoA93TgrJDkrPYkPc=
+
+set-harmonic-interval@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/set-harmonic-interval/-/set-harmonic-interval-1.0.0.tgz#2759658395579fc336b9cd026eefe1ad9e742f9b"
+  integrity sha512-RJtrhB5G10e5A1auBv/jHGq0KWfHH8PAb4ln4+kjiHS46aAP12rSdarSj9GDlxQ3QULA2pefEDpm9Y1Xnz+eng==
 
 set-value@^2.0.0, set-value@^2.0.1:
   version "2.0.1"
