@@ -10,7 +10,7 @@
         "@hookstate/persistence": "1.0.1",
         "@hookstate/touched": "1.0.1",
         "@hookstate/untracked": "1.0.4",
-        "@hookstate/validation": "1.0.4",
+        "@hookstate/validation": "1.0.5",
         "@material-ui/core": "4.3.3",
         "@types/hookrouter": "2.2.1",
         "@types/jest": "24.0.18",
