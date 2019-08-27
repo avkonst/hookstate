@@ -56,6 +56,13 @@ npm install --save @hookstate/core
 yarn add @hookstate/core
 ```
 
+## Browser support
+
+The library requires the target environment to support:
+- ES5, Map and Set (All are available long time ago, including IE11)
+- Symbol (Polyfill is available: [`es6-proxy`](https://www.npmjs.com/package/es6-symbol))
+- Proxy (Polyfill is not available, not supported by IE11, but the library will work with [`Degraded` plugin](#plugins) and if `nested` property of the [`StateLink`](#statelink) is not used. This requirement can be relaxed in the future.)
+
 ## API Documentation
 
 ### `createStateLink`
