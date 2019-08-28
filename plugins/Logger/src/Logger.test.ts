@@ -5,7 +5,7 @@ import { Logger } from './Logger';
 
 import mockConsole from 'jest-mock-console';
 
-test('logger should not mark objects as used', async () => {
+test('logger: should log objects untracked', async () => {
     const restoreConsole = mockConsole();
     try {
         let renderTimes = 0
@@ -28,6 +28,7 @@ test('logger should not mark objects as used', async () => {
         expect(renderTimes).toStrictEqual(1);
         // tslint:disable-next-line: no-console
         expect(console.log).toHaveBeenCalledTimes(3);
+        // tslint:disable-next-line: no-console
         expect((console.log as any).mock.calls).toEqual([
             ['[hookstate]: logger attached'],
             // tslint:disable-next-line: quotemark

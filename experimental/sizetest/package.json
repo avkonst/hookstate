@@ -1,5 +1,5 @@
 {
-  "name": "testsize",
+  "name": "hookstate-sizetest",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
