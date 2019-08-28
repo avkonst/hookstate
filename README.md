@@ -61,7 +61,7 @@ yarn add @hookstate/core
 
 It supports all recent browsers and works where React works. If you need to polyfill, for example for IE11, you need to make sure the following is supported by the target environment:
 - ES5, `Map` and `Set` (All are available long time ago, including IE11)
-- `Symbol` (You likely already have got one from the [`react-app-polyfill`](https://www.npmjs.com/package/react-app-polyfill). If you do not import [`react-app-polyfill`](https://www.npmjs.com/package/react-app-polyfill), you can get the standalone [`es6-proxy`](https://www.npmjs.com/package/es6-symbol))
+- `Symbol` (You likely already have got one from the [`react-app-polyfill`](https://www.npmjs.com/package/react-app-polyfill). If you do not import [`react-app-polyfill`](https://www.npmjs.com/package/react-app-polyfill), you can get the standalone [`es6-symbol`](https://www.npmjs.com/package/es6-symbol))
 - `Number.isInteger` (Polyfill is available from [`core-js/features/number/is-integer`](https://www.npmjs.com/package/core-js))
 - `Proxy` (Sufficient for the library polyfill is available from [`@hookstate/proxy-polyfill`](#plugins))
 
