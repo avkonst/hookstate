@@ -8,7 +8,7 @@ var LoggerPluginInstance = /** @class */ (function () {
     LoggerPluginInstance.prototype.toJsonTrimmed = function (s) {
         var limit = 100;
         var r = JSON.stringify(s);
-        if (r.length > 100) {
+        if (r && r.length > 100) {
             return r.slice(0, limit) + "... (" + (r.length - limit) + " characters trunkated)";
         }
         return r;
