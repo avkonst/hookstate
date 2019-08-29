@@ -18,7 +18,7 @@ class LoggerPluginInstance implements PluginInstance {
     toJsonTrimmed(s: StateValueAtPath) {
         const limit = 100;
         const r = JSON.stringify(s);
-        if (r.length > 100) {
+        if (r && r.length > 100) {
             return `${r.slice(0, limit)}... (${r.length - limit} characters trunkated)`
         }
         return r;

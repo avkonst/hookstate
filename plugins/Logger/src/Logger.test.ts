@@ -58,3 +58,80 @@ test('logger: should log objects untracked', async () => {
         restoreConsole();
     }
 });
+
+test('logger: should log undefined prop', async () => {
+    const restoreConsole = mockConsole();
+    try {
+        let renderTimes = 0
+        const { result } = renderHook(() => {
+            renderTimes += 1;
+            return useStateLink<{ prop: undefined | null }>({ prop: undefined }).with(Logger)
+        });
+        // tslint:disable-next-line: no-console
+        expect(console.log).toHaveBeenCalledTimes(1);
+
+        expect(renderTimes).toStrictEqual(1);
+        Logger(result.current).log();
+        // tslint:disable-next-line: no-console
+        expect(console.log).toHaveBeenCalledTimes(2);
+
+        act(() => {
+            result.current.set(p => ({ prop: null }));
+        });
+        // logger should not mark objects as used
+        expect(renderTimes).toStrictEqual(1);
+        // tslint:disable-next-line: no-console
+        expect(console.log).toHaveBeenCalledTimes(3);
+        // tslint:disable-next-line: no-console
+        expect((console.log as any).mock.calls).toEqual([
+            ['[hookstate]: logger attached'],
+            // tslint:disable-next-line: quotemark
+            ["[hookstate]: current value at path '/: {}'", { path: [], value: { prop: undefined }}],
+            // tslint:disable-next-line: quotemark
+            ["[hookstate]: new value set at path '/': {\"prop\":null}", { path: [], value: { prop: null }}],
+        ]);
+
+        expect(renderTimes).toStrictEqual(1);
+        Logger(result.current).log();
+        // tslint:disable-next-line: no-console
+        expect(console.log).toHaveBeenCalledTimes(4);
+    } finally {
+        restoreConsole();
+    }
+});
+
+test('logger: should log undefined value', async () => {
+    const restoreConsole = mockConsole();
+    try {
+        let renderTimes = 0
+        const { result } = renderHook(() => {
+            renderTimes += 1;
+            return useStateLink<null | undefined>(undefined).with(Logger)
+        });
+        // tslint:disable-next-line: no-console
+        expect(console.log).toHaveBeenCalledTimes(1);
+
+        expect(renderTimes).toStrictEqual(1);
+        Logger(result.current).log();
+        // tslint:disable-next-line: no-console
+        expect(console.log).toHaveBeenCalledTimes(2);
+
+        act(() => {
+            result.current.set(p => null);
+        });
+        // logger should not mark objects as used
+        expect(renderTimes).toStrictEqual(1);
+        // tslint:disable-next-line: no-console
+        expect(console.log).toHaveBeenCalledTimes(3);
+        // tslint:disable-next-line: no-console
+        expect((console.log as any).mock.calls).toEqual([
+            ['[hookstate]: logger attached'],
+            // tslint:disable-next-line: quotemark
+            ["[hookstate]: current value at path '/: undefined'", { path: [], value: undefined}],
+            // tslint:disable-next-line: quotemark
+            ["[hookstate]: new value set at path '/': null", { path: [], value: null}],
+        ]);
+    } finally {
+        restoreConsole();
+    }
+});
