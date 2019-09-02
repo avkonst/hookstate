@@ -126,6 +126,7 @@ interface Subscribable {
 
 const DegradedID = Symbol('Degraded');
 const StateMemoID = Symbol('StateMemo');
+const ProxyMarkerID = Symbol('ProxyMarker');
 
 const RootPath: Path = [];
 
@@ -233,8 +234,8 @@ class State implements Subscribable {
     }
 
     toJSON() {
-        throw new StateLinkInvalidUsageError('toJSON', RootPath,
-        'did you mean to searialize the value of the StateLink but not the StateLink itself');
+        throw new StateLinkInvalidUsageError('toJSON()', RootPath,
+        'did you mean to use JSON.stringify(state.get()) instead of JSON.stringify(state)?');
     }
 }
 
@@ -323,6 +324,12 @@ class StateLinkImpl<S> implements StateLink<S>,
     setUntracked(newValue: React.SetStateAction<S>): Path {
         if (typeof newValue === 'function') {
             newValue = (newValue as ((prevValue: S) => S))(this.state.get(this.path));
+        }
+        if (typeof newValue === 'object' && newValue[ProxyMarkerID]) {
+            throw new StateLinkInvalidUsageError(
+                `set(state.get() at '/${newValue[ProxyMarkerID].path.join('/')}')`,
+                this.path,
+                'did you mean to use state.set(lodash.cloneDeep(value)) instead of state.set(value)?')
         }
         return this.state.set(this.path, newValue);
     }
@@ -456,15 +463,18 @@ class StateLinkImpl<S> implements StateLink<S>,
         return this.proxyWrap(
             this.valueUntracked as unknown as object,
             (target: object, key: PropertyKey) => {
-                if (typeof key === 'symbol') {
-                    // allow clients to associate hidden cache with state values
-                    return target[key];
-                }
                 if (key === 'length') {
                     return (target as []).length;
                 }
                 if (key in Array.prototype) {
                     return Array.prototype[key];
+                }
+                if (key === ProxyMarkerID) {
+                    return this;
+                }
+                if (typeof key === 'symbol') {
+                    // allow clients to associate hidden cache with state values
+                    return target[key];
                 }
                 const index = Number(key);
                 if (!Number.isInteger(index)) {
@@ -479,8 +489,7 @@ class StateLinkImpl<S> implements StateLink<S>,
                     return true;
                 }
                 throw new StateLinkInvalidUsageError('set', this.path,
-                    `use StateLink.set(...) API: replace 'state[${key}] = value' by ` +
-                    `'state.nested[${key}].set(value)' to update an element in the state array`)
+                    `did you mean to use 'state.nested[${key}].set(value)' instead of 'state[${key}] = value'?`)
             }
         ) as unknown as S;
     }
@@ -517,6 +526,9 @@ class StateLinkImpl<S> implements StateLink<S>,
         return this.proxyWrap(
             this.valueUntracked as unknown as object,
             (target: object, key: PropertyKey) => {
+                if (key === ProxyMarkerID) {
+                    return this;
+                }
                 if (typeof key === 'symbol') {
                     // allow clients to associate hidden cache with state values
                     return target[key];
@@ -530,8 +542,7 @@ class StateLinkImpl<S> implements StateLink<S>,
                     return true;
                 }
                 throw new StateLinkInvalidUsageError('set', this.path,
-                    `use StateLink.set(...) API: replace 'state.${key} = value' by ` +
-                    `'state.nested.${key}.set(value)' to update a property in the state object`)
+                    `did you mean to use 'state.nested.${key}.set(value)' instead of 'state.${key} = value'?`)
             }
         ) as unknown as S;
     }
@@ -619,6 +630,13 @@ function createState<S>(initial: S | (() => S)): State {
     if (typeof initial === 'function') {
         initialValue = (initial as (() => S))();
     }
+    if (typeof initialValue === 'object' && initialValue[ProxyMarkerID]) {
+        throw new StateLinkInvalidUsageError(
+            `create/useStateLink(state.get() at '/${initialValue[ProxyMarkerID].path.join('/')}')`,
+            RootPath,
+            'did you mean to use create/useStateLink(state) OR ' +
+            'create/useStateLink(lodash.cloneDeep(state.get())) instead of create/useStateLink(state.get())?')
+    }
     return new State(initialValue);
 }
 
@@ -635,7 +653,7 @@ function useSubscribedStateLink<S>(
         state.get(path)
     );
     if (disabledTracking) {
-        link.with(DisabledTracking)
+        link.with(Degraded)
     }
     useIsomorphicLayoutEffect(() => {
         subscribeTarget.subscribe(link);
@@ -737,7 +755,7 @@ export function createStateLink<S, R>(
     initial: S | (() => S),
     transform?: (state: StateLink<S>, prev: R | undefined) => R
 ): StateRef<S> | StateInf<R> {
-    const ref =  new StateRefImpl<S>(createState(initial));
+    const ref = new StateRefImpl<S>(createState(initial));
     if (transform) {
         return new StateInfImpl(ref, transform)
     }
@@ -799,7 +817,7 @@ export function useStateLinkUnmounted<S, R>(
             throw new Error('Internal Error: unexpected call');
         },
         stateRef.state.get(RootPath)
-    ).with(DisabledTracking) // it does not matter how it is used, it is not subscribed anyway
+    ).with(Degraded) // it does not matter how it is used, it is not subscribed anyway
     if (source instanceof StateInfImpl) {
         return source.transform(link, undefined);
     }
@@ -864,7 +882,7 @@ export function StateMemo<S, R>(
 }
 
 /**
- * @deprecated: use DisabledOptimization instead
+ * @deprecated: use Degraded instead
  */
 // tslint:disable-next-line: function-name
 export function DisabledTracking(): Plugin {
