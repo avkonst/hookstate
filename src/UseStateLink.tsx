@@ -435,6 +435,9 @@ class StateLinkImpl<S> implements StateLink<S>,
             if (key in Array.prototype) {
                 return Array.prototype[key];
             }
+            if (key === ProxyMarkerID) {
+                return this;
+            }
             const index = Number(key);
             if (!Number.isInteger(index)) {
                 return undefined;
@@ -499,6 +502,9 @@ class StateLinkImpl<S> implements StateLink<S>,
         this.nestedLinksCache = proxyGetterCache;
 
         const getter = (target: object, key: PropertyKey) => {
+            if (key === ProxyMarkerID) {
+                return this;
+            }
             if (typeof key === 'symbol') {
                 return undefined;
             }

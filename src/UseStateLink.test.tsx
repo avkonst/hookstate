@@ -283,3 +283,33 @@ test('array: should not rerender unused self', async () => {
     expect(Object.keys(result.current.nested)).toEqual(['0', '1']);
     expect(Object.keys(result.current.get())).toEqual(['0', '1']);
 });
+
+test('error: should not allow set to another state value', async () => {
+    const state1 = renderHook(() => {
+        return useStateLink({ prop1: [0, 0] })
+    });
+
+    const state2 = renderHook(() => {
+        return useStateLink({ prop2: [0, 0] })
+    });
+
+    expect(() => {
+        state2.result.current.nested.prop2.set(
+            p => state1.result.current.get().prop1);
+    // tslint:disable-next-line: max-line-length
+    }).toThrow(`StateLink is used incorrectly. Attempted 'set(state.get() at '/prop1')' at '/prop2'. Hint: did you mean to use state.set(lodash.cloneDeep(value)) instead of state.set(value)?`);
+});
+
+test('error: should not allow create state from another state value', async () => {
+    const state1 = renderHook(() => {
+        return useStateLink({ prop1: [0, 0] })
+    });
+
+    const state2 = renderHook(() => {
+        return useStateLink(state1.result.current.get().prop1)
+    })
+
+    expect(state2.result.error.message)
+        // tslint:disable-next-line: max-line-length
+        .toEqual(`StateLink is used incorrectly. Attempted 'create/useStateLink(state.get() at '/prop1')' at '/'. Hint: did you mean to use create/useStateLink(state) OR create/useStateLink(lodash.cloneDeep(state.get())) instead of create/useStateLink(state.get())?`)
+});
