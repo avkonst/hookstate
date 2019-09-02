@@ -313,3 +313,25 @@ test('error: should not allow create state from another state value', async () =
         // tslint:disable-next-line: max-line-length
         .toEqual(`StateLink is used incorrectly. Attempted 'create/useStateLink(state.get() at '/prop1')' at '/'. Hint: did you mean to use create/useStateLink(state) OR create/useStateLink(lodash.cloneDeep(state.get())) instead of create/useStateLink(state.get())?`)
 });
+
+test('error: should not allow create state from another state value (nested)', async () => {
+    const state1 = renderHook(() => {
+        return useStateLink({ prop1: [0, 0] })
+    });
+
+    const state2 = renderHook(() => {
+        return useStateLink(state1.result.current.nested)
+    })
+
+    expect(state2.result.error.message)
+        // tslint:disable-next-line: max-line-length
+        .toEqual(`StateLink is used incorrectly. Attempted 'create/useStateLink(state.get() at '/')' at '/'. Hint: did you mean to use create/useStateLink(state) OR create/useStateLink(lodash.cloneDeep(state.get())) instead of create/useStateLink(state.get())?`)
+
+    const state3 = renderHook(() => {
+        return useStateLink(state1.result.current.nested.prop1.nested)
+    })
+
+    expect(state3.result.error.message)
+        // tslint:disable-next-line: max-line-length
+        .toEqual(`StateLink is used incorrectly. Attempted 'create/useStateLink(state.get() at '/prop1')' at '/'. Hint: did you mean to use create/useStateLink(state) OR create/useStateLink(lodash.cloneDeep(state.get())) instead of create/useStateLink(state.get())?`)
+});
