@@ -68,6 +68,7 @@ var PluginUnknownError = /** @class */ (function (_super) {
 }(Error));
 var DegradedID = Symbol('Degraded');
 var StateMemoID = Symbol('StateMemo');
+var ProxyMarkerID = Symbol('ProxyMarker');
 var RootPath = [];
 var State = /** @class */ (function () {
     function State(_value) {
@@ -167,7 +168,7 @@ var State = /** @class */ (function () {
         this._subscribers.delete(l);
     };
     State.prototype.toJSON = function () {
-        throw new StateLinkInvalidUsageError('toJSON', RootPath, 'did you mean to searialize the value of the StateLink but not the StateLink itself');
+        throw new StateLinkInvalidUsageError('toJSON()', RootPath, 'did you mean to use JSON.stringify(state.get()) instead of JSON.stringify(state)?');
     };
     return State;
 }());
@@ -245,6 +246,9 @@ var StateLinkImpl = /** @class */ (function () {
     StateLinkImpl.prototype.setUntracked = function (newValue) {
         if (typeof newValue === 'function') {
             newValue = newValue(this.state.get(this.path));
+        }
+        if (typeof newValue === 'object' && newValue[ProxyMarkerID]) {
+            throw new StateLinkInvalidUsageError("set(state.get() at '/" + newValue[ProxyMarkerID].path.join('/') + "')", this.path, 'did you mean to use state.set(lodash.cloneDeep(value)) instead of state.set(value)?');
         }
         return this.state.set(this.path, newValue);
     };
@@ -346,6 +350,9 @@ var StateLinkImpl = /** @class */ (function () {
             if (key in Array.prototype) {
                 return Array.prototype[key];
             }
+            if (key === ProxyMarkerID) {
+                return _this;
+            }
             var index = Number(key);
             if (!Number.isInteger(index)) {
                 return undefined;
@@ -366,15 +373,18 @@ var StateLinkImpl = /** @class */ (function () {
     StateLinkImpl.prototype.valueArrayImpl = function () {
         var _this = this;
         return this.proxyWrap(this.valueUntracked, function (target, key) {
-            if (typeof key === 'symbol') {
-                // allow clients to associate hidden cache with state values
-                return target[key];
-            }
             if (key === 'length') {
                 return target.length;
             }
             if (key in Array.prototype) {
                 return Array.prototype[key];
+            }
+            if (key === ProxyMarkerID) {
+                return _this;
+            }
+            if (typeof key === 'symbol') {
+                // allow clients to associate hidden cache with state values
+                return target[key];
             }
             var index = Number(key);
             if (!Number.isInteger(index)) {
@@ -387,8 +397,7 @@ var StateLinkImpl = /** @class */ (function () {
                 target[key] = value;
                 return true;
             }
-            throw new StateLinkInvalidUsageError('set', _this.path, "use StateLink.set(...) API: replace 'state[" + key + "] = value' by " +
-                ("'state.nested[" + key + "].set(value)' to update an element in the state array"));
+            throw new StateLinkInvalidUsageError('set', _this.path, "did you mean to use 'state.nested[" + key + "].set(value)' instead of 'state[" + key + "] = value'?");
         });
     };
     StateLinkImpl.prototype.nestedObjectImpl = function () {
@@ -396,6 +405,9 @@ var StateLinkImpl = /** @class */ (function () {
         var proxyGetterCache = {};
         this.nestedLinksCache = proxyGetterCache;
         var getter = function (target, key) {
+            if (key === ProxyMarkerID) {
+                return _this;
+            }
             if (typeof key === 'symbol') {
                 return undefined;
             }
@@ -415,6 +427,9 @@ var StateLinkImpl = /** @class */ (function () {
     StateLinkImpl.prototype.valueObjectImpl = function () {
         var _this = this;
         return this.proxyWrap(this.valueUntracked, function (target, key) {
+            if (key === ProxyMarkerID) {
+                return _this;
+            }
             if (typeof key === 'symbol') {
                 // allow clients to associate hidden cache with state values
                 return target[key];
@@ -426,8 +441,7 @@ var StateLinkImpl = /** @class */ (function () {
                 target[key] = value;
                 return true;
             }
-            throw new StateLinkInvalidUsageError('set', _this.path, "use StateLink.set(...) API: replace 'state." + key + " = value' by " +
-                ("'state.nested." + key + ".set(value)' to update a property in the state object"));
+            throw new StateLinkInvalidUsageError('set', _this.path, "did you mean to use 'state.nested." + key + ".set(value)' instead of 'state." + key + " = value'?");
         });
     };
     // tslint:disable-next-line: no-any
@@ -512,12 +526,16 @@ function createState(initial) {
     if (typeof initial === 'function') {
         initialValue = initial();
     }
+    if (typeof initialValue === 'object' && initialValue[ProxyMarkerID]) {
+        throw new StateLinkInvalidUsageError("create/useStateLink(state.get() at '/" + initialValue[ProxyMarkerID].path.join('/') + "')", RootPath, 'did you mean to use create/useStateLink(state) OR ' +
+            'create/useStateLink(lodash.cloneDeep(state.get())) instead of create/useStateLink(state.get())?');
+    }
     return new State(initialValue);
 }
 function useSubscribedStateLink(state, path, update, subscribeTarget, disabledTracking) {
     var link = new StateLinkImpl(state, path, update, state.get(path));
     if (disabledTracking) {
-        link.with(DisabledTracking);
+        link.with(Degraded);
     }
     useIsomorphicLayoutEffect(function () {
         subscribeTarget.subscribe(link);
@@ -614,7 +632,7 @@ function useStateLinkUnmounted(source, transform) {
     // it is assumed the client discards the state link once it is used
     function () {
         throw new Error('Internal Error: unexpected call');
-    }, stateRef.state.get(RootPath)).with(DisabledTracking); // it does not matter how it is used, it is not subscribed anyway
+    }, stateRef.state.get(RootPath)).with(Degraded); // it does not matter how it is used, it is not subscribed anyway
     if (source instanceof StateInfImpl) {
         return source.transform(link, undefined);
     }
@@ -634,7 +652,7 @@ function StateMemo(transform, equals) {
     };
 }
 /**
- * @deprecated: use DisabledOptimization instead
+ * @deprecated: use Degraded instead
  */
 // tslint:disable-next-line: function-name
 function DisabledTracking() {
