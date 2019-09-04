@@ -284,6 +284,21 @@ test('array: should not rerender unused self', async () => {
     expect(Object.keys(result.current.get())).toEqual(['0', '1']);
 });
 
+test('null: should set to null', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useStateLink<{} | null>({})
+    });
+
+    result.current.get()
+    act(() => {
+        result.current.set(p => null);
+        result.current.set(null);
+    });
+    expect(renderTimes).toStrictEqual(2);
+});
+
 test('error: should not allow set to another state value', async () => {
     const state1 = renderHook(() => {
         return useStateLink({ prop1: [0, 0] })

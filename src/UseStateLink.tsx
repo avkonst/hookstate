@@ -325,7 +325,7 @@ class StateLinkImpl<S> implements StateLink<S>,
         if (typeof newValue === 'function') {
             newValue = (newValue as ((prevValue: S) => S))(this.state.get(this.path));
         }
-        if (typeof newValue === 'object' && newValue[ProxyMarkerID]) {
+        if (typeof newValue === 'object' && newValue !== null && newValue[ProxyMarkerID]) {
             throw new StateLinkInvalidUsageError(
                 `set(state.get() at '/${newValue[ProxyMarkerID].path.join('/')}')`,
                 this.path,
