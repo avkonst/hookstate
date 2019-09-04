@@ -18,6 +18,7 @@
         "build": "echo nothing for proxy-polyfill",
         "lint": "echo nothing for proxy-polyfill",
         "clean": "echo nothing for proxy-polyfill",
+        "clean-deps": "echo nothing for proxy-polyfill",
         "test": "echo nothing for proxy-polyfill",
         "check-updates": "ncu",
         "apply-updates": "ncu -u"

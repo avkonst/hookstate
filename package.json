@@ -26,6 +26,7 @@
         "build:watch": "yarn run start",
         "lint": "tslint --project .",
         "clean": "rimraf dist",
+        "clean-deps": "rimraf node_modules",
         "test": "cross-env CI=1 react-scripts test --env=jsdom",
         "test:watch": "react-scripts test --env=jsdom",
         "check-updates": "ncu",

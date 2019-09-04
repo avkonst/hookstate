@@ -144,7 +144,7 @@ function createValueStateMutation<S>(state: StateLink<S>): ValueStateMutation<S>
 // tslint:disable-next-line: function-name
 export function Mutate<S>(state: StateLink<S>): InferredStateMutation<S> {
     if (Array.isArray(state.value)) {
-        return createArrayStateMutation(state as unknown as StateLink<StateValueAtPath>) as
+        return createArrayStateMutation(state as unknown as StateLink<StateValueAtPath[]>) as
             unknown as InferredStateMutation<S>
     } else if (typeof state.value === 'object' && state.value !== null) {
         return createObjectStateMutation(state as StateLink<StateValueAtPath>) as
