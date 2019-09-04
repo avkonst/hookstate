@@ -1,6 +1,6 @@
 {
     "name": "@hookstate/touched",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "description": "Plugin for @hookstate/core to enable tracking of touched data (form) fields.",
     "license": "MIT",
     "author": {

@@ -1,6 +1,6 @@
 {
     "name": "@hookstate/logger",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "description": "Plugin for @hookstate/core to enable logging.",
     "license": "MIT",
     "author": {
