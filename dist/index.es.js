@@ -247,7 +247,7 @@ var StateLinkImpl = /** @class */ (function () {
         if (typeof newValue === 'function') {
             newValue = newValue(this.state.get(this.path));
         }
-        if (typeof newValue === 'object' && newValue[ProxyMarkerID]) {
+        if (typeof newValue === 'object' && newValue !== null && newValue[ProxyMarkerID]) {
             throw new StateLinkInvalidUsageError("set(state.get() at '/" + newValue[ProxyMarkerID].path.join('/') + "')", this.path, 'did you mean to use state.set(lodash.cloneDeep(value)) instead of state.set(value)?');
         }
         return this.state.set(this.path, newValue);
