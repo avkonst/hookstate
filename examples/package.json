@@ -37,7 +37,7 @@
         "typescript": "3.5.3"
     },
     "scripts": {
-        "prestart": "cp node_modules/outdated-browser-rework/dist/outdated-browser-rework.min.js public/outdated-browser.min.js && cp node_modules/outdated-browser-rework/dist/style.css public/outdated-browser.css",
+        "prestart": "concat -o public/outdated-browser.min.js node_modules/outdated-browser-rework/dist/outdated-browser-rework.min.js src/outdated-browser-override.js && concat -o  public/outdated-browser.css node_modules/outdated-browser-rework/dist/style.css src/outdated-browser-override.css",
         "start": "react-scripts start",
         "build": "react-scripts build && cp .netlify-headers build/_headers && cp .netlify-redirects build/_redirects && node sitemap.js",
         "test": "react-scripts test",
@@ -61,6 +61,7 @@
         ]
     },
     "devDependencies": {
+        "concat": "1.0.3",
         "outdated-browser-rework": "2.9.0",
         "sitemap": "4.1.1"
     }
