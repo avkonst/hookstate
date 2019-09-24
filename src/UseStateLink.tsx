@@ -32,9 +32,11 @@ export interface StateLink<S> {
     readonly path: Path;
     readonly nested: NestedInferredLink<S>;
 
-    /**
-     * @deprecated use get()
-     */
+    // keep value in addition to get() because typescript compiler
+    // does not handle elimination of undefined with get(), like in this example:
+    // const state = useStateLink<number | undefined>(0)
+    // const myvalue: number = statelink.value ? statelink.value + 1 : 0; // <-- compiles
+    // const myvalue: number = statelink.get() ? statelink.get() + 1 : 0; // <-- does not compile
     readonly value: S;
 
     get(): S;
@@ -282,39 +284,39 @@ class StateLinkImpl<S> implements StateLink<S>,
     private nestedCache: NestedInferredLink<S> | undefined;
     private nestedLinksCache: Record<string | number, StateLinkImpl<S[keyof S]>> | undefined;
 
-    private valueTracked: S | undefined;
+    private valueCache: S | undefined;
     private valueUsed: boolean | undefined;
 
     constructor(
         public readonly state: State,
         public readonly path: Path,
         public onUpdateUsed: () => void,
-        public valueUntracked: S
+        public valueSource: S
     ) { }
 
     get value(): S {
-        if (this.valueTracked === undefined) {
+        if (this.valueCache === undefined) {
             if (this.disabledTracking) {
-                this.valueTracked = this.valueUntracked;
-                if (this.valueTracked === undefined) {
+                this.valueCache = this.valueSource;
+                if (this.valueCache === undefined) {
                     this.valueUsed = true;
                 }
-            } else if (Array.isArray(this.valueUntracked)) {
-                this.valueTracked = this.valueArrayImpl();
-            } else if (typeof this.valueUntracked === 'object' && this.valueUntracked !== null) {
-                this.valueTracked = this.valueObjectImpl();
+            } else if (Array.isArray(this.valueSource)) {
+                this.valueCache = this.valueArrayImpl();
+            } else if (typeof this.valueSource === 'object' && this.valueSource !== null) {
+                this.valueCache = this.valueObjectImpl();
             } else {
-                this.valueTracked = this.valueUntracked;
-                if (this.valueTracked === undefined) {
+                this.valueCache = this.valueSource;
+                if (this.valueCache === undefined) {
                     this.valueUsed = true;
                 }
             }
         }
-        return this.valueTracked!;
+        return this.valueCache!;
     }
 
     getUntracked() {
-        return this.valueUntracked;
+        return this.valueSource;
     }
 
     get() {
@@ -380,13 +382,13 @@ class StateLinkImpl<S> implements StateLink<S>,
 
     updateIfUsed(path: Path, actions: (() => void)[]): boolean {
         const update = () => {
-            if (this.disabledTracking && (this.valueTracked !== undefined || this.valueUsed === true)) {
+            if (this.disabledTracking && (this.valueCache !== undefined || this.valueUsed === true)) {
                 actions.push(this.onUpdateUsed);
                 return true;
             }
             const firstChildKey = path[this.path.length];
             if (firstChildKey === undefined) {
-                if (this.valueTracked !== undefined || this.valueUsed === true) {
+                if (this.valueCache !== undefined || this.valueUsed === true) {
                     actions.push(this.onUpdateUsed);
                     return true;
                 }
@@ -409,13 +411,13 @@ class StateLinkImpl<S> implements StateLink<S>,
     }
 
     get nested(): NestedInferredLink<S> {
-        if (!this.valueTracked) {
+        if (!this.valueCache) {
             this.valueUsed = true;
         }
         if (this.nestedCache === undefined) {
-            if (Array.isArray(this.valueUntracked)) {
+            if (Array.isArray(this.valueSource)) {
                 this.nestedCache = this.nestedArrayImpl();
-            } else if (typeof this.valueUntracked === 'object' && this.valueUntracked !== null) {
+            } else if (typeof this.valueSource === 'object' && this.valueSource !== null) {
                 this.nestedCache = this.nestedObjectImpl();
             } else {
                 this.nestedCache = undefined;
@@ -458,13 +460,13 @@ class StateLinkImpl<S> implements StateLink<S>,
             proxyGetterCache[index] = r;
             return r;
         };
-        return this.proxyWrap(this.valueUntracked as unknown as object, getter) as
+        return this.proxyWrap(this.valueSource as unknown as object, getter) as
             unknown as NestedInferredLink<S>;
     }
 
     private valueArrayImpl(): S {
         return this.proxyWrap(
-            this.valueUntracked as unknown as object,
+            this.valueSource as unknown as object,
             (target: object, key: PropertyKey) => {
                 if (key === 'length') {
                     return (target as []).length;
@@ -524,13 +526,13 @@ class StateLinkImpl<S> implements StateLink<S>,
             proxyGetterCache[key] = r;
             return r;
         };
-        return this.proxyWrap(this.valueUntracked as unknown as object, getter) as
+        return this.proxyWrap(this.valueSource as unknown as object, getter) as
             unknown as NestedInferredLink<S>;
     }
 
     private valueObjectImpl(): S {
         return this.proxyWrap(
-            this.valueUntracked as unknown as object,
+            this.valueSource as unknown as object,
             (target: object, key: PropertyKey) => {
                 if (key === ProxyMarkerID) {
                     return this;

@@ -155,7 +155,7 @@ You can also use the state (**global**, **local** or **scoped**) via `StateFragm
 
 The `StateLink` variable has got the following methods and properties:
 
-- `get()` - returns the instance of data in the state
+- `get()` or `value` - returns the instance of data in the state
 - `set(...)` or `set((prevState) => ...)` - function which allows to mutate the state value. If `path === []`, it is similar to the `setState` variable returned by `React.useState` hook. If `path !== []`, it sets only the segment of the state value, pointed out by the path. The `set` function will not accept partial updates. It can be done by combining `set` with `nested`. There is the `Mutate` [plugin](#plugins), which adds helpful methods to mutate arrays and objects.
 - `path` 'Javascript' object 'path' to an element relative to the root object in the state. For example:
 
