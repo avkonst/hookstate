@@ -1,5 +1,5 @@
 
-import { useStateLink } from './UseStateLink';
+import { useStateLink, createStateLink, useStateLinkUnmounted } from './UseStateLink';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 
@@ -166,6 +166,28 @@ test('object: should not rerender unused self', async () => {
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.get().field1).toStrictEqual(0);
+});
+
+test('object: should auto have latest state for unmounted', async () => {
+    const state = createStateLink({
+        field1: 0,
+        field2: 'str'
+    })
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useStateLink(state)
+    });
+    const unmountedLink = useStateLinkUnmounted(state).nested
+
+    expect(unmountedLink.field1.get()).toStrictEqual(0);
+    expect(result.current.get().field1).toStrictEqual(0);
+    act(() => {
+        result.current.nested.field1.set(2);
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(unmountedLink.field1.get()).toStrictEqual(2);
+    expect(result.current.get().field1).toStrictEqual(2);
 });
 
 test('array: should rerender used', async () => {

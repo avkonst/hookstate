@@ -133,14 +133,20 @@ const ProxyMarkerID = Symbol('ProxyMarker');
 const RootPath: Path = [];
 
 class State implements Subscribable {
+    private _edition: number = 0;
+
     private _subscribers: Set<Subscriber> = new Set();
     private _presetSubscribers: Set<PresetCallback> = new Set();
     private _setSubscribers: Set<SetCallback> = new Set();
 
     private _plugins: Map<symbol, PluginInstance> = new Map();
-
+    
     constructor(private _value: StateValueAtRoot) { }
 
+    get edition() {
+        return this._edition;
+    }
+    
     get(path: Path) {
         let result = this._value;
         path.forEach(p => {
@@ -176,6 +182,8 @@ class State implements Subscribable {
                 result = result[p];
             }
         });
+        
+        this._edition += 1;
         this._setSubscribers.forEach(cb => cb(path, this._value, value))
         return returnPath;
     }
@@ -281,41 +289,52 @@ class StateLinkImpl<S> implements StateLink<S>,
     public disabledTracking: boolean | undefined;
     private subscribers: Set<Subscriber> | undefined;
 
+    private valueCache: S | undefined;
     private nestedCache: NestedInferredLink<S> | undefined;
     private nestedLinksCache: Record<string | number, StateLinkImpl<S[keyof S]>> | undefined;
-
-    private valueCache: S | undefined;
-    private valueUsed: boolean | undefined;
 
     constructor(
         public readonly state: State,
         public readonly path: Path,
-        public onUpdateUsed: () => void,
-        public valueSource: S
+        public onUpdateUsed: (() => void) | undefined,
+        public valueSource: S,
+        public valueEdition: number
     ) { }
 
+    private resetIfStale() {
+        // only unmounted / untracked links are refreshed
+        // others are recreated on state change as a part of rerender for affected state segments
+        // it is for performance and correctness
+        if (this.onUpdateUsed === undefined && this.valueEdition !== this.state.edition) {
+            // it is safe to reset the state only for unmounted / untracked state links
+            // because the following variables are used for tracking if a link has been used
+            // during rendering
+            delete this.valueCache
+            delete this.nestedCache
+            delete this.nestedLinksCache
+            this.valueSource = this.state.get(this.path)
+            this.valueEdition = this.state.edition
+        }
+    }
+    
     get value(): S {
+        this.resetIfStale()
         if (this.valueCache === undefined) {
             if (this.disabledTracking) {
                 this.valueCache = this.valueSource;
-                if (this.valueCache === undefined) {
-                    this.valueUsed = true;
-                }
             } else if (Array.isArray(this.valueSource)) {
                 this.valueCache = this.valueArrayImpl();
             } else if (typeof this.valueSource === 'object' && this.valueSource !== null) {
                 this.valueCache = this.valueObjectImpl();
             } else {
                 this.valueCache = this.valueSource;
-                if (this.valueCache === undefined) {
-                    this.valueUsed = true;
-                }
             }
         }
         return this.valueCache!;
     }
 
     getUntracked() {
+        this.resetIfStale()
         return this.valueSource;
     }
 
@@ -380,16 +399,20 @@ class StateLinkImpl<S> implements StateLink<S>,
         this.updateIfUsed(path, actions)
     }
 
-    updateIfUsed(path: Path, actions: (() => void)[]): boolean {
+    private updateIfUsed(path: Path, actions: (() => void)[]): boolean {
         const update = () => {
-            if (this.disabledTracking && (this.valueCache !== undefined || this.valueUsed === true)) {
-                actions.push(this.onUpdateUsed);
+            if (this.disabledTracking && ('valueCache' in this || 'nestedCache' in this)) {
+                if (this.onUpdateUsed) {
+                    actions.push(this.onUpdateUsed);
+                }
                 return true;
             }
             const firstChildKey = path[this.path.length];
             if (firstChildKey === undefined) {
-                if (this.valueCache !== undefined || this.valueUsed === true) {
-                    actions.push(this.onUpdateUsed);
+                if ('valueCache' in this || 'nestedCache' in this) {
+                    if (this.onUpdateUsed) {
+                        actions.push(this.onUpdateUsed);
+                    }
                     return true;
                 }
                 return false;
@@ -411,9 +434,7 @@ class StateLinkImpl<S> implements StateLink<S>,
     }
 
     get nested(): NestedInferredLink<S> {
-        if (!this.valueCache) {
-            this.valueUsed = true;
-        }
+        this.resetIfStale()
         if (this.nestedCache === undefined) {
             if (Array.isArray(this.valueSource)) {
                 this.nestedCache = this.nestedArrayImpl();
@@ -452,7 +473,8 @@ class StateLinkImpl<S> implements StateLink<S>,
                 this.state,
                 this.path.slice().concat(index),
                 this.onUpdateUsed,
-                target[index]
+                target[index],
+                this.valueEdition
             )
             if (this.disabledTracking) {
                 r.disabledTracking = true;
@@ -518,7 +540,8 @@ class StateLinkImpl<S> implements StateLink<S>,
                 this.state,
                 this.path.slice().concat(key.toString()),
                 this.onUpdateUsed,
-                target[key]
+                target[key],
+                this.valueEdition
             );
             if (this.disabledTracking) {
                 r.disabledTracking = true;
@@ -658,7 +681,8 @@ function useSubscribedStateLink<S>(
         state,
         path,
         update,
-        state.get(path)
+        state.get(path),
+        state.edition
     );
     if (disabledTracking) {
         link.with(Degraded)
@@ -711,6 +735,10 @@ function injectTransform<S, R>(
     link: StateLinkImpl<S>,
     transform: (state: StateLink<S>, prev: R | undefined) => R
 ) {
+    if (link.onUpdateUsed === undefined) {
+        // this is unmounted link
+        return transform(link, undefined);
+    }
     let injectedOnUpdateUsed: (() => void) | undefined = undefined;
     const originOnUpdateUsed = link.onUpdateUsed;
     link.onUpdateUsed = () => {
@@ -734,7 +762,8 @@ function injectTransform<S, R>(
             link.state,
             link.path,
             link.onUpdateUsed,
-            link.state.get(link.path)
+            link.state.get(link.path),
+            link.state.edition
         )
         // and we should inject to onUpdate now
         // so the overriding link is used to track used properties
@@ -820,11 +849,9 @@ export function useStateLinkUnmounted<S, R>(
     const link = new StateLinkImpl<S>(
         stateRef.state,
         RootPath,
-        // it is assumed the client discards the state link once it is used
-        () => {
-            throw new Error('Internal Error: unexpected call');
-        },
-        stateRef.state.get(RootPath)
+        undefined,
+        stateRef.state.get(RootPath),
+        stateRef.state.edition
     ).with(Degraded) // it does not matter how it is used, it is not subscribed anyway
     if (source instanceof StateInfImpl) {
         return source.transform(link, undefined);

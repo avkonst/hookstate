@@ -91,7 +91,7 @@ setTimeout(() => useStateLinkUnmounted(stateRef)
 , 5000) // adds new task 5 seconds after website load
 ```
 
-The result variable is of type [`StateLink`](#statelink). The state link variable must be discarded when an event processing is complete. Obtain new state link variable when it is needed in the next event. It is allowed to obtain the state link multiple times within the same event handler.
+The result variable is of type [`StateLink`](#statelink).
 
 The result state link inherits all the plugins attached to the state reference.
 
