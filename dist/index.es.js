@@ -73,11 +73,19 @@ var RootPath = [];
 var State = /** @class */ (function () {
     function State(_value) {
         this._value = _value;
+        this._edition = 0;
         this._subscribers = new Set();
         this._presetSubscribers = new Set();
         this._setSubscribers = new Set();
         this._plugins = new Map();
     }
+    Object.defineProperty(State.prototype, "edition", {
+        get: function () {
+            return this._edition;
+        },
+        enumerable: true,
+        configurable: true
+    });
     State.prototype.get = function (path) {
         var result = this._value;
         path.forEach(function (p) {
@@ -114,6 +122,7 @@ var State = /** @class */ (function () {
                 result = result[p];
             }
         });
+        this._edition += 1;
         this._setSubscribers.forEach(function (cb) { return cb(path, _this._value, value); });
         return returnPath;
     };
@@ -173,6 +182,8 @@ var State = /** @class */ (function () {
     return State;
 }());
 var SynteticID = Symbol('SynteticTypeInferenceMarker');
+var ValueCache = Symbol('ValueCache');
+var NestedCache = Symbol('NestedCache');
 var StateRefImpl = /** @class */ (function () {
     function StateRefImpl(state) {
         this.state = state;
@@ -204,41 +215,53 @@ var StateInfImpl = /** @class */ (function () {
     return StateInfImpl;
 }());
 var StateLinkImpl = /** @class */ (function () {
-    function StateLinkImpl(state, path, onUpdateUsed, valueUntracked) {
+    function StateLinkImpl(state, path, onUpdateUsed, valueSource, valueEdition) {
         this.state = state;
         this.path = path;
         this.onUpdateUsed = onUpdateUsed;
-        this.valueUntracked = valueUntracked;
+        this.valueSource = valueSource;
+        this.valueEdition = valueEdition;
     }
+    StateLinkImpl.prototype.resetIfStale = function () {
+        // only unmounted / untracked links are refreshed
+        // others are recreated on state change as a part of rerender for affected state segments
+        // it is for performance and correctness
+        if (this.onUpdateUsed === undefined && this.valueEdition !== this.state.edition) {
+            // it is safe to reset the state only for unmounted / untracked state links
+            // because the following variables are used for tracking if a link has been used
+            // during rendering
+            delete this[ValueCache];
+            delete this[NestedCache];
+            delete this.nestedLinksCache;
+            this.valueSource = this.state.get(this.path);
+            this.valueEdition = this.state.edition;
+        }
+    };
     Object.defineProperty(StateLinkImpl.prototype, "value", {
         get: function () {
-            if (this.valueTracked === undefined) {
+            this.resetIfStale();
+            if (this[ValueCache] === undefined) {
                 if (this.disabledTracking) {
-                    this.valueTracked = this.valueUntracked;
-                    if (this.valueTracked === undefined) {
-                        this.valueUsed = true;
-                    }
+                    this[ValueCache] = this.valueSource;
                 }
-                else if (Array.isArray(this.valueUntracked)) {
-                    this.valueTracked = this.valueArrayImpl();
+                else if (Array.isArray(this.valueSource)) {
+                    this[ValueCache] = this.valueArrayImpl();
                 }
-                else if (typeof this.valueUntracked === 'object' && this.valueUntracked !== null) {
-                    this.valueTracked = this.valueObjectImpl();
+                else if (typeof this.valueSource === 'object' && this.valueSource !== null) {
+                    this[ValueCache] = this.valueObjectImpl();
                 }
                 else {
-                    this.valueTracked = this.valueUntracked;
-                    if (this.valueTracked === undefined) {
-                        this.valueUsed = true;
-                    }
+                    this[ValueCache] = this.valueSource;
                 }
             }
-            return this.valueTracked;
+            return this[ValueCache];
         },
         enumerable: true,
         configurable: true
     });
     StateLinkImpl.prototype.getUntracked = function () {
-        return this.valueUntracked;
+        this.resetIfStale();
+        return this.valueSource;
     };
     StateLinkImpl.prototype.get = function () {
         return this.value;
@@ -292,14 +315,19 @@ var StateLinkImpl = /** @class */ (function () {
     StateLinkImpl.prototype.updateIfUsed = function (path, actions) {
         var _this = this;
         var update = function () {
-            if (_this.disabledTracking && (_this.valueTracked !== undefined || _this.valueUsed === true)) {
-                actions.push(_this.onUpdateUsed);
+            if (_this.disabledTracking &&
+                (ValueCache in _this || NestedCache in _this)) {
+                if (_this.onUpdateUsed) {
+                    actions.push(_this.onUpdateUsed);
+                }
                 return true;
             }
             var firstChildKey = path[_this.path.length];
             if (firstChildKey === undefined) {
-                if (_this.valueTracked !== undefined || _this.valueUsed === true) {
-                    actions.push(_this.onUpdateUsed);
+                if (ValueCache in _this || NestedCache in _this) {
+                    if (_this.onUpdateUsed) {
+                        actions.push(_this.onUpdateUsed);
+                    }
                     return true;
                 }
                 return false;
@@ -320,21 +348,19 @@ var StateLinkImpl = /** @class */ (function () {
     };
     Object.defineProperty(StateLinkImpl.prototype, "nested", {
         get: function () {
-            if (!this.valueTracked) {
-                this.valueUsed = true;
-            }
-            if (this.nestedCache === undefined) {
-                if (Array.isArray(this.valueUntracked)) {
-                    this.nestedCache = this.nestedArrayImpl();
+            this.resetIfStale();
+            if (this[NestedCache] === undefined) {
+                if (Array.isArray(this.valueSource)) {
+                    this[NestedCache] = this.nestedArrayImpl();
                 }
-                else if (typeof this.valueUntracked === 'object' && this.valueUntracked !== null) {
-                    this.nestedCache = this.nestedObjectImpl();
+                else if (typeof this.valueSource === 'object' && this.valueSource !== null) {
+                    this[NestedCache] = this.nestedObjectImpl();
                 }
                 else {
-                    this.nestedCache = undefined;
+                    this[NestedCache] = undefined;
                 }
             }
-            return this.nestedCache;
+            return this[NestedCache];
         },
         enumerable: true,
         configurable: true
@@ -361,18 +387,18 @@ var StateLinkImpl = /** @class */ (function () {
             if (cachehit) {
                 return cachehit;
             }
-            var r = new StateLinkImpl(_this.state, _this.path.slice().concat(index), _this.onUpdateUsed, target[index]);
+            var r = new StateLinkImpl(_this.state, _this.path.slice().concat(index), _this.onUpdateUsed, target[index], _this.valueEdition);
             if (_this.disabledTracking) {
                 r.disabledTracking = true;
             }
             proxyGetterCache[index] = r;
             return r;
         };
-        return this.proxyWrap(this.valueUntracked, getter);
+        return this.proxyWrap(this.valueSource, getter);
     };
     StateLinkImpl.prototype.valueArrayImpl = function () {
         var _this = this;
-        return this.proxyWrap(this.valueUntracked, function (target, key) {
+        return this.proxyWrap(this.valueSource, function (target, key) {
             if (key === 'length') {
                 return target.length;
             }
@@ -415,18 +441,18 @@ var StateLinkImpl = /** @class */ (function () {
             if (cachehit) {
                 return cachehit;
             }
-            var r = new StateLinkImpl(_this.state, _this.path.slice().concat(key.toString()), _this.onUpdateUsed, target[key]);
+            var r = new StateLinkImpl(_this.state, _this.path.slice().concat(key.toString()), _this.onUpdateUsed, target[key], _this.valueEdition);
             if (_this.disabledTracking) {
                 r.disabledTracking = true;
             }
             proxyGetterCache[key] = r;
             return r;
         };
-        return this.proxyWrap(this.valueUntracked, getter);
+        return this.proxyWrap(this.valueSource, getter);
     };
     StateLinkImpl.prototype.valueObjectImpl = function () {
         var _this = this;
-        return this.proxyWrap(this.valueUntracked, function (target, key) {
+        return this.proxyWrap(this.valueSource, function (target, key) {
             if (key === ProxyMarkerID) {
                 return _this;
             }
@@ -533,7 +559,7 @@ function createState(initial) {
     return new State(initialValue);
 }
 function useSubscribedStateLink(state, path, update, subscribeTarget, disabledTracking) {
-    var link = new StateLinkImpl(state, path, update, state.get(path));
+    var link = new StateLinkImpl(state, path, update, state.get(path), state.edition);
     if (disabledTracking) {
         link.with(Degraded);
     }
@@ -574,6 +600,10 @@ function useAutoStateLink(initialState) {
     return useLocalStateLink(initialState);
 }
 function injectTransform(link, transform) {
+    if (link.onUpdateUsed === undefined) {
+        // this is unmounted link
+        return transform(link, undefined);
+    }
     var injectedOnUpdateUsed = undefined;
     var originOnUpdateUsed = link.onUpdateUsed;
     link.onUpdateUsed = function () {
@@ -591,7 +621,7 @@ function injectTransform(link, transform) {
     injectedOnUpdateUsed = function () {
         // need to create new one to make sure
         // it does not pickup the stale cache of the original link after mutation
-        var overidingLink = new StateLinkImpl(link.state, link.path, link.onUpdateUsed, link.state.get(link.path));
+        var overidingLink = new StateLinkImpl(link.state, link.path, link.onUpdateUsed, link.state.get(link.path), link.state.edition);
         // and we should inject to onUpdate now
         // so the overriding link is used to track used properties
         link.onSet = function (path, actions) { return overidingLink.onSet(path, actions); };
@@ -628,11 +658,7 @@ function useStateLinkUnmounted(source, transform) {
     var stateRef = source instanceof StateInfImpl
         ? source.wrapped
         : source;
-    var link = new StateLinkImpl(stateRef.state, RootPath, 
-    // it is assumed the client discards the state link once it is used
-    function () {
-        throw new Error('Internal Error: unexpected call');
-    }, stateRef.state.get(RootPath)).with(Degraded); // it does not matter how it is used, it is not subscribed anyway
+    var link = new StateLinkImpl(stateRef.state, RootPath, undefined, stateRef.state.get(RootPath), stateRef.state.edition).with(Degraded); // it does not matter how it is used, it is not subscribed anyway
     if (source instanceof StateInfImpl) {
         return source.transform(link, undefined);
     }

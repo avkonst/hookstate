@@ -250,6 +250,8 @@ class State implements Subscribable {
 }
 
 const SynteticID = Symbol('SynteticTypeInferenceMarker');
+const ValueCache = Symbol('ValueCache');
+const NestedCache = Symbol('NestedCache');
 
 class StateRefImpl<S> implements StateRef<S> {
     // tslint:disable-next-line: variable-name
@@ -289,8 +291,6 @@ class StateLinkImpl<S> implements StateLink<S>,
     public disabledTracking: boolean | undefined;
     private subscribers: Set<Subscriber> | undefined;
 
-    private valueCache: S | undefined;
-    private nestedCache: NestedInferredLink<S> | undefined;
     private nestedLinksCache: Record<string | number, StateLinkImpl<S[keyof S]>> | undefined;
 
     constructor(
@@ -309,8 +309,8 @@ class StateLinkImpl<S> implements StateLink<S>,
             // it is safe to reset the state only for unmounted / untracked state links
             // because the following variables are used for tracking if a link has been used
             // during rendering
-            delete this.valueCache
-            delete this.nestedCache
+            delete this[ValueCache]
+            delete this[NestedCache]
             delete this.nestedLinksCache
             this.valueSource = this.state.get(this.path)
             this.valueEdition = this.state.edition
@@ -319,18 +319,18 @@ class StateLinkImpl<S> implements StateLink<S>,
     
     get value(): S {
         this.resetIfStale()
-        if (this.valueCache === undefined) {
+        if (this[ValueCache] === undefined) {
             if (this.disabledTracking) {
-                this.valueCache = this.valueSource;
+                this[ValueCache] = this.valueSource;
             } else if (Array.isArray(this.valueSource)) {
-                this.valueCache = this.valueArrayImpl();
+                this[ValueCache] = this.valueArrayImpl();
             } else if (typeof this.valueSource === 'object' && this.valueSource !== null) {
-                this.valueCache = this.valueObjectImpl();
+                this[ValueCache] = this.valueObjectImpl();
             } else {
-                this.valueCache = this.valueSource;
+                this[ValueCache] = this.valueSource;
             }
         }
-        return this.valueCache!;
+        return this[ValueCache] as S;
     }
 
     getUntracked() {
@@ -401,7 +401,8 @@ class StateLinkImpl<S> implements StateLink<S>,
 
     private updateIfUsed(path: Path, actions: (() => void)[]): boolean {
         const update = () => {
-            if (this.disabledTracking && ('valueCache' in this || 'nestedCache' in this)) {
+            if (this.disabledTracking &&
+                (ValueCache in this || NestedCache in this)) {
                 if (this.onUpdateUsed) {
                     actions.push(this.onUpdateUsed);
                 }
@@ -409,7 +410,7 @@ class StateLinkImpl<S> implements StateLink<S>,
             }
             const firstChildKey = path[this.path.length];
             if (firstChildKey === undefined) {
-                if ('valueCache' in this || 'nestedCache' in this) {
+                if (ValueCache in this || NestedCache in this) {
                     if (this.onUpdateUsed) {
                         actions.push(this.onUpdateUsed);
                     }
@@ -435,16 +436,16 @@ class StateLinkImpl<S> implements StateLink<S>,
 
     get nested(): NestedInferredLink<S> {
         this.resetIfStale()
-        if (this.nestedCache === undefined) {
+        if (this[NestedCache] === undefined) {
             if (Array.isArray(this.valueSource)) {
-                this.nestedCache = this.nestedArrayImpl();
+                this[NestedCache] = this.nestedArrayImpl();
             } else if (typeof this.valueSource === 'object' && this.valueSource !== null) {
-                this.nestedCache = this.nestedObjectImpl();
+                this[NestedCache] = this.nestedObjectImpl();
             } else {
-                this.nestedCache = undefined;
+                this[NestedCache] = undefined;
             }
         }
-        return this.nestedCache as NestedInferredLink<S>;
+        return this[NestedCache] as NestedInferredLink<S>;
     }
 
     private nestedArrayImpl(): NestedInferredLink<S> {

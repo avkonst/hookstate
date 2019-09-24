@@ -14,9 +14,6 @@ export declare type Path = ReadonlyArray<string | number>;
 export interface StateLink<S> {
     readonly path: Path;
     readonly nested: NestedInferredLink<S>;
-    /**
-     * @deprecated use get()
-     */
     readonly value: S;
     get(): S;
     set(newValue: React.SetStateAction<S>): void;
