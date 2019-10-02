@@ -156,7 +156,7 @@ async function loadStateUpdates(dbRef: Promise<StateHandle>, from: number, upto:
     readStore.getAll(IDBKeyRange.bound(from, upto))
     await readTx.done
 }
-async function persistStateUpdate(dbRef: Promise<StateHandle>, update: StateLinkUpdateRecord): Promise<number> {
+async function saveStateUpdate(dbRef: Promise<StateHandle>, update: StateLinkUpdateRecord): Promise<number> {
     const database = (await dbRef).db;
     const topic = (await dbRef).topic;
     return database.put(topic, update)
@@ -190,6 +190,7 @@ export function useStateLinkSynchronised<T>(
         latestCompactedEdition: number,
         latestCompactedTimestamp: number,
         isCompactionRunning: boolean,
+        latestSynchronizedEdition: number,
         isSynchronizationRunning: boolean,
         updatesCapturedDuringLoading: StateLinkUpdateRecordPersisted[],
         updatesTrackingEnabled: boolean,
@@ -201,6 +202,7 @@ export function useStateLinkSynchronised<T>(
         latestCompactedEdition: -1,
         latestCompactedTimestamp: 0,
         isCompactionRunning: false,
+        latestSynchronizedEdition: -1,
         isSynchronizationRunning: false,
         updatesCapturedDuringLoading: [],
         updatesTrackingEnabled: true,
@@ -336,7 +338,7 @@ export function useStateLinkSynchronised<T>(
                             path: path,
                             value: newValue
                         }
-                        persistStateUpdate(meta.current.dbRef!, update)
+                        saveStateUpdate(meta.current.dbRef!, update)
                             .then((edition) => broadcast({ ...update, edition })
                                 .then(() => triggerCompaction(edition)))
                     }
