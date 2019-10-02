@@ -186,47 +186,47 @@ export function useStateLinkSynchronised<T>(
     const meta = React.useRef<{
         stateRef: StateLink<T>,
         dbRef: Promise<StateHandle> | undefined,
-        loadedEdition: number,
-        compactedEdition: number,
-        compactedTimestamp: number,
-        compactionRunning: boolean,
-        synchronizationRunning: boolean,
-        deferredNotifications: StateLinkUpdateRecordPersisted[],
-        isLeader: boolean,
-        notificationsEnabled: boolean
+        initiallyLoadedEdition: number,
+        latestCompactedEdition: number,
+        latestCompactedTimestamp: number,
+        isCompactionRunning: boolean,
+        isSynchronizationRunning: boolean,
+        updatesCapturedDuringLoading: StateLinkUpdateRecordPersisted[],
+        updatesTrackingEnabled: boolean,
+        isThisInstanceLeader: boolean,
     }>({
         stateRef: state,
         dbRef: undefined,
-        loadedEdition: -1,
-        compactedEdition: -1,
-        compactedTimestamp: 0,
-        compactionRunning: false,
-        synchronizationRunning: false,
-        deferredNotifications: [],
-        isLeader: false,
-        notificationsEnabled: true
+        initiallyLoadedEdition: -1,
+        latestCompactedEdition: -1,
+        latestCompactedTimestamp: 0,
+        isCompactionRunning: false,
+        isSynchronizationRunning: false,
+        updatesCapturedDuringLoading: [],
+        updatesTrackingEnabled: true,
+        isThisInstanceLeader: false,
     })
     meta.current.stateRef = state
 
     function isLoading() {
-        return meta.current.loadedEdition === -1
+        return meta.current.initiallyLoadedEdition === -1
     }
     
     function disableNotifications(action: () => void) {
-        meta.current.notificationsEnabled = false;
+        meta.current.updatesTrackingEnabled = false;
         try {
             action();
         } finally {
-            meta.current.notificationsEnabled = true;
+            meta.current.updatesTrackingEnabled = true;
         }
     }
     
     function applyUpdate(record: StateLinkUpdateRecordPersisted) {
         if (isLoading()) {
-            meta.current.deferredNotifications.push(record)
+            meta.current.updatesCapturedDuringLoading.push(record)
             return;
         }
-        if (meta.current.loadedEdition >= record.edition) {
+        if (meta.current.initiallyLoadedEdition >= record.edition) {
             // this can happen, because the loadState could have loaded a record,
             // which we received here
             return;
@@ -251,55 +251,55 @@ export function useStateLinkSynchronised<T>(
     }
     
     function triggerCompaction(observedEdition: number) {
-        if (!meta.current.isLeader) {
+        if (!meta.current.isThisInstanceLeader) {
             return;
         }
-        if (observedEdition - meta.current.compactedEdition < 100) {
+        if (observedEdition - meta.current.latestCompactedEdition < 100) {
             return;
         }
         if (!meta.current.dbRef) {
             return;
         }
-        if (meta.current.compactionRunning) {
+        if (meta.current.isCompactionRunning) {
             return;
         }
         const currentTimestamp = (new Date).getTime()
-        if (currentTimestamp - meta.current.compactedTimestamp < 60000) {
+        if (currentTimestamp - meta.current.latestCompactedTimestamp < 60000) {
             return;
         }
-        meta.current.compactionRunning = true;
+        meta.current.isCompactionRunning = true;
         compactStateUpdates(meta.current.dbRef!, observedEdition).then(() => {
-            meta.current.compactionRunning = false;
+            meta.current.isCompactionRunning = false;
         }).catch((err) => {
-            meta.current.compactionRunning = false;
+            meta.current.isCompactionRunning = false;
             console.error(err)
         })
-        meta.current.compactedEdition = observedEdition
-        meta.current.compactedTimestamp = currentTimestamp
+        meta.current.latestCompactedEdition = observedEdition
+        meta.current.latestCompactedTimestamp = currentTimestamp
     }
     
     function triggerSynchronization() {
         if (!onSync) {
             return;
         }
-        if (!meta.current.isLeader) {
+        if (!meta.current.isThisInstanceLeader) {
             return;
         }
-        if (meta.current.synchronizationRunning) {
+        if (meta.current.isSynchronizationRunning) {
             return;
         }
-        meta.current.synchronizationRunning = true;
+        meta.current.isSynchronizationRunning = true;
         onSync([], 1, 1).then(() => {
-            meta.current.synchronizationRunning = false;
+            meta.current.isSynchronizationRunning = false;
         }).catch((err) => {
-            meta.current.synchronizationRunning = false;
+            meta.current.isSynchronizationRunning = false;
             console.error(err)
         })
     }
 
     const broadcast = useBroadcastChannel<StateLinkUpdateRecordPersisted>(
         topic, applyUpdate, () => {
-            meta.current.isLeader = true
+            meta.current.isThisInstanceLeader = true
             if (onLeader) {
                 onLeader()
             }
@@ -310,10 +310,10 @@ export function useStateLinkSynchronised<T>(
         let db = openState(topic, initial) 
         loadState(db).then(s => {
             disableNotifications(() => meta.current.stateRef.set(s.state))
-            meta.current.loadedEdition = s.loadedEdition;
-            meta.current.compactedEdition = s.compactedEdition;
-            meta.current.deferredNotifications.forEach(applyUpdate)
-            meta.current.deferredNotifications = []
+            meta.current.initiallyLoadedEdition = s.loadedEdition;
+            meta.current.latestCompactedEdition = s.compactedEdition;
+            meta.current.updatesCapturedDuringLoading.forEach(applyUpdate)
+            meta.current.updatesCapturedDuringLoading = []
             forceUpdate(true)
         })
         meta.current.dbRef = db
@@ -330,7 +330,7 @@ export function useStateLinkSynchronised<T>(
         instanceFactory: () => {
             return {
                 onSet: (path, newState, newValue) => {
-                    if (meta.current.notificationsEnabled) {
+                    if (meta.current.updatesTrackingEnabled) {
                         // this instance has been updated, so notify peers
                         const update = {
                             path: path,
