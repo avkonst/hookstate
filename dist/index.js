@@ -205,6 +205,9 @@ var StateRefImpl = /** @class */ (function () {
         this.state.register(pluginMeta);
         return this;
     };
+    StateRefImpl.prototype.wrap = function (transform) {
+        return new StateInfImpl(this, transform);
+    };
     return StateRefImpl;
 }());
 var StateInfImpl = /** @class */ (function () {

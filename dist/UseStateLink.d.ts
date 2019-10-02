@@ -2,6 +2,7 @@ import React from 'react';
 export interface StateRef<S> {
     __synteticTypeInferenceMarkerRef: symbol;
     with(plugin: () => Plugin): StateRef<S>;
+    wrap<R>(transform: (state: StateLink<S>, prev: R | undefined) => R): StateInf<R>;
 }
 export interface StateInf<R> {
     __synteticTypeInferenceMarkerInf: symbol;
