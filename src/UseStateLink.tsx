@@ -9,8 +9,8 @@ export interface StateRef<S> {
     // on useStateLink call
     __synteticTypeInferenceMarkerRef: symbol;
     with(plugin: () => Plugin): StateRef<S>;
-    
     wrap<R>(transform: (state: StateLink<S>, prev: R | undefined) => R): StateInf<R>
+    destroy(): void
 }
 
 // R captures the type of result of transform function
@@ -19,6 +19,7 @@ export interface StateInf<R> {
     // on useStateLink call
     __synteticTypeInferenceMarkerInf: symbol;
     with(plugin: () => Plugin): StateInf<R>;
+    destroy(): void;
 }
 
 // TODO add support for Map and Set
@@ -71,13 +72,14 @@ export interface PluginInstance {
         newValue: StateValueAtPath) => void | StateValueAtRoot,
     readonly onSet?: (path: Path, newState: StateValueAtRoot,
         newValue: StateValueAtPath) => void,
+    readonly onDestroy?: (state: StateValueAtRoot) => void,
 };
 
 export interface Plugin {
     readonly id: symbol;
-    // initial value may not be of the same type as the target value type,
-    // because it is coming from the state and represents the type of the root value
-    readonly instanceFactory: (initial: StateValueAtRoot) => PluginInstance;
+    readonly instanceFactory: (
+        initial: StateValueAtRoot, linkFactory: () => StateLink<StateValueAtRoot>
+    ) => PluginInstance;
 }
 
 //
@@ -122,6 +124,7 @@ interface Subscriber {
 
 type PresetCallback = (path: Path, prevState: StateValueAtRoot, newValue: StateValueAtPath) => void | StateValueAtRoot;
 type SetCallback = (path: Path, newState: StateValueAtRoot, newValue: StateValueAtPath) => void;
+type DestroyCallback = (state: StateValueAtRoot) => void;
 
 interface Subscribable {
     subscribe(l: Subscriber): void;
@@ -140,6 +143,7 @@ class State implements Subscribable {
     private _subscribers: Set<Subscriber> = new Set();
     private _presetSubscribers: Set<PresetCallback> = new Set();
     private _setSubscribers: Set<SetCallback> = new Set();
+    private _destroySubscribers: Set<DestroyCallback> = new Set();
 
     private _plugins: Map<symbol, PluginInstance> = new Map();
     
@@ -217,7 +221,10 @@ class State implements Subscribable {
         if (existingInstance) {
             return;
         }
-        const pluginInstance = plugin.instanceFactory(this._value);
+        const pluginInstance = plugin.instanceFactory(
+            this._value,
+            () => useStateLinkUnmounted(new StateRefImpl(this))
+        );
         this._plugins.set(plugin.id, pluginInstance);
         if (pluginInstance.onInit) {
             const initValue = pluginInstance.onInit()
@@ -234,6 +241,9 @@ class State implements Subscribable {
         if (pluginInstance.onSet) {
             this._setSubscribers.add((p, s, v) => pluginInstance.onSet!(p, s, v))
         }
+        if (pluginInstance.onDestroy) {
+            this._destroySubscribers.add((s) => pluginInstance.onDestroy!(s))
+        }
         return;
     }
 
@@ -245,6 +255,11 @@ class State implements Subscribable {
         this._subscribers.delete(l);
     }
 
+    destroy() {
+        // TODO may need to block all coming calls after it is destroyed
+        this._destroySubscribers.forEach(cb => cb(this._value))
+    }
+    
     toJSON() {
         throw new StateLinkInvalidUsageError('toJSON()', RootPath,
         'did you mean to use JSON.stringify(state.get()) instead of JSON.stringify(state)?');
@@ -275,6 +290,10 @@ class StateRefImpl<S> implements StateRef<S> {
     wrap<R>(transform: (state: StateLink<S>, prev: R | undefined) => R): StateInf<R> {
         return new StateInfImpl(this, transform)
     }
+    
+    destroy() {
+        this.state.destroy()
+    }
 }
 
 class StateInfImpl<S, R> implements StateInf<R> {
@@ -289,6 +308,10 @@ class StateInfImpl<S, R> implements StateInf<R> {
     with(plugin: () => Plugin): StateInf<R> {
         this.wrapped.with(plugin);
         return this;
+    }
+    
+    destroy() {
+        this.wrapped.destroy()
     }
 }
 
@@ -661,8 +684,6 @@ class StateLinkImpl<S> implements StateLink<S>,
     }
 }
 
-const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
-
 function createState<S>(initial: S | (() => S)): State {
     let initialValue: S = initial as S;
     if (typeof initial === 'function') {
@@ -680,9 +701,11 @@ function createState<S>(initial: S | (() => S)): State {
 
 function useSubscribedStateLink<S>(
     state: State,
-    path: Path, update: () => void,
+    path: Path,
+    update: () => void,
     subscribeTarget: Subscribable,
-    disabledTracking?: boolean | undefined
+    disabledTracking: boolean | undefined,
+    onDestroy: () => void
 ) {
     const link = new StateLinkImpl<S>(
         state,
@@ -694,32 +717,51 @@ function useSubscribedStateLink<S>(
     if (disabledTracking) {
         link.with(Degraded)
     }
-    useIsomorphicLayoutEffect(() => {
-        subscribeTarget.subscribe(link);
-        return () => subscribeTarget.unsubscribe(link);
-    });
+    
+    const ref = React.useRef<StateLinkImpl<S>>()
+    if (ref.current !== undefined) {
+        subscribeTarget.unsubscribe(ref.current)
+    }
+    ref.current = link
+    subscribeTarget.subscribe(link)
+
+    React.useEffect(() => {
+        return () => onDestroy();
+    }, []);
     return link;
 }
 
-function useGlobalStateLink<S>(stateLink: StateRefImpl<S>): StateLinkImpl<S> {
+function useGlobalStateLink<S>(stateRef: StateRefImpl<S>): StateLinkImpl<S> {
     const [, setValue] = React.useState({});
-    return useSubscribedStateLink(stateLink.state, RootPath, () => {
-        setValue({})
-    }, stateLink.state, stateLink.disabledTracking);
+    return useSubscribedStateLink(
+        stateRef.state,
+        RootPath,
+        () => setValue({}),
+        stateRef.state,
+        stateRef.disabledTracking,
+        () => {});
 }
 
 function useLocalStateLink<S>(initialState: S | (() => S)): StateLinkImpl<S> {
     const [value, setValue] = React.useState(() => ({ state: createState(initialState) }));
-    return useSubscribedStateLink(value.state, RootPath, () => {
-        setValue({ state: value.state })
-    }, value.state);
+    return useSubscribedStateLink(
+        value.state,
+        RootPath,
+        () => setValue({ state: value.state }),
+        value.state,
+        undefined,
+        () => value.state.destroy());
 }
 
 function useScopedStateLink<S>(originLink: StateLinkImpl<S>): StateLinkImpl<S> {
     const [, setValue] = React.useState({});
-    return useSubscribedStateLink(originLink.state, originLink.path, () => {
-        setValue({})
-    }, originLink, originLink.disabledTracking);
+    return useSubscribedStateLink(
+        originLink.state,
+        originLink.path,
+        () => setValue({}),
+        originLink,
+        originLink.disabledTracking,
+        () => {});
 }
 
 function useAutoStateLink<S>(
