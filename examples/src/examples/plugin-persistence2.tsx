@@ -56,6 +56,9 @@ async function openState(topic: string, initial: any): Promise<StateHandle> {
                 edition: 0,
                 data: initial
             }, 'state')
+            transaction.objectStore(topic).put({
+                edition: 0
+            }, 'sync')
             transaction.done.then(() => {
                 console.log('[hookstate][persistence]: store created:', topic)
             })
@@ -149,17 +152,35 @@ async function compactStateUpdates(dbRef: Promise<StateHandle>, upto: number) {
     await writeTx.done
 }
 async function loadStateUpdates(dbRef: Promise<StateHandle>, from: number, upto: number) {
+    console.log('loading state updates', from, upto)
     const database = (await dbRef).db;
     const topic = (await dbRef).topic;
     const readTx = database.transaction(topic, 'readonly')
     const readStore = readTx.objectStore(topic)
-    readStore.getAll(IDBKeyRange.bound(from, upto))
+    const result = await readStore.getAll(IDBKeyRange.bound(from, upto))
     await readTx.done
+    return result.map((r, i) => ({ ...r, edition: (i + from)})) as StateLinkUpdateRecordPersisted[];
 }
 async function saveStateUpdate(dbRef: Promise<StateHandle>, update: StateLinkUpdateRecord): Promise<number> {
     const database = (await dbRef).db;
     const topic = (await dbRef).topic;
     return database.put(topic, update)
+}
+async function loadStateSync(stateHandle: Promise<StateHandle>) {
+    const database = (await stateHandle).db;
+    const topic = (await stateHandle).topic;
+    const syncState = await database.get(topic, 'sync')
+    return {
+        synchronizedEdition: syncState.edition
+    }
+}
+async function saveStateSync(stateHandle: Promise<StateHandle>, latestSynchronizedEdition: number) {
+    const database = (await stateHandle).db;
+    const topic = (await stateHandle).topic;
+    await database.put(topic, {
+        edition: latestSynchronizedEdition
+    }, 'sync')
+    return
 }
 
 interface StateLinkUpdateRecord {
@@ -176,7 +197,7 @@ const LocalSyncBroadcastPluginID = Symbol('LocalSyncBroadcastPluginID')
 export function useStateLinkSynchronised<T>(
     topic: string, initial: T,
     onLeader?: () => void,
-    onSync?: (path: Path, newValue: StateValueAtPath, prevValue: StateValueAtPath) => Promise<boolean>): {
+    onSync?: (updates: StateLinkUpdateRecordPersisted[]) => Promise<boolean>): {
     isLoading: boolean,
     state: StateLink<T>
 } {
@@ -186,35 +207,57 @@ export function useStateLinkSynchronised<T>(
     const meta = React.useRef<{
         stateRef: StateLink<T>,
         dbRef: Promise<StateHandle> | undefined,
+
         initiallyLoadedEdition: number,
+        updatesCapturedDuringStateLoading: StateLinkUpdateRecordPersisted[],
+
         latestCompactedEdition: number,
         latestCompactedTimestamp: number,
         isCompactionRunning: boolean,
+
+        latestObservedEdition: number,
+        updatesCapturedDuringLeaderLoading: StateLinkUpdateRecordPersisted[],
+        updatesPendingSynchronization: StateLinkUpdateRecordPersisted[],
+
         latestSynchronizedEdition: number,
         isSynchronizationRunning: boolean,
-        updatesCapturedDuringLoading: StateLinkUpdateRecordPersisted[],
+
         updatesTrackingEnabled: boolean,
-        isThisInstanceLeader: boolean,
     }>({
         stateRef: state,
         dbRef: undefined,
+
         initiallyLoadedEdition: -1,
+        updatesCapturedDuringStateLoading: [],
+
         latestCompactedEdition: -1,
         latestCompactedTimestamp: 0,
         isCompactionRunning: false,
-        latestSynchronizedEdition: -1,
+
+        latestObservedEdition: -1,
+        updatesCapturedDuringLeaderLoading: [],
+        updatesPendingSynchronization: [],
+
+        latestSynchronizedEdition: -2, // see states and transitions below
         isSynchronizationRunning: false,
-        updatesCapturedDuringLoading: [],
+
         updatesTrackingEnabled: true,
-        isThisInstanceLeader: false,
     })
     meta.current.stateRef = state
 
-    function isLoading() {
-        return meta.current.initiallyLoadedEdition === -1
+    // transitions 1): Loading (false) -> Loaded (true)
+    function isStateLoaded() {
+        return meta.current.initiallyLoadedEdition !== -1
+    }
+
+    // transitions 2): Not Elected (undefined) -> Loading & Elected (false) -> Loaded & Elected (true)
+    function isLeaderLoaded() {
+        if (meta.current.latestSynchronizedEdition === -2) return undefined;
+        if (meta.current.latestSynchronizedEdition === -1) return false;
+        return true;
     }
     
-    function disableNotifications(action: () => void) {
+    function runWithUpdatesTrackingDisabled(action: () => void) {
         meta.current.updatesTrackingEnabled = false;
         try {
             action();
@@ -223,9 +266,107 @@ export function useStateLinkSynchronised<T>(
         }
     }
     
-    function applyUpdate(record: StateLinkUpdateRecordPersisted) {
-        if (isLoading()) {
-            meta.current.updatesCapturedDuringLoading.push(record)
+    function processUnsyncedUpdate(record: StateLinkUpdateRecordPersisted) {
+        // updates can come out of order
+        
+        console.log('processUnsyncedUpdate', record)
+        
+        meta.current.latestObservedEdition = Math.max(meta.current.latestObservedEdition, record.edition)
+
+        if (isLeaderLoaded() === undefined) {
+            console.log('processUnsyncedUpdate: leader undefined')
+            return;
+        }
+
+        if (!isStateLoaded()) {
+            console.log('processUnsyncedUpdate: leader loading')
+            meta.current.updatesCapturedDuringLeaderLoading.push(record)
+            return;
+        }
+        
+        meta.current.updatesPendingSynchronization.push(record)
+        if (meta.current.isSynchronizationRunning) {
+            console.log('processUnsyncedUpdate: already running')
+            return;
+        }
+
+        function compact(upto: number) {
+            console.log('processUnsyncedUpdate: compacting', upto)
+
+            const observedEdition = upto;
+            if (isLeaderLoaded()) {
+                return;
+            }
+            if (observedEdition - meta.current.latestCompactedEdition < 100) {
+                return;
+            }
+            if (!meta.current.dbRef) {
+                return;
+            }
+            if (meta.current.isCompactionRunning) {
+                return;
+            }
+            const currentTimestamp = (new Date).getTime()
+            if (currentTimestamp - meta.current.latestCompactedTimestamp < 60000) {
+                return;
+            }
+            meta.current.isCompactionRunning = true;
+            compactStateUpdates(meta.current.dbRef!, observedEdition).then(() => {
+                meta.current.isCompactionRunning = false;
+            }).catch((err) => {
+                meta.current.isCompactionRunning = false;
+                console.error(err)
+            })
+            meta.current.latestCompactedEdition = observedEdition
+            meta.current.latestCompactedTimestamp = currentTimestamp
+        }
+        
+        async function sync() {
+            console.log('processUnsyncedUpdate: syncing')
+
+            const recordsToSync = meta.current.updatesPendingSynchronization
+            const pendingEditions = meta.current.updatesPendingSynchronization.map(i => i.edition).sort()
+            const latestEdition = pendingEditions[pendingEditions.length - 1]
+            if (pendingEditions.find(
+                    (e, i) => e - meta.current.latestSynchronizedEdition !== i + 1) !== undefined) {
+                // some are out of order, wait until it lines up
+                console.warn('out of order updates received, postponing sync until gaps are closed',
+                meta.current.latestSynchronizedEdition, pendingEditions)
+                return;
+            }
+
+            console.log('processUnsyncedUpdate: syncing editions', pendingEditions)
+
+            meta.current.updatesPendingSynchronization = []
+            meta.current.latestSynchronizedEdition = latestEdition
+            
+            meta.current.isSynchronizationRunning = true;
+            if (onSync) {
+                try {
+                    console.log('processUnsyncedUpdate: syncing records', recordsToSync)
+                    await onSync(recordsToSync)
+                } catch (err) {
+                    console.error(err)
+                }
+            }
+            console.log('processUnsyncedUpdate: saving sync', latestEdition)
+            await saveStateSync(meta.current.dbRef!, latestEdition)
+            meta.current.isSynchronizationRunning = false;
+            
+            compact(latestEdition)
+            
+            if (meta.current.updatesPendingSynchronization.length > 0) {
+                console.log('processUnsyncedUpdate: running again')
+                sync()
+            }
+        }
+        
+        sync()
+    }
+    
+    function processBroadcastedUpdate(record: StateLinkUpdateRecordPersisted) {
+        if (!isStateLoaded()) {
+            meta.current.updatesCapturedDuringStateLoading.push(record)
             return;
         }
         if (meta.current.initiallyLoadedEdition >= record.edition) {
@@ -233,8 +374,9 @@ export function useStateLinkSynchronised<T>(
             // which we received here
             return;
         }
+        // also updates can come here out of order, it is acceptable
         
-        disableNotifications(() => {
+        runWithUpdatesTrackingDisabled(() => {
             let targetState = meta.current.stateRef;
             for (let i = 0; i < record.path.length; i += 1) {
                 const p = record.path[i];
@@ -249,76 +391,58 @@ export function useStateLinkSynchronised<T>(
             targetState.set(record.value)
         })
         
-        triggerCompaction(record.edition);
+        processUnsyncedUpdate(record);
     }
     
-    function triggerCompaction(observedEdition: number) {
-        if (!meta.current.isThisInstanceLeader) {
-            return;
+    function activateWhenLoaded(s: {
+        state: any;
+        loadedEdition: number;
+        compactedEdition: number;
+    }) {
+        runWithUpdatesTrackingDisabled(() => meta.current.stateRef.set(s.state))
+        meta.current.initiallyLoadedEdition = s.loadedEdition;
+        meta.current.latestCompactedEdition = s.compactedEdition;
+        meta.current.updatesCapturedDuringStateLoading.forEach(processBroadcastedUpdate)
+        meta.current.updatesCapturedDuringStateLoading = []
+        if (isLeaderLoaded() !== undefined) {
+            activateWhenElected()
         }
-        if (observedEdition - meta.current.latestCompactedEdition < 100) {
-            return;
-        }
-        if (!meta.current.dbRef) {
-            return;
-        }
-        if (meta.current.isCompactionRunning) {
-            return;
-        }
-        const currentTimestamp = (new Date).getTime()
-        if (currentTimestamp - meta.current.latestCompactedTimestamp < 60000) {
-            return;
-        }
-        meta.current.isCompactionRunning = true;
-        compactStateUpdates(meta.current.dbRef!, observedEdition).then(() => {
-            meta.current.isCompactionRunning = false;
-        }).catch((err) => {
-            meta.current.isCompactionRunning = false;
-            console.error(err)
-        })
-        meta.current.latestCompactedEdition = observedEdition
-        meta.current.latestCompactedTimestamp = currentTimestamp
+        forceUpdate(true)
     }
     
-    function triggerSynchronization() {
-        if (!onSync) {
+    function activateWhenElected() {
+        meta.current.latestSynchronizedEdition = -1 // elected & loading state
+        if (!isStateLoaded()) {
             return;
         }
-        if (!meta.current.isThisInstanceLeader) {
-            return;
-        }
-        if (meta.current.isSynchronizationRunning) {
-            return;
-        }
-        meta.current.isSynchronizationRunning = true;
-        onSync([], 1, 1).then(() => {
-            meta.current.isSynchronizationRunning = false;
-        }).catch((err) => {
-            meta.current.isSynchronizationRunning = false;
-            console.error(err)
+        loadStateSync(meta.current.dbRef!).then(i => {
+            loadStateUpdates(meta.current.dbRef!,
+                i.synchronizedEdition + 1,
+                meta.current.latestObservedEdition === -1
+                    ? meta.current.initiallyLoadedEdition
+                    : meta.current.latestObservedEdition)
+                .then(updates => {
+                    meta.current.latestSynchronizedEdition = i.synchronizedEdition
+                    updates.forEach(processUnsyncedUpdate)
+                    meta.current.updatesCapturedDuringLeaderLoading
+                        // it could receive the same updates while they are being loaded
+                        .filter(u => !updates.find(i => i.edition === u.edition))
+                        .forEach(processUnsyncedUpdate)
+                    meta.current.updatesCapturedDuringLeaderLoading = []
+                })
         })
+        if (onLeader) {
+            onLeader()
+        }
     }
-
+    
     const broadcast = useBroadcastChannel<StateLinkUpdateRecordPersisted>(
-        topic, applyUpdate, () => {
-            meta.current.isThisInstanceLeader = true
-            if (onLeader) {
-                onLeader()
-            }
-        }
-    )
+        topic, processBroadcastedUpdate, activateWhenElected)
 
     React.useEffect(() => {
         let db = openState(topic, initial) 
-        loadState(db).then(s => {
-            disableNotifications(() => meta.current.stateRef.set(s.state))
-            meta.current.initiallyLoadedEdition = s.loadedEdition;
-            meta.current.latestCompactedEdition = s.compactedEdition;
-            meta.current.updatesCapturedDuringLoading.forEach(applyUpdate)
-            meta.current.updatesCapturedDuringLoading = []
-            forceUpdate(true)
-        })
         meta.current.dbRef = db
+        loadState(db).then(s => activateWhenLoaded(s))
         return () => closeState(db)
         // Callbacks are different on every call
         // but database setup is expensive.
@@ -339,8 +463,11 @@ export function useStateLinkSynchronised<T>(
                             value: newValue
                         }
                         saveStateUpdate(meta.current.dbRef!, update)
-                            .then((edition) => broadcast({ ...update, edition })
-                                .then(() => triggerCompaction(edition)))
+                            .then((edition) => {
+                                const persistedUpdate = { ...update, edition }
+                                processUnsyncedUpdate(persistedUpdate)
+                                broadcast(persistedUpdate)
+                            })
                     }
                 }
             }
@@ -348,7 +475,7 @@ export function useStateLinkSynchronised<T>(
     }))
     
     return {
-        isLoading: isLoading(),
+        isLoading: !isStateLoaded(),
         state: state
     }
 }
@@ -356,8 +483,17 @@ export function useStateLinkSynchronised<T>(
 interface Task { name: string }
 
 export const ExampleComponent = () => {
-    const { isLoading, state } = useStateLinkSynchronised('plugin-persisted-data-key-6',
-        [{ name: 'First Task' }, { name: 'Second Task' }] as Task[])
+    const { isLoading, state } = useStateLinkSynchronised(
+        'plugin-persisted-data-key-6',
+        [{ name: 'First Task' }, { name: 'Second Task' }] as Task[],
+        () => console.log('This is the leader'),
+        (updates) => {
+            console.log('request to sync', updates)
+            return new Promise<boolean>((resolve, reject) => {
+                setTimeout(() => resolve(true), 1000)
+            })
+        }
+    )
     if (isLoading) {
         return <p>Loading offline data...</p>
     }
