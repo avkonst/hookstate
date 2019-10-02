@@ -9,6 +9,8 @@ export interface StateRef<S> {
     // on useStateLink call
     __synteticTypeInferenceMarkerRef: symbol;
     with(plugin: () => Plugin): StateRef<S>;
+    
+    wrap<R>(transform: (state: StateLink<S>, prev: R | undefined) => R): StateInf<R>
 }
 
 // R captures the type of result of transform function
@@ -268,6 +270,10 @@ class StateRefImpl<S> implements StateRef<S> {
         }
         this.state.register(pluginMeta);
         return this;
+    }
+    
+    wrap<R>(transform: (state: StateLink<S>, prev: R | undefined) => R): StateInf<R> {
+        return new StateInfImpl(this, transform)
     }
 }
 
@@ -822,7 +828,7 @@ export function useStateLink<S, R>(
     transform?: (state: StateLink<S>, prev: R | undefined) => R
 ): StateLink<S> | R {
     const state = source instanceof StateInfImpl
-        ? source.wrapped as StateRef<S>
+        ? source.wrapped as unknown as StateRef<S>
         : source as (S | (() => S) | StateLink<S> | StateRef<S>);
     const link = useAutoStateLink(state);
     if (source instanceof StateInfImpl) {

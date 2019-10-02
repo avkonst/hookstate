@@ -168,7 +168,7 @@ test('object: should not rerender unused self', async () => {
     expect(result.current.get().field1).toStrictEqual(0);
 });
 
-test('object: should auto have latest state for unmounted', async () => {
+test('object: should auto save latest state for unmounted', async () => {
     const state = createStateLink({
         field1: 0,
         field2: 'str'
