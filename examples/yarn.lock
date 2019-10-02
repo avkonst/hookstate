@@ -1042,10 +1042,10 @@
   dependencies:
     "@hapi/hoek" "8.x.x"
 
-"@hookstate/core@1.0.8":
-  version "1.0.8"
-  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-1.0.8.tgz#fbc5c66983daa12e6d2f5fb0171354f2b21993e9"
-  integrity sha512-slqrkVW8vAN+IX1LHi71mdZBucHJZjUkJx2zBkzDFR8P/k5SE2a4S30IDysu+T0kprTxpX4jdAiQ892z8z9WEg==
+"@hookstate/core@1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-1.1.0.tgz#4cc2f25b82b3549278b8b0f2123db116ab5118d1"
+  integrity sha512-/RW6tAkWqhgPySaNfv5mz2xOlDzz/TRwCza2rhJNtthoqsWOjz8unKaPOXIMaovKDomSeeAPDf9fHVebidxJlA==
 
 "@hookstate/initial@1.0.3":
   version "1.0.3"
