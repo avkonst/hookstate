@@ -1,7 +1,7 @@
 import React from 'react';
 import BroadcastChannel from 'broadcast-channel';
 import LeaderElection, { LeaderElector } from 'broadcast-channel/leader-election';
-import { useStateLink, Path, StateValueAtPath, StateLink } from '@hookstate/core';
+import { useStateLink, Path, StateValueAtPath, StateLink, StateRef, createStateLink, useStateLinkUnmounted } from '@hookstate/core';
 import * as idb from 'idb';
 import { number } from 'prop-types';
 
@@ -197,18 +197,18 @@ const LocalSyncBroadcastPluginID = Symbol('LocalSyncBroadcastPluginID')
 export function useStateLinkSynchronised<T>(
     topic: string, initial: T,
     onLeader?: () => void,
-    onSync?: (updates: StateLinkUpdateRecordPersisted[]) => Promise<boolean>): {
-    isLoading: boolean,
-    state: StateLink<T>
-} {
-    const [, forceUpdate] = React.useState()
+    onSync?: (updates: StateLinkUpdateRecordPersisted[]) => Promise<boolean>) {
     const state = useStateLink(initial)
-
+    
     const meta = React.useRef<{
-        stateRef: StateLink<T>,
+        metaState: StateRef<{
+            initiallyLoadedEdition: number,
+            isSynchronizationRunning: boolean
+        }>,
+        targetState: StateLink<T>,
+        
         dbRef: Promise<StateHandle> | undefined,
 
-        initiallyLoadedEdition: number,
         updatesCapturedDuringStateLoading: StateLinkUpdateRecordPersisted[],
 
         latestCompactedEdition: number,
@@ -220,14 +220,19 @@ export function useStateLinkSynchronised<T>(
         updatesPendingSynchronization: StateLinkUpdateRecordPersisted[],
 
         latestSynchronizedEdition: number,
-        isSynchronizationRunning: boolean,
 
         updatesTrackingEnabled: boolean,
     }>({
-        stateRef: state,
+        metaState: createStateLink<{
+            initiallyLoadedEdition: number,
+            isSynchronizationRunning: boolean
+        }>({
+            initiallyLoadedEdition: -1,
+            isSynchronizationRunning: false,
+        }),
+        targetState: state,
         dbRef: undefined,
 
-        initiallyLoadedEdition: -1,
         updatesCapturedDuringStateLoading: [],
 
         latestCompactedEdition: -1,
@@ -239,15 +244,16 @@ export function useStateLinkSynchronised<T>(
         updatesPendingSynchronization: [],
 
         latestSynchronizedEdition: -2, // see states and transitions below
-        isSynchronizationRunning: false,
-
+        
         updatesTrackingEnabled: true,
     })
-    meta.current.stateRef = state
+    meta.current.targetState = state
+    
+    const metaState = useStateLinkUnmounted(meta.current.metaState)
 
     // transitions 1): Loading (false) -> Loaded (true)
     function isStateLoaded() {
-        return meta.current.initiallyLoadedEdition !== -1
+        return metaState.value.initiallyLoadedEdition !== -1
     }
 
     // transitions 2): Not Elected (undefined) -> Loading & Elected (false) -> Loaded & Elected (true)
@@ -285,7 +291,7 @@ export function useStateLinkSynchronised<T>(
         }
         
         meta.current.updatesPendingSynchronization.push(record)
-        if (meta.current.isSynchronizationRunning) {
+        if (metaState.value.isSynchronizationRunning) {
             console.log('processUnsyncedUpdate: already running')
             return;
         }
@@ -303,7 +309,7 @@ export function useStateLinkSynchronised<T>(
             if (meta.current.isCompactionRunning) {
                 return;
             }
-            const currentTimestamp = (new Date).getTime()
+            const currentTimestamp = (new Date()).getTime()
             if (currentTimestamp - meta.current.latestCompactedTimestamp < 60000) {
                 return;
             }
@@ -320,39 +326,44 @@ export function useStateLinkSynchronised<T>(
         
         async function sync() {
             console.log('processUnsyncedUpdate: syncing')
-
-            const recordsToSync = meta.current.updatesPendingSynchronization
-            const pendingEditions = meta.current.updatesPendingSynchronization.map(i => i.edition)
-                .sort((a, b) => a - b)
-            const latestEdition = pendingEditions[pendingEditions.length - 1]
-            if (pendingEditions.find(
-                    (e, i) => e - meta.current.latestSynchronizedEdition !== i + 1) !== undefined) {
-                // some are out of order, wait until it lines up
-                console.warn('out of order updates received, postponing sync until gaps are closed',
-                meta.current.latestSynchronizedEdition, pendingEditions)
-                return;
-            }
-
-            console.log('processUnsyncedUpdate: syncing editions', pendingEditions)
-
-            meta.current.updatesPendingSynchronization = []
-            meta.current.latestSynchronizedEdition = latestEdition
-            
-            meta.current.isSynchronizationRunning = true;
-            if (onSync) {
-                try {
-                    console.log('processUnsyncedUpdate: syncing records', recordsToSync)
-                    await onSync(recordsToSync)
-                } catch (err) {
-                    console.error(err)
+            try {
+                metaState.nested.isSynchronizationRunning.set(true);
+                
+                await new Promise(resolve => setTimeout(() => resolve(), 500)) // debounce
+                
+                const recordsToSync = meta.current.updatesPendingSynchronization
+                const pendingEditions = recordsToSync
+                    .map(i => i.edition)
+                    .sort((a, b) => a - b)
+                if (pendingEditions.find(
+                        (e, i) => e - meta.current.latestSynchronizedEdition !== i + 1) !== undefined) {
+                    // some are out of order, wait until it lines up
+                    console.warn('out of order updates received, postponing sync until gaps are closed',
+                    meta.current.latestSynchronizedEdition, pendingEditions)
+                    return;
                 }
+
+                console.log('processUnsyncedUpdate: syncing editions', pendingEditions)
+
+                const latestEdition = pendingEditions[pendingEditions.length - 1]
+                meta.current.updatesPendingSynchronization = []
+                meta.current.latestSynchronizedEdition = latestEdition
+                if (onSync) {
+                    try {
+                        console.log('processUnsyncedUpdate: syncing records', recordsToSync)
+                        await onSync(recordsToSync)
+                    } catch (err) {
+                        console.error(err)
+                    }
+                }
+                console.log('processUnsyncedUpdate: saving sync', latestEdition)
+                await saveStateSync(meta.current.dbRef!, latestEdition)
+            
+                compact(latestEdition)
+            } finally {
+                metaState.nested.isSynchronizationRunning.set(false);
             }
-            console.log('processUnsyncedUpdate: saving sync', latestEdition)
-            await saveStateSync(meta.current.dbRef!, latestEdition)
-            meta.current.isSynchronizationRunning = false;
-            
-            compact(latestEdition)
-            
+                        
             if (meta.current.updatesPendingSynchronization.length > 0) {
                 console.log('processUnsyncedUpdate: running again')
                 sync()
@@ -367,7 +378,7 @@ export function useStateLinkSynchronised<T>(
             meta.current.updatesCapturedDuringStateLoading.push(record)
             return;
         }
-        if (meta.current.initiallyLoadedEdition >= record.edition) {
+        if (metaState.value.initiallyLoadedEdition >= record.edition) {
             // this can happen, because the loadState could have loaded a record,
             // which we received here
             return;
@@ -375,14 +386,14 @@ export function useStateLinkSynchronised<T>(
         // also updates can come here out of order, it is acceptable
         
         runWithUpdatesTrackingDisabled(() => {
-            let targetState = meta.current.stateRef;
+            let targetState = meta.current.targetState;
             for (let i = 0; i < record.path.length; i += 1) {
                 const p = record.path[i];
                 const nested = targetState.nested
                 if (nested) {
                     targetState = nested[p]
                 } else {
-                    console.warn('Can not apply update at path:', record.path, meta.current.stateRef.get());
+                    console.warn('Can not apply update at path:', record.path, meta.current.targetState.get());
                     return;
                 }
             }
@@ -397,15 +408,14 @@ export function useStateLinkSynchronised<T>(
         loadedEdition: number;
         compactedEdition: number;
     }) {
-        runWithUpdatesTrackingDisabled(() => meta.current.stateRef.set(s.state))
-        meta.current.initiallyLoadedEdition = s.loadedEdition;
+        runWithUpdatesTrackingDisabled(() => meta.current.targetState.set(s.state))
+        metaState.nested.initiallyLoadedEdition.set(s.loadedEdition);
         meta.current.latestCompactedEdition = s.compactedEdition;
         meta.current.updatesCapturedDuringStateLoading.forEach(processBroadcastedUpdate)
         meta.current.updatesCapturedDuringStateLoading = []
         if (isLeaderLoaded() !== undefined) {
             activateWhenElected()
         }
-        forceUpdate(true)
     }
     
     function activateWhenElected() {
@@ -419,7 +429,7 @@ export function useStateLinkSynchronised<T>(
                 Math.max(
                     meta.current.latestObservedEdition,
                     i.synchronizedEdition + 1,
-                    meta.current.initiallyLoadedEdition))
+                    metaState.value.initiallyLoadedEdition))
                 .then(updates => {
                     meta.current.latestSynchronizedEdition = i.synchronizedEdition
                     updates.forEach(processUnsyncedUpdate)
@@ -473,16 +483,24 @@ export function useStateLinkSynchronised<T>(
         }
     }))
     
+    const metaInf = meta.current.metaState.wrap(s => ({
+        isLoading() {
+            return s.value.initiallyLoadedEdition === -1
+        },
+        isSynchronising() {
+            return s.value.isSynchronizationRunning
+        }
+    }))
     return {
-        isLoading: !isStateLoaded(),
-        state: state
+        state: state,
+        meta: metaInf
     }
 }
 
 interface Task { name: string }
 
 export const ExampleComponent = () => {
-    const { isLoading, state } = useStateLinkSynchronised(
+    const { state, meta: metaState } = useStateLinkSynchronised(
         'plugin-persisted-data-key-6',
         [{ name: 'First Task' }, { name: 'Second Task' }] as Task[],
         () => console.log('This is the leader'),
@@ -493,10 +511,12 @@ export const ExampleComponent = () => {
             })
         }
     )
-    if (isLoading) {
+    const meta = useStateLink(metaState);
+    if (meta.isLoading()) {
         return <p>Loading offline data...</p>
     }
     return <>
+        <p>Is syncrhonisation running: {meta.isSynchronising().toString()}</p>
         {state.nested.map((taskState, taskIndex) => {
             return <p key={taskIndex}>
                 <input
