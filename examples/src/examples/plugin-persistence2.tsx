@@ -294,9 +294,6 @@ export function useStateLinkSynchronised<T>(
             console.log('processUnsyncedUpdate: compacting', upto)
 
             const observedEdition = upto;
-            if (isLeaderLoaded()) {
-                return;
-            }
             if (observedEdition - meta.current.latestCompactedEdition < 100) {
                 return;
             }
@@ -325,7 +322,8 @@ export function useStateLinkSynchronised<T>(
             console.log('processUnsyncedUpdate: syncing')
 
             const recordsToSync = meta.current.updatesPendingSynchronization
-            const pendingEditions = meta.current.updatesPendingSynchronization.map(i => i.edition).sort()
+            const pendingEditions = meta.current.updatesPendingSynchronization.map(i => i.edition)
+                .sort((a, b) => a - b)
             const latestEdition = pendingEditions[pendingEditions.length - 1]
             if (pendingEditions.find(
                     (e, i) => e - meta.current.latestSynchronizedEdition !== i + 1) !== undefined) {
@@ -418,9 +416,7 @@ export function useStateLinkSynchronised<T>(
         loadStateSync(meta.current.dbRef!).then(i => {
             loadStateUpdates(meta.current.dbRef!,
                 i.synchronizedEdition + 1,
-                meta.current.latestObservedEdition === -1
-                    ? meta.current.initiallyLoadedEdition
-                    : meta.current.latestObservedEdition)
+                Math.max(meta.current.latestObservedEdition, meta.current.initiallyLoadedEdition + 1))
                 .then(updates => {
                     meta.current.latestSynchronizedEdition = i.synchronizedEdition
                     updates.forEach(processUnsyncedUpdate)
