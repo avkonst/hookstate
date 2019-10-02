@@ -3,10 +3,12 @@ export interface StateRef<S> {
     __synteticTypeInferenceMarkerRef: symbol;
     with(plugin: () => Plugin): StateRef<S>;
     wrap<R>(transform: (state: StateLink<S>, prev: R | undefined) => R): StateInf<R>;
+    destroy(): void;
 }
 export interface StateInf<R> {
     __synteticTypeInferenceMarkerInf: symbol;
     with(plugin: () => Plugin): StateInf<R>;
+    destroy(): void;
 }
 export declare type NestedInferredLink<S> = S extends ReadonlyArray<(infer U)> ? ReadonlyArray<StateLink<U>> : S extends null ? undefined : S extends object ? {
     readonly [K in keyof Required<S>]: StateLink<S[K]>;
@@ -33,10 +35,11 @@ export interface PluginInstance {
     readonly onInit?: () => StateValueAtRoot | void;
     readonly onPreset?: (path: Path, prevState: StateValueAtRoot, newValue: StateValueAtPath) => void | StateValueAtRoot;
     readonly onSet?: (path: Path, newState: StateValueAtRoot, newValue: StateValueAtPath) => void;
+    readonly onDestroy?: (state: StateValueAtRoot) => void;
 }
 export interface Plugin {
     readonly id: symbol;
-    readonly instanceFactory: (initial: StateValueAtRoot) => PluginInstance;
+    readonly instanceFactory: (initial: StateValueAtRoot, linkFactory: () => StateLink<StateValueAtRoot>) => PluginInstance;
 }
 export declare function createStateLink<S>(initial: S | (() => S)): StateRef<S>;
 export declare function createStateLink<S, R>(initial: S | (() => S), transform: (state: StateLink<S>, prev: R | undefined) => R): StateInf<R>;

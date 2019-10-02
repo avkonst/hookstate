@@ -83,6 +83,7 @@ var State = /** @class */ (function () {
         this._subscribers = new Set();
         this._presetSubscribers = new Set();
         this._setSubscribers = new Set();
+        this._destroySubscribers = new Set();
         this._plugins = new Map();
     }
     Object.defineProperty(State.prototype, "edition", {
@@ -153,11 +154,12 @@ var State = /** @class */ (function () {
         throw new PluginUnknownError(pluginId);
     };
     State.prototype.register = function (plugin, path) {
+        var _this = this;
         var existingInstance = this._plugins.get(plugin.id);
         if (existingInstance) {
             return;
         }
-        var pluginInstance = plugin.instanceFactory(this._value);
+        var pluginInstance = plugin.instanceFactory(this._value, function () { return useStateLinkUnmounted(new StateRefImpl(_this)); });
         this._plugins.set(plugin.id, pluginInstance);
         if (pluginInstance.onInit) {
             var initValue = pluginInstance.onInit();
@@ -174,6 +176,9 @@ var State = /** @class */ (function () {
         if (pluginInstance.onSet) {
             this._setSubscribers.add(function (p, s, v) { return pluginInstance.onSet(p, s, v); });
         }
+        if (pluginInstance.onDestroy) {
+            this._destroySubscribers.add(function (s) { return pluginInstance.onDestroy(s); });
+        }
         return;
     };
     State.prototype.subscribe = function (l) {
@@ -181,6 +186,11 @@ var State = /** @class */ (function () {
     };
     State.prototype.unsubscribe = function (l) {
         this._subscribers.delete(l);
+    };
+    State.prototype.destroy = function () {
+        var _this = this;
+        // TODO may need to block all coming calls after it is destroyed
+        this._destroySubscribers.forEach(function (cb) { return cb(_this._value); });
     };
     State.prototype.toJSON = function () {
         throw new StateLinkInvalidUsageError('toJSON()', RootPath, 'did you mean to use JSON.stringify(state.get()) instead of JSON.stringify(state)?');
@@ -208,6 +218,9 @@ var StateRefImpl = /** @class */ (function () {
     StateRefImpl.prototype.wrap = function (transform) {
         return new StateInfImpl(this, transform);
     };
+    StateRefImpl.prototype.destroy = function () {
+        this.state.destroy();
+    };
     return StateRefImpl;
 }());
 var StateInfImpl = /** @class */ (function () {
@@ -220,6 +233,9 @@ var StateInfImpl = /** @class */ (function () {
     StateInfImpl.prototype.with = function (plugin) {
         this.wrapped.with(plugin);
         return this;
+    };
+    StateInfImpl.prototype.destroy = function () {
+        this.wrapped.destroy();
     };
     return StateInfImpl;
 }());
@@ -555,7 +571,6 @@ var StateLinkImpl = /** @class */ (function () {
     };
     return StateLinkImpl;
 }());
-var useIsomorphicLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
 function createState(initial) {
     var initialValue = initial;
     if (typeof initial === 'function') {
@@ -567,34 +582,33 @@ function createState(initial) {
     }
     return new State(initialValue);
 }
-function useSubscribedStateLink(state, path, update, subscribeTarget, disabledTracking) {
+function useSubscribedStateLink(state, path, update, subscribeTarget, disabledTracking, onDestroy) {
     var link = new StateLinkImpl(state, path, update, state.get(path), state.edition);
     if (disabledTracking) {
         link.with(Degraded);
     }
-    useIsomorphicLayoutEffect(function () {
-        subscribeTarget.subscribe(link);
-        return function () { return subscribeTarget.unsubscribe(link); };
-    });
+    var ref = React.useRef();
+    if (ref.current !== undefined) {
+        subscribeTarget.unsubscribe(ref.current);
+    }
+    ref.current = link;
+    subscribeTarget.subscribe(link);
+    React.useEffect(function () {
+        return function () { return onDestroy(); };
+    }, []);
     return link;
 }
-function useGlobalStateLink(stateLink) {
+function useGlobalStateLink(stateRef) {
     var _a = React.useState({}), setValue = _a[1];
-    return useSubscribedStateLink(stateLink.state, RootPath, function () {
-        setValue({});
-    }, stateLink.state, stateLink.disabledTracking);
+    return useSubscribedStateLink(stateRef.state, RootPath, function () { return setValue({}); }, stateRef.state, stateRef.disabledTracking, function () { });
 }
 function useLocalStateLink(initialState) {
     var _a = React.useState(function () { return ({ state: createState(initialState) }); }), value = _a[0], setValue = _a[1];
-    return useSubscribedStateLink(value.state, RootPath, function () {
-        setValue({ state: value.state });
-    }, value.state);
+    return useSubscribedStateLink(value.state, RootPath, function () { return setValue({ state: value.state }); }, value.state, undefined, function () { return value.state.destroy(); });
 }
 function useScopedStateLink(originLink) {
     var _a = React.useState({}), setValue = _a[1];
-    return useSubscribedStateLink(originLink.state, originLink.path, function () {
-        setValue({});
-    }, originLink, originLink.disabledTracking);
+    return useSubscribedStateLink(originLink.state, originLink.path, function () { return setValue({}); }, originLink, originLink.disabledTracking, function () { });
 }
 function useAutoStateLink(initialState) {
     if (initialState instanceof StateLinkImpl) {
