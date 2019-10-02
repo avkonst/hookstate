@@ -416,7 +416,10 @@ export function useStateLinkSynchronised<T>(
         loadStateSync(meta.current.dbRef!).then(i => {
             loadStateUpdates(meta.current.dbRef!,
                 i.synchronizedEdition + 1,
-                Math.max(meta.current.latestObservedEdition, meta.current.initiallyLoadedEdition + 1))
+                Math.max(
+                    meta.current.latestObservedEdition,
+                    i.synchronizedEdition + 1,
+                    meta.current.initiallyLoadedEdition))
                 .then(updates => {
                     meta.current.latestSynchronizedEdition = i.synchronizedEdition
                     updates.forEach(processUnsyncedUpdate)
