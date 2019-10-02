@@ -1,7 +1,7 @@
 import React from 'react';
 import BroadcastChannel from 'broadcast-channel';
 import LeaderElection, { LeaderElector } from 'broadcast-channel/leader-election';
-import { useStateLink, Path, StateValueAtPath, Plugin, StateLink, createStateLink, useStateLinkUnmounted, PluginInstance, StateValueAtRoot, StateInf } from '@hookstate/core';
+import { useStateLink, Path, StateValueAtPath, Plugin, StateLink, createStateLink, useStateLinkUnmounted, PluginInstance, StateValueAtRoot, StateInf, StateRef } from '@hookstate/core';
 import * as idb from 'idb';
 
 interface BroadcastChannelHandle<T> {
@@ -39,6 +39,7 @@ async function openState(topic: string, initial: any): Promise<StateHandle> {
                 data: initial
             }, 'state')
             transaction.objectStore(topic).put({
+                data: undefined,
                 edition: 0
             }, 'sync')
             transaction.done.then(() => {
@@ -153,13 +154,17 @@ async function loadStateSync(stateHandle: Promise<StateHandle>) {
     const topic = (await stateHandle).topic;
     const syncState = await database.get(topic, 'sync')
     return {
+        pendingState: syncState.data,
         synchronizedEdition: syncState.edition
     }
 }
-async function saveStateSync(stateHandle: Promise<StateHandle>, latestSynchronizedEdition: number) {
+async function saveStateSync(stateHandle: Promise<StateHandle>,
+    pendingState: any,
+    latestSynchronizedEdition: number) {
     const database = (await stateHandle).db;
     const topic = (await stateHandle).topic;
     await database.put(topic, {
+        data: pendingState,
         edition: latestSynchronizedEdition
     }, 'sync')
     return
@@ -167,7 +172,8 @@ async function saveStateSync(stateHandle: Promise<StateHandle>, latestSynchroniz
 
 interface StateLinkUpdateRecord {
     readonly path: Path,
-    readonly value: StateValueAtPath
+    readonly value: StateValueAtPath,
+    readonly incoming: boolean
 }
 
 interface StateLinkUpdateRecordPersisted extends StateLinkUpdateRecord {
@@ -179,8 +185,8 @@ export interface SynchronisationStatus {
     isSynchronising(): boolean;
 }
 
-export interface SynchronisedExtensions {
-    set(): void;
+export interface SynchronisedExtensions<S> {
+    set(newValue: React.SetStateAction<S>): void;
     status(): StateInf<SynchronisationStatus>
 }
 
@@ -189,25 +195,36 @@ const PluginID = Symbol('Synchronised');
 class SynchronisedPluginInstance implements PluginInstance {
     private broadcastRef: BroadcastChannelHandle<StateLinkUpdateRecordPersisted>;
     private dbRef: Promise<StateHandle>;
-    private onSetCallback: (path: readonly (string | number)[], newState: any, newValue: any) => void;
+    private onSetOutgoing: (path: readonly (string | number)[], newState: any, newValue: any) => void;
     private metaInf: StateInf<SynchronisationStatus>;
+    private unsubscribeCallback: (() => void) | undefined;
+    private metaStateRef: StateRef<{
+        initiallyLoadedEdition: number;
+        isSynchronizationRunning: boolean;
+    }>;
+    
+    runWithoutRemoteSynchronisation: (action: () => void) => void;
     
     constructor(
         topic: string,
         unmountedLink: StateLink<StateValueAtRoot>,
-        onLeader?: () => void,
-        onSync?: (updates: StateLinkUpdateRecordPersisted[]) => Promise<boolean>
+        subscribeIncoming?: (link: StateLink<StateValueAtRoot>) => () => void,
+        submitOutgoing?: (
+            pending: any,
+            updates: StateLinkUpdateRecordPersisted[],
+            link: StateLink<StateValueAtRoot>
+        ) => Promise<any>
     ) {
         const self = this;
         
-        const metaStateRef = createStateLink<{
+        this.metaStateRef = createStateLink<{
             initiallyLoadedEdition: number,
             isSynchronizationRunning: boolean
         }>({
             initiallyLoadedEdition: -1,
             isSynchronizationRunning: false,
         });
-        const metaState = useStateLinkUnmounted(metaStateRef);
+        const metaState = useStateLinkUnmounted(this.metaStateRef);
         
         let updatesCapturedDuringStateLoading: StateLinkUpdateRecordPersisted[] = [];
         let latestCompactedEdition = -1;
@@ -218,7 +235,10 @@ class SynchronisedPluginInstance implements PluginInstance {
         let updatesPendingSynchronization: StateLinkUpdateRecordPersisted[] = [];
 
         let latestSynchronizedEdition = -2; // see states and transitions below
-        let updatesTrackingEnabled = true;
+        let latestSynchronizedData: any = undefined;
+        
+        let isLocalSynchronisationEnabled = true;
+        let isRemoteSynchronisationEnabled = true;
         
         // transitions 1): Loading (false) -> Loaded (true)
         function isStateLoaded() {
@@ -232,15 +252,24 @@ class SynchronisedPluginInstance implements PluginInstance {
             return true;
         }
         
-        function runWithUpdatesTrackingDisabled(action: () => void) {
-            updatesTrackingEnabled = false;
+        function runWithoutLocalSynchronisation(action: () => void) {
+            isLocalSynchronisationEnabled = false;
             try {
                 action();
             } finally {
-                updatesTrackingEnabled = true;
+                isLocalSynchronisationEnabled = true;
             }
         }
-        
+
+        this.runWithoutRemoteSynchronisation = (action: () => void) => {
+            isRemoteSynchronisationEnabled = false;
+            try {
+                action();
+            } finally {
+                isRemoteSynchronisationEnabled = true;
+            }
+        }
+
         function processUnsyncedUpdate(record: StateLinkUpdateRecordPersisted) {
             // updates can come out of order
             
@@ -314,16 +343,19 @@ class SynchronisedPluginInstance implements PluginInstance {
                     const latestEdition = pendingEditions[pendingEditions.length - 1]
                     updatesPendingSynchronization = []
                     latestSynchronizedEdition = latestEdition
-                    if (onSync) {
+                    if (submitOutgoing) {
                         try {
                             console.log('processUnsyncedUpdate: syncing records', recordsToSync)
-                            await onSync(recordsToSync)
+                            latestSynchronizedData = await submitOutgoing(
+                                latestSynchronizedData,
+                                recordsToSync.filter(i => !i.incoming),
+                                unmountedLink)
                         } catch (err) {
                             console.error(err)
                         }
                     }
                     console.log('processUnsyncedUpdate: saving sync', latestEdition)
-                    await saveStateSync(self.dbRef, latestEdition)
+                    await saveStateSync(self.dbRef, latestSynchronizedData, latestEdition)
                 
                     compact(latestEdition)
                 } finally {
@@ -351,7 +383,7 @@ class SynchronisedPluginInstance implements PluginInstance {
             }
             // also updates can come here out of order, it is acceptable
             
-            runWithUpdatesTrackingDisabled(() => {
+            runWithoutLocalSynchronisation(() => {
                 let targetState = unmountedLink;
                 for (let i = 0; i < record.path.length; i += 1) {
                     const p = record.path[i];
@@ -374,7 +406,7 @@ class SynchronisedPluginInstance implements PluginInstance {
             loadedEdition: number;
             compactedEdition: number;
         }) {
-            runWithUpdatesTrackingDisabled(() => unmountedLink.set(s.state))
+            runWithoutLocalSynchronisation(() => unmountedLink.set(s.state))
             metaState.nested.initiallyLoadedEdition.set(s.loadedEdition);
             latestCompactedEdition = s.compactedEdition;
             updatesCapturedDuringStateLoading.forEach(processBroadcastedUpdate)
@@ -398,6 +430,7 @@ class SynchronisedPluginInstance implements PluginInstance {
                         metaState.value.initiallyLoadedEdition))
                     .then(updates => {
                         latestSynchronizedEdition = i.synchronizedEdition
+                        latestSynchronizedData = i.pendingState
                         updates.forEach(processUnsyncedUpdate)
                         updatesCapturedDuringLeaderLoading
                             // it could receive the same updates while they are being loaded
@@ -406,8 +439,8 @@ class SynchronisedPluginInstance implements PluginInstance {
                         updatesCapturedDuringLeaderLoading = []
                     })
             })
-            if (onLeader) {
-                onLeader()
+            if (subscribeIncoming) {
+                self.unsubscribeCallback = subscribeIncoming(unmountedLink)
             }
         }
         
@@ -419,12 +452,13 @@ class SynchronisedPluginInstance implements PluginInstance {
         this.dbRef = openState(topic, unmountedLink.value) 
         loadState(this.dbRef).then(s => activateWhenLoaded(s))
 
-        this.onSetCallback = (path, newState, newValue) => {
-            if (updatesTrackingEnabled) {
+        this.onSetOutgoing = (path, newState, newValue) => {
+            if (isLocalSynchronisationEnabled) {
                 // this instance has been updated, so notify peers
                 const update = {
                     path: path,
-                    value: newValue
+                    value: newValue,
+                    incoming: !isRemoteSynchronisationEnabled
                 }
                 saveStateUpdate(this.dbRef, update)
                     .then((edition) => {
@@ -435,7 +469,7 @@ class SynchronisedPluginInstance implements PluginInstance {
             }
         }
         
-        this.metaInf = metaStateRef.wrap(s => ({
+        this.metaInf = this.metaStateRef.wrap(s => ({
             isLoading() {
                 return s.value.initiallyLoadedEdition === -1
             },
@@ -447,12 +481,16 @@ class SynchronisedPluginInstance implements PluginInstance {
     
     onDestroy() {
         console.log('Plugin destroyed')
+        if (this.unsubscribeCallback) {
+            this.unsubscribeCallback()
+        }
+        this.metaStateRef.destroy()
         unsubscribeBroadcastChannel(this.broadcastRef)
         closeState(this.dbRef)
     }
     
     onSet(path: Path, newState: StateValueAtRoot, newValue: StateValueAtPath) {
-        this.onSetCallback(path, newState, newValue)
+        this.onSetOutgoing(path, newState, newValue)
     }
     
     status() {
@@ -461,21 +499,33 @@ class SynchronisedPluginInstance implements PluginInstance {
 }
 
 // tslint:disable-next-line: function-name
-export function Synchronised(
+export function Synchronised<S, P>(
     topic: string,
-    onLeader?: () => void,
-    onSync?: (updates: StateLinkUpdateRecordPersisted[]) => Promise<boolean>): () => Plugin;
-export function Synchronised<S>(self: StateLink<S>): SynchronisedExtensions;
+    subscribeIncoming?: (link: StateLink<S>) => () => void,
+    submitOutgoing?: (
+        pending: P | undefined,
+        updates: StateLinkUpdateRecordPersisted[],
+        link: StateLink<S>
+    ) => Promise<P>): () => Plugin;
+export function Synchronised<S>(self: StateLink<S>): SynchronisedExtensions<S>;
 export function Synchronised<S>(selfOrTopic?: StateLink<S> | string,
-    onLeader?: () => void,
-    onSync?: (updates: StateLinkUpdateRecordPersisted[]) => Promise<boolean>
-    ): (() => Plugin) | SynchronisedExtensions {
+    subscribeIncoming?: (link: StateLink<StateValueAtRoot>) => () => void,
+    submitOutgoing?: (
+        pending: any,
+        updates: StateLinkUpdateRecordPersisted[],
+        link: StateLink<StateValueAtRoot>
+    ) => Promise<any>
+    ): (() => Plugin) | SynchronisedExtensions<S> {
     if (typeof selfOrTopic !== 'string') {
         const self = selfOrTopic as StateLink<S>;
         const [link, instance] = self.with(PluginID);
         const inst = instance as SynchronisedPluginInstance;
         return {
-            set() {}, // set without propagation to sync
+            set(newValue: React.SetStateAction<S>) {
+                inst.runWithoutRemoteSynchronisation(() => {
+                    link.set(newValue)
+                })
+            },
             status() {
                 return inst.status()
             }
@@ -484,7 +534,7 @@ export function Synchronised<S>(selfOrTopic?: StateLink<S> | string,
     return () => ({
         id: PluginID,
         instanceFactory: (_, linkFactory) => {
-            return new SynchronisedPluginInstance(selfOrTopic, linkFactory(), onLeader, onSync);
+            return new SynchronisedPluginInstance(selfOrTopic, linkFactory(), subscribeIncoming, submitOutgoing);
         }
     })
 }
@@ -493,13 +543,21 @@ interface Task { name: string }
 
 export const ExampleComponent = () => {
     const state = useStateLink([{ name: 'First Task' }, { name: 'Second Task' }] as Task[])
-    state.with(Synchronised(
+    state.with(Synchronised<Task[], StateLinkUpdateRecordPersisted[]>(
             'plugin-persisted-data-key-6',
-            () => console.log('This is the leader'),
-            (updates) => {
+            (link) => {
+                let count = 0
+                const timer = setInterval(() => {
+                    count += 1
+                    Synchronised(link.nested[0].nested.name).set('from subscription: ' + count.toString())
+                }, 1000)
+                return () => clearInterval(timer)
+            },
+            (pending, updates, link) => {
                 console.log('request to sync', updates)
-                return new Promise<boolean>((resolve, reject) => {
-                    setTimeout(() => resolve(true), 1000)
+                return new Promise((resolve, reject) => {
+                    // keep last 10 updates in pending
+                    setTimeout(() => resolve((pending || []).concat(updates).slice(-10)), 1000)
                 })
             }
         ))
