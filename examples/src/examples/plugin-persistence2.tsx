@@ -3,6 +3,7 @@ import BroadcastChannel from 'broadcast-channel';
 import LeaderElection, { LeaderElector } from 'broadcast-channel/leader-election';
 import { useStateLink, Path, StateValueAtPath, Plugin, StateLink, createStateLink, useStateLinkUnmounted, PluginInstance, StateValueAtRoot, StateInf, StateRef } from '@hookstate/core';
 import * as idb from 'idb';
+import { Untracked } from '@hookstate/untracked';
 
 interface BroadcastChannelHandle<T> {
     channel: BroadcastChannel<T>,
@@ -180,6 +181,12 @@ interface StateLinkUpdateRecordPersisted extends StateLinkUpdateRecord {
     readonly edition: number;
 }
 
+interface StatusMessage {
+    status: {
+        isSynchronising: boolean
+    }
+}
+
 export interface SynchronisationStatus {
     isLoading(): boolean;
     isSynchronising(): boolean;
@@ -193,7 +200,7 @@ export interface SynchronisedExtensions<S> {
 const PluginID = Symbol('Synchronised');
 
 class SynchronisedPluginInstance implements PluginInstance {
-    private broadcastRef: BroadcastChannelHandle<StateLinkUpdateRecordPersisted>;
+    private broadcastRef: BroadcastChannelHandle<StateLinkUpdateRecordPersisted | StatusMessage>;
     private dbRef: Promise<StateHandle>;
     private onSetOutgoing: (path: readonly (string | number)[], newState: any, newValue: any) => void;
     private metaInf: StateInf<SynchronisationStatus>;
@@ -224,7 +231,7 @@ class SynchronisedPluginInstance implements PluginInstance {
             initiallyLoadedEdition: -1,
             isSynchronizationRunning: false,
         });
-        const metaState = useStateLinkUnmounted(this.metaStateRef);
+        const metaState = useStateLinkUnmounted(this.metaStateRef).with(Untracked);
         
         let updatesCapturedDuringStateLoading: StateLinkUpdateRecordPersisted[] = [];
         let latestCompactedEdition = -1;
@@ -322,10 +329,10 @@ class SynchronisedPluginInstance implements PluginInstance {
             async function sync() {
                 console.log('processUnsyncedUpdate: syncing')
                 try {
-                    metaState.nested.isSynchronizationRunning.set(true);
+                    Untracked(metaState.nested.isSynchronizationRunning).set(true);
                     
-                    await new Promise(resolve => setTimeout(() => resolve(), 500)) // debounce
-                    
+                    await new Promise(resolve => setTimeout(() => resolve(), 1000)) // debounce
+
                     const recordsToSync = updatesPendingSynchronization
                     const pendingEditions = recordsToSync
                         .map(i => i.edition)
@@ -343,12 +350,25 @@ class SynchronisedPluginInstance implements PluginInstance {
                     const latestEdition = pendingEditions[pendingEditions.length - 1]
                     updatesPendingSynchronization = []
                     latestSynchronizedEdition = latestEdition
+                    const recordsToSyncExcludingIncoming = recordsToSync.filter(i => !i.incoming)
+                    
+                    if (recordsToSyncExcludingIncoming.length === 0) {
+                        return;
+                    }
+
+                    console.warn('set sync running true')
+                    metaState.nested.isSynchronizationRunning.set(true);
+                    broadcast({
+                        status: {
+                            isSynchronising: true
+                        }
+                    })
                     if (submitOutgoing) {
                         try {
-                            console.log('processUnsyncedUpdate: syncing records', recordsToSync)
+                            console.log('processUnsyncedUpdate: syncing records', recordsToSyncExcludingIncoming)
                             latestSynchronizedData = await submitOutgoing(
                                 latestSynchronizedData,
-                                recordsToSync.filter(i => !i.incoming),
+                                recordsToSyncExcludingIncoming,
                                 unmountedLink)
                         } catch (err) {
                             console.error(err)
@@ -359,7 +379,14 @@ class SynchronisedPluginInstance implements PluginInstance {
                 
                     compact(latestEdition)
                 } finally {
-                    metaState.nested.isSynchronizationRunning.set(false);
+                    if (metaState.nested.isSynchronizationRunning.value) {
+                        broadcast({
+                            status: {
+                                isSynchronising: false
+                            }
+                        })
+                        metaState.nested.isSynchronizationRunning.set(false);
+                    }
                 }
                             
                 if (updatesPendingSynchronization.length > 0) {
@@ -371,7 +398,13 @@ class SynchronisedPluginInstance implements PluginInstance {
             sync()
         }
         
-        function processBroadcastedUpdate(record: StateLinkUpdateRecordPersisted) {
+        function processBroadcastedUpdate(message: StateLinkUpdateRecordPersisted | StatusMessage) {
+            if ((message as StatusMessage).status !== undefined) {
+                const status = (message as StatusMessage).status;
+                metaState.nested.isSynchronizationRunning.set(status.isSynchronising)
+                return;
+            }
+            const record = message as StateLinkUpdateRecordPersisted;
             if (!isStateLoaded()) {
                 updatesCapturedDuringStateLoading.push(record)
                 return;
@@ -446,7 +479,7 @@ class SynchronisedPluginInstance implements PluginInstance {
         
         this.broadcastRef = subscribeBroadcastChannel(
             topic, processBroadcastedUpdate, activateWhenElected)
-        const broadcast = (message: StateLinkUpdateRecordPersisted) =>
+        const broadcast = (message: StateLinkUpdateRecordPersisted | StatusMessage) =>
             this.broadcastRef.channel.postMessage(message);
 
         this.dbRef = openState(topic, unmountedLink.value) 
@@ -541,32 +574,14 @@ export function Synchronised<S>(selfOrTopic?: StateLink<S> | string,
 
 interface Task { name: string }
 
-export const ExampleComponent = () => {
-    const state = useStateLink([{ name: 'First Task' }, { name: 'Second Task' }] as Task[])
-    state.with(Synchronised<Task[], StateLinkUpdateRecordPersisted[]>(
-            'plugin-persisted-data-key-6',
-            (link) => {
-                let count = 0
-                const timer = setInterval(() => {
-                    count += 1
-                    Synchronised(link.nested[0].nested.name).set('from subscription: ' + count.toString())
-                }, 1000)
-                return () => clearInterval(timer)
-            },
-            (pending, updates, link) => {
-                console.log('request to sync', updates)
-                return new Promise((resolve, reject) => {
-                    // keep last 10 updates in pending
-                    setTimeout(() => resolve((pending || []).concat(updates).slice(-10)), 1000)
-                })
-            }
-        ))
-    const meta = useStateLink(Synchronised(state).status());
-    if (meta.isLoading()) {
-        return <p>Loading offline data...</p>
-    }
+const StatusView = (props: { status: StateInf<SynchronisationStatus> }) => {
+    const meta = useStateLink(props.status);
+    return <p>Is syncrhonisation running: {meta.isSynchronising().toString()}</p>
+}
+
+const DataEditor = (props: { state: StateLink<Task[]> }) => {
+    const state = useStateLink(props.state);
     return <>
-        <p>Is syncrhonisation running: {meta.isSynchronising().toString()}</p>
         {state.nested.map((taskState, taskIndex) => {
             return <p key={taskIndex}>
                 <input
@@ -578,5 +593,36 @@ export const ExampleComponent = () => {
         <p><button onClick={() => state.set(tasks => tasks.concat([{ name: 'Untitled' }]))}>
             Add task
         </button></p> 
+    </>
+}
+
+export const ExampleComponent = () => {
+    const state = useStateLink([{ name: 'First Task' }, { name: 'Second Task' }] as Task[])
+    state.with(Synchronised<Task[], StateLinkUpdateRecordPersisted[]>(
+            'plugin-persisted-data-key-6',
+            (link) => {
+                let count = 0
+                const timer = setInterval(() => {
+                    count += 1
+                    Synchronised(link.nested[0].nested.name).set('from subscription: ' + count.toString())
+                }, 10000)
+                return () => clearInterval(timer)
+            },
+            (pending, updates, link) => {
+                console.log('request to sync', updates)
+                return new Promise((resolve, reject) => {
+                    // keep last 10 updates in pending
+                    setTimeout(() => resolve((pending || []).concat(updates).slice(-10)), 1000)
+                })
+            }
+        ))
+    const status = Synchronised(state).status();
+    const meta = useStateLink(status);
+    if (meta.isLoading()) {
+        return <p>Loading offline data...</p>
+    }
+    return <>
+        <StatusView status={status} />
+        <DataEditor state={state} />
     </>
 }
