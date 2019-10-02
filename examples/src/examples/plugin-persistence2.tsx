@@ -9,7 +9,6 @@ interface BroadcastChannelHandle<T> {
     channel: BroadcastChannel<T>,
     elector: LeaderElector
 }
-
 function subscribeBroadcastChannel<T>(
     topic: string,
     onMessage: (m: T) => void,
@@ -23,12 +22,10 @@ function subscribeBroadcastChannel<T>(
         elector
     }
 }
-
 function unsubscribeBroadcastChannel<T>(handle: BroadcastChannelHandle<T>) {
     handle.channel.onmessage = null;
     handle.elector.die().then(() => handle.channel.close())
 }
-
 function useBroadcastChannel<T>(
     topic: string,
     onMessage: (m: T) => void,
@@ -51,7 +48,6 @@ interface StateHandle {
     db: idb.IDBPDatabase<any>,
     topic: string
 }
-
 async function openState(topic: string, initial: any): Promise<StateHandle> {
     const dbRef = idb.openDB(topic, 1, {
         upgrade(db, oldVersion, newVersion, transaction) {
@@ -71,11 +67,9 @@ async function openState(topic: string, initial: any): Promise<StateHandle> {
         topic
     }
 }
-
 function closeState(stateHandle: Promise<StateHandle>) {
     stateHandle.then(d => d.db.close());
 }
-
 async function loadState(stateHandle: Promise<StateHandle>) {
     const database = (await stateHandle).db;
     const topic = (await stateHandle).topic;
@@ -116,8 +110,7 @@ async function loadState(stateHandle: Promise<StateHandle>) {
         compactedEdition: compactedEdition
     }
 }
-
-async function compactState(dbRef: Promise<StateHandle>, upto: number) {
+async function compactStateUpdates(dbRef: Promise<StateHandle>, upto: number) {
     const database = (await dbRef).db;
     const topic = (await dbRef).topic;
     const persistedState = await database.get(topic, 'state')
@@ -155,8 +148,15 @@ async function compactState(dbRef: Promise<StateHandle>, upto: number) {
     await writeStore.delete(IDBKeyRange.bound(currentEdition + 1, upto))
     await writeTx.done
 }
-
-async function updateState(dbRef: Promise<StateHandle>, update: StateLinkUpdateRecord): Promise<number> {
+async function loadStateUpdates(dbRef: Promise<StateHandle>, from: number, upto: number) {
+    const database = (await dbRef).db;
+    const topic = (await dbRef).topic;
+    const readTx = database.transaction(topic, 'readonly')
+    const readStore = readTx.objectStore(topic)
+    readStore.getAll(IDBKeyRange.bound(from, upto))
+    await readTx.done
+}
+async function persistStateUpdate(dbRef: Promise<StateHandle>, update: StateLinkUpdateRecord): Promise<number> {
     const database = (await dbRef).db;
     const topic = (await dbRef).topic;
     return database.put(topic, update)
@@ -173,7 +173,10 @@ interface StateLinkUpdateRecordPersisted extends StateLinkUpdateRecord {
 
 const LocalSyncBroadcastPluginID = Symbol('LocalSyncBroadcastPluginID')
 
-export function useStateLinkSynchronised<T>(topic: string, initial: T, onLeader?: () => void): {
+export function useStateLinkSynchronised<T>(
+    topic: string, initial: T,
+    onLeader?: () => void,
+    onSync?: (path: Path, newValue: StateValueAtPath, prevValue: StateValueAtPath) => Promise<boolean>): {
     isLoading: boolean,
     state: StateLink<T>
 } {
@@ -186,6 +189,8 @@ export function useStateLinkSynchronised<T>(topic: string, initial: T, onLeader?
         loadedEdition: number,
         compactedEdition: number,
         compactedTimestamp: number,
+        compactionRunning: boolean,
+        synchronizationRunning: boolean,
         deferredNotifications: StateLinkUpdateRecordPersisted[],
         isLeader: boolean,
         notificationsEnabled: boolean
@@ -195,6 +200,8 @@ export function useStateLinkSynchronised<T>(topic: string, initial: T, onLeader?
         loadedEdition: -1,
         compactedEdition: -1,
         compactedTimestamp: 0,
+        compactionRunning: false,
+        synchronizationRunning: false,
         deferredNotifications: [],
         isLeader: false,
         notificationsEnabled: true
@@ -247,19 +254,47 @@ export function useStateLinkSynchronised<T>(topic: string, initial: T, onLeader?
         if (!meta.current.isLeader) {
             return;
         }
-        if (observedEdition - meta.current.compactedEdition < 10) {
+        if (observedEdition - meta.current.compactedEdition < 100) {
             return;
         }
         if (!meta.current.dbRef) {
+            return;
+        }
+        if (meta.current.compactionRunning) {
             return;
         }
         const currentTimestamp = (new Date).getTime()
         if (currentTimestamp - meta.current.compactedTimestamp < 60000) {
             return;
         }
-        compactState(meta.current.dbRef!, observedEdition)
+        meta.current.compactionRunning = true;
+        compactStateUpdates(meta.current.dbRef!, observedEdition).then(() => {
+            meta.current.compactionRunning = false;
+        }).catch((err) => {
+            meta.current.compactionRunning = false;
+            console.error(err)
+        })
         meta.current.compactedEdition = observedEdition
         meta.current.compactedTimestamp = currentTimestamp
+    }
+    
+    function triggerSynchronization() {
+        if (!onSync) {
+            return;
+        }
+        if (!meta.current.isLeader) {
+            return;
+        }
+        if (meta.current.synchronizationRunning) {
+            return;
+        }
+        meta.current.synchronizationRunning = true;
+        onSync([], 1, 1).then(() => {
+            meta.current.synchronizationRunning = false;
+        }).catch((err) => {
+            meta.current.synchronizationRunning = false;
+            console.error(err)
+        })
     }
 
     const broadcast = useBroadcastChannel<StateLinkUpdateRecordPersisted>(
@@ -301,11 +336,9 @@ export function useStateLinkSynchronised<T>(topic: string, initial: T, onLeader?
                             path: path,
                             value: newValue
                         }
-                        updateState(meta.current.dbRef!, update)
-                            .then((edition) => {
-                                broadcast({ ...update, edition })
-                                triggerCompaction(edition)
-                            })
+                        persistStateUpdate(meta.current.dbRef!, update)
+                            .then((edition) => broadcast({ ...update, edition })
+                                .then(() => triggerCompaction(edition)))
                     }
                 }
             }
