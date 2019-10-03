@@ -19,6 +19,7 @@ export interface StateInf<R> {
     // on useStateLink call
     __synteticTypeInferenceMarkerInf: symbol;
     with(plugin: () => Plugin): StateInf<R>;
+    wrap<R2>(transform: (state: R, prev: R2 | undefined) => R2): StateInf<R2>
     destroy(): void;
 }
 
@@ -308,6 +309,12 @@ class StateInfImpl<S, R> implements StateInf<R> {
     with(plugin: () => Plugin): StateInf<R> {
         this.wrapped.with(plugin);
         return this;
+    }
+    
+    wrap<R2>(transform: (state: R, prev: R2 | undefined) => R2): StateInf<R2> {
+        return new StateInfImpl(this.wrapped, (s, p) => {
+            return transform(this.transform(s, undefined), p)
+        })
     }
     
     destroy() {
@@ -884,6 +891,10 @@ export function useStateLinkUnmounted<R>(
 export function useStateLinkUnmounted<S>(
     source: StateRef<S>,
 ): StateLink<S>;
+export function useStateLinkUnmounted<S, R>(
+    source: StateRef<S>,
+    transform: (state: StateLink<S>) => R
+): R;
 export function useStateLinkUnmounted<S, R>(
     source: StateRef<S> | StateInf<R>,
     transform?: (state: StateLink<S>) => R
