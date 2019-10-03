@@ -137,7 +137,6 @@ async function compactStateUpdates(dbRef: Promise<StateHandle>, upto: number) {
     await writeTx.done
 }
 async function loadStateUpdates(dbRef: Promise<StateHandle>, from: number, upto: number) {
-    console.trace('loading state updates', from, upto)
     const database = (await dbRef).db;
     const topic = (await dbRef).topic;
     const readTx = database.transaction(topic, 'readonly')
@@ -673,6 +672,16 @@ const DataEditor = (props: { state: StateLink<Task[]> }) => {
 
 export const ExampleComponent = () => {
     const state = useStateLink([{ name: 'First Task' }, { name: 'Second Task' }] as Task[])
+    React.useEffect(() => {
+        let i = 0;
+        const timer = setInterval(() => {
+            i += 1
+            state.nested[1].nested.name.set(i.toString())
+        }, 500)
+        return () => {
+            clearInterval(timer)
+        }
+    })
     state.with(Synchronised<Task[], StateLinkUpdateRecordPersisted[]>(
             'plugin-persisted-data-key-6',
             (link) => {
