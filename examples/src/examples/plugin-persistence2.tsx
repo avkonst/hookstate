@@ -304,15 +304,13 @@ class SynchronisedPluginInstance implements PluginInstance {
             function compact(upto: number) {
                 console.log('processUnsyncedUpdate: compacting', upto)
 
-                const observedEdition = upto;
-                if (observedEdition - latestCompactedEdition < 100) {
-                    return;
-                }
                 if (isCompactionRunning) {
                     return;
                 }
+                const observedEdition = upto;
                 const currentTimestamp = (new Date()).getTime()
-                if (currentTimestamp - latestCompactedTimestamp < 60000) {
+                if (observedEdition - latestCompactedEdition < 1000 &&
+                    currentTimestamp - latestCompactedTimestamp < 60000) {
                     return;
                 }
                 isCompactionRunning = true;
