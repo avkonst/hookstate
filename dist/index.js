@@ -571,6 +571,7 @@ var StateLinkImpl = /** @class */ (function () {
     };
     return StateLinkImpl;
 }());
+var useIsomorphicLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
 function createState(initial) {
     var initialValue = initial;
     if (typeof initial === 'function') {
@@ -587,18 +588,11 @@ function useSubscribedStateLink(state, path, update, subscribeTarget, disabledTr
     if (disabledTracking) {
         link.with(Degraded);
     }
-    var ref = React.useRef();
-    if (ref.current !== undefined) {
-        subscribeTarget.unsubscribe(ref.current);
-    }
-    ref.current = link;
-    subscribeTarget.subscribe(link);
-    React.useEffect(function () {
-        return function () {
-            subscribeTarget.unsubscribe(ref.current);
-            onDestroy();
-        };
-    }, []);
+    useIsomorphicLayoutEffect(function () {
+        subscribeTarget.subscribe(link);
+        return function () { return subscribeTarget.unsubscribe(link); };
+    });
+    React.useEffect(function () { return function () { return onDestroy(); }; }, []);
     return link;
 }
 function useGlobalStateLink(stateRef) {
