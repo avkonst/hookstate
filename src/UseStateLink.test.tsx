@@ -372,3 +372,36 @@ test('error: should not allow create state from another state value (nested)', a
         // tslint:disable-next-line: max-line-length
         .toEqual(`StateLink is used incorrectly. Attempted 'create/useStateLink(state.get() at '/prop1')' at '/'. Hint: did you mean to use create/useStateLink(state) OR create/useStateLink(lodash.cloneDeep(state.get())) instead of create/useStateLink(state.get())?`)
 });
+
+test('primitive: global state', async () => {
+    const stateRef = createStateLink(0)
+    
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useStateLink(stateRef)
+    });
+
+    expect(result.current.get()).toStrictEqual(0);
+    act(() => {
+        result.current.set(p => p + 1);
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(result.current.get()).toStrictEqual(1);
+});
+
+test('primitive: global state created locally', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        const stateRef = createStateLink(0)
+        renderTimes += 1;
+        return useStateLink(stateRef)
+    });
+
+    expect(result.current.get()).toStrictEqual(0);
+    act(() => {
+        result.current.set(p => p + 1);
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(result.current.get()).toStrictEqual(1);
+});

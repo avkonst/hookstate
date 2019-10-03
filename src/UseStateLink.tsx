@@ -735,12 +735,12 @@ function useSubscribedStateLink<S>(
 }
 
 function useGlobalStateLink<S>(stateRef: StateRefImpl<S>): StateLinkImpl<S> {
-    const [, setValue] = React.useState({});
+    const [value, setValue] = React.useState({ state: stateRef.state });
     return useSubscribedStateLink(
-        stateRef.state,
+        value.state,
         RootPath,
-        () => setValue({}),
-        stateRef.state,
+        () => setValue({ state: value.state }),
+        value.state,
         stateRef.disabledTracking,
         () => {});
 }
