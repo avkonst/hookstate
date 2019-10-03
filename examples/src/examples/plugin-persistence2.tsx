@@ -24,7 +24,11 @@ function subscribeBroadcastChannel<T>(
 }
 function unsubscribeBroadcastChannel<T>(handle: BroadcastChannelHandle<T>) {
     handle.channel.onmessage = null;
-    handle.elector.die().then(() => handle.channel.close())
+    const p = handle.elector.die()
+    if (p) {
+        // for some reason p can be undefined
+        p.then(() => handle.channel.close())
+    }
 }
 
 interface StateHandle {
@@ -311,29 +315,19 @@ class SynchronisedPluginInstance implements PluginInstance {
                 return;
             }
             
-            try {
-                // set guard without rerendering status viewers
-                Untracked(metaState.nested.isSynchronizationRunning).set(true);
-                
-                await new Promise(resolve => setTimeout(() => resolve(), 1000)) // debounce
-    
-                const recordsToSync = updatesPendingSynchronization
-                const recordsToSyncExcludingIncoming = recordsToSync.filter(i => !i.incoming)
-                const pendingEditions = recordsToSync.map(i => i.edition).sort((a, b) => a - b)
-                
-                if (pendingEditions.find(
-                        (e, i) => e - latestSynchronisedEdition !== i + 1) !== undefined) {
-                    // some are out of order, wait until it lines up
-                    console.warn('out of order updates received, postponing sync until gaps are closed',
-                        latestSynchronisedEdition, pendingEditions)
-                    return;
-                }
+            async function syncUpTo(uptoIndex: number) {
+                let recordsToSync = updatesPendingSynchronization
+                    .slice(0, uptoIndex + 1)
+                let recordsToSyncExcludingIncoming = recordsToSync
+                    .filter((r, i) => !r.incoming)
 
-                const latestEdition = pendingEditions[pendingEditions.length - 1] || latestSynchronisedEdition
-                updatesPendingSynchronization = []
-                latestSynchronisedEdition = latestEdition
+                updatesPendingSynchronization = updatesPendingSynchronization.slice(uptoIndex + 1)
+                latestSynchronisedEdition = recordsToSync.length > 0
+                    ? recordsToSync[recordsToSync.length - 1].edition
+                    : latestSynchronisedEdition;
                 
-                if ((recordsToSyncExcludingIncoming.length > 0 || latestSynchronisedData) && submitOutgoing) {
+                if ((recordsToSyncExcludingIncoming.length > 0 || latestSynchronisedData)
+                    && submitOutgoing) {
                     // reset guard AND rerender status viewers
                     metaState.nested.isSynchronizationRunning.set(true);
                     broadcast({
@@ -362,18 +356,58 @@ class SynchronisedPluginInstance implements PluginInstance {
                     // or did not save for quite a while
                     || currentTimestamp - latestSynchronisedTimestamp > 60000
                     ) {
-                    await saveStateSync(dbRef, latestSynchronisedData, latestEdition)
+                    await saveStateSync(dbRef, latestSynchronisedData, latestSynchronisedEdition)
                     latestSynchronisedTimestamp = currentTimestamp
 
                     // check if compaction needed
                     // either many updates accumulated
                     // or did not compact for quite a while
-                    if (latestEdition - latestCompactedEdition > 1000 ||
+                    if (latestSynchronisedEdition - latestCompactedEdition > 1000 ||
                         currentTimestamp - latestCompactedTimestamp > 60000) {
-                        await compactStateUpdates(dbRef, latestEdition)
-                        latestCompactedEdition = latestEdition
+                        await compactStateUpdates(dbRef, latestSynchronisedEdition)
+                        latestCompactedEdition = latestSynchronisedEdition
                         latestCompactedTimestamp = currentTimestamp
                     }
+                }
+            }
+            
+            try {
+                // set guard without rerendering status viewers
+                Untracked(metaState.nested.isSynchronizationRunning).set(true);
+                
+                await new Promise(resolve => setTimeout(() => resolve(), 1000)) // debounce
+    
+                // updtes pending syncrhonisation are sorted and no duplicates
+                if (updatesPendingSynchronization.length > 0 && updatesPendingSynchronization[0].edition <= latestSynchronisedEdition) {
+                    // head elements are stale, remove them
+                    updatesPendingSynchronization = updatesPendingSynchronization
+                        .filter(i => i.edition <= latestSynchronisedEdition)
+                }
+
+                const foundOooIndex = updatesPendingSynchronization
+                    .findIndex((e, i) => (e.edition - latestSynchronisedEdition) !== (i + 1))
+                if (foundOooIndex !== -1) {
+                    if (foundOooIndex !== 0) {
+                        console.warn('out of order updates received, submitting the head',
+                            latestSynchronisedEdition, updatesPendingSynchronization, foundOooIndex)
+                        await syncUpTo(foundOooIndex - 1)
+                    } else {
+                        if (updatesPendingSynchronization.length > 100) {
+                            // clearly missing some data for long time unknown reason
+                            // TODO report in production
+                            // auto recover by continueing
+                            console.warn('recovering out of order, proceeding sync with gaps',
+                                updatesPendingSynchronization)
+                            await syncUpTo(updatesPendingSynchronization.length - 1)
+                        }
+                        else {
+                            // some are out of order, wait until it lines up
+                            console.warn('out of order updates received, postponing sync until gaps are closed',
+                                latestSynchronisedEdition, updatesPendingSynchronization)
+                        }
+                    }
+                } else {
+                    await syncUpTo(updatesPendingSynchronization.length - 1)
                 }
             } finally {
                 if (metaState.nested.isSynchronizationRunning.get()) {
@@ -391,7 +425,9 @@ class SynchronisedPluginInstance implements PluginInstance {
                 }
             }
 
-            if (updatesPendingSynchronization.length > 0) {
+            // there are pending elements and the first one is in the required order
+            if (updatesPendingSynchronization.length > 0 &&
+                latestSynchronisedEdition + 1 === updatesPendingSynchronization[0].edition) {
                 sync()
             }
         }
@@ -407,9 +443,20 @@ class SynchronisedPluginInstance implements PluginInstance {
                 updatesCapturedDuringLeaderLoading.push(record)
                 return;
             }
-            updatesPendingSynchronization.push(record)
-
-            sync()
+            
+            // updates pending synchronisation should be sorted and no duplucates
+            // guarantee required by sync()
+            const foundNextIndex = updatesPendingSynchronization.findIndex(i => i.edition >= record.edition)
+            if (foundNextIndex !== -1) {
+                if (updatesPendingSynchronization[foundNextIndex].edition !== record.edition) {
+                    // non duplicate
+                    updatesPendingSynchronization.splice(foundNextIndex, 0, record)
+                    sync()
+                }
+            } else {
+                updatesPendingSynchronization.push(record)
+                sync()
+            }
         }
         
         function processBroadcastedUpdate(message: StateLinkUpdateRecordPersisted | StatusMessage) {
@@ -677,7 +724,7 @@ export const ExampleComponent = () => {
         const timer = setInterval(() => {
             i += 1
             state.nested[1].nested.name.set(i.toString())
-        }, 500)
+        }, 200)
         return () => {
             clearInterval(timer)
         }
