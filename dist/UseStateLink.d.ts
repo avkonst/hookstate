@@ -8,6 +8,7 @@ export interface StateRef<S> {
 export interface StateInf<R> {
     __synteticTypeInferenceMarkerInf: symbol;
     with(plugin: () => Plugin): StateInf<R>;
+    wrap<R2>(transform: (state: R, prev: R2 | undefined) => R2): StateInf<R2>;
     destroy(): void;
 }
 export declare type NestedInferredLink<S> = S extends ReadonlyArray<(infer U)> ? ReadonlyArray<StateLink<U>> : S extends null ? undefined : S extends object ? {
@@ -50,6 +51,7 @@ export declare function useStateLink<S>(source: S | (() => S)): StateLink<S>;
 export declare function useStateLink<S, R>(source: S | (() => S), transform: (state: StateLink<S>, prev: R | undefined) => R): R;
 export declare function useStateLinkUnmounted<R>(source: StateInf<R>): R;
 export declare function useStateLinkUnmounted<S>(source: StateRef<S>): StateLink<S>;
+export declare function useStateLinkUnmounted<S, R>(source: StateRef<S>, transform: (state: StateLink<S>) => R): R;
 export declare function StateFragment<R>(props: {
     state: StateInf<R>;
     children: (state: R) => React.ReactElement;

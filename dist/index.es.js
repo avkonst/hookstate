@@ -228,6 +228,12 @@ var StateInfImpl = /** @class */ (function () {
         this.wrapped.with(plugin);
         return this;
     };
+    StateInfImpl.prototype.wrap = function (transform) {
+        var _this = this;
+        return new StateInfImpl(this.wrapped, function (s, p) {
+            return transform(_this.transform(s, undefined), p);
+        });
+    };
     StateInfImpl.prototype.destroy = function () {
         this.wrapped.destroy();
     };
