@@ -40,8 +40,8 @@ async function openState(topic: string, initial: any): Promise<StateHandle> {
                 data: initial
             }, 'state')
             transaction.objectStore(topic).put({
-                data: undefined,
-                edition: 0
+                edition: 0,
+                data: undefined
             }, 'sync')
             transaction.done.then(() => {
                 console.log('[hookstate][persistence]: store created:', topic)
@@ -136,7 +136,7 @@ async function compactStateUpdates(dbRef: Promise<StateHandle>, upto: number) {
     await writeTx.done
 }
 async function loadStateUpdates(dbRef: Promise<StateHandle>, from: number, upto: number) {
-    console.log('loading state updates', from, upto)
+    console.trace('loading state updates', from, upto)
     const database = (await dbRef).db;
     const topic = (await dbRef).topic;
     const readTx = database.transaction(topic, 'readonly')
@@ -156,17 +156,17 @@ async function loadStateSync(stateHandle: Promise<StateHandle>) {
     const syncState = await database.get(topic, 'sync')
     return {
         pendingState: syncState.data,
-        synchronizedEdition: syncState.edition
+        synchronisedEdition: syncState.edition
     }
 }
 async function saveStateSync(stateHandle: Promise<StateHandle>,
     pendingState: any,
-    latestSynchronizedEdition: number) {
+    latestSynchronisedEdition: number) {
     const database = (await stateHandle).db;
     const topic = (await stateHandle).topic;
     await database.put(topic, {
-        data: pendingState,
-        edition: latestSynchronizedEdition
+        edition: latestSynchronisedEdition,
+        data: pendingState
     }, 'sync')
     return
 }
@@ -190,6 +190,7 @@ interface StatusMessage {
 export interface SynchronisationStatus {
     isLoading(): boolean;
     isSynchronising(): boolean;
+    isNetworkOnline(): boolean;
 }
 
 export interface SynchronisedExtensions<S> {
@@ -230,12 +231,15 @@ class SynchronisedPluginInstance implements PluginInstance {
             isNetworkOnline: true
         });
         const metaState = useStateLinkUnmounted(metaStateRef).with(Untracked);
-        const metaInf = metaStateRef.wrap(s => ({
+        const metaInf: StateInf<SynchronisationStatus> = metaStateRef.wrap(s => ({
             isLoading() {
                 return s.value.initiallyLoadedEdition === -1
             },
             isSynchronising() {
                 return s.value.isSynchronizationRunning
+            },
+            isNetworkOnline() { 
+                return s.value.isNetworkOnline
             }
         }))
         
@@ -255,8 +259,9 @@ class SynchronisedPluginInstance implements PluginInstance {
         let updatesCapturedDuringLeaderLoading: StateLinkUpdateRecordPersisted[] = [];
         let updatesPendingSynchronization: StateLinkUpdateRecordPersisted[] = [];
 
-        let latestSynchronizedEdition = -2; // see states and transitions below
-        let latestSynchronizedData: any = undefined;
+        let latestSynchronisedEdition = -2; // see states and transitions below
+        let latestSynchronisedTimestamp = 0;
+        let latestSynchronisedData: any = undefined;
         
         let isLocalSynchronisationEnabled = true;
         let isRemoteSynchronisationEnabled = true;
@@ -270,8 +275,8 @@ class SynchronisedPluginInstance implements PluginInstance {
 
         // transitions 2): Not Elected (undefined) -> Loading & Elected (false) -> Loaded & Elected (true)
         function isLeaderLoaded() {
-            if (latestSynchronizedEdition === -2) return undefined;
-            if (latestSynchronizedEdition === -1) return false;
+            if (latestSynchronisedEdition === -2) return undefined;
+            if (latestSynchronisedEdition === -1) return false;
             return true;
         }
         
@@ -294,8 +299,6 @@ class SynchronisedPluginInstance implements PluginInstance {
         }
 
         function compact(upto: number) {
-            console.log('processUnsyncedUpdate: compacting', upto)
-
             if (isCompactionRunning) {
                 return;
             }
@@ -324,38 +327,32 @@ class SynchronisedPluginInstance implements PluginInstance {
                 await new Promise(resolve => setTimeout(() => resolve(), 1000)) // debounce
 
                 const recordsToSync = updatesPendingSynchronization
+                const recordsToSyncExcludingIncoming = recordsToSync.filter(i => !i.incoming)
                 const pendingEditions = recordsToSync
                     .map(i => i.edition)
                     .sort((a, b) => a - b)
                 if (pendingEditions.find(
-                        (e, i) => e - latestSynchronizedEdition !== i + 1) !== undefined) {
+                        (e, i) => e - latestSynchronisedEdition !== i + 1) !== undefined) {
                     // some are out of order, wait until it lines up
                     console.warn('out of order updates received, postponing sync until gaps are closed',
-                    latestSynchronizedEdition, pendingEditions)
+                    latestSynchronisedEdition, pendingEditions)
                     return;
                 }
 
-                console.log('processUnsyncedUpdate: syncing editions', pendingEditions)
-
-                const latestEdition = pendingEditions[pendingEditions.length - 1]
+                const latestEdition = pendingEditions[pendingEditions.length - 1] || latestSynchronisedEdition
                 updatesPendingSynchronization = []
-                latestSynchronizedEdition = latestEdition
-                const recordsToSyncExcludingIncoming = recordsToSync.filter(i => !i.incoming)
+                latestSynchronisedEdition = latestEdition
                 
-                if (recordsToSyncExcludingIncoming.length > 0 || latestSynchronizedData) {
-                    console.warn('set sync running true')
+                if ((recordsToSyncExcludingIncoming.length > 0 || latestSynchronisedData) && submitOutgoing) {
                     metaState.nested.isSynchronizationRunning.set(true);
                     broadcast({
                         status: {
                             isSynchronising: true
                         }
                     })
-                }
-                if (submitOutgoing) {
                     try {
-                        console.log('processUnsyncedUpdate: syncing records', recordsToSyncExcludingIncoming)
-                        latestSynchronizedData = await submitOutgoing(
-                            latestSynchronizedData,
+                        latestSynchronisedData = await submitOutgoing(
+                            latestSynchronisedData,
                             recordsToSyncExcludingIncoming,
                             unmountedLink,
                             metaState.nested.isNetworkOnline.get())
@@ -363,10 +360,18 @@ class SynchronisedPluginInstance implements PluginInstance {
                         console.error(err)
                     }
                 }
-                console.log('processUnsyncedUpdate: saving sync', latestEdition)
-                await saveStateSync(dbRef, latestSynchronizedData, latestEdition)
-
-                compact(latestEdition)
+                
+                // save periodically
+                // if it is not saved and application is closed,
+                // it is replayed from the updates queue next time
+                const currentTimestamp = (new Date()).getTime()
+                if (latestSynchronisedData === undefined // flushed successfully
+                    // or did not save for quite a while
+                    || currentTimestamp - latestSynchronisedTimestamp < 60000
+                    ) {
+                    await saveStateSync(dbRef, latestSynchronisedData, latestEdition)
+                    compact(latestEdition)
+                }
             } finally {
                 if (metaState.nested.isSynchronizationRunning.value) {
                     broadcast({
@@ -379,7 +384,6 @@ class SynchronisedPluginInstance implements PluginInstance {
             }
                         
             if (updatesPendingSynchronization.length > 0) {
-                console.log('processUnsyncedUpdate: running again')
                 sync()
             }
         }
@@ -387,24 +391,16 @@ class SynchronisedPluginInstance implements PluginInstance {
         function processUnsyncedUpdate(record: StateLinkUpdateRecordPersisted) {
             // updates can come out of order
             
-            console.log('processUnsyncedUpdate', record)
-            
             latestObservedEdition = Math.max(latestObservedEdition, record.edition)
-
             if (isLeaderLoaded() === undefined) {
-                console.log('processUnsyncedUpdate: leader undefined')
                 return;
             }
-
             if (!isStateLoaded()) {
-                console.log('processUnsyncedUpdate: leader loading')
                 updatesCapturedDuringLeaderLoading.push(record)
                 return;
             }
-            
             updatesPendingSynchronization.push(record)
             if (metaState.value.isSynchronizationRunning) {
-                console.log('processUnsyncedUpdate: already running')
                 return;
             }
 
@@ -471,20 +467,20 @@ class SynchronisedPluginInstance implements PluginInstance {
             // keep watching if strange synchronisation errors apear in production
             
             // safe to proceed with activation
-            latestSynchronizedEdition = -1 // elected & loading state
+            latestSynchronisedEdition = -1 // elected & loading state
             if (!isStateLoaded()) {
                 return;
             }
             loadStateSync(dbRef).then(i => {
                 loadStateUpdates(dbRef,
-                    i.synchronizedEdition + 1,
+                    i.synchronisedEdition + 1,
                     Math.max(
                         latestObservedEdition,
-                        i.synchronizedEdition + 1,
+                        i.synchronisedEdition + 1,
                         metaState.value.initiallyLoadedEdition))
                     .then(updates => {
-                        latestSynchronizedEdition = i.synchronizedEdition
-                        latestSynchronizedData = i.pendingState
+                        latestSynchronisedEdition = i.synchronisedEdition
+                        latestSynchronisedData = i.pendingState
                         updates.forEach(processUnsyncedUpdate)
                         updatesCapturedDuringLeaderLoading
                             // it could receive the same updates while they are being loaded
@@ -535,7 +531,6 @@ class SynchronisedPluginInstance implements PluginInstance {
         }
         
         this.onDestroyCallback = () => {
-            console.log('Plugin destroyed')
             off(window, 'online', onOnline)
             off(window, 'offline', onOffline)
             if (unsubscribeIncoming) {
@@ -609,7 +604,10 @@ interface Task { name: string }
 
 const StatusView = (props: { status: StateInf<SynchronisationStatus> }) => {
     const meta = useStateLink(props.status);
-    return <p>Is syncrhonisation running: {meta.isSynchronising().toString()}</p>
+    return <>
+        <p>Is syncrhonisation running: {meta.isSynchronising().toString()}</p>
+        <p>Is network online: {meta.isNetworkOnline().toString()}</p>
+    </>
 }
 
 const DataEditor = (props: { state: StateLink<Task[]> }) => {
@@ -634,22 +632,22 @@ export const ExampleComponent = () => {
     state.with(Synchronised<Task[], StateLinkUpdateRecordPersisted[]>(
             'plugin-persisted-data-key-6',
             (link) => {
-                console.warn('subscribing incoming, interval simulated') 
+                console.log('subscribing incoming, interval simulated') 
                 let count = 0
                 const timer = setInterval(() => {
                     count += 1
                     Synchronised(link.nested[0].nested.name).set('from subscription: ' + count.toString())
                 }, 10000)
                 return () => {
-                    console.warn('unsubscribing incoming, internal simulated')
+                    console.log('unsubscribing incoming, internal simulated')
                     clearInterval(timer)
                 }
             },
             (pending, updates, link, isOnline) => {
-                console.log('request to sync', updates, isOnline)
+                console.log('submitting outgoing', pending, updates, isOnline)
                 if (isOnline) {
                     return new Promise((resolve, reject) => {
-                        // assuming flushed successfully
+                        // assuming flushed to remote successfully
                         setTimeout(() => resolve(undefined), 1000)
                     })
                 }
