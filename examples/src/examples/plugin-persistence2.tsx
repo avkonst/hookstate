@@ -370,6 +370,8 @@ class SynchronisedPluginInstance implements PluginInstance {
                     || currentTimestamp - latestSynchronisedTimestamp < 60000
                     ) {
                     await saveStateSync(dbRef, latestSynchronisedData, latestEdition)
+                    latestSynchronisedTimestamp = currentTimestamp
+
                     compact(latestEdition)
                 }
             } finally {
