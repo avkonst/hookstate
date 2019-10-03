@@ -183,7 +183,7 @@ interface StateLinkUpdateRecordPersisted extends StateLinkUpdateRecord {
 
 interface StatusMessage {
     status: {
-        isSynchronising: boolean
+        isSynchronising?: boolean
     }
 }
 
@@ -196,6 +196,9 @@ export interface SynchronisedExtensions<S> {
     set(newValue: React.SetStateAction<S>): void;
     status(): StateInf<SynchronisationStatus>
 }
+
+export const on = (obj: any, ...args: any[]) => obj.addEventListener(...args);
+export const off = (obj: any, ...args: any[]) => obj.removeEventListener(...args);
 
 const PluginID = Symbol('Synchronised');
 
@@ -213,23 +216,18 @@ class SynchronisedPluginInstance implements PluginInstance {
         submitOutgoing?: (
             pending: any,
             updates: StateLinkUpdateRecordPersisted[],
-            link: StateLink<StateValueAtRoot>
+            link: StateLink<StateValueAtRoot>,
+            isNetworkOnline: boolean
         ) => Promise<any>
     ) {
-        // private broadcastRef: BroadcastChannelHandle<StateLinkUpdateRecordPersisted | StatusMessage>;
-        // private dbRef: Promise<StateHandle>;
-        // private unsubscribeCallback: (() => void) | undefined;
-        // private metaStateRef: StateRef<{
-        //     initiallyLoadedEdition: number;
-        //     isSynchronizationRunning: boolean;
-        // }>;
-        
         const metaStateRef = createStateLink<{
             initiallyLoadedEdition: number,
-            isSynchronizationRunning: boolean
+            isSynchronizationRunning: boolean,
+            isNetworkOnline: boolean
         }>({
             initiallyLoadedEdition: -1,
             isSynchronizationRunning: false,
+            isNetworkOnline: true
         });
         const metaState = useStateLinkUnmounted(metaStateRef).with(Untracked);
         const metaInf = metaStateRef.wrap(s => ({
@@ -295,6 +293,97 @@ class SynchronisedPluginInstance implements PluginInstance {
             }
         }
 
+        function compact(upto: number) {
+            console.log('processUnsyncedUpdate: compacting', upto)
+
+            if (isCompactionRunning) {
+                return;
+            }
+            const observedEdition = upto;
+            const currentTimestamp = (new Date()).getTime()
+            if (observedEdition - latestCompactedEdition < 1000 &&
+                currentTimestamp - latestCompactedTimestamp < 60000) {
+                return;
+            }
+            isCompactionRunning = true;
+            compactStateUpdates(dbRef, observedEdition).then(() => {
+                isCompactionRunning = false;
+            }).catch((err) => {
+                isCompactionRunning = false;
+                console.error(err)
+            })
+            latestCompactedEdition = observedEdition
+            latestCompactedTimestamp = currentTimestamp
+        }
+        
+        async function sync() {
+            console.log('processUnsyncedUpdate: syncing')
+            try {
+                Untracked(metaState.nested.isSynchronizationRunning).set(true);
+                
+                await new Promise(resolve => setTimeout(() => resolve(), 1000)) // debounce
+
+                const recordsToSync = updatesPendingSynchronization
+                const pendingEditions = recordsToSync
+                    .map(i => i.edition)
+                    .sort((a, b) => a - b)
+                if (pendingEditions.find(
+                        (e, i) => e - latestSynchronizedEdition !== i + 1) !== undefined) {
+                    // some are out of order, wait until it lines up
+                    console.warn('out of order updates received, postponing sync until gaps are closed',
+                    latestSynchronizedEdition, pendingEditions)
+                    return;
+                }
+
+                console.log('processUnsyncedUpdate: syncing editions', pendingEditions)
+
+                const latestEdition = pendingEditions[pendingEditions.length - 1]
+                updatesPendingSynchronization = []
+                latestSynchronizedEdition = latestEdition
+                const recordsToSyncExcludingIncoming = recordsToSync.filter(i => !i.incoming)
+                
+                if (recordsToSyncExcludingIncoming.length > 0 || latestSynchronizedData) {
+                    console.warn('set sync running true')
+                    metaState.nested.isSynchronizationRunning.set(true);
+                    broadcast({
+                        status: {
+                            isSynchronising: true
+                        }
+                    })
+                }
+                if (submitOutgoing) {
+                    try {
+                        console.log('processUnsyncedUpdate: syncing records', recordsToSyncExcludingIncoming)
+                        latestSynchronizedData = await submitOutgoing(
+                            latestSynchronizedData,
+                            recordsToSyncExcludingIncoming,
+                            unmountedLink,
+                            metaState.nested.isNetworkOnline.get())
+                    } catch (err) {
+                        console.error(err)
+                    }
+                }
+                console.log('processUnsyncedUpdate: saving sync', latestEdition)
+                await saveStateSync(dbRef, latestSynchronizedData, latestEdition)
+
+                compact(latestEdition)
+            } finally {
+                if (metaState.nested.isSynchronizationRunning.value) {
+                    broadcast({
+                        status: {
+                            isSynchronising: false
+                        }
+                    })
+                    metaState.nested.isSynchronizationRunning.set(false);
+                }
+            }
+                        
+            if (updatesPendingSynchronization.length > 0) {
+                console.log('processUnsyncedUpdate: running again')
+                sync()
+            }
+        }
+        
         function processUnsyncedUpdate(record: StateLinkUpdateRecordPersisted) {
             // updates can come out of order
             
@@ -319,105 +408,15 @@ class SynchronisedPluginInstance implements PluginInstance {
                 return;
             }
 
-            function compact(upto: number) {
-                console.log('processUnsyncedUpdate: compacting', upto)
-
-                if (isCompactionRunning) {
-                    return;
-                }
-                const observedEdition = upto;
-                const currentTimestamp = (new Date()).getTime()
-                if (observedEdition - latestCompactedEdition < 1000 &&
-                    currentTimestamp - latestCompactedTimestamp < 60000) {
-                    return;
-                }
-                isCompactionRunning = true;
-                compactStateUpdates(dbRef, observedEdition).then(() => {
-                    isCompactionRunning = false;
-                }).catch((err) => {
-                    isCompactionRunning = false;
-                    console.error(err)
-                })
-                latestCompactedEdition = observedEdition
-                latestCompactedTimestamp = currentTimestamp
-            }
-            
-            async function sync() {
-                console.log('processUnsyncedUpdate: syncing')
-                try {
-                    Untracked(metaState.nested.isSynchronizationRunning).set(true);
-                    
-                    await new Promise(resolve => setTimeout(() => resolve(), 1000)) // debounce
-
-                    const recordsToSync = updatesPendingSynchronization
-                    const pendingEditions = recordsToSync
-                        .map(i => i.edition)
-                        .sort((a, b) => a - b)
-                    if (pendingEditions.find(
-                            (e, i) => e - latestSynchronizedEdition !== i + 1) !== undefined) {
-                        // some are out of order, wait until it lines up
-                        console.warn('out of order updates received, postponing sync until gaps are closed',
-                        latestSynchronizedEdition, pendingEditions)
-                        return;
-                    }
-
-                    console.log('processUnsyncedUpdate: syncing editions', pendingEditions)
-
-                    const latestEdition = pendingEditions[pendingEditions.length - 1]
-                    updatesPendingSynchronization = []
-                    latestSynchronizedEdition = latestEdition
-                    const recordsToSyncExcludingIncoming = recordsToSync.filter(i => !i.incoming)
-                    
-                    if (recordsToSyncExcludingIncoming.length === 0) {
-                        return;
-                    }
-
-                    console.warn('set sync running true')
-                    metaState.nested.isSynchronizationRunning.set(true);
-                    broadcast({
-                        status: {
-                            isSynchronising: true
-                        }
-                    })
-                    if (submitOutgoing) {
-                        try {
-                            console.log('processUnsyncedUpdate: syncing records', recordsToSyncExcludingIncoming)
-                            latestSynchronizedData = await submitOutgoing(
-                                latestSynchronizedData,
-                                recordsToSyncExcludingIncoming,
-                                unmountedLink)
-                        } catch (err) {
-                            console.error(err)
-                        }
-                    }
-                    console.log('processUnsyncedUpdate: saving sync', latestEdition)
-                    await saveStateSync(dbRef, latestSynchronizedData, latestEdition)
-                
-                    compact(latestEdition)
-                } finally {
-                    if (metaState.nested.isSynchronizationRunning.value) {
-                        broadcast({
-                            status: {
-                                isSynchronising: false
-                            }
-                        })
-                        metaState.nested.isSynchronizationRunning.set(false);
-                    }
-                }
-                            
-                if (updatesPendingSynchronization.length > 0) {
-                    console.log('processUnsyncedUpdate: running again')
-                    sync()
-                }
-            }
-            
             sync()
         }
         
         function processBroadcastedUpdate(message: StateLinkUpdateRecordPersisted | StatusMessage) {
             if ((message as StatusMessage).status !== undefined) {
                 const status = (message as StatusMessage).status;
-                metaState.nested.isSynchronizationRunning.set(status.isSynchronising)
+                if (status.isSynchronising !== undefined) {
+                    metaState.nested.isSynchronizationRunning.set(status.isSynchronising)
+                }
                 return;
             }
             const record = message as StateLinkUpdateRecordPersisted;
@@ -466,6 +465,12 @@ class SynchronisedPluginInstance implements PluginInstance {
         }
         
         function activateWhenElected() {
+            // note the 3rd party election algorithm has got a bug
+            // very hard to reproduce and track it down
+            // it is also unclear if it is reproducinble only under hot reload or not
+            // keep watching if strange synchronisation errors apear in production
+            
+            // safe to proceed with activation
             latestSynchronizedEdition = -1 // elected & loading state
             if (!isStateLoaded()) {
                 return;
@@ -493,6 +498,25 @@ class SynchronisedPluginInstance implements PluginInstance {
             }
         }
         
+        const onOnline = () => {
+            if (unsubscribeIncoming === undefined &&
+                subscribeIncoming &&
+                isLeaderLoaded() !== undefined) {
+                unsubscribeIncoming = subscribeIncoming(unmountedLink)
+            }
+            metaState.nested.isNetworkOnline.set(true)
+            sync()
+        };
+        const onOffline = () => {
+            metaState.nested.isNetworkOnline.set(false)
+            if (unsubscribeIncoming) {
+                unsubscribeIncoming()
+                unsubscribeIncoming = undefined;
+            }
+        };
+        on(window, 'online', onOnline)
+        on(window, 'offline', onOffline)
+        
         this.onSetCallback = (path, newState, newValue) => {
             if (isLocalSynchronisationEnabled) {
                 // this instance has been updated, so notify peers
@@ -512,6 +536,8 @@ class SynchronisedPluginInstance implements PluginInstance {
         
         this.onDestroyCallback = () => {
             console.log('Plugin destroyed')
+            off(window, 'online', onOnline)
+            off(window, 'offline', onOffline)
             if (unsubscribeIncoming) {
                 unsubscribeIncoming()
             }
@@ -543,7 +569,8 @@ export function Synchronised<S, P>(
     submitOutgoing?: (
         pending: P | undefined,
         updates: StateLinkUpdateRecordPersisted[],
-        link: StateLink<S>
+        link: StateLink<S>,
+        isNetworkOnline: boolean
     ) => Promise<P>): () => Plugin;
 export function Synchronised<S>(self: StateLink<S>): SynchronisedExtensions<S>;
 export function Synchronised<S>(selfOrTopic?: StateLink<S> | string,
@@ -551,7 +578,8 @@ export function Synchronised<S>(selfOrTopic?: StateLink<S> | string,
     submitOutgoing?: (
         pending: any,
         updates: StateLinkUpdateRecordPersisted[],
-        link: StateLink<StateValueAtRoot>
+        link: StateLink<StateValueAtRoot>,
+        isNetworkOnline: boolean
     ) => Promise<any>
     ): (() => Plugin) | SynchronisedExtensions<S> {
     if (typeof selfOrTopic !== 'string') {
@@ -606,18 +634,28 @@ export const ExampleComponent = () => {
     state.with(Synchronised<Task[], StateLinkUpdateRecordPersisted[]>(
             'plugin-persisted-data-key-6',
             (link) => {
+                console.warn('subscribing incoming, interval simulated') 
                 let count = 0
                 const timer = setInterval(() => {
                     count += 1
                     Synchronised(link.nested[0].nested.name).set('from subscription: ' + count.toString())
                 }, 10000)
-                return () => clearInterval(timer)
+                return () => {
+                    console.warn('unsubscribing incoming, internal simulated')
+                    clearInterval(timer)
+                }
             },
-            (pending, updates, link) => {
-                console.log('request to sync', updates)
+            (pending, updates, link, isOnline) => {
+                console.log('request to sync', updates, isOnline)
+                if (isOnline) {
+                    return new Promise((resolve, reject) => {
+                        // assuming flushed successfully
+                        setTimeout(() => resolve(undefined), 1000)
+                    })
+                }
                 return new Promise((resolve, reject) => {
-                    // keep last 10 updates in pending
-                    setTimeout(() => resolve((pending || []).concat(updates).slice(-10)), 1000)
+                    // accumulate while offline
+                    setTimeout(() => resolve((pending || []).concat(updates)), 1000)
                 })
             }
         ))
