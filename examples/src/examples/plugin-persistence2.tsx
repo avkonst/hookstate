@@ -234,7 +234,7 @@ class SynchronisedPluginInstance implements PluginInstance {
         }>({
             initiallyLoadedEdition: -1,
             isSynchronizationRunning: false,
-            isNetworkOnline: true
+            isNetworkOnline: window.navigator ? navigator.onLine : true
         });
         const metaState = useStateLinkUnmounted(metaStateRef).with(Untracked);
         const metaInf: StateInf<SynchronisedStatus> = metaStateRef.wrap(s => ({
