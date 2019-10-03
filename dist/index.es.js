@@ -588,7 +588,10 @@ function useSubscribedStateLink(state, path, update, subscribeTarget, disabledTr
     ref.current = link;
     subscribeTarget.subscribe(link);
     React.useEffect(function () {
-        return function () { return onDestroy(); };
+        return function () {
+            subscribeTarget.unsubscribe(ref.current);
+            onDestroy();
+        };
     }, []);
     return link;
 }
