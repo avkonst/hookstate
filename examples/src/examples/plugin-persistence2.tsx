@@ -106,8 +106,10 @@ async function compactStateUpdates(dbRef: Promise<StateHandle>, upto: number) {
     
     const readTx = database.transaction(topic, 'readonly')
     const readStore = readTx.objectStore(topic)
-    for (let i = currentEdition + 1; i <= upto; i += 1) {
-        const record: StateLinkUpdateRecord = await readStore.get(i)
+    const records: StateLinkUpdateRecord[] =
+        await readStore.getAll(IDBKeyRange.bound(currentEdition + 1, upto))
+    await readTx.done
+    records.forEach(record => {
         if (record.path.length === 0) {
             persisted = record.value;
         }
@@ -123,8 +125,7 @@ async function compactStateUpdates(dbRef: Promise<StateHandle>, upto: number) {
                 console.warn('Can not merge update at path:', record.path, p, i)
             }
         });
-    }
-    await readTx.done
+    })
     
     const writeTx = database.transaction(topic, 'readwrite')
     const writeStore = writeTx.objectStore(topic)
@@ -187,7 +188,7 @@ interface StatusMessage {
     }
 }
 
-export interface SynchronisationStatus {
+export interface SynchronisedStatus {
     isLoading(): boolean;
     isSynchronising(): boolean;
     isNetworkOnline(): boolean;
@@ -195,7 +196,7 @@ export interface SynchronisationStatus {
 
 export interface SynchronisedExtensions<S> {
     set(newValue: React.SetStateAction<S>): void;
-    status(): StateInf<SynchronisationStatus>
+    status(): StateInf<SynchronisedStatus>
 }
 
 export const on = (obj: any, ...args: any[]) => obj.addEventListener(...args);
@@ -206,7 +207,7 @@ const PluginID = Symbol('Synchronised');
 class SynchronisedPluginInstance implements PluginInstance {
     private onDestroyCallback: () => void;
     private onSetCallback: (path: readonly (string | number)[], newState: any, newValue: any) => void;
-    private onStatusCallback: () => StateInf<SynchronisationStatus>
+    private onStatusCallback: () => StateInf<SynchronisedStatus>
 
     runWithoutRemoteSynchronisation: (action: () => void) => void;
     
@@ -221,6 +222,8 @@ class SynchronisedPluginInstance implements PluginInstance {
             isNetworkOnline: boolean
         ) => Promise<any>
     ) {
+        let hasBeenDestroyed = false;
+        
         const metaStateRef = createStateLink<{
             initiallyLoadedEdition: number,
             isSynchronizationRunning: boolean,
@@ -231,7 +234,7 @@ class SynchronisedPluginInstance implements PluginInstance {
             isNetworkOnline: true
         });
         const metaState = useStateLinkUnmounted(metaStateRef).with(Untracked);
-        const metaInf: StateInf<SynchronisationStatus> = metaStateRef.wrap(s => ({
+        const metaInf: StateInf<SynchronisedStatus> = metaStateRef.wrap(s => ({
             isLoading() {
                 return s.value.initiallyLoadedEdition === -1
             },
@@ -245,8 +248,9 @@ class SynchronisedPluginInstance implements PluginInstance {
         
         const broadcastRef = subscribeBroadcastChannel(
             topic, processBroadcastedUpdate, activateWhenElected)
-        const broadcast = (message: StateLinkUpdateRecordPersisted | StatusMessage) =>
+        const broadcast = (message: StateLinkUpdateRecordPersisted | StatusMessage) => {
             broadcastRef.channel.postMessage(message);
+        }
 
         const dbRef = openState(topic, unmountedLink.value) 
         loadState(dbRef).then(activateWhenLoaded)
@@ -254,7 +258,6 @@ class SynchronisedPluginInstance implements PluginInstance {
         let updatesCapturedDuringStateLoading: StateLinkUpdateRecordPersisted[] = [];
         let latestCompactedEdition = -1;
         let latestCompactedTimestamp = 0;
-        let isCompactionRunning = false;
         let latestObservedEdition = -1;
         let updatesCapturedDuringLeaderLoading: StateLinkUpdateRecordPersisted[] = [];
         let updatesPendingSynchronization: StateLinkUpdateRecordPersisted[] = [];
@@ -298,44 +301,32 @@ class SynchronisedPluginInstance implements PluginInstance {
             }
         }
 
-        function compact(upto: number) {
-            if (isCompactionRunning) {
-                return;
-            }
-            const observedEdition = upto;
-            const currentTimestamp = (new Date()).getTime()
-            if (observedEdition - latestCompactedEdition < 1000 &&
-                currentTimestamp - latestCompactedTimestamp < 60000) {
-                return;
-            }
-            isCompactionRunning = true;
-            compactStateUpdates(dbRef, observedEdition).then(() => {
-                isCompactionRunning = false;
-            }).catch((err) => {
-                isCompactionRunning = false;
-                console.error(err)
-            })
-            latestCompactedEdition = observedEdition
-            latestCompactedTimestamp = currentTimestamp
-        }
-        
+        // TODO sync can throw if two leaders are elected (see other notes about leader election problem),
+        // handle it and stop syncing on errors?
         async function sync() {
-            console.log('processUnsyncedUpdate: syncing')
+            if (hasBeenDestroyed) {
+                return;
+            }
+            
+            if (metaState.value.isSynchronizationRunning) {
+                return;
+            }
+            
             try {
+                // set guard without rerendering status viewers
                 Untracked(metaState.nested.isSynchronizationRunning).set(true);
                 
                 await new Promise(resolve => setTimeout(() => resolve(), 1000)) // debounce
-
+    
                 const recordsToSync = updatesPendingSynchronization
                 const recordsToSyncExcludingIncoming = recordsToSync.filter(i => !i.incoming)
-                const pendingEditions = recordsToSync
-                    .map(i => i.edition)
-                    .sort((a, b) => a - b)
+                const pendingEditions = recordsToSync.map(i => i.edition).sort((a, b) => a - b)
+                
                 if (pendingEditions.find(
                         (e, i) => e - latestSynchronisedEdition !== i + 1) !== undefined) {
                     // some are out of order, wait until it lines up
                     console.warn('out of order updates received, postponing sync until gaps are closed',
-                    latestSynchronisedEdition, pendingEditions)
+                        latestSynchronisedEdition, pendingEditions)
                     return;
                 }
 
@@ -344,12 +335,14 @@ class SynchronisedPluginInstance implements PluginInstance {
                 latestSynchronisedEdition = latestEdition
                 
                 if ((recordsToSyncExcludingIncoming.length > 0 || latestSynchronisedData) && submitOutgoing) {
+                    // reset guard AND rerender status viewers
                     metaState.nested.isSynchronizationRunning.set(true);
                     broadcast({
                         status: {
                             isSynchronising: true
                         }
                     })
+
                     try {
                         latestSynchronisedData = await submitOutgoing(
                             latestSynchronisedData,
@@ -357,25 +350,34 @@ class SynchronisedPluginInstance implements PluginInstance {
                             unmountedLink,
                             metaState.nested.isNetworkOnline.get())
                     } catch (err) {
+                        // TODO flush to errors collector
                         console.error(err)
                     }
                 }
                 
-                // save periodically
+                // save sync status periodically
                 // if it is not saved and application is closed,
                 // it is replayed from the updates queue next time
                 const currentTimestamp = (new Date()).getTime()
                 if (latestSynchronisedData === undefined // flushed successfully
                     // or did not save for quite a while
-                    || currentTimestamp - latestSynchronisedTimestamp < 60000
+                    || currentTimestamp - latestSynchronisedTimestamp > 60000
                     ) {
                     await saveStateSync(dbRef, latestSynchronisedData, latestEdition)
                     latestSynchronisedTimestamp = currentTimestamp
 
-                    compact(latestEdition)
+                    // check if compaction needed
+                    // either many updates accumulated
+                    // or did not compact for quite a while
+                    if (latestEdition - latestCompactedEdition > 1000 ||
+                        currentTimestamp - latestCompactedTimestamp > 60000) {
+                        await compactStateUpdates(dbRef, latestEdition)
+                        latestCompactedEdition = latestEdition
+                        latestCompactedTimestamp = currentTimestamp
+                    }
                 }
             } finally {
-                if (metaState.nested.isSynchronizationRunning.value) {
+                if (metaState.nested.isSynchronizationRunning.get()) {
                     broadcast({
                         status: {
                             isSynchronising: false
@@ -383,8 +385,13 @@ class SynchronisedPluginInstance implements PluginInstance {
                     })
                     metaState.nested.isSynchronizationRunning.set(false);
                 }
+                
+                if (hasBeenDestroyed) {
+                    // a component has been unmounted while syncing data
+                    onDestroyFinally()
+                }
             }
-                        
+
             if (updatesPendingSynchronization.length > 0) {
                 sync()
             }
@@ -402,14 +409,16 @@ class SynchronisedPluginInstance implements PluginInstance {
                 return;
             }
             updatesPendingSynchronization.push(record)
-            if (metaState.value.isSynchronizationRunning) {
-                return;
-            }
 
             sync()
         }
         
         function processBroadcastedUpdate(message: StateLinkUpdateRecordPersisted | StatusMessage) {
+            // a component can be unmounted while the synchronisation process was running
+            if (hasBeenDestroyed) {
+                return;
+            }
+
             if ((message as StatusMessage).status !== undefined) {
                 const status = (message as StatusMessage).status;
                 if (status.isSynchronising !== undefined) {
@@ -452,6 +461,11 @@ class SynchronisedPluginInstance implements PluginInstance {
             loadedEdition: number;
             compactedEdition: number;
         }) {
+            // a component can be unmounted while the data is being loaded
+            if (hasBeenDestroyed) {
+                return;
+            }
+            
             runWithoutLocalSynchronisation(() => unmountedLink.set(s.state))
             metaState.nested.initiallyLoadedEdition.set(s.loadedEdition);
             latestCompactedEdition = s.compactedEdition;
@@ -463,17 +477,29 @@ class SynchronisedPluginInstance implements PluginInstance {
         }
         
         function activateWhenElected() {
+            // a component can be unmounted while the elector was working
+            if (hasBeenDestroyed) {
+                return;
+            }
+
+            console.log('activated leader')
+            
             // note the 3rd party election algorithm has got a bug
             // very hard to reproduce and track it down
             // it is also unclear if it is reproducinble only under hot reload or not
             // keep watching if strange synchronisation errors apear in production
             
-            // safe to proceed with activation
             latestSynchronisedEdition = -1 // elected & loading state
             if (!isStateLoaded()) {
+                // will be picked up when activated on loaded
                 return;
-            }
+            }            
             loadStateSync(dbRef).then(i => {
+                // a component can be unmounted while the data is being loaded
+                if (hasBeenDestroyed) {
+                    return;
+                }
+
                 loadStateUpdates(dbRef,
                     i.synchronisedEdition + 1,
                     Math.max(
@@ -481,6 +507,11 @@ class SynchronisedPluginInstance implements PluginInstance {
                         i.synchronisedEdition + 1,
                         metaState.value.initiallyLoadedEdition))
                     .then(updates => {
+                        // a component can be unmounted while the data is being loaded
+                        if (hasBeenDestroyed) {
+                            return;
+                        }
+                        
                         latestSynchronisedEdition = i.synchronisedEdition
                         latestSynchronisedData = i.pendingState
                         updates.forEach(processUnsyncedUpdate)
@@ -525,6 +556,11 @@ class SynchronisedPluginInstance implements PluginInstance {
                 }
                 saveStateUpdate(dbRef, update)
                     .then((edition) => {
+                        // a component can be unmounted while the data is being saved
+                        if (hasBeenDestroyed) {
+                            return;
+                        }
+        
                         const persistedUpdate = { ...update, edition }
                         processUnsyncedUpdate(persistedUpdate)
                         broadcast(persistedUpdate)
@@ -532,15 +568,21 @@ class SynchronisedPluginInstance implements PluginInstance {
             }
         }
         
+        const onDestroyFinally = () => {
+            metaStateRef.destroy()
+            unsubscribeBroadcastChannel(broadcastRef)
+            closeState(dbRef)
+        }
         this.onDestroyCallback = () => {
+            hasBeenDestroyed = true;
             off(window, 'online', onOnline)
             off(window, 'offline', onOffline)
             if (unsubscribeIncoming) {
                 unsubscribeIncoming()
             }
-            metaStateRef.destroy()
-            unsubscribeBroadcastChannel(broadcastRef)
-            closeState(dbRef)
+            if (!metaState.nested.isSynchronizationRunning.get()) {
+                onDestroyFinally()
+            }
         }
         
         this.onStatusCallback = () => metaInf
@@ -604,7 +646,7 @@ export function Synchronised<S>(selfOrTopic?: StateLink<S> | string,
 
 interface Task { name: string }
 
-const StatusView = (props: { status: StateInf<SynchronisationStatus> }) => {
+const StatusView = (props: { status: StateInf<SynchronisedStatus> }) => {
     const meta = useStateLink(props.status);
     return <>
         <p>Is syncrhonisation running: {meta.isSynchronising().toString()}</p>
@@ -639,7 +681,7 @@ export const ExampleComponent = () => {
                 const timer = setInterval(() => {
                     count += 1
                     Synchronised(link.nested[0].nested.name).set('from subscription: ' + count.toString())
-                }, 10000)
+                }, 1000)
                 return () => {
                     console.log('unsubscribing incoming, internal simulated')
                     clearInterval(timer)
@@ -655,7 +697,7 @@ export const ExampleComponent = () => {
                 }
                 return new Promise((resolve, reject) => {
                     // accumulate while offline
-                    setTimeout(() => resolve((pending || []).concat(updates)), 1000)
+                    resolve((pending || []).concat(updates))
                 })
             }
         ))
