@@ -270,6 +270,7 @@ class State implements Subscribable {
 const SynteticID = Symbol('SynteticTypeInferenceMarker');
 const ValueCache = Symbol('ValueCache');
 const NestedCache = Symbol('NestedCache');
+const UnmountedCallback = Symbol('UnmountedCallback');
 
 class StateRefImpl<S> implements StateRef<S> {
     // tslint:disable-next-line: variable-name
@@ -332,29 +333,41 @@ class StateLinkImpl<S> implements StateLink<S>,
     constructor(
         public readonly state: State,
         public readonly path: Path,
-        public onUpdateUsed: (() => void) | undefined,
+        public onUpdateUsed: (() => void),
         public valueSource: S,
         public valueEdition: number
     ) { }
 
-    private resetIfStale() {
-        // only unmounted / untracked links are refreshed
-        // others are recreated on state change as a part of rerender for affected state segments
-        // it is for performance and correctness
-        if (this.onUpdateUsed === undefined && this.valueEdition !== this.state.edition) {
-            // it is safe to reset the state only for unmounted / untracked state links
-            // because the following variables are used for tracking if a link has been used
-            // during rendering
-            delete this[ValueCache]
-            delete this[NestedCache]
-            delete this.nestedLinksCache
+    private refreshIfStale() {
+        if (this.valueEdition !== this.state.edition) {
             this.valueSource = this.state.get(this.path)
             this.valueEdition = this.state.edition
+
+            if (this.onUpdateUsed[UnmountedCallback]) {
+                // this link is not mounted to a component
+                // for example, it might be global link or
+                // a link which has been discarded after rerender
+                // but still captured by some callback or an effect
+                delete this[ValueCache]
+                delete this[NestedCache]
+            } else {
+                // this link is still mounted to a component
+                // populate cache again to ensure correct tracking of usage
+                // when React scans which states to rerender on update
+                if (ValueCache in this) {
+                    delete this[ValueCache]
+                    this.get()
+                }
+                if (NestedCache in this) {
+                    delete this[NestedCache]
+                    this.nested
+                }
+            }
         }
     }
     
     get value(): S {
-        this.resetIfStale()
+        this.refreshIfStale()
         if (this[ValueCache] === undefined) {
             if (this.disabledTracking) {
                 this[ValueCache] = this.valueSource;
@@ -370,7 +383,7 @@ class StateLinkImpl<S> implements StateLink<S>,
     }
 
     getUntracked() {
-        this.resetIfStale()
+        this.refreshIfStale()
         return this.valueSource;
     }
 
@@ -439,17 +452,13 @@ class StateLinkImpl<S> implements StateLink<S>,
         const update = () => {
             if (this.disabledTracking &&
                 (ValueCache in this || NestedCache in this)) {
-                if (this.onUpdateUsed) {
-                    actions.push(this.onUpdateUsed);
-                }
+                actions.push(this.onUpdateUsed);
                 return true;
             }
             const firstChildKey = path[this.path.length];
             if (firstChildKey === undefined) {
                 if (ValueCache in this || NestedCache in this) {
-                    if (this.onUpdateUsed) {
-                        actions.push(this.onUpdateUsed);
-                    }
+                    actions.push(this.onUpdateUsed);
                     return true;
                 }
                 return false;
@@ -471,7 +480,7 @@ class StateLinkImpl<S> implements StateLink<S>,
     }
 
     get nested(): NestedInferredLink<S> {
-        this.resetIfStale()
+        this.refreshIfStale()
         if (this[NestedCache] === undefined) {
             if (Array.isArray(this.valueSource)) {
                 this[NestedCache] = this.nestedArrayImpl();
@@ -485,8 +494,8 @@ class StateLinkImpl<S> implements StateLink<S>,
     }
 
     private nestedArrayImpl(): NestedInferredLink<S> {
-        const proxyGetterCache = {};
-        this.nestedLinksCache = proxyGetterCache;
+        this.nestedLinksCache = this.nestedLinksCache || {};
+        const proxyGetterCache = this.nestedLinksCache;
 
         const getter = (target: object, key: PropertyKey) => {
             if (key === 'length') {
@@ -559,8 +568,8 @@ class StateLinkImpl<S> implements StateLink<S>,
     }
 
     private nestedObjectImpl(): NestedInferredLink<S> {
-        const proxyGetterCache = {}
-        this.nestedLinksCache = proxyGetterCache;
+        this.nestedLinksCache = this.nestedLinksCache || {};
+        const proxyGetterCache = this.nestedLinksCache;
 
         const getter = (target: object, key: PropertyKey) => {
             if (key === ProxyMarkerID) {
@@ -692,6 +701,9 @@ class StateLinkImpl<S> implements StateLink<S>,
 }
 
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
+const NoAction = () => {};
+const NoActionUnmounted = () => {};
+NoActionUnmounted[UnmountedCallback] = true
 
 function createState<S>(initial: S | (() => S)): State {
     let initialValue: S = initial as S;
@@ -728,7 +740,10 @@ function useSubscribedStateLink<S>(
     }
     useIsomorphicLayoutEffect(() => {
         subscribeTarget.subscribe(link);
-        return () => subscribeTarget.unsubscribe(link);
+        return () => {
+            link.onUpdateUsed[UnmountedCallback] = true
+            subscribeTarget.unsubscribe(link);
+        }
     });
     React.useEffect(() => () => onDestroy(), []);
     return link;
@@ -742,7 +757,7 @@ function useGlobalStateLink<S>(stateRef: StateRefImpl<S>): StateLinkImpl<S> {
         () => setValue({ state: value.state }),
         value.state,
         stateRef.disabledTracking,
-        () => {});
+        NoAction);
 }
 
 function useLocalStateLink<S>(initialState: S | (() => S)): StateLinkImpl<S> {
@@ -764,7 +779,7 @@ function useScopedStateLink<S>(originLink: StateLinkImpl<S>): StateLinkImpl<S> {
         () => setValue({}),
         originLink,
         originLink.disabledTracking,
-        () => {});
+        NoAction);
 }
 
 function useAutoStateLink<S>(
@@ -787,7 +802,7 @@ function injectTransform<S, R>(
     link: StateLinkImpl<S>,
     transform: (state: StateLink<S>, prev: R | undefined) => R
 ) {
-    if (link.onUpdateUsed === undefined) {
+    if (link.onUpdateUsed[UnmountedCallback]) {
         // this is unmounted link
         return transform(link, undefined);
     }
@@ -905,7 +920,7 @@ export function useStateLinkUnmounted<S, R>(
     const link = new StateLinkImpl<S>(
         stateRef.state,
         RootPath,
-        undefined,
+        NoActionUnmounted,
         stateRef.state.get(RootPath),
         stateRef.state.edition
     ).with(Degraded) // it does not matter how it is used, it is not subscribed anyway
