@@ -200,6 +200,7 @@ var State = /** @class */ (function () {
 var SynteticID = Symbol('SynteticTypeInferenceMarker');
 var ValueCache = Symbol('ValueCache');
 var NestedCache = Symbol('NestedCache');
+var UnmountedCallback = Symbol('UnmountedCallback');
 var StateRefImpl = /** @class */ (function () {
     function StateRefImpl(state) {
         this.state = state;
@@ -253,24 +254,36 @@ var StateLinkImpl = /** @class */ (function () {
         this.valueSource = valueSource;
         this.valueEdition = valueEdition;
     }
-    StateLinkImpl.prototype.resetIfStale = function () {
-        // only unmounted / untracked links are refreshed
-        // others are recreated on state change as a part of rerender for affected state segments
-        // it is for performance and correctness
-        if (this.onUpdateUsed === undefined && this.valueEdition !== this.state.edition) {
-            // it is safe to reset the state only for unmounted / untracked state links
-            // because the following variables are used for tracking if a link has been used
-            // during rendering
-            delete this[ValueCache];
-            delete this[NestedCache];
-            delete this.nestedLinksCache;
+    StateLinkImpl.prototype.refreshIfStale = function () {
+        if (this.valueEdition !== this.state.edition) {
             this.valueSource = this.state.get(this.path);
             this.valueEdition = this.state.edition;
+            if (this.onUpdateUsed[UnmountedCallback]) {
+                // this link is not mounted to a component
+                // for example, it might be global link or
+                // a link which has been discarded after rerender
+                // but still captured by some callback or an effect
+                delete this[ValueCache];
+                delete this[NestedCache];
+            }
+            else {
+                // this link is still mounted to a component
+                // populate cache again to ensure correct tracking of usage
+                // when React scans which states to rerender on update
+                if (ValueCache in this) {
+                    delete this[ValueCache];
+                    this.get();
+                }
+                if (NestedCache in this) {
+                    delete this[NestedCache];
+                    this.nested;
+                }
+            }
         }
     };
     Object.defineProperty(StateLinkImpl.prototype, "value", {
         get: function () {
-            this.resetIfStale();
+            this.refreshIfStale();
             if (this[ValueCache] === undefined) {
                 if (this.disabledTracking) {
                     this[ValueCache] = this.valueSource;
@@ -291,7 +304,7 @@ var StateLinkImpl = /** @class */ (function () {
         configurable: true
     });
     StateLinkImpl.prototype.getUntracked = function () {
-        this.resetIfStale();
+        this.refreshIfStale();
         return this.valueSource;
     };
     StateLinkImpl.prototype.get = function () {
@@ -348,17 +361,13 @@ var StateLinkImpl = /** @class */ (function () {
         var update = function () {
             if (_this.disabledTracking &&
                 (ValueCache in _this || NestedCache in _this)) {
-                if (_this.onUpdateUsed) {
-                    actions.push(_this.onUpdateUsed);
-                }
+                actions.push(_this.onUpdateUsed);
                 return true;
             }
             var firstChildKey = path[_this.path.length];
             if (firstChildKey === undefined) {
                 if (ValueCache in _this || NestedCache in _this) {
-                    if (_this.onUpdateUsed) {
-                        actions.push(_this.onUpdateUsed);
-                    }
+                    actions.push(_this.onUpdateUsed);
                     return true;
                 }
                 return false;
@@ -379,7 +388,7 @@ var StateLinkImpl = /** @class */ (function () {
     };
     Object.defineProperty(StateLinkImpl.prototype, "nested", {
         get: function () {
-            this.resetIfStale();
+            this.refreshIfStale();
             if (this[NestedCache] === undefined) {
                 if (Array.isArray(this.valueSource)) {
                     this[NestedCache] = this.nestedArrayImpl();
@@ -398,8 +407,8 @@ var StateLinkImpl = /** @class */ (function () {
     });
     StateLinkImpl.prototype.nestedArrayImpl = function () {
         var _this = this;
-        var proxyGetterCache = {};
-        this.nestedLinksCache = proxyGetterCache;
+        this.nestedLinksCache = this.nestedLinksCache || {};
+        var proxyGetterCache = this.nestedLinksCache;
         var getter = function (target, key) {
             if (key === 'length') {
                 return target.length;
@@ -459,8 +468,8 @@ var StateLinkImpl = /** @class */ (function () {
     };
     StateLinkImpl.prototype.nestedObjectImpl = function () {
         var _this = this;
-        var proxyGetterCache = {};
-        this.nestedLinksCache = proxyGetterCache;
+        this.nestedLinksCache = this.nestedLinksCache || {};
+        var proxyGetterCache = this.nestedLinksCache;
         var getter = function (target, key) {
             if (key === ProxyMarkerID) {
                 return _this;
@@ -578,6 +587,9 @@ var StateLinkImpl = /** @class */ (function () {
     return StateLinkImpl;
 }());
 var useIsomorphicLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
+var NoAction = function () { };
+var NoActionUnmounted = function () { };
+NoActionUnmounted[UnmountedCallback] = true;
 function createState(initial) {
     var initialValue = initial;
     if (typeof initial === 'function') {
@@ -596,14 +608,17 @@ function useSubscribedStateLink(state, path, update, subscribeTarget, disabledTr
     }
     useIsomorphicLayoutEffect(function () {
         subscribeTarget.subscribe(link);
-        return function () { return subscribeTarget.unsubscribe(link); };
+        return function () {
+            link.onUpdateUsed[UnmountedCallback] = true;
+            subscribeTarget.unsubscribe(link);
+        };
     });
     React.useEffect(function () { return function () { return onDestroy(); }; }, []);
     return link;
 }
 function useGlobalStateLink(stateRef) {
-    var _a = React.useState({}), setValue = _a[1];
-    return useSubscribedStateLink(stateRef.state, RootPath, function () { return setValue({}); }, stateRef.state, stateRef.disabledTracking, function () { });
+    var _a = React.useState({ state: stateRef.state }), value = _a[0], setValue = _a[1];
+    return useSubscribedStateLink(value.state, RootPath, function () { return setValue({ state: value.state }); }, value.state, stateRef.disabledTracking, NoAction);
 }
 function useLocalStateLink(initialState) {
     var _a = React.useState(function () { return ({ state: createState(initialState) }); }), value = _a[0], setValue = _a[1];
@@ -611,7 +626,7 @@ function useLocalStateLink(initialState) {
 }
 function useScopedStateLink(originLink) {
     var _a = React.useState({}), setValue = _a[1];
-    return useSubscribedStateLink(originLink.state, originLink.path, function () { return setValue({}); }, originLink, originLink.disabledTracking, function () { });
+    return useSubscribedStateLink(originLink.state, originLink.path, function () { return setValue({}); }, originLink, originLink.disabledTracking, NoAction);
 }
 function useAutoStateLink(initialState) {
     if (initialState instanceof StateLinkImpl) {
@@ -626,7 +641,7 @@ function useAutoStateLink(initialState) {
     return useLocalStateLink(initialState);
 }
 function injectTransform(link, transform) {
-    if (link.onUpdateUsed === undefined) {
+    if (link.onUpdateUsed[UnmountedCallback]) {
         // this is unmounted link
         return transform(link, undefined);
     }
@@ -684,7 +699,7 @@ function useStateLinkUnmounted(source, transform) {
     var stateRef = source instanceof StateInfImpl
         ? source.wrapped
         : source;
-    var link = new StateLinkImpl(stateRef.state, RootPath, undefined, stateRef.state.get(RootPath), stateRef.state.edition).with(Degraded); // it does not matter how it is used, it is not subscribed anyway
+    var link = new StateLinkImpl(stateRef.state, RootPath, NoActionUnmounted, stateRef.state.get(RootPath), stateRef.state.edition).with(Degraded); // it does not matter how it is used, it is not subscribed anyway
     if (source instanceof StateInfImpl) {
         return source.transform(link, undefined);
     }
