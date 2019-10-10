@@ -3,7 +3,6 @@ import BroadcastChannel from 'broadcast-channel';
 import LeaderElection, { LeaderElector } from 'broadcast-channel/leader-election';
 import { useStateLink, Path, StateValueAtPath, Plugin, StateLink, createStateLink, useStateLinkUnmounted, PluginInstance, StateValueAtRoot, StateInf, StateRef } from '@hookstate/core';
 import * as idb from 'idb';
-import { Untracked } from '@hookstate/untracked';
 
 interface BroadcastChannelHandle<T> {
     channel: BroadcastChannel<T>,
@@ -195,6 +194,7 @@ export interface SynchronisedStatus {
     isLoading(): boolean;
     isSynchronising(): boolean;
     isNetworkOnline(): boolean;
+    isConnected(): boolean;
 }
 
 export interface SynchronisedExtensions<S> {
@@ -210,10 +210,11 @@ const PluginID = Symbol('Synchronised');
 class SynchronisedPluginInstance implements PluginInstance {
     private onDestroyCallback: () => void;
     private onSetCallback: (path: readonly (string | number)[], newState: any, newValue: any) => void;
-    private onStatusCallback: () => StateInf<SynchronisedStatus>
+    private onStatusCallback: () => StateInf<SynchronisedStatus>;
+    private onConnectedCallback: (isConnected: boolean) => void;
+    private onSyncCallback: (newValue: React.SetStateAction<StateValueAtPath>,
+        stateLink: StateLink<StateValueAtPath>) => void;
 
-    runWithoutRemoteSynchronisation: (action: () => void) => void;
-    
     constructor(
         topic: string,
         unmountedLink: StateLink<StateValueAtRoot>,
@@ -230,13 +231,15 @@ class SynchronisedPluginInstance implements PluginInstance {
         const metaStateRef = createStateLink<{
             initiallyLoadedEdition: number,
             isSynchronizationRunning: boolean,
-            isNetworkOnline: boolean
+            isNetworkOnline: boolean,
+            isConnected: boolean,
         }>({
             initiallyLoadedEdition: -1,
             isSynchronizationRunning: false,
-            isNetworkOnline: window.navigator ? navigator.onLine : true
+            isNetworkOnline: window.navigator ? navigator.onLine : true,
+            isConnected: true
         });
-        const metaState = useStateLinkUnmounted(metaStateRef).with(Untracked);
+        const metaState = useStateLinkUnmounted(metaStateRef);
         const metaInf: StateInf<SynchronisedStatus> = metaStateRef.wrap(s => ({
             isLoading() {
                 return s.value.initiallyLoadedEdition === -1
@@ -246,6 +249,9 @@ class SynchronisedPluginInstance implements PluginInstance {
             },
             isNetworkOnline() { 
                 return s.value.isNetworkOnline
+            },
+            isConnected() {
+                return s.value.isConnected
             }
         }))
         
@@ -295,7 +301,7 @@ class SynchronisedPluginInstance implements PluginInstance {
             }
         }
 
-        this.runWithoutRemoteSynchronisation = (action: () => void) => {
+        function runWithoutRemoteSynchronisation(action: () => void) {
             isRemoteSynchronisationEnabled = false;
             try {
                 action();
@@ -328,14 +334,6 @@ class SynchronisedPluginInstance implements PluginInstance {
                 
                 if ((recordsToSyncExcludingIncoming.length > 0 || latestSynchronisedData)
                     && submitOutgoing) {
-                    // reset guard AND rerender status viewers
-                    metaState.nested.isSynchronizationRunning.set(true);
-                    broadcast({
-                        status: {
-                            isSynchronising: true
-                        }
-                    })
-
                     try {
                         latestSynchronisedData = await submitOutgoing(
                             latestSynchronisedData,
@@ -372,12 +370,16 @@ class SynchronisedPluginInstance implements PluginInstance {
             }
             
             try {
-                // set guard without rerendering status viewers
-                Untracked(metaState.nested.isSynchronizationRunning).set(true);
-                
+                metaState.nested.isSynchronizationRunning.set(true);
+                broadcast({
+                    status: {
+                        isSynchronising: true
+                    }
+                })
+            
                 await new Promise(resolve => setTimeout(() => resolve(), 1000)) // debounce
     
-                // updtes pending syncrhonisation are sorted and no duplicates
+                // updates pending syncrhonisation are sorted and no duplicates
                 if (updatesPendingSynchronization.length > 0 && updatesPendingSynchronization[0].edition <= latestSynchronisedEdition) {
                     // head elements are stale, remove them
                     updatesPendingSynchronization = updatesPendingSynchronization
@@ -558,6 +560,7 @@ class SynchronisedPluginInstance implements PluginInstance {
                             return;
                         }
                         
+                        metaState.nested.isSynchronizationRunning.set(false)
                         latestSynchronisedEdition = i.synchronisedEdition
                         latestSynchronisedData = i.pendingState
                         updates.forEach(processUnsyncedUpdate)
@@ -626,12 +629,27 @@ class SynchronisedPluginInstance implements PluginInstance {
             if (unsubscribeIncoming) {
                 unsubscribeIncoming()
             }
-            if (!metaState.nested.isSynchronizationRunning.get()) {
+            if (isLeaderLoaded() === undefined ||
+                !metaState.nested.isSynchronizationRunning.get()) {
                 onDestroyFinally()
             }
         }
         
         this.onStatusCallback = () => metaInf
+        
+        this.onConnectedCallback = (isConnected: boolean) => {
+            const wasConnected = metaState.nested.isConnected.get()
+            metaState.nested.isConnected.set(isConnected)
+            if (!wasConnected && isConnected) {
+                sync()
+            }
+        }
+        
+        this.onSyncCallback = (v, l) => {
+            runWithoutRemoteSynchronisation(() => {
+                l.set(v)
+            })
+        }
     }
     
     onDestroy() {
@@ -644,6 +662,15 @@ class SynchronisedPluginInstance implements PluginInstance {
     
     status() {
         return this.onStatusCallback();
+    }
+    
+    connected(state: boolean) {
+        this.onConnectedCallback(state)
+    }
+    
+    sync(newValue: React.SetStateAction<StateValueAtPath>,
+        stateLink: StateLink<StateValueAtPath>) {
+        this.onSyncCallback(newValue, stateLink)
     }
 }
 
@@ -673,9 +700,7 @@ export function Synchronised<S>(selfOrTopic?: StateLink<S> | string,
         const inst = instance as SynchronisedPluginInstance;
         return {
             set(newValue: React.SetStateAction<S>) {
-                inst.runWithoutRemoteSynchronisation(() => {
-                    link.set(newValue)
-                })
+                inst.sync(newValue, link)
             },
             status() {
                 return inst.status()
