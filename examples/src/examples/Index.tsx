@@ -5,6 +5,7 @@ import { ExampleComponent as ExampleGlobalPrimitiveInterface } from './global-ge
 import { ExampleComponent as ExampleLocalPrimitive } from './local-getting-started';
 import { ExampleComponent as ExampleGlobalComplexFromDocumentation } from './global-complex-from-documentation';
 import { ExampleComponent as ExampleLocalComplexFromDocumentation } from './local-complex-from-documentation';
+import { ExampleComponent as ExampleLocalComplexTreeStructure } from './local-complex-tree-structure';
 import { ExampleComponent as ExamplePerformanceLargeTable } from './performance-demo-large-table';
 import { ExampleComponent as ExamplePerformanceLargeForm } from './performance-demo-large-form';
 import { ExampleComponent as ExampleGlobalMultiConsumers } from './global-multiple-consumers';
@@ -80,6 +81,17 @@ ExamplesRepo.set(ExampleIds.LocalComplexFromDocumentation, {
     same example as <ExampleLink id={ExampleIds.GlobalComplexFromDocumentation} />,
     but this one uses local (per component) state.</>,
     demo: <ExampleLocalComplexFromDocumentation />
+});
+ExamplesRepo.set(ExampleIds.LocalComplexTreeStructure, {
+    name: 'Local State: Complex Data, Tree Structure',
+    description: <>
+        This example demonstrates how to manage React state for tree-like structure.
+        Every node has got optional children nodes, which can have nested sub nodes too, and so on.
+        The example uses local state, but the same would be for the global state,
+        if it was created using <code>
+            <a href="https://github.com/avkonst/hookstate#createstatelink">createStateLink</a></code> function.
+    </>,
+    demo: <ExampleLocalComplexTreeStructure />
 });
 ExamplesRepo.set(ExampleIds.GlobalMutlipleConsumers, {
     name: 'Global State: Multiple Consumers via Direct Usage',
