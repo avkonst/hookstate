@@ -3,24 +3,27 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@hookstate/core": "1.0.2",
-    "@hookstate/proxy-polyfill": "^1.0.0",
-    "@types/jest": "24.0.17",
-    "@types/node": "12.7.2",
-    "@types/react": "16.9.1",
-    "@types/react-dom": "16.8.5",
-    "core-js": "^3.2.1",
-    "react": "^16.9.0",
-    "react-app-polyfill": "^1.0.2",
-    "react-dom": "^16.9.0",
-    "react-scripts": "3.1.1",
-    "typescript": "3.5.3"
+    "@hookstate/core": "1.2.2",
+    "@hookstate/proxy-polyfill": "1.2.2",
+    "@types/jest": "24.0.19",
+    "@types/node": "12.11.5",
+    "@types/react": "16.9.9",
+    "@types/react-dom": "16.9.2",
+    "core-js": "^3.3.3",
+    "npm-check-updates": "3.1.25",
+    "react": "^16.11.0",
+    "react-app-polyfill": "^1.0.4",
+    "react-dom": "^16.11.0",
+    "react-scripts": "3.2.0",
+    "typescript": "3.6.4"
   },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "check-updates": "ncu",
+    "apply-updates": "ncu -u"
   },
   "eslintConfig": {
     "extends": "react-app"

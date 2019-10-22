@@ -1,40 +1,38 @@
 import { Fragment, h } from 'preact';
 import { useStateLink, StateLink, createStateLink, useStateLinkUnmounted, Downgraded } from '@hookstate/core';
-
-const totalRows = 100;
-const totalColumns = 100;
-const rate = 50;
-const timer = 1;
-
-const createMatrix = (rows: number, cols: number) => Array.from(Array(rows).keys())
-    .map(i => Array.from(Array(cols).keys()).map(j => 0))
-const stateRef = createStateLink(createMatrix(totalRows, totalColumns))
-
-setInterval(() => {
-    function randomInt(min: number, max: number) {
-        min = Math.ceil(min);
-        max = Math.floor(max);
-        return Math.floor(Math.random() * (max - min)) + min;
-    }
-    for (let i = 0; i < rate; i += 1) {
-        useStateLinkUnmounted(stateRef)
-            .nested[randomInt(0, totalRows)]
-            .nested[randomInt(0, totalColumns)]
-            .set((p:number) => p + randomInt(0, 5))
-    }
-}, timer)
+import { useRef, useEffect } from 'react';
 
 const TableCell = (props: { cellState: StateLink<number> }) => {
     const state = useStateLink(props.cellState);
-    return <Fragment>{state.value.toString(16)}</Fragment>
+    return <Fragment>{state.value.toString(16)}</Fragment>;
 }
 
-const MatrixView = (props: { totalRows: number, totalColumns: number, interval: number, callsPerInterval: number }) => {
+const MatrixView = (props: { key: number, totalRows: number, totalColumns: number, interval: number, callsPerInterval: number }) => {
     const totalRows = props.totalRows;
     const totalColumns = props.totalColumns;
-    // we use global state,
-    // but the same result would be for the local state
-    const matrixState = useStateLink(stateRef)
+    // we use local per component state,
+    // but the same result would be for the global state
+    // if it was created by createStateLink
+    const matrixState = useStateLink(
+        Array.from(Array(totalRows).keys())
+            .map(i => Array.from(Array(totalColumns).keys()).map(j => 0)));
+    // schedule interval updates
+    useEffect(() => {
+        const t = setInterval(() => {
+            function randomInt(min: number, max: number) {
+                min = Math.ceil(min);
+                max = Math.floor(max);
+                return Math.floor(Math.random() * (max - min)) + min;
+            }
+            for (let i = 0; i < props.callsPerInterval; i += 1) {
+                matrixState
+                    .nested[randomInt(0, totalRows)]
+                    .nested[randomInt(0, totalColumns)]
+                    .set(p => p + randomInt(0, 5))
+            }
+        }, props.interval)
+        return () => clearInterval(t);
+    })
 
     return <div style={{ overflow: 'scroll' }}>
         <PerformanceMeter matrixState={matrixState} />
@@ -61,72 +59,89 @@ const MatrixView = (props: { totalRows: number, totalColumns: number, interval: 
 }
 
 export const ExampleComponent = () => {
-    const settings = {
-        totalRows,
-        totalColumns,
-        rate,
-        timer
-    };
-    return <div>
+    const settings = useStateLink({
+        totalRows: 50,
+        totalColumns: 50,
+        rate: 50,
+        timer: 10
+    }, (s) => ({
+        totalRows: s.value.totalRows,
+        totalColumns: s.value.totalColumns,
+        rate: s.value.rate,
+        timer: s.value.timer,
+        setRows: (f: (p: number) => number) => s.nested.totalRows.set(f),
+        setColumns: (f: (p: number) => number) => s.nested.totalColumns.set(f),
+        setRate: (f: (p: number) => number) => s.nested.rate.set(f),
+        setTimer: (f: (p: number) => number) => s.nested.timer.set(f),
+    }));
+
+    return <Fragment>
         <div>
-            <p><span>Total rows: {settings.totalRows} </span></p>
-            <p><span>Total columns: {settings.totalColumns} </span></p>
+            <p><span>Total rows: {settings.totalRows} </span>
+                <button onClick={() => settings.setRows(p => (p - 10) || 10)}>-10</button>
+                <button onClick={() => settings.setRows(p => p + 10)}>+10</button></p>
+            <p><span>Total columns: {settings.totalColumns} </span>
+                <button onClick={() => settings.setColumns(p => (p - 10) || 10)}>-10</button>
+                <button onClick={() => settings.setColumns(p => p + 10)}>+10</button></p>
             <p>Total cells: {settings.totalColumns * settings.totalRows}</p>
-            <p><span>Cells to update per timer interval: {settings.rate} </span></p>
-            <p><span>Timer interval in ms: {settings.timer} </span></p>
+            <p><span>Cells to update per timer interval: {settings.rate} </span>
+                <button onClick={() => settings.setRate(p => (p - 1) || 1)}>-1</button>
+                <button onClick={() => settings.setRate(p => p + 1)}>+1</button>
+                <button onClick={() => settings.setRate(p => p > 10 ? (p - 10) : 1)}>-10</button>
+                <button onClick={() => settings.setRate(p => p + 10)}>+10</button>
+                </p>
+            <p><span>Timer interval in ms: {settings.timer} </span>
+                <button onClick={() => settings.setTimer(p => p > 1 ? (p - 1) : 1)}>-1</button>
+                <button onClick={() => settings.setTimer(p => p + 1)}>+1</button>
+                <button onClick={() => settings.setTimer(p => p > 10 ? (p - 10) : 1)}>-10</button>
+                <button onClick={() => settings.setTimer(p => p + 10)}>+10</button>
+                </p>
         </div>
-        <div key={Math.random()}>
-            <MatrixView
-                // key={Math.random()}
-                totalRows={settings.totalRows}
-                totalColumns={settings.totalColumns}
-                interval={settings.timer}
-                callsPerInterval={settings.rate}
-            />
-        </div>
-    </div>;
+        <MatrixView
+            key={Math.random()}
+            totalRows={settings.totalRows}
+            totalColumns={settings.totalColumns}
+            interval={settings.timer}
+            callsPerInterval={settings.rate}
+        />
+    </Fragment>;
 }
+
 
 const PerformanceViewPluginID = Symbol('PerformanceViewPlugin');
 function PerformanceMeter(props: { matrixState: StateLink<number[][]> }) {
-    // const workaround = useStateLink(0);
+    const stats = useRef({
+        totalSum: 0,
+        totalCalls: 0,
+        startTime: (new Date()).getTime()
+    })
+    const elapsedMs = () => (new Date()).getTime() - stats.current.startTime;
+    const elapsed = () => Math.floor(elapsedMs() / 1000);
+    const rate = Math.floor(stats.current.totalCalls / elapsedMs() * 1000);
     const scopedState = useStateLink(props.matrixState)
-        .with(() => {
-            // this is custom Hookstate plugin which counts statistics
-            let totalSum = 0;
-            let totalCalls = 0;
-            let startTime = (new Date()).getTime();
-            const elapsed = () => (new Date()).getTime() - startTime;
-            return {
-                id: PerformanceViewPluginID,
-                instanceFactory: () => ({
-                    onSet: (path, newMatrixState, newCellState) => {
+        .with(() => ({
+            id: PerformanceViewPluginID,
+            instanceFactory: () => ({
+                onPreset: (path, prevState, newCellValue) => {
+                    if (path.length === 2) {
                         // new value can be only number in this example
                         // and path can contain only 2 elements: row and column indexes
-                        totalSum += newMatrixState[path[0]][path[1]] - newCellState;
-                        totalCalls += 1;
-
-                        // workaround.set(p => p + 1)
-                    },
-                    extensions: ['totalSum', 'totalCalls', 'elapsed', 'rate'],
-                    extensionsFactory: () => ({
-                        totalSum: () => totalSum,
-                        totalCalls: () => totalCalls,
-                        elapsed: () => Math.floor(elapsed() / 1000),
-                        rate: () => Math.floor(totalCalls / elapsed() * 1000)
-                    })
-                })
-            }
-        })
+                        stats.current.totalSum += newCellValue - prevState[path[0]][path[1]];
+                    }
+                },
+                onSet: () => {
+                    stats.current.totalCalls += 1;
+                }
+            })
+        }))
     // mark the value of the whole matrix as 'used' by this component
     scopedState.with(Downgraded);
-    const valueExplicitlyUsed = scopedState.value;
+    scopedState.get();
 
     return <Fragment>
-        <p><span>Elapsed: {scopedState.extended.elapsed()}s</span></p>
-        <p><span>Total cells sum: {scopedState.extended.totalSum()}</span></p>
-        <p><span>Total matrix state updates: {scopedState.extended.totalCalls()}</span></p>
-        {/* <p><span>Total matrix state updates (workaround): {workaround.get()}</span></p> */}
-        <p><span>Average update rate: {scopedState.extended.rate()}cells/s</span></p>
+        <p><span>Elapsed: {elapsed()}s</span></p>
+        <p><span>Total cells sum: {stats.current.totalSum}</span></p>
+        <p><span>Total matrix state updates: {stats.current.totalCalls}</span></p>
+        <p><span>Average update rate: {rate}cells/s</span></p>
     </Fragment>;
 }
