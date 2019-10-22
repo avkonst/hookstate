@@ -132,7 +132,7 @@ interface Subscribable {
     unsubscribe(l: Subscriber): void;
 }
 
-const DegradedID = Symbol('Degraded');
+const DowngradedID = Symbol('Downgraded');
 const StateMemoID = Symbol('StateMemo');
 const ProxyMarkerID = Symbol('ProxyMarker');
 
@@ -281,7 +281,7 @@ class StateRefImpl<S> implements StateRef<S> {
 
     with(plugin: () => Plugin): StateRef<S> {
         const pluginMeta = plugin()
-        if (pluginMeta.id === DegradedID) {
+        if (pluginMeta.id === DowngradedID) {
             this.disabledTracking = true;
             return this;
         }
@@ -422,7 +422,7 @@ class StateLinkImpl<S> implements StateLink<S>,
         StateLink<S> | [StateLink<S> & StateLinkPlugable<S>, PluginInstance] {
         if (typeof plugin === 'function') {
             const pluginMeta = plugin();
-            if (pluginMeta.id === DegradedID) {
+            if (pluginMeta.id === DowngradedID) {
                 this.disabledTracking = true;
                 return this;
             }
@@ -736,7 +736,7 @@ function useSubscribedStateLink<S>(
         state.edition
     );
     if (disabledTracking) {
-        link.with(Degraded)
+        link.with(Downgraded)
     }
     useIsomorphicLayoutEffect(() => {
         subscribeTarget.subscribe(link);
@@ -923,7 +923,7 @@ export function useStateLinkUnmounted<S, R>(
         NoActionUnmounted,
         stateRef.state.get(RootPath),
         stateRef.state.edition
-    ).with(Degraded) // it does not matter how it is used, it is not subscribed anyway
+    ).with(Downgraded) // it does not matter how it is used, it is not subscribed anyway
     if (source instanceof StateInfImpl) {
         return source.transform(link, undefined);
     }
@@ -987,18 +987,10 @@ export function StateMemo<S, R>(
     }
 }
 
-/**
- * @deprecated: use Degraded instead
- */
 // tslint:disable-next-line: function-name
-export function DisabledTracking(): Plugin {
-    return Degraded()
-}
-
-// tslint:disable-next-line: function-name
-export function Degraded(): Plugin {
+export function Downgraded(): Plugin {
     return {
-        id: DegradedID,
+        id: DowngradedID,
         instanceFactory: () => ({})
     }
 }

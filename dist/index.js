@@ -72,7 +72,7 @@ var PluginUnknownError = /** @class */ (function (_super) {
     }
     return PluginUnknownError;
 }(Error));
-var DegradedID = Symbol('Degraded');
+var DowngradedID = Symbol('Downgraded');
 var StateMemoID = Symbol('StateMemo');
 var ProxyMarkerID = Symbol('ProxyMarker');
 var RootPath = [];
@@ -209,7 +209,7 @@ var StateRefImpl = /** @class */ (function () {
     }
     StateRefImpl.prototype.with = function (plugin) {
         var pluginMeta = plugin();
-        if (pluginMeta.id === DegradedID) {
+        if (pluginMeta.id === DowngradedID) {
             this.disabledTracking = true;
             return this;
         }
@@ -333,7 +333,7 @@ var StateLinkImpl = /** @class */ (function () {
     StateLinkImpl.prototype.with = function (plugin) {
         if (typeof plugin === 'function') {
             var pluginMeta = plugin();
-            if (pluginMeta.id === DegradedID) {
+            if (pluginMeta.id === DowngradedID) {
                 this.disabledTracking = true;
                 return this;
             }
@@ -604,7 +604,7 @@ function createState(initial) {
 function useSubscribedStateLink(state, path, update, subscribeTarget, disabledTracking, onDestroy) {
     var link = new StateLinkImpl(state, path, update, state.get(path), state.edition);
     if (disabledTracking) {
-        link.with(Degraded);
+        link.with(Downgraded);
     }
     useIsomorphicLayoutEffect(function () {
         subscribeTarget.subscribe(link);
@@ -699,7 +699,7 @@ function useStateLinkUnmounted(source, transform) {
     var stateRef = source instanceof StateInfImpl
         ? source.wrapped
         : source;
-    var link = new StateLinkImpl(stateRef.state, RootPath, NoActionUnmounted, stateRef.state.get(RootPath), stateRef.state.edition).with(Degraded); // it does not matter how it is used, it is not subscribed anyway
+    var link = new StateLinkImpl(stateRef.state, RootPath, NoActionUnmounted, stateRef.state.get(RootPath), stateRef.state.edition).with(Downgraded); // it does not matter how it is used, it is not subscribed anyway
     if (source instanceof StateInfImpl) {
         return source.transform(link, undefined);
     }
@@ -718,23 +718,15 @@ function StateMemo(transform, equals) {
         return transform(link, prev);
     };
 }
-/**
- * @deprecated: use Degraded instead
- */
 // tslint:disable-next-line: function-name
-function DisabledTracking() {
-    return Degraded();
-}
-// tslint:disable-next-line: function-name
-function Degraded() {
+function Downgraded() {
     return {
-        id: DegradedID,
+        id: DowngradedID,
         instanceFactory: function () { return ({}); }
     };
 }
 
-exports.Degraded = Degraded;
-exports.DisabledTracking = DisabledTracking;
+exports.Downgraded = Downgraded;
 exports.StateFragment = StateFragment;
 exports.StateMemo = StateMemo;
 exports.createStateLink = createStateLink;

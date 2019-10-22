@@ -75,9 +75,5 @@ export declare function StateFragment<S, R>(props: {
     children: (state: R) => React.ReactElement;
 }): React.ReactElement;
 export declare function StateMemo<S, R>(transform: (state: StateLink<S>, prev: R | undefined) => R, equals?: (next: R, prev: R) => boolean): (link: StateLink<S>, prev: R | undefined) => R;
-/**
- * @deprecated: use Degraded instead
- */
-export declare function DisabledTracking(): Plugin;
-export declare function Degraded(): Plugin;
+export declare function Downgraded(): Plugin;
 export default useStateLink;

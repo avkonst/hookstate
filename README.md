@@ -112,7 +112,7 @@ This function opens access to the state. It **must** be used within a functional
         </button>
     }
     ```
-- **local state**: initial variable to assign to the local (per component) state. It similar to the original `React.createState`, but the result [`StateLink`](#statelink) variable has got more features. For example ([see it running](https://hookstate.netlify.com/local-complex-from-documentation)):
+- **local state**: initial variable to assign to the local (per component) state. It similar to the original `React.useState`, but the result [`StateLink`](#statelink) variable has got more features. For example ([see it running](https://hookstate.netlify.com/local-complex-from-documentation)):
 
     ```tsx
     export const ExampleComponent = () => {
@@ -170,7 +170,7 @@ The `StateLink` variable has got the following methods and properties:
 This allows to 'walk' the tree and access/mutate nested compex data in very convenient way. The result of `nested` for primitive values is `undefined`. The typescript support for `nested` will handle correctly any complexy of the state structure. The result of `Object.keys(state.nested)` is the same as `Object.keys(state.get())`. However, nested state links object will have ANY property defined (although not every will pass Typescript compiler check). It is very convenient to create 'editor-like' components for properties, which can be undefined. For example:
 
     ```tsx
-    const PriorityEditor = (props: { priorityState: StateLink<number> }) => {
+    const PriorityEditor = (props: { priorityState: StateLink<number | undefined> }) => {
         return <p>Current priority: {priorityState.get() === undefined ? 'unknown' : priority.get()}
             <button onClick={() => priorityState.set(prevPriority =>
                 (prevPriority || 0) + 1 // here the value might be not defined, but we can set it!
@@ -179,7 +179,8 @@ This allows to 'walk' the tree and access/mutate nested compex data in very conv
         </p>
     }
     const ExampleComponent = () => {
-        const taskState: StateLink<Task> = useStateLink({ name: 'Task name is defined but priority is not' });
+        const taskState: StateLink<{ name: string, priority?: number }> =
+            useStateLink({ name: 'Task name is defined but priority is not' });
         return <PriorityEditor priorityState={
             taskState.nested.priority // it will be always defined, but it's value might be not defined
         } />
@@ -298,5 +299,5 @@ Persistence | Enables persistence of managed states to browser's local storage. 
 Mutate | Adds mutate actions specific for arrays (push, pop, insert, remove, swap, etc..), objects (merge, etc.), strings and numbers. | [Demo](https://hookstate.netlify.com/plugin-mutate) | `@hookstate/mutate` | [![npm version](https://img.shields.io/npm/v/@hookstate/mutate.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/mutate)
 Logger | Logs state updates and current value of a [`StateLink`](#statelink) to the development console. | [Demo](https://hookstate.netlify.com/plugin-logger) | `@hookstate/logger` | [![npm version](https://img.shields.io/npm/v/@hookstate/logger.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/logger)
 Untracked | Enables access to `StateLink`'s `get` and `set` methods which do not track usage or state update. It means these operations do not influence rendering at all. Applicable in specific usecases. You should understand what you are doing when you use it. | [Demo](https://hookstate.netlify.com/plugin-untracked) | `@hookstate/untracked` | [![npm version](https://img.shields.io/npm/v/@hookstate/untracked.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/untracked)
-Degraded | Turns off optimizations for a StateLink by stopping tracking of it's value usage and assuming the entire state is *used* if StateLink's value is accessed at least once. |  | `@hookstate/core` | [![npm version](https://img.shields.io/npm/v/@hookstate/core.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/core)
+Downgraded | Turns off optimizations for a StateLink by stopping tracking of it's value usage and assuming the entire state is *used* if StateLink's value is accessed at least once. |  | `@hookstate/core` | [![npm version](https://img.shields.io/npm/v/@hookstate/core.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/core)
 Proxy Polyfill | Makes the Hookstate working in older browsers, for example IE11. All features are supported with two known differences in polyfilled behaviour: 1) `StateLink.nested[key]` will return `undefined` if `StateLink.get()[key]` is also `undefined` property. 2) `StateLink.get()[key] = 'some new value'` will not throw but will mutate the object in the state without notifying any of rendered components or plugins. | [Demo](https://github.com/avkonst/hookstate/tree/master/experimental/ie11) | `@hookstate/proxy-polyfill` | [![npm version](https://img.shields.io/npm/v/@hookstate/proxy-polyfill.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/proxy-polyfill)
