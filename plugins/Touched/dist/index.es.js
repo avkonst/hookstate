@@ -1,4 +1,4 @@
-import { DisabledTracking } from '@hookstate/core';
+import { Downgraded } from '@hookstate/core';
 import { Initial } from '@hookstate/initial';
 
 var PluginID = Symbol('Touched');
@@ -50,7 +50,7 @@ var TouchedPluginInstance = /** @class */ (function () {
                 // when the source value is updated.
                 // We do the trick to fix it, we mark the value being 'deeply used',
                 // so any changes for this value or any nested will trigger rerender.
-                var _1 = l.with(DisabledTracking).value;
+                var _1 = l.with(Downgraded).value;
                 return t;
             }
             return Initial(l).modified();

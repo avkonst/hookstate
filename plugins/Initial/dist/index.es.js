@@ -1,4 +1,4 @@
-import { DisabledTracking } from '@hookstate/core';
+import { Downgraded } from '@hookstate/core';
 import isEqual from 'lodash.isequal';
 import cloneDeep from 'lodash.clonedeep';
 
@@ -13,7 +13,7 @@ var InitialPluginInstance = /** @class */ (function () {
             return result;
         };
         this.getModified = function (l) {
-            l.with(DisabledTracking);
+            l.with(Downgraded);
             return !isEqual(l.value, _this.getInitial(l.path));
         };
         this.initialState = cloneDeep(initialValue);

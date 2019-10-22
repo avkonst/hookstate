@@ -1,7 +1,7 @@
 
 import {
     Path,
-    DisabledTracking,
+    Downgraded,
     Plugin,
     StateLink,
     StateValueAtPath,
@@ -30,7 +30,7 @@ class InitialPluginInstance {
         return result;
     }
     getModified = (l: StateLink<StateValueAtPath>): boolean => {
-        l.with(DisabledTracking)
+        l.with(Downgraded)
         return !isEqual(l.value, this.getInitial(l.path))
     }
 }

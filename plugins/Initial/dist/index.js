@@ -19,7 +19,7 @@ var InitialPluginInstance = /** @class */ (function () {
             return result;
         };
         this.getModified = function (l) {
-            l.with(core.DisabledTracking);
+            l.with(core.Downgraded);
             return !isEqual(l.value, _this.getInitial(l.path));
         };
         this.initialState = cloneDeep(initialValue);

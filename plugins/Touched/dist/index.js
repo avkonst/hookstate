@@ -54,7 +54,7 @@ var TouchedPluginInstance = /** @class */ (function () {
                 // when the source value is updated.
                 // We do the trick to fix it, we mark the value being 'deeply used',
                 // so any changes for this value or any nested will trigger rerender.
-                var _1 = l.with(core.DisabledTracking).value;
+                var _1 = l.with(core.Downgraded).value;
                 return t;
             }
             return initial.Initial(l).modified();

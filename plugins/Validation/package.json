@@ -1,6 +1,6 @@
 {
     "name": "@hookstate/validation",
-    "version": "1.0.7",
+    "version": "1.2.2",
     "description": "Plugin for @hookstate/core to enable validation of data state.",
     "license": "MIT",
     "author": {
@@ -35,36 +35,36 @@
     },
     "dependencies": {},
     "peerDependencies": {
-        "@hookstate/core": "^1.0.6"
+        "@hookstate/core": "^1.2.2"
     },
     "devDependencies": {
-        "@hookstate/core": "^1.0.6",
-        "@testing-library/react": "9.1.4",
-        "@testing-library/react-hooks": "2.0.1",
-        "@types/jest": "24.0.18",
+        "@hookstate/core": "^1.2.2",
+        "@testing-library/react": "9.3.0",
+        "@testing-library/react-hooks": "3.1.0",
+        "@types/jest": "24.0.19",
         "@types/lodash.clonedeep": "4.5.6",
         "@types/lodash.isequal": "4.5.5",
-        "@types/react": "16.9.2",
-        "@types/react-dom": "16.9.0",
+        "@types/react": "16.9.9",
+        "@types/react-dom": "16.9.2",
         "babel-core": "6.26.3",
         "babel-runtime": "6.26.0",
-        "cross-env": "5.2.1",
-        "npm-check-updates": "3.1.21",
-        "react": "16.9.0",
-        "react-dom": "16.9.0",
-        "react-scripts": "3.1.1",
-        "react-test-renderer": "16.9.0",
+        "cross-env": "6.0.3",
+        "npm-check-updates": "3.1.25",
+        "react": "16.10.2",
+        "react-dom": "16.10.2",
+        "react-scripts": "3.2.0",
+        "react-test-renderer": "16.10.2",
         "rimraf": "3.0.0",
-        "rollup": "1.20.3",
+        "rollup": "1.25.1",
         "rollup-plugin-babel": "4.3.3",
         "rollup-plugin-commonjs": "10.1.0",
         "rollup-plugin-node-resolve": "5.2.0",
         "rollup-plugin-peer-deps-external": "2.2.0",
-        "rollup-plugin-typescript2": "0.24.0",
-        "rollup-plugin-url": "2.2.2",
-        "tslint": "5.19.0",
-        "tslint-react": "4.0.0",
-        "typescript": "3.6.2"
+        "rollup-plugin-typescript2": "0.24.3",
+        "rollup-plugin-url": "3.0.0",
+        "tslint": "5.20.0",
+        "tslint-react": "4.1.0",
+        "typescript": "3.6.4"
     },
     "files": [
         "dist"

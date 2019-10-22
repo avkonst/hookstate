@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useStateLink, StateLink, DisabledTracking } from '@hookstate/core';
+import { useStateLink, StateLink, Downgraded } from '@hookstate/core';
 
 const TableCell = (props: { cellState: StateLink<number> }) => {
     const state = useStateLink(props.cellState);
@@ -133,7 +133,7 @@ function PerformanceMeter(props: { matrixState: StateLink<number[][]> }) {
             })
         }))
     // mark the value of the whole matrix as 'used' by this component
-    scopedState.with(DisabledTracking);
+    scopedState.with(Downgraded);
     const valueExplicitlyUsed = scopedState.value;
 
     return <>

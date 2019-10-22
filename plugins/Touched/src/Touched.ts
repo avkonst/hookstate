@@ -1,5 +1,5 @@
 
-import { Path, Plugin, PluginInstance, StateLink, DisabledTracking, StateValueAtPath } from '@hookstate/core';
+import { Path, Plugin, PluginInstance, StateLink, Downgraded, StateValueAtPath } from '@hookstate/core';
 
 import { Initial } from '@hookstate/initial';
 
@@ -61,7 +61,7 @@ class TouchedPluginInstance implements PluginInstance {
             // when the source value is updated.
             // We do the trick to fix it, we mark the value being 'deeply used',
             // so any changes for this value or any nested will trigger rerender.
-            const _ = l.with(DisabledTracking).value;
+            const _ = l.with(Downgraded).value;
             return t;
         }
         return Initial(l).modified();

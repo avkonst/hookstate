@@ -1,5 +1,5 @@
 import { Fragment, h } from 'preact';
-import { useStateLink, StateLink, createStateLink, useStateLinkUnmounted, DisabledTracking } from '@hookstate/core';
+import { useStateLink, StateLink, createStateLink, useStateLinkUnmounted, Downgraded } from '@hookstate/core';
 
 const totalRows = 100;
 const totalColumns = 100;
@@ -119,7 +119,7 @@ function PerformanceMeter(props: { matrixState: StateLink<number[][]> }) {
             }
         })
     // mark the value of the whole matrix as 'used' by this component
-    scopedState.with(DisabledTracking);
+    scopedState.with(Downgraded);
     const valueExplicitlyUsed = scopedState.value;
 
     return <Fragment>
