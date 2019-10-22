@@ -1,7 +1,7 @@
 import React from 'react';
 import BroadcastChannel from 'broadcast-channel';
 import LeaderElection, { LeaderElector } from 'broadcast-channel/leader-election';
-import { useStateLink, Path, StateValueAtPath, Plugin, StateLink, createStateLink, useStateLinkUnmounted, PluginInstance, StateValueAtRoot, StateInf, StateRef } from '@hookstate/core';
+import { useStateLink, Path, StateValueAtPath, Plugin, StateLink, createStateLink, useStateLinkUnmounted, PluginInstance, StateValueAtRoot, StateInf } from '@hookstate/core';
 import * as idb from 'idb';
 
 interface BroadcastChannelHandle<T> {

@@ -134,7 +134,7 @@ function PerformanceMeter(props: { matrixState: StateLink<number[][]> }) {
         }))
     // mark the value of the whole matrix as 'used' by this component
     scopedState.with(Downgraded);
-    const valueExplicitlyUsed = scopedState.value;
+    scopedState.get();
 
     return <>
         <p><span>Elapsed: {elapsed()}s</span></p>
