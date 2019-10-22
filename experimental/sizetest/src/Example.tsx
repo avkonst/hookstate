@@ -7,5 +7,5 @@ useStateLinkUnmounted(store);
 
 export const ExampleComponent = () => {
     const state = useStateLink(store);
-    return <></>
+    return <>{state.value}</>
 }

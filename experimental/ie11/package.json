@@ -15,6 +15,7 @@
     "react-app-polyfill": "^1.0.4",
     "react-dom": "^16.11.0",
     "react-scripts": "3.2.0",
+    "serve": "^11.2.0",
     "typescript": "3.6.4"
   },
   "scripts": {
@@ -22,6 +23,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
+    "serve": "serve -s build",
     "check-updates": "ncu",
     "apply-updates": "ncu -u"
   },
