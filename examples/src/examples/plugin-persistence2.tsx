@@ -47,6 +47,9 @@ function resubscribeBroadcastChannel<T>(handle: BroadcastChannelHandle<T>) {
         handle.onLeader = newHandler.onLeader
     }
 }
+function checkBroadcastChannel<T>(handle: BroadcastChannelHandle<T>) {
+    return handle.channel.onmessage !== null
+}
 
 interface BroadcastMessage {
     readonly version: number;
@@ -80,7 +83,7 @@ class BroadcastedPluginInstance implements PluginInstance {
     constructor(
         readonly topic: string,
         readonly unmountedLink: StateLink<StateValueAtRoot>,
-        readonly onLeader?: () => void
+        readonly onLeader?: () => Promise<void>
     ) {
         this.broadcastRef = subscribeBroadcastChannel(topic, (message: BroadcastMessage | ServiceMessage) => {
             if (message.version > 1) {
@@ -96,7 +99,7 @@ class BroadcastedPluginInstance implements PluginInstance {
                         initial: true
                     })
                 }
-                if (this.statusState.value.isLeader &&
+                if (this.instanceId !== -1 &&
                     message.kind === 'leader-elected' &&
                     message.id > this.instanceId) {
                     // There is a bug in broadcast-channel
@@ -131,28 +134,39 @@ class BroadcastedPluginInstance implements PluginInstance {
                 this.statusState.nested.isLoading.set(false);
             }
         }, () => {
-            if (onLeader) {
-                onLeader()
-            }
-            
-            this.broadcastRef.channel.postMessage({
-                version: 1,
-                path: [],
-                value: unmountedLink.value,
-                initial: true
-            })
-            
-            this.statusState.nested.isLeader.set(true);
-            if (this.statusState.value.isLoading) {
-                this.statusState.nested.isLoading.set(false);
-            }
-            
             this.instanceId = Math.random()
+            const capturedInstanceId = this.instanceId;
             this.broadcastRef.channel.postMessage({
                 version: 1,
                 kind: 'leader-elected',
                 id: this.instanceId
             })
+
+            // There is a bug in broadcast-channel
+            // which causes 2 leaders claimed elected simulteneously
+            // This is a workaround for the problem:
+            // the tab may revoke leadership itself (see above)
+            // so we delay the action
+            setTimeout(() => {
+                // if has not been destroyed and leadership has not been revoked
+                if (checkBroadcastChannel(this.broadcastRef) &&
+                    capturedInstanceId === this.instanceId) {
+
+                    (onLeader ? onLeader() : Promise.resolve()).then(() => {
+                        this.broadcastRef.channel.postMessage({
+                            version: 1,
+                            path: [],
+                            value: unmountedLink.value,
+                            initial: true
+                        })
+                        
+                        if (this.statusState.value.isLoading) {
+                            this.statusState.nested.isLoading.set(false);
+                        }
+                        this.statusState.nested.isLeader.set(true);
+                    })
+                }
+            }, 200)
         })
         
         this.broadcastRef.channel.postMessage({
@@ -196,10 +210,10 @@ interface BroadcastedExtensions {
 }
 
 // tslint:disable-next-line: function-name
-export function Broadcasted(topic: string, onLeader?: () => void): () => Plugin;
+export function Broadcasted(topic: string, onLeader?: () => Promise<void>): () => Plugin;
 export function Broadcasted<S>(self: StateLink<S>): BroadcastedExtensions;
 export function Broadcasted<S>(selfOrTopic?: StateLink<S> | string,
-    onLeader?: () => void): (() => Plugin) | BroadcastedExtensions {
+    onLeader?: () => Promise<void>): (() => Plugin) | BroadcastedExtensions {
     if (typeof selfOrTopic !== 'string') {
         const self = selfOrTopic as StateLink<S>;
         const [link, instance] = self.with(PluginID);
@@ -250,15 +264,18 @@ const DataEditor = (props: { state: StateLink<Task[]> }) => {
 export const ExampleComponent = () => {
     const state = useStateLink([{ name: 'First Task' }, { name: 'Second Task' }] as Task[])
         .with(Broadcasted(
-            'plugin-persisted-data-key-7',
-            () => console.log('this tab is a leader!!!'),
+            'tasks-state-broadcasted',
+            () => {
+                console.log('this tab is a leader!!')
+                return Promise.resolve()
+            },
         ))
     const statusState = useStateLink(Broadcasted(state).status())
     if (statusState.isLoading()) {
         return <p>Synchronising data with other tabs...</p>
     }
     return <>
-        <p>Is leader: {statusState.isLeader().toString()}</p>
+        <p>Is this tab a leader?: {statusState.isLeader().toString()}</p>
         <DataEditor state={state} />
     </>
 }
