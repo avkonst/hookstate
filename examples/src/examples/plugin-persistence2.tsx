@@ -4,8 +4,11 @@ import LeaderElection, { LeaderElector } from 'broadcast-channel/leader-election
 import React from 'react';
 
 interface BroadcastChannelHandle<T> {
+    topic: string,
     channel: BroadcastChannel<T>,
-    elector: LeaderElector
+    elector: LeaderElector,
+    onMessage: (m: T) => void
+    onLeader: () => void
 }
 function subscribeBroadcastChannel<T>(
     topic: string,
@@ -16,16 +19,32 @@ function subscribeBroadcastChannel<T>(
     const elector = LeaderElection.create(channel);
     elector.awaitLeadership().then(() => onLeader())
     return {
+        topic,
         channel,
-        elector
+        elector,
+        onMessage,
+        onLeader
     }
 }
 function unsubscribeBroadcastChannel<T>(handle: BroadcastChannelHandle<T>) {
     handle.channel.onmessage = null;
-    const p = handle.elector.die()
-    if (p) {
-        // for some reason p can be undefined
-        p.then(() => handle.channel.close())
+    handle.elector.die()
+    handle.channel.close()
+}
+function resubscribeBroadcastChannel<T>(handle: BroadcastChannelHandle<T>) {
+    if (handle.channel.onmessage !== null) {
+        const topic = handle.topic
+        const onMessage = handle.onMessage
+        const onLeader = handle.onLeader
+        
+        unsubscribeBroadcastChannel(handle)
+        const newHandler = subscribeBroadcastChannel(topic, onMessage, onLeader)
+
+        handle.topic = newHandler.topic
+        handle.channel = newHandler.channel
+        handle.elector = newHandler.elector
+        handle.onMessage = newHandler.onMessage
+        handle.onLeader = newHandler.onLeader
     }
 }
 
@@ -36,10 +55,18 @@ interface BroadcastMessage {
     readonly initial?: boolean
 }
 
-interface ServiceMessage {
+interface ServiceMessageInitialRequest {
     readonly version: number;
-    readonly kind: 'request-initial'
+    readonly kind: 'request-initial';
 }
+
+interface ServiceMessageLeaderId {
+    readonly version: number;
+    readonly kind: 'leader-elected';
+    readonly id: number;
+}
+
+type ServiceMessage = ServiceMessageInitialRequest | ServiceMessageLeaderId;
 
 const PluginID = Symbol('Broadcasted');
 
@@ -48,7 +75,7 @@ class BroadcastedPluginInstance implements PluginInstance {
     private isBroadcastEnabled = true;
     private statusStateRef = createStateLink({ isLoading: true, isLeader: false });
     private statusState = useStateLinkUnmounted(this.statusStateRef);
-    // private thisInstanceId = Math.random();
+    private instanceId = -1;
     
     constructor(
         readonly topic: string,
@@ -56,8 +83,6 @@ class BroadcastedPluginInstance implements PluginInstance {
         readonly onLeader?: () => void
     ) {
         this.broadcastRef = subscribeBroadcastChannel(topic, (message: BroadcastMessage | ServiceMessage) => {
-            console.log('onMessage', message)
-
             if (message.version > 1) {
                 // peer tab has been upgraded
                 return;
@@ -71,6 +96,18 @@ class BroadcastedPluginInstance implements PluginInstance {
                         initial: true
                     })
                 }
+                if (this.statusState.value.isLeader &&
+                    message.kind === 'leader-elected' &&
+                    message.id > this.instanceId) {
+                    // There is a bug in broadcast-channel
+                    // which causes 2 leaders claimed elected simulteneously
+                    // This is a workaround for the problem:
+                    // the tab revokes leadership itself
+                    // and enters in to new election phase
+                    resubscribeBroadcastChannel(this.broadcastRef)
+                    this.instanceId = -1;
+                    this.statusState.nested.isLeader.set(false)
+                }
                 return;
             }
 
@@ -82,6 +119,7 @@ class BroadcastedPluginInstance implements PluginInstance {
                     targetState = nested[p]
                 } else {
                     console.warn('Can not apply update at path:', message.path, targetState.get());
+                    // TODO request initial
                     return;
                 }
             }
@@ -100,14 +138,23 @@ class BroadcastedPluginInstance implements PluginInstance {
             this.broadcastRef.channel.postMessage({
                 version: 1,
                 path: [],
-                value: unmountedLink.value
+                value: unmountedLink.value,
+                initial: true
             })
             
             this.statusState.nested.isLeader.set(true);
             if (this.statusState.value.isLoading) {
                 this.statusState.nested.isLoading.set(false);
             }
+            
+            this.instanceId = Math.random()
+            this.broadcastRef.channel.postMessage({
+                version: 1,
+                kind: 'leader-elected',
+                id: this.instanceId
+            })
         })
+        
         this.broadcastRef.channel.postMessage({
             version: 1,
             kind: 'request-initial'
@@ -204,20 +251,8 @@ export const ExampleComponent = () => {
     const state = useStateLink([{ name: 'First Task' }, { name: 'Second Task' }] as Task[])
         .with(Broadcasted(
             'plugin-persisted-data-key-7',
-            () => {
-                console.log('this tab is a leader') 
-            },
+            () => console.log('this tab is a leader!!!'),
         ))
-    // React.useEffect(() => {
-    //     let i = 0;
-    //     const timer = setInterval(() => {
-    //         i += 1
-    //         state.nested[1].nested.name.set(i.toString())
-    //     }, 1000)
-    //     return () => {
-    //         clearInterval(timer)
-    //     }
-    // })
     const statusState = useStateLink(Broadcasted(state).status())
     if (statusState.isLoading()) {
         return <p>Synchronising data with other tabs...</p>
