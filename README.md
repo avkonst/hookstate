@@ -3,7 +3,7 @@
 </h1>
 
 <p align="center">
-  The flexible, fast and extendable state management<br/>for React that is based on hooks.
+  The simple but very powerful and incredibly fast state management for React that is based on hooks.
 </p>
 <br/>
 
@@ -34,20 +34,53 @@
 
 ## Preface
 
-Hookstate is a modern alternative to Redux, Mobx, Formik without boilerplate but with impressive performance and predictable behavior.
-
-Browse [demos and code samples](https://hookstate.netlify.com) to see what it can do and learn it in few minutes.
+Hookstate is a modern alternative to Redux, Mobx, Formik without boilerplate. It is simple to learn but very flexible to use. It has got impressive performance and predictable behavior.
 
 Any questions? Just ask by raising a github ticket.
 
 ## Why Hookstate
 
-- Concise, pragmatic but flexible API. Very easy to learn. See ["Getting Started" code sample](https://hookstate.netlify.com/getting-started).
+- Concise, pragmatic but flexible API. Very easy to learn. See ["Quick Start"](#quick-start) section.
 - Incredible performance based on unique method for tracking of used/rendered and updated state segments. See the performance demos [with huge table state](https://hookstate.netlify.com/performance-demo-large-table) and [with huge form state](https://hookstate.netlify.com/performance-demo-large-form).
 - First-class Typescript support. Complete type inferrence for any complexity of structures of managed state data. Full intellisense support tested in VS Code.
+- [Used in production](#used-by). Code simplification and incredible performance boost are proven in a number of real cases.
 - Plugin system enables custom extensions, with several [standard plugins](#plugins) available.
 - Tiny footprint: **2.8KB** gziped by create-react-app. No external dependencies, except React.
 - Support for older browsers, for example IE11, via [the polyfill plugin](#plugins).
+- Runs with [Preact](https://preactjs.com/) without polyfills.
+
+## Quick start
+
+See [the code sample below and other demos](https://hookstate.netlify.com) running online. You will learn how to use Hookstate and what it can do in few minutes.
+
+For more detailed explanation read the [API documentation](#api-documentation).
+
+For the complete example application built with Hookstate, check out [this demo](https://hookstate-example-app.netlify.com/) and it's [source code](https://github.com/avkonst/hookstate-example-app).
+
+
+```tsx
+// Create the state ...
+const stateRef = createStateLink(0);
+// ... and use it *within* a React component...
+export function ExampleComponent() {
+  const state = useStateLink(stateRef);
+  return <p>
+    State value: {state.value}
+    <button onClick={() => state.set(p => p + 1)}>Increment</button>
+  </p>
+}
+// .. and *outside* of a React component
+setInterval(() => useStateLinkUnmounted(stateRef).set(p => p + 1), 3000)
+```
+
+## Used By
+
+Known applications, which use Hookstate in production:
+
+- [MoonPiano](https://moonpiano.praisethemoon.org) - read [the success story](https://praisethemoon.org/hookstate-how-one-small-react-library-saved-moonpiano/) of moving from Redux to Hookstate.
+- [Nextfinal](https://nextfinal.com/)
+
+> Submit pull request to include yours.
 
 ## Installation
 

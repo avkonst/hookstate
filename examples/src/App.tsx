@@ -117,8 +117,7 @@ const HomePage = (props: { example?: string }) => {
         <Container maxWidth="md">
             <Box paddingTop={4}>
                 <Typography variant="h4" gutterBottom={true} align="center">
-                    <b>Hookstate</b>: the flexible, fast and extendable state
-                    management for React that is based on hooks.
+                    <b>Hookstate</b>: the simple but very powerful and incredibly fast state management for React that is based on hooks.
                 </Typography>
             </Box>
             <Box
