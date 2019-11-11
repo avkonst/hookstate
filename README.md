@@ -58,18 +58,20 @@ For more detailed explanation read the [API documentation](#api-documentation).
 For the complete example application built with Hookstate, check out [this demo](https://hookstate-example-app.netlify.com/) and it's [source code](https://github.com/avkonst/hookstate-example-app).
 
 
+> Create the state:
 ```tsx
-// Create the state ...
 const stateRef = createStateLink(0);
-// ... and use it *within* a React component...
+```
+> and use it *within* a React component:
+```tsx
 export function ExampleComponent() {
   const state = useStateLink(stateRef);
-  return <p>
-    State value: {state.value}
-    <button onClick={() => state.set(p => p + 1)}>Increment</button>
-  </p>
+  return <p>State value: {state.value}
+    <button onClick={() => state.set(p => p + 1)}>Increment</button></p>
 }
-// .. and *outside* of a React component
+```
+> and *outside* of a React component:
+```tsx
 setInterval(() => useStateLinkUnmounted(stateRef).set(p => p + 1), 3000)
 ```
 
