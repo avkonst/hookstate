@@ -1,4 +1,4 @@
-import { useStateLink, createStateLink, useStateLinkUnmounted } from './UseStateLink';
+import { useStateLink, createStateLink, useStateLinkUnmounted, None } from './UseStateLink';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import React from 'react';
@@ -174,6 +174,53 @@ test('object: should not rerender unused self', async () => {
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.get().field1).toStrictEqual(2);
+});
+
+test('object: should delete property when set to none', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useStateLink({
+            field1: 0,
+            field2: 'str',
+            field3: true
+        })
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(result.current.get().field1).toStrictEqual(0);
+    
+    act(() => {
+        // deleting existing property
+        result.current.nested.field1.set(None);
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(result.current.get()).toEqual({ field2: 'str', field3: true });
+
+    act(() => {
+        // deleting non existing property
+        result.current.nested.field1.set(None);
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(result.current.get()).toEqual({ field2: 'str', field3: true });
+    
+    act(() => {
+        // inserting property
+        result.current.nested.field1.set(1);
+    });
+    expect(renderTimes).toStrictEqual(3);
+    expect(result.current.get().field1).toEqual(1);
+
+    act(() => {
+        // deleting existing but not used in render property
+        result.current.nested.field2.set(None);
+    });
+    expect(renderTimes).toStrictEqual(4);
+    expect(result.current.get()).toEqual({ field1: 1, field3: true });
+
+    // deleting root value
+    expect(() => result.current.set(None)).toThrow(`StateLink is used incorrectly. Attempted 'delete state' at '/'. Hint: did you mean to use state.set(undefined) instead of state.set(None)?`);
+    expect(renderTimes).toStrictEqual(4);
+    expect(result.current.get()).toEqual({ field1: 1, field3: true });
 });
 
 test('object: should auto save latest state for unmounted', async () => {

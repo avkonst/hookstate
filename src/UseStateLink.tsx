@@ -61,8 +61,8 @@ export interface StateLinkPlugable<S> {
 export type StateValueAtRoot = any;
 // tslint:disable-next-line: no-any
 export type StateValueAtPath = any;
-// tslint:disable-next-line: no-any
-export type TransformResult = any;
+
+export const None = Symbol('none') as StateValueAtPath;
 
 export interface PluginInstance {
     // if returns defined value,
@@ -72,7 +72,7 @@ export interface PluginInstance {
     readonly onPreset?: (path: Path, prevState: StateValueAtRoot,
         newValue: StateValueAtPath) => void | StateValueAtRoot,
     readonly onSet?: (path: Path, newState: StateValueAtRoot,
-        newValue: StateValueAtPath) => void,
+        newValue: StateValueAtPath, prevValue: StateValueAtPath) => void,
     readonly onDestroy?: (state: StateValueAtRoot) => void,
 };
 
@@ -123,8 +123,10 @@ interface Subscriber {
     onSet(path: Path, actions: (() => void)[]): void;
 }
 
-type PresetCallback = (path: Path, prevState: StateValueAtRoot, newValue: StateValueAtPath) => void | StateValueAtRoot;
-type SetCallback = (path: Path, newState: StateValueAtRoot, newValue: StateValueAtPath) => void;
+type PresetCallback = (path: Path, prevState: StateValueAtRoot,
+    newValue: StateValueAtPath) => void | StateValueAtRoot;
+type SetCallback = (path: Path, newState: StateValueAtRoot,
+    newValue: StateValueAtPath, prevValue: StateValueAtPath) => void;
 type DestroyCallback = (state: StateValueAtRoot) => void;
 
 interface Subscribable {
@@ -163,6 +165,15 @@ class State implements Subscribable {
     }
 
     set(path: Path, value: StateValueAtPath): Path {
+        if (path.length === 0 && value === None) {
+            // Root value DELETE case
+            // not allowed at the moment
+            throw new StateLinkInvalidUsageError(
+                `delete state`,
+                path,
+                'did you mean to use state.set(undefined) instead of state.set(None)?')
+        }
+        
         this._presetSubscribers.forEach(cb => {
             const presetResult = cb(path, this._value, value)
             if (presetResult !== undefined) {
@@ -171,27 +182,57 @@ class State implements Subscribable {
                 this._value = presetResult
             }
         })
-        if (path.length === 0) {
-            this._value = value;
-        }
-        let result = this._value;
+
+        let prevValue = this._value;
         let returnPath = path;
-        path.forEach((p, i) => {
-            if (i === path.length - 1) {
-                if (!(p in result)) {
-                    // if an array of object is about to be extended by new property
-                    // we consider it is the whole object is changed
-                    // which is identified by upper path
-                    returnPath = path.slice(0, -1)
+        
+        if (path.length === 0) {
+            // Root value UPDATE case,
+            this._value = value;
+        } else {
+            // Nested property UPDATE, INSERT or DELETE cases
+            let result = this._value;
+            path.forEach((p, i) => {
+                if (i === path.length - 1) {
+                    if (p in result) {
+                        prevValue = result[p]
+                        
+                        if (value !== None) {
+                            // Property UPDATE case
+                            result[p] = value;
+                        } else {
+                            // Property DELETE case
+                            delete result[p]
+                            
+                            // if an array of object is about to loose existing property
+                            // we consider it is the whole object is changed
+                            // which is identified by upper path
+                            returnPath = path.slice(0, -1)
+                        }
+                    } else {
+                        prevValue = None
+                        
+                        if (value !== None) {
+                            // Property INSERT case
+                            result[p] = value;
+                            
+                            // if an array of object is about to be extended by new property
+                            // we consider it is the whole object is changed
+                            // which is identified by upper path
+                            returnPath = path.slice(0, -1)
+                        } else {
+                            // Non-existing property DELETE case
+                            // no-op
+                        }
+                    }
+                } else {
+                    result = result[p];
                 }
-                result[p] = value;
-            } else {
-                result = result[p];
-            }
-        });
+            });
+        }
         
         this._edition += 1;
-        this._setSubscribers.forEach(cb => cb(path, this._value, value))
+        this._setSubscribers.forEach(cb => cb(path, this._value, value, prevValue))
         return returnPath;
     }
 
@@ -240,7 +281,7 @@ class State implements Subscribable {
             this._presetSubscribers.add((p, s, v) => pluginInstance.onPreset!(p, s, v))
         }
         if (pluginInstance.onSet) {
-            this._setSubscribers.add((p, s, v) => pluginInstance.onSet!(p, s, v))
+            this._setSubscribers.add((p, s, v, pv) => pluginInstance.onSet!(p, s, v, pv))
         }
         if (pluginInstance.onDestroy) {
             this._destroySubscribers.add((s) => pluginInstance.onDestroy!(s))
