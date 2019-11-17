@@ -35,6 +35,7 @@ function __extends(d, b) {
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 }
 
+var None = Symbol('none');
 //
 // INTERNAL IMPLEMENTATIONS
 //
@@ -102,6 +103,11 @@ var State = /** @class */ (function () {
     };
     State.prototype.set = function (path, value) {
         var _this = this;
+        if (path.length === 0 && value === None) {
+            // Root value DELETE case
+            // not allowed at the moment
+            throw new StateLinkInvalidUsageError("delete state", path, 'did you mean to use state.set(undefined) instead of state.set(None)?');
+        }
         this._presetSubscribers.forEach(function (cb) {
             var presetResult = cb(path, _this._value, value);
             if (presetResult !== undefined) {
@@ -110,27 +116,51 @@ var State = /** @class */ (function () {
                 _this._value = presetResult;
             }
         });
+        var prevValue = this._value;
+        var returnPath = path;
         if (path.length === 0) {
+            // Root value UPDATE case,
             this._value = value;
         }
-        var result = this._value;
-        var returnPath = path;
-        path.forEach(function (p, i) {
-            if (i === path.length - 1) {
-                if (!(p in result)) {
-                    // if an array of object is about to be extended by new property
-                    // we consider it is the whole object is changed
-                    // which is identified by upper path
-                    returnPath = path.slice(0, -1);
+        else {
+            // Nested property UPDATE, INSERT or DELETE cases
+            var result_1 = this._value;
+            path.forEach(function (p, i) {
+                if (i === path.length - 1) {
+                    if (p in result_1) {
+                        prevValue = result_1[p];
+                        if (value !== None) {
+                            // Property UPDATE case
+                            result_1[p] = value;
+                        }
+                        else {
+                            // Property DELETE case
+                            delete result_1[p];
+                            // if an array of object is about to loose existing property
+                            // we consider it is the whole object is changed
+                            // which is identified by upper path
+                            returnPath = path.slice(0, -1);
+                        }
+                    }
+                    else {
+                        prevValue = None;
+                        if (value !== None) {
+                            // Property INSERT case
+                            result_1[p] = value;
+                            // if an array of object is about to be extended by new property
+                            // we consider it is the whole object is changed
+                            // which is identified by upper path
+                            returnPath = path.slice(0, -1);
+                        }
+                    }
                 }
-                result[p] = value;
-            }
-            else {
-                result = result[p];
-            }
-        });
+                else {
+                    result_1 = result_1[p];
+                }
+            });
+        }
         this._edition += 1;
-        this._setSubscribers.forEach(function (cb) { return cb(path, _this._value, value); });
+        this._setSubscribers.forEach(function (cb) { return cb(path, _this._value, value, prevValue); });
         return returnPath;
     };
     State.prototype.update = function (path) {
@@ -174,7 +204,7 @@ var State = /** @class */ (function () {
             this._presetSubscribers.add(function (p, s, v) { return pluginInstance.onPreset(p, s, v); });
         }
         if (pluginInstance.onSet) {
-            this._setSubscribers.add(function (p, s, v) { return pluginInstance.onSet(p, s, v); });
+            this._setSubscribers.add(function (p, s, v, pv) { return pluginInstance.onSet(p, s, v, pv); });
         }
         if (pluginInstance.onDestroy) {
             this._destroySubscribers.add(function (s) { return pluginInstance.onDestroy(s); });
@@ -727,6 +757,7 @@ function Downgraded() {
 }
 
 exports.Downgraded = Downgraded;
+exports.None = None;
 exports.StateFragment = StateFragment;
 exports.StateMemo = StateMemo;
 exports.createStateLink = createStateLink;

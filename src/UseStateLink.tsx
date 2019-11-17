@@ -70,7 +70,7 @@ export interface PluginInstance {
     // it is only applicable for plugins attached via stateref, not via statelink
     readonly onInit?: () => StateValueAtRoot | void,
     readonly onPreset?: (path: Path, prevState: StateValueAtRoot,
-        newValue: StateValueAtPath) => void | StateValueAtRoot,
+        newValue: StateValueAtPath, prevValue: StateValueAtPath) => void | StateValueAtRoot,
     readonly onSet?: (path: Path, newState: StateValueAtRoot,
         newValue: StateValueAtPath, prevValue: StateValueAtPath) => void,
     readonly onDestroy?: (state: StateValueAtRoot) => void,
@@ -124,7 +124,7 @@ interface Subscriber {
 }
 
 type PresetCallback = (path: Path, prevState: StateValueAtRoot,
-    newValue: StateValueAtPath) => void | StateValueAtRoot;
+    newValue: StateValueAtPath, prevValue: StateValueAtPath) => void | StateValueAtRoot;
 type SetCallback = (path: Path, newState: StateValueAtRoot,
     newValue: StateValueAtPath, prevValue: StateValueAtPath) => void;
 type DestroyCallback = (state: StateValueAtRoot) => void;
@@ -165,75 +165,73 @@ class State implements Subscribable {
     }
 
     set(path: Path, value: StateValueAtPath): Path {
-        if (path.length === 0 && value === None) {
-            // Root value DELETE case
-            // not allowed at the moment
-            throw new StateLinkInvalidUsageError(
-                `delete state`,
-                path,
-                'did you mean to use state.set(undefined) instead of state.set(None)?')
-        }
-        
-        this._presetSubscribers.forEach(cb => {
-            const presetResult = cb(path, this._value, value)
-            if (presetResult !== undefined) {
-                // plugin overrides the current value
-                // could be used for immutable later on
-                this._value = presetResult
-            }
-        })
-
-        let prevValue = this._value;
-        let returnPath = path;
-        
         if (path.length === 0) {
             // Root value UPDATE case,
+
+            if (value === None) {
+                // Root value DELETE case not allowed at the moment
+                throw new StateLinkInvalidUsageError(
+                    `delete state`,
+                    path,
+                    'did you mean to use state.set(undefined) instead of state.set(None)?')
+            }
+            
+            let prevValue = this._value;
+            this.callOnPreset(path, value, prevValue)
             this._value = value;
-        } else {
-            // Nested property UPDATE, INSERT or DELETE cases
-            let result = this._value;
-            path.forEach((p, i) => {
-                if (i === path.length - 1) {
-                    if (p in result) {
-                        prevValue = result[p]
-                        
-                        if (value !== None) {
-                            // Property UPDATE case
-                            result[p] = value;
-                        } else {
-                            // Property DELETE case
-                            delete result[p]
-                            
-                            // if an array of object is about to loose existing property
-                            // we consider it is the whole object is changed
-                            // which is identified by upper path
-                            returnPath = path.slice(0, -1)
-                        }
-                    } else {
-                        prevValue = None
-                        
-                        if (value !== None) {
-                            // Property INSERT case
-                            result[p] = value;
-                            
-                            // if an array of object is about to be extended by new property
-                            // we consider it is the whole object is changed
-                            // which is identified by upper path
-                            returnPath = path.slice(0, -1)
-                        } else {
-                            // Non-existing property DELETE case
-                            // no-op
-                        }
-                    }
-                } else {
-                    result = result[p];
-                }
-            });
+            this.callOnSet(path, value, prevValue)
+            
+            return path;
+        }
+
+        let target = this._value;
+        for (let i = 0; i < path.length - 1; i += 1) {
+            target = target[path[i]];
         }
         
-        this._edition += 1;
-        this._setSubscribers.forEach(cb => cb(path, this._value, value, prevValue))
-        return returnPath;
+        const p = path[path.length - 1]
+        if (p in target) {
+            if (value !== None) {
+                // Property UPDATE case
+                let prevValue = target[p]
+                this.callOnPreset(path, value, prevValue)
+                target[p] = value;
+                this.callOnSet(path, value, prevValue)
+                
+                return path;
+            } else {
+                // Property DELETE case
+                let prevValue = target[p]
+                this.callOnPreset(path, value, prevValue)
+                if (Array.isArray(target) && typeof p === 'number') {
+                    target.splice(p, 1)
+                } else {
+                    delete target[p]
+                }
+                this.callOnSet(path, value, prevValue)
+                
+                // if an array of object is about to loose existing property
+                // we consider it is the whole object is changed
+                // which is identified by upper path
+                return path.slice(0, -1)
+            }
+        }
+        
+        if (value !== None) {
+            // Property INSERT case
+            this.callOnPreset(path, value, None)
+            target[p] = value;
+            this.callOnSet(path, value, None)
+            
+            // if an array of object is about to be extended by new property
+            // we consider it is the whole object is changed
+            // which is identified by upper path
+            return path.slice(0, -1)
+        }
+        
+        // Non-existing property DELETE case
+        // no-op
+        return path;
     }
 
     update(path: Path) {
@@ -250,6 +248,22 @@ class State implements Subscribable {
         actions.forEach(a => a());
     }
 
+    callOnPreset(path: Path, value: StateValueAtPath, prevValue: StateValueAtPath) {
+        this._presetSubscribers.forEach(cb => {
+            const presetResult = cb(path, this._value, value, prevValue)
+            if (presetResult !== undefined) {
+                // plugin overrides the current value
+                // could be used for immutable later on
+                this._value = presetResult
+            }
+        })
+    }
+
+    callOnSet(path: Path, value: StateValueAtPath, prevValue: StateValueAtPath) {
+        this._edition += 1;
+        this._setSubscribers.forEach(cb => cb(path, this._value, value, prevValue))
+    }
+    
     getPlugin(pluginId: symbol) {
         const existingInstance = this._plugins.get(pluginId)
         if (existingInstance) {
@@ -278,7 +292,7 @@ class State implements Subscribable {
             }
         }
         if (pluginInstance.onPreset) {
-            this._presetSubscribers.add((p, s, v) => pluginInstance.onPreset!(p, s, v))
+            this._presetSubscribers.add((p, s, v, pv) => pluginInstance.onPreset!(p, s, v, pv))
         }
         if (pluginInstance.onSet) {
             this._setSubscribers.add((p, s, v, pv) => pluginInstance.onSet!(p, s, v, pv))
