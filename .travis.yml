@@ -4,6 +4,6 @@ node_js:
 scripts:
   - npm install codecov -g
   - yarn install
-  - yarn test
+  - yarn test -- --coverage
 after_success:
   - codecov -e TRAVIS_NODE_VERSION
