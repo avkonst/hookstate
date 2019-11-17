@@ -27,6 +27,12 @@
   <a href="./LICENSE">
     <img src="https://badgen.net/github/license/avkonst/hookstate?color=green" />
   </a>
+  <a href="https://travis-ci.org/avkonst/hookstate">
+    <img src="https://travis-ci.org/avkonst/hookstate.svg?branch=master" />
+  </a>
+  <a href="https://codecov.io/gh/avkonst/hookstate">
+    <img src="https://codecov.io/gh/avkonst/hookstate/branch/master/graph/badge.svg" />
+  </a>
   <a href="https://www.npmjs.com/package/@hookstate/core">
     <img src="https://img.shields.io/npm/v/@hookstate/core.svg?maxAge=300&label=version&colorB=007ec6" />
   </a>
