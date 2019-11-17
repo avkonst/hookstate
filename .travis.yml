@@ -1,10 +1,8 @@
 language: node_js
 node_js:
-  - 10
-  - 8
+  - stable
 scripts:
-  - npm install codecov -g
   - yarn install
   - yarn test
 after_success:
-  - codecov
+  - bash <(curl -s https://codecov.io/bash) -e TRAVIS_NODE_VERSION

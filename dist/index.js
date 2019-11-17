@@ -102,66 +102,62 @@ var State = /** @class */ (function () {
         return result;
     };
     State.prototype.set = function (path, value) {
-        var _this = this;
-        if (path.length === 0 && value === None) {
-            // Root value DELETE case
-            // not allowed at the moment
-            throw new StateLinkInvalidUsageError("delete state", path, 'did you mean to use state.set(undefined) instead of state.set(None)?');
-        }
-        this._presetSubscribers.forEach(function (cb) {
-            var presetResult = cb(path, _this._value, value);
-            if (presetResult !== undefined) {
-                // plugin overrides the current value
-                // could be used for immutable later on
-                _this._value = presetResult;
-            }
-        });
-        var prevValue = this._value;
-        var returnPath = path;
         if (path.length === 0) {
             // Root value UPDATE case,
+            if (value === None) {
+                // Root value DELETE case not allowed at the moment
+                throw new StateLinkInvalidUsageError("delete state", path, 'did you mean to use state.set(undefined) instead of state.set(None)?');
+            }
+            var prevValue = this._value;
+            this.callOnPreset(path, value, prevValue);
             this._value = value;
+            this.callOnSet(path, value, prevValue);
+            return path;
         }
-        else {
-            // Nested property UPDATE, INSERT or DELETE cases
-            var result_1 = this._value;
-            path.forEach(function (p, i) {
-                if (i === path.length - 1) {
-                    if (p in result_1) {
-                        prevValue = result_1[p];
-                        if (value !== None) {
-                            // Property UPDATE case
-                            result_1[p] = value;
-                        }
-                        else {
-                            // Property DELETE case
-                            delete result_1[p];
-                            // if an array of object is about to loose existing property
-                            // we consider it is the whole object is changed
-                            // which is identified by upper path
-                            returnPath = path.slice(0, -1);
-                        }
-                    }
-                    else {
-                        prevValue = None;
-                        if (value !== None) {
-                            // Property INSERT case
-                            result_1[p] = value;
-                            // if an array of object is about to be extended by new property
-                            // we consider it is the whole object is changed
-                            // which is identified by upper path
-                            returnPath = path.slice(0, -1);
-                        }
-                    }
+        var target = this._value;
+        for (var i = 0; i < path.length - 1; i += 1) {
+            target = target[path[i]];
+        }
+        var p = path[path.length - 1];
+        if (p in target) {
+            if (value !== None) {
+                // Property UPDATE case
+                var prevValue = target[p];
+                this.callOnPreset(path, value, prevValue);
+                target[p] = value;
+                this.callOnSet(path, value, prevValue);
+                return path;
+            }
+            else {
+                // Property DELETE case
+                var prevValue = target[p];
+                this.callOnPreset(path, value, prevValue);
+                if (Array.isArray(target) && typeof p === 'number') {
+                    target.splice(p, 1);
                 }
                 else {
-                    result_1 = result_1[p];
+                    delete target[p];
                 }
-            });
+                this.callOnSet(path, value, prevValue);
+                // if an array of object is about to loose existing property
+                // we consider it is the whole object is changed
+                // which is identified by upper path
+                return path.slice(0, -1);
+            }
         }
-        this._edition += 1;
-        this._setSubscribers.forEach(function (cb) { return cb(path, _this._value, value, prevValue); });
-        return returnPath;
+        if (value !== None) {
+            // Property INSERT case
+            this.callOnPreset(path, value, None);
+            target[p] = value;
+            this.callOnSet(path, value, None);
+            // if an array of object is about to be extended by new property
+            // we consider it is the whole object is changed
+            // which is identified by upper path
+            return path.slice(0, -1);
+        }
+        // Non-existing property DELETE case
+        // no-op
+        return path;
     };
     State.prototype.update = function (path) {
         var actions = [];
@@ -175,6 +171,22 @@ var State = /** @class */ (function () {
             _this._subscribers.forEach(function (s) { return s.onSet(path, actions); });
         });
         actions.forEach(function (a) { return a(); });
+    };
+    State.prototype.callOnPreset = function (path, value, prevValue) {
+        var _this = this;
+        this._presetSubscribers.forEach(function (cb) {
+            var presetResult = cb(path, _this._value, value, prevValue);
+            if (presetResult !== undefined) {
+                // plugin overrides the current value
+                // could be used for immutable later on
+                _this._value = presetResult;
+            }
+        });
+    };
+    State.prototype.callOnSet = function (path, value, prevValue) {
+        var _this = this;
+        this._edition += 1;
+        this._setSubscribers.forEach(function (cb) { return cb(path, _this._value, value, prevValue); });
     };
     State.prototype.getPlugin = function (pluginId) {
         var existingInstance = this._plugins.get(pluginId);
@@ -201,7 +213,7 @@ var State = /** @class */ (function () {
             }
         }
         if (pluginInstance.onPreset) {
-            this._presetSubscribers.add(function (p, s, v) { return pluginInstance.onPreset(p, s, v); });
+            this._presetSubscribers.add(function (p, s, v, pv) { return pluginInstance.onPreset(p, s, v, pv); });
         }
         if (pluginInstance.onSet) {
             this._setSubscribers.add(function (p, s, v, pv) { return pluginInstance.onSet(p, s, v, pv); });

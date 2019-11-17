@@ -34,7 +34,7 @@ export declare type StateValueAtPath = any;
 export declare const None: any;
 export interface PluginInstance {
     readonly onInit?: () => StateValueAtRoot | void;
-    readonly onPreset?: (path: Path, prevState: StateValueAtRoot, newValue: StateValueAtPath) => void | StateValueAtRoot;
+    readonly onPreset?: (path: Path, prevState: StateValueAtRoot, newValue: StateValueAtPath, prevValue: StateValueAtPath) => void | StateValueAtRoot;
     readonly onSet?: (path: Path, newState: StateValueAtRoot, newValue: StateValueAtPath, prevValue: StateValueAtPath) => void;
     readonly onDestroy?: (state: StateValueAtRoot) => void;
 }
