@@ -390,6 +390,7 @@ test('complex: should delete property when set to none', async () => {
     });
     expect(renderTimes).toStrictEqual(2);
     expect(result.current.nested[0].get()).toEqual({ field2: 'str', field3: true });
+    expect(Object.keys(result.current.nested[0].get())).toEqual(['field2', 'field3']);
 
     act(() => {
         // deleting non existing property
