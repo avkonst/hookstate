@@ -2,7 +2,7 @@ const { createSitemap } = require('sitemap');
 const ExampleIds = require('./src/examples/ids');
 const fs = require('fs')
 
-const baseUrl = 'https://hookstate.netlify.com'
+const baseUrl = 'https://hookstate.js.org'
 
 const exampleUrls = Object.values(ExampleIds).map(id => `${baseUrl}/${id}`);
 

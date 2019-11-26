@@ -1,5 +1,6 @@
-# the following is neccessary to reduce site duplication and improve SEO result
-# https://hookstate.netlify.com/* https://hookstate.org/:splat 301!
+# The following is neccessary to reduce site duplication and improve SEO result
+# Redirect default Netlify subdomain to primary domain
+https://hookstate.netlify.com/* https://hookstate.js.org/:splat 301!
 
 # version.json is cached in the bundle, but checkline path is unknown for the bundle
 # this path is used by the app to check internet connectivity

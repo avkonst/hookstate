@@ -9,7 +9,7 @@
 
 <p align="center">
   <a href="#why-hookstate">Why?</a> •
-  <a href="https://hookstate.netlify.com/">Demos / Examples</a> •
+  <a href="https://hookstate.js.org/">Demos / Examples</a> •
   <a href="#api-documentation">Documentation</a> •
   <a href="#plugins">Plugins</a>
 </p>
@@ -47,7 +47,7 @@ Any questions? Just ask by raising a github ticket.
 ## Why Hookstate
 
 - Concise, pragmatic but flexible API. Very easy to learn. See ["Quick Start"](#quick-start) section.
-- Incredible performance based on unique method for tracking of used/rendered and updated state segments. See the performance demos [with huge table state](https://hookstate.netlify.com/performance-demo-large-table) and [with huge form state](https://hookstate.netlify.com/performance-demo-large-form).
+- Incredible performance based on unique method for tracking of used/rendered and updated state segments. See the performance demos [with huge table state](https://hookstate.js.org/performance-demo-large-table) and [with huge form state](https://hookstate.js.org/performance-demo-large-form).
 - First-class Typescript support. Complete type inferrence for any complexity of structures of managed state data. Full intellisense support tested in VS Code.
 - [Used in production](#used-by). Code simplification and incredible performance boost are proven in a number of real cases.
 - Plugin system enables custom extensions, with several [standard plugins](#plugins) available.
@@ -57,7 +57,7 @@ Any questions? Just ask by raising a github ticket.
 
 ## Quick start
 
-See [the code sample below and other demos](https://hookstate.netlify.com) running online. You will learn how to use Hookstate and what it can do in few minutes.
+See [the code sample below and other demos](https://hookstate.js.org) running online. You will learn how to use Hookstate and what it can do in few minutes.
 
 For more detailed explanation read the [API documentation](#api-documentation).
 
@@ -110,7 +110,7 @@ It supports all recent browsers and works where React works. If you need to poly
 
 ### `createStateLink`
 
-This function creates a reference to a **global** state. The first argument is the initial value to assign to the state. For example ([see it running](https://hookstate.netlify.com/global-complex-from-documentation)):
+This function creates a reference to a **global** state. The first argument is the initial value to assign to the state. For example ([see it running](https://hookstate.js.org/global-complex-from-documentation)):
 
 ```tsx
 interface Task { name: string; priority?: number }
@@ -124,7 +124,7 @@ You can also wrap the state reference by your custom state access interface usin
 
 ### `useStateLinkUnmounted`
 
-This function opens access to the state. It **can** be used outside of a React component. The first argument should be a result of the [`createStateLink`](#createstatelink) function. For example ([see it running](https://hookstate.netlify.com/global-complex-from-documentation)):
+This function opens access to the state. It **can** be used outside of a React component. The first argument should be a result of the [`createStateLink`](#createstatelink) function. For example ([see it running](https://hookstate.js.org/global-complex-from-documentation)):
 
 ```tsx
 setTimeout(() => useStateLinkUnmounted(stateRef)
@@ -143,7 +143,7 @@ You can also wrap the [state link](#statelink) by your custom state access inter
 ### `useStateLink`
 
 This function opens access to the state. It **must** be used within a functional React component. The first argument should be one of the following:
-- **global state**: a result of the [`createStateLink`](#createstatelink) function. For example ([see it running](https://hookstate.netlify.com/global-complex-from-documentation)):
+- **global state**: a result of the [`createStateLink`](#createstatelink) function. For example ([see it running](https://hookstate.js.org/global-complex-from-documentation)):
 
     ```tsx
     export const ExampleComponent = () => {
@@ -153,7 +153,7 @@ This function opens access to the state. It **must** be used within a functional
         </button>
     }
     ```
-- **local state**: initial variable to assign to the local (per component) state. It similar to the original `React.useState`, but the result [`StateLink`](#statelink) variable has got more features. For example ([see it running](https://hookstate.netlify.com/local-complex-from-documentation)):
+- **local state**: initial variable to assign to the local (per component) state. It similar to the original `React.useState`, but the result [`StateLink`](#statelink) variable has got more features. For example ([see it running](https://hookstate.js.org/local-complex-from-documentation)):
 
     ```tsx
     export const ExampleComponent = () => {
@@ -163,7 +163,7 @@ This function opens access to the state. It **must** be used within a functional
         </button>
     }
     ```
-- **scoped state**: a result of the [`useStateLink`](#usestatelink) function, called by a parent component either for a **global state**, for **local state** or it's parent **scoped state**. This is discussed in more details below. For example ([see it running for global state](https://hookstate.netlify.com/global-complex-from-documentation) or for [local state](https://hookstate.netlify.com/local-complex-from-documentation)):
+- **scoped state**: a result of the [`useStateLink`](#usestatelink) function, called by a parent component either for a **global state**, for **local state** or it's parent **scoped state**. This is discussed in more details below. For example ([see it running for global state](https://hookstate.js.org/global-complex-from-documentation) or for [local state](https://hookstate.js.org/local-complex-from-documentation)):
 
     ```tsx
     const TaskViewer = (props: { taskState: StateLink<Task> }) => {
@@ -174,12 +174,12 @@ This function opens access to the state. It **must** be used within a functional
 
 The `useStateLink` forces a component to rerender everytime when any segment/part of the state data is changed **AND only if** this segement was used by the component.
 
-A segment/part of the state is considered as **not used** by a parent's state link, if it is only used by a **scoped state** link. This gives great rendering performance of nested components for large data sets. It is demonstrated in [this example for global state](https://hookstate.netlify.com/global-complex-from-documentation), [this example for local state](https://hookstate.netlify.com/local-complex-from-documentation), [this performance demo with large table state](https://hookstate.netlify.com/performance-demo-large-table)
-and [this performance demo with large form state](https://hookstate.netlify.com/performance-demo-large-form).
+A segment/part of the state is considered as **not used** by a parent's state link, if it is only used by a **scoped state** link. This gives great rendering performance of nested components for large data sets. It is demonstrated in [this example for global state](https://hookstate.js.org/global-complex-from-documentation), [this example for local state](https://hookstate.js.org/local-complex-from-documentation), [this performance demo with large table state](https://hookstate.js.org/performance-demo-large-table)
+and [this performance demo with large form state](https://hookstate.js.org/performance-demo-large-form).
 
 The **global state** can be consumed by:
-- multiple components as demonstrated in [this example](https://hookstate.netlify.com/global-multiple-consumers)
-- or by a 'parent' component passing `nested` links to it's children as demonstarted in [this example](https://hookstate.netlify.com/global-multiple-consumers-from-root) or [this example](https://hookstate.netlify.com/global-complex-from-documentation)
+- multiple components as demonstrated in [this example](https://hookstate.js.org/global-multiple-consumers)
+- or by a 'parent' component passing `nested` links to it's children as demonstarted in [this example](https://hookstate.js.org/global-multiple-consumers-from-root) or [this example](https://hookstate.js.org/global-complex-from-documentation)
 - or any combination of the above two options
 
 The result of `useStateLink` is of type [`StateLink`](#statelink).
@@ -190,7 +190,7 @@ You can attach more [plugins](#plugins) using `with` method of the state link.
 
 You can also wrap the [state link](#statelink) by your custom state access interface using the second [`transform` argument](#transform-argument).
 
-You can also use the state (**global**, **local** or **scoped**) via `StateFragment` React component. It is particularly useful for creating **scoped state** links, as demonstrated in [this](https://hookstate.netlify.com/global-multiple-consumers-statefragment) and [this](https://hookstate.netlify.com/plugin-initial-statefragment) examples.
+You can also use the state (**global**, **local** or **scoped**) via `StateFragment` React component. It is particularly useful for creating **scoped state** links, as demonstrated in [this](https://hookstate.js.org/global-multiple-consumers-statefragment) and [this](https://hookstate.js.org/plugin-initial-statefragment) examples.
 
 ### `StateLink`
 
@@ -321,7 +321,7 @@ const TotalHighestPriorityTasksComponent = (props: { tasksState: StateLink<Task[
 
 The above will rerender only when the result of the aggregation is changed. This allows to achieve advanced optimizations for rendering of various aggregated views.
 
-`StateMemo` usage is demonstarted in [this](https://hookstate.netlify.com/plugin-initial), [this](https://hookstate.netlify.com/plugin-initial-statefragment) and [this](https://hookstate.netlify.com/plugin-touched) examples.
+`StateMemo` usage is demonstarted in [this](https://hookstate.js.org/plugin-initial), [this](https://hookstate.js.org/plugin-initial-statefragment) and [this](https://hookstate.js.org/plugin-touched) examples.
 
 `StateMemo` can be invoked with the second argument, which is equality operator used to compare the new and the previous results of the `transform` callback. By default, tripple equality (===) is used. If new and previous are equal, Hookstate will skip rerendering the component on state chage.
 
@@ -333,12 +333,12 @@ The second argument of the `transform` callback is defined and equals to the res
 
 Plugin | Description | Example | Package | Version
 -|-|-|-|-
-Initial | Enables access to an initial value of a [`StateLink`](#statelink) and allows to check if the current value of the [`StateLink`](#statelink) is modified (compares with the initial value). Helps with tracking of *modified* form field(s). | [Demo](https://hookstate.netlify.com/plugin-initial) | `@hookstate/initial` | [![npm version](https://img.shields.io/npm/v/@hookstate/initial.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/initial)
-Touched | Helps with tracking of *touched* form field(s). | [Demo](https://hookstate.netlify.com/plugin-touched) | `@hookstate/touched` | [![npm version](https://img.shields.io/npm/v/@hookstate/touched.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/touched)
-Validation | Enables validation and error / warning messages for a state. Usefull for validation of form fields and form states. | [Demo](https://hookstate.netlify.com/plugin-validation) | `@hookstate/validation` | [![npm version](https://img.shields.io/npm/v/@hookstate/validation.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/validation)
-Persistence | Enables persistence of managed states to browser's local storage. | [Demo](https://hookstate.netlify.com/plugin-persistence) | `@hookstate/persistence` | [![npm version](https://img.shields.io/npm/v/@hookstate/persistence.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/persistence)
-Mutate | Adds mutate actions specific for arrays (push, pop, insert, remove, swap, etc..), objects (merge, etc.), strings and numbers. | [Demo](https://hookstate.netlify.com/plugin-mutate) | `@hookstate/mutate` | [![npm version](https://img.shields.io/npm/v/@hookstate/mutate.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/mutate)
-Logger | Logs state updates and current value of a [`StateLink`](#statelink) to the development console. | [Demo](https://hookstate.netlify.com/plugin-logger) | `@hookstate/logger` | [![npm version](https://img.shields.io/npm/v/@hookstate/logger.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/logger)
-Untracked | Enables access to `StateLink`'s `get` and `set` methods which do not track usage or state update. It means these operations do not influence rendering at all. Applicable in specific usecases. You should understand what you are doing when you use it. | [Demo](https://hookstate.netlify.com/plugin-untracked) | `@hookstate/untracked` | [![npm version](https://img.shields.io/npm/v/@hookstate/untracked.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/untracked)
+Initial | Enables access to an initial value of a [`StateLink`](#statelink) and allows to check if the current value of the [`StateLink`](#statelink) is modified (compares with the initial value). Helps with tracking of *modified* form field(s). | [Demo](https://hookstate.js.org/plugin-initial) | `@hookstate/initial` | [![npm version](https://img.shields.io/npm/v/@hookstate/initial.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/initial)
+Touched | Helps with tracking of *touched* form field(s). | [Demo](https://hookstate.js.org/plugin-touched) | `@hookstate/touched` | [![npm version](https://img.shields.io/npm/v/@hookstate/touched.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/touched)
+Validation | Enables validation and error / warning messages for a state. Usefull for validation of form fields and form states. | [Demo](https://hookstate.js.org/plugin-validation) | `@hookstate/validation` | [![npm version](https://img.shields.io/npm/v/@hookstate/validation.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/validation)
+Persistence | Enables persistence of managed states to browser's local storage. | [Demo](https://hookstate.js.org/plugin-persistence) | `@hookstate/persistence` | [![npm version](https://img.shields.io/npm/v/@hookstate/persistence.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/persistence)
+Mutate | Adds mutate actions specific for arrays (push, pop, insert, remove, swap, etc..), objects (merge, etc.), strings and numbers. | [Demo](https://hookstate.js.org/plugin-mutate) | `@hookstate/mutate` | [![npm version](https://img.shields.io/npm/v/@hookstate/mutate.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/mutate)
+Logger | Logs state updates and current value of a [`StateLink`](#statelink) to the development console. | [Demo](https://hookstate.js.org/plugin-logger) | `@hookstate/logger` | [![npm version](https://img.shields.io/npm/v/@hookstate/logger.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/logger)
+Untracked | Enables access to `StateLink`'s `get` and `set` methods which do not track usage or state update. It means these operations do not influence rendering at all. Applicable in specific usecases. You should understand what you are doing when you use it. | [Demo](https://hookstate.js.org/plugin-untracked) | `@hookstate/untracked` | [![npm version](https://img.shields.io/npm/v/@hookstate/untracked.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/untracked)
 Downgraded | Turns off optimizations for a StateLink by stopping tracking of it's value usage and assuming the entire state is *used* if StateLink's value is accessed at least once. |  | `@hookstate/core` | [![npm version](https://img.shields.io/npm/v/@hookstate/core.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/core)
 Proxy Polyfill | Makes the Hookstate working in older browsers, for example IE11. All features are supported with two known differences in polyfilled behaviour: 1) `StateLink.nested[key]` will return `undefined` if `StateLink.get()[key]` is also `undefined` property. 2) `StateLink.get()[key] = 'some new value'` will not throw but will mutate the object in the state without notifying any of rendered components or plugins. | [Demo](https://github.com/avkonst/hookstate/tree/master/experimental/ie11) | `@hookstate/proxy-polyfill` | [![npm version](https://img.shields.io/npm/v/@hookstate/proxy-polyfill.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/proxy-polyfill)

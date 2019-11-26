@@ -3,7 +3,7 @@
 [![license](https://img.shields.io/github/license/avkonst/hookstate)](https://img.shields.io/github/license/avkonst/hookstate) [![npm version](https://img.shields.io/npm/v/@hookstate/mutate.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/mutate)
 
 
-Plugin for @hookstate/core to add mutate actions specific for arrays, objects, strings and numbers. See [demo](https://hookstate.netlify.com/plugin-mutate).
+Plugin for @hookstate/core to add mutate actions specific for arrays, objects, strings and numbers. See [demo](https://hookstate.js.org/plugin-mutate).
 
 ## API Documentation
 
