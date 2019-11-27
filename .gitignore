@@ -10,4 +10,5 @@ yarn-error.log*
 **/.idea
 **/.netlify
 **/.firebase
+**/.vscode
 
