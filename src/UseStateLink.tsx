@@ -424,6 +424,15 @@ class StateLinkImpl<S> implements StateLink<S>,
         }
     }
     
+    getUntracked() {
+        this.refreshIfStale()
+        return this.valueSource;
+    }
+
+    get() {
+        return this.value
+    }
+
     get value(): S {
         this.refreshIfStale()
         if (this[ValueCache] === undefined) {
@@ -438,15 +447,6 @@ class StateLinkImpl<S> implements StateLink<S>,
             }
         }
         return this[ValueCache] as S;
-    }
-
-    getUntracked() {
-        this.refreshIfStale()
-        return this.valueSource;
-    }
-
-    get() {
-        return this.value
     }
 
     setUntracked(newValue: React.SetStateAction<S>): Path {
@@ -467,12 +467,12 @@ class StateLinkImpl<S> implements StateLink<S>,
     }
 
     merge(sourceValue: SetPartialStateAction<S>) {
-        this.refreshIfStale()
+        const currentValue = this.getUntracked()
         if (typeof sourceValue === 'function') {
-            sourceValue = (sourceValue as ((prevValue: S) => S))(this.valueSource);
+            sourceValue = (sourceValue as ((prevValue: S) => S))(currentValue);
         }
 
-        if (Array.isArray(this.valueSource)) {
+        if (Array.isArray(currentValue)) {
             this.set((prevValue) => {
                 const deletedIndexes: number[] = []
                 Object.keys(sourceValue).sort().forEach(i => {
@@ -492,7 +492,7 @@ class StateLinkImpl<S> implements StateLink<S>,
                 })
                 return prevValue
             })
-        } else if (typeof this.valueSource === 'object' && this.valueSource !== null) {
+        } else if (typeof currentValue === 'object' && currentValue !== null) {
             this.set((prevValue) => {
                 Object.keys(sourceValue).forEach(key => {
                     const newPropValue = sourceValue[key]
