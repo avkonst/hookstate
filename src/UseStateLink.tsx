@@ -517,7 +517,7 @@ class StateLinkImpl<S> implements StateLink<S>,
     }
     
     update(path: Path | Path[]) {
-        if (path.length === 0 || !Array.isArray(path[0])) {
+        if (path.length === 0 || typeof path[0] === 'string' || typeof path[0] === 'number') {
             this.state.update(path as Path)
         } else {
             this.state.updateBatch(path as Path[])
