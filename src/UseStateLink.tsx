@@ -56,6 +56,7 @@ export interface StateLink<S> {
 export interface StateLinkPlugable<S> {
     getUntracked(): S;
     setUntracked(newValue: React.SetStateAction<S>): Path;
+    mergeUntracked(mergeValue: SetPartialStateAction<S>): Path;
     update(path: Path | Path[]): void;
 }
 
@@ -167,7 +168,7 @@ class State implements Subscribable {
         return result;
     }
 
-    set(path: Path, value: StateValueAtPath): Path {
+    set(path: Path, value: StateValueAtPath, mergeValue: Partial<StateValueAtPath> | undefined): Path {
         if (path.length === 0) {
             // Root value UPDATE case,
 
@@ -449,7 +450,7 @@ class StateLinkImpl<S> implements StateLink<S>,
         return this[ValueCache] as S;
     }
 
-    setUntracked(newValue: React.SetStateAction<S>): Path {
+    setUntracked(newValue: React.SetStateAction<S>, mergeValue?: Partial<StateValueAtPath>): Path {
         if (typeof newValue === 'function') {
             newValue = (newValue as ((prevValue: S) => S))(this.getUntracked());
         }
@@ -459,21 +460,21 @@ class StateLinkImpl<S> implements StateLink<S>,
                 this.path,
                 'did you mean to use state.set(lodash.cloneDeep(value)) instead of state.set(value)?')
         }
-        return this.state.set(this.path, newValue);
+        return this.state.set(this.path, newValue, mergeValue);
     }
 
     set(newValue: React.SetStateAction<S>) {
         this.state.update(this.setUntracked(newValue));
     }
 
-    merge(sourceValue: SetPartialStateAction<S>) {
+    mergeUntracked(sourceValue: SetPartialStateAction<S>) {
         const currentValue = this.getUntracked()
         if (typeof sourceValue === 'function') {
             sourceValue = (sourceValue as ((prevValue: S) => S))(currentValue);
         }
 
         if (Array.isArray(currentValue)) {
-            this.set((prevValue) => {
+            return this.setUntracked((prevValue) => {
                 const deletedIndexes: number[] = []
                 Object.keys(sourceValue).sort().forEach(i => {
                     const index = Number(i);
@@ -491,9 +492,11 @@ class StateLinkImpl<S> implements StateLink<S>,
                     (prevValue as unknown as Array<unknown>).splice(p, 1)
                 })
                 return prevValue
-            })
-        } else if (typeof currentValue === 'object' && currentValue !== null) {
-            this.set((prevValue) => {
+            }, sourceValue)
+        }
+        
+        if (typeof currentValue === 'object' && currentValue !== null) {
+            return this.setUntracked((prevValue) => {
                 Object.keys(sourceValue).forEach(key => {
                     const newPropValue = sourceValue[key]
                     if (newPropValue === None) {
@@ -503,10 +506,14 @@ class StateLinkImpl<S> implements StateLink<S>,
                     }
                 })
                 return prevValue
-            })
-        } else {
-            this.set(sourceValue as React.SetStateAction<S>)
+            }, sourceValue)
         }
+        
+        return this.setUntracked(sourceValue as React.SetStateAction<S>)
+    }
+    
+    merge(sourceValue: SetPartialStateAction<S>) {
+        this.state.update(this.mergeUntracked(sourceValue));
     }
     
     update(path: Path | Path[]) {
