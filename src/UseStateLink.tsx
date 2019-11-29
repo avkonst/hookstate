@@ -56,7 +56,7 @@ export interface StateLink<S> {
 export interface StateLinkPlugable<S> {
     getUntracked(): S;
     setUntracked(newValue: React.SetStateAction<S>): Path;
-    mergeUntracked(mergeValue: SetPartialStateAction<S>): Path;
+    mergeUntracked(mergeValue: SetPartialStateAction<S>): Path | Path[];
     update(path: Path | Path[]): void;
 }
 
@@ -473,17 +473,25 @@ class StateLinkImpl<S> implements StateLink<S>,
             sourceValue = (sourceValue as ((prevValue: S) => S))(currentValue);
         }
 
+        const maximumPropsForCherryPickUpdate = 5;
+        
         if (Array.isArray(currentValue)) {
-            return this.setUntracked((prevValue) => {
+            let deletedOrInsertedProps = false
+            let totalUpdatedProps = 0
+            
+            const updatedPath = this.setUntracked((prevValue) => {
                 const deletedIndexes: number[] = []
                 Object.keys(sourceValue).sort().forEach(i => {
                     const index = Number(i);
                     const newPropValue = sourceValue[index]
                     if (newPropValue === None) {
+                        deletedOrInsertedProps = true
                         deletedIndexes.push(index)
                     } else {
+                        deletedOrInsertedProps = deletedOrInsertedProps || !(index in prevValue)
                         prevValue[index] = newPropValue
                     }
+                    totalUpdatedProps += 1
                 });
                 // indexes are ascending sorted as per above
                 // so, delete one by one from the end
@@ -493,27 +501,45 @@ class StateLinkImpl<S> implements StateLink<S>,
                 })
                 return prevValue
             }, sourceValue)
+            
+            if (updatedPath !== this.path || deletedOrInsertedProps ||
+                totalUpdatedProps > maximumPropsForCherryPickUpdate) {
+                return updatedPath
+            }
+            return Object.keys(sourceValue).map(p => updatedPath.slice().concat(p))
         }
         
         if (typeof currentValue === 'object' && currentValue !== null) {
-            return this.setUntracked((prevValue) => {
+            let deletedOrInsertedProps = false
+            let totalUpdatedProps = 0
+            
+            const updatedPath = this.setUntracked((prevValue) => {
                 Object.keys(sourceValue).forEach(key => {
                     const newPropValue = sourceValue[key]
                     if (newPropValue === None) {
+                        deletedOrInsertedProps = true
                         delete prevValue[key]
                     } else {
+                        deletedOrInsertedProps = deletedOrInsertedProps || !(key in prevValue)
                         prevValue[key] = newPropValue
                     }
+                    totalUpdatedProps += 0
                 })
                 return prevValue
             }, sourceValue)
+            
+            if (updatedPath !== this.path || deletedOrInsertedProps ||
+                totalUpdatedProps > maximumPropsForCherryPickUpdate) {
+                return updatedPath
+            }
+            return Object.keys(sourceValue).map(p => updatedPath.slice().concat(p))
         }
         
         return this.setUntracked(sourceValue as React.SetStateAction<S>)
     }
     
     merge(sourceValue: SetPartialStateAction<S>) {
-        this.state.update(this.mergeUntracked(sourceValue));
+        this.update(this.mergeUntracked(sourceValue));
     }
     
     update(path: Path | Path[]) {
