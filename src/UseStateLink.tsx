@@ -32,6 +32,8 @@ export type NestedInferredLink<S> =
 
 export type Path = ReadonlyArray<string | number>;
 
+export type SetPartialStateAction<S> = Partial<S> | ((prevValue: S) => Partial<S>);
+
 export interface StateLink<S> {
     readonly path: Path;
     readonly nested: NestedInferredLink<S>;
@@ -45,6 +47,7 @@ export interface StateLink<S> {
 
     get(): S;
     set(newValue: React.SetStateAction<S>): void;
+    merge(newValue: SetPartialStateAction<S>): void;
 
     with(plugin: () => Plugin): StateLink<S>;
     with(pluginId: symbol): [StateLink<S> & StateLinkPlugable<S>, PluginInstance];
@@ -448,7 +451,7 @@ class StateLinkImpl<S> implements StateLink<S>,
 
     setUntracked(newValue: React.SetStateAction<S>): Path {
         if (typeof newValue === 'function') {
-            newValue = (newValue as ((prevValue: S) => S))(this.state.get(this.path));
+            newValue = (newValue as ((prevValue: S) => S))(this.getUntracked());
         }
         if (typeof newValue === 'object' && newValue !== null && newValue[ProxyMarkerID]) {
             throw new StateLinkInvalidUsageError(
@@ -463,6 +466,49 @@ class StateLinkImpl<S> implements StateLink<S>,
         this.state.update(this.setUntracked(newValue));
     }
 
+    merge(sourceValue: SetPartialStateAction<S>) {
+        this.refreshIfStale()
+        if (typeof sourceValue === 'function') {
+            sourceValue = (sourceValue as ((prevValue: S) => S))(this.valueSource);
+        }
+
+        if (Array.isArray(this.valueSource)) {
+            this.set((prevValue) => {
+                const deletedIndexes: number[] = []
+                Object.keys(sourceValue).sort().forEach(i => {
+                    const index = Number(i);
+                    const newPropValue = sourceValue[index]
+                    if (newPropValue === None) {
+                        deletedIndexes.push(index)
+                    } else {
+                        prevValue[index] = newPropValue
+                    }
+                });
+                // indexes are ascending sorted as per above
+                // so, delete one by one from the end
+                // this way index positions do not change
+                deletedIndexes.reverse().forEach(p => {
+                    (prevValue as unknown as Array<unknown>).splice(p, 1)
+                })
+                return prevValue
+            })
+        } else if (typeof this.valueSource === 'object' && this.valueSource !== null) {
+            this.set((prevValue) => {
+                Object.keys(sourceValue).forEach(key => {
+                    const newPropValue = sourceValue[key]
+                    if (newPropValue === None) {
+                        delete prevValue[key]
+                    } else {
+                        prevValue[key] = newPropValue
+                    }
+                })
+                return prevValue
+            })
+        } else {
+            this.set(sourceValue as React.SetStateAction<S>)
+        }
+    }
+    
     update(path: Path | Path[]) {
         if (path.length === 0 || !Array.isArray(path[0])) {
             this.state.update(path as Path)
@@ -878,19 +924,7 @@ function injectTransform<S, R>(
     delete link[StateMemoID];
 
     injectedOnUpdateUsed = () => {
-        // need to create new one to make sure
-        // it does not pickup the stale cache of the original link after mutation
-        const overidingLink = new StateLinkImpl<S>(
-            link.state,
-            link.path,
-            link.onUpdateUsed,
-            link.state.get(link.path),
-            link.state.edition
-        )
-        // and we should inject to onUpdate now
-        // so the overriding link is used to track used properties
-        link.onSet = (path, actions) => overidingLink.onSet(path, actions);
-        const updatedResult = transform(overidingLink, result);
+        const updatedResult = transform(link, result);
         // if result is not changed, it does not affect the rendering result too
         // so, we skip triggering rerendering in this case
         if (!stateMemoEquals(updatedResult, result)) {
