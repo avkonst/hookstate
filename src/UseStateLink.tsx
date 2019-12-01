@@ -419,7 +419,8 @@ class StateLinkImpl<S> implements StateLink<S>,
                 }
                 if (NestedCache in this) {
                     delete this[NestedCache]
-                    this.nested
+                    // tslint:disable-next-line no-unused-expression
+                    this.nested // trigger call to mark 'nested' as used again
                 }
             }
         }
@@ -835,8 +836,8 @@ class StateLinkImpl<S> implements StateLink<S>,
 }
 
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
-const NoAction = () => {};
-const NoActionUnmounted = () => {};
+const NoAction = () => { /* empty */ };
+const NoActionUnmounted = () => { /* empty */ };
 NoActionUnmounted[UnmountedCallback] = true
 
 function createState<S>(initial: S | (() => S)): State {
