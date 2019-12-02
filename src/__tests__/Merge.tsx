@@ -3,6 +3,22 @@ import { useStateLink, createStateLink, useStateLinkUnmounted, None } from '../U
 import { renderHook, act } from '@testing-library/react-hooks';
 import React from 'react';
 
+test('primitive: should rerender used after merge update', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useStateLink(1)
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(result.current.get()).toStrictEqual(1);
+
+    act(() => {
+        result.current.merge(p => p + 1);
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(result.current.get()).toStrictEqual(2);
+});
+
 test('object: should rerender used after merge update', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
