@@ -19,6 +19,22 @@ test('primitive: should rerender used after merge update', async () => {
     expect(result.current.get()).toStrictEqual(2);
 });
 
+test('string: should rerender used after merge update', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useStateLink('str')
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(result.current.get()).toStrictEqual('str');
+
+    act(() => {
+        result.current.merge('str');
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(result.current.get()).toStrictEqual('strstr');
+});
+
 test('object: should rerender used after merge update', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {

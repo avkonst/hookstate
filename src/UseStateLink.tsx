@@ -530,6 +530,8 @@ class StateLinkImpl<S> implements StateLink<S>,
                 totalUpdatedProps += 0
             })
             updatedPath = this.setUntracked(currentValue, sourceValue)
+        } else if (typeof currentValue === 'string') {
+            return this.setUntracked((currentValue + sourceValue.toString()) as unknown as S)
         } else {
             return this.setUntracked(sourceValue as S)
         }
