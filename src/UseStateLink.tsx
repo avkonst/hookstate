@@ -644,6 +644,9 @@ class StateLinkImpl<S> implements StateLink<S>,
             if (key === ProxyMarkerID) {
                 return this;
             }
+            if (typeof key === 'symbol') {
+                return undefined;
+            }
             const index = Number(key);
             if (!Number.isInteger(index)) {
                 return undefined;

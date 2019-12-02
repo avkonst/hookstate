@@ -48,6 +48,7 @@ test('primitive: should not rerender unused', async () => {
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.get()).toStrictEqual(1);
+    expect(result.current.nested).toEqual(undefined);
 });
 
 test('object: should rerender used', async () => {

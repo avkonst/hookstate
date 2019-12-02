@@ -24,6 +24,37 @@ test('object: should rerender used via nested', async () => {
     expect(Object.keys(result.current.get())).toEqual(['field1', 'field2']);
 });
 
+// tslint:disable-next-line: no-any
+const TestSymbol = Symbol('TestSymbol') as any;
+test('object: should not rerender used symbol properties', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useStateLink({
+            field1: 0,
+            field2: 'str'
+        })
+    });
+
+    expect(TestSymbol in result.current.get()).toEqual(false)
+    expect(TestSymbol in result.current.nested).toEqual(false)
+    expect(result.current.get()[TestSymbol]).toEqual(undefined)
+    expect(result.current.nested[TestSymbol]).toEqual(undefined)
+    
+    expect(() => { result.current.get().field1 = 100 })
+    .toThrow('StateLink is used incorrectly. Attempted \'set\' at \'/\'. Hint: did you mean to use \'state.nested.field1.set(value)\' instead of \'state.field1 = value\'?')
+    
+    result.current.get()[TestSymbol] = 100
+
+    expect(renderTimes).toStrictEqual(1);
+    expect(TestSymbol in result.current.get()).toEqual(false)
+    expect(TestSymbol in result.current.nested).toEqual(false)
+    expect(result.current.get()[TestSymbol]).toEqual(100);
+    expect(Object.keys(result.current.nested)).toEqual(['field1', 'field2']);
+    expect(Object.keys(result.current.get())).toEqual(['field1', 'field2']);
+    expect(result.current.get().field1).toEqual(0);
+});
+
 test('object: should rerender used when set to the same', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {

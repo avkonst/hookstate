@@ -54,3 +54,12 @@ test('error: should not allow create state from another state value (nested)', a
         // tslint:disable-next-line: max-line-length
         .toEqual(`StateLink is used incorrectly. Attempted 'create/useStateLink(state.get() at '/prop1')' at '/'. Hint: did you mean to use create/useStateLink(state) OR create/useStateLink(lodash.cloneDeep(state.get())) instead of create/useStateLink(state.get())?`)
 });
+
+test('error: should not allow serialization of statelink', async () => {
+    const state1 = renderHook(() => {
+        return useStateLink({ prop1: [0, 0] })
+    });
+    
+    expect(() => JSON.stringify(state1))
+    .toThrow('StateLink is used incorrectly. Attempted \'toJSON()\' at \'/\'. Hint: did you mean to use JSON.stringify(state.get()) instead of JSON.stringify(state)?')
+});

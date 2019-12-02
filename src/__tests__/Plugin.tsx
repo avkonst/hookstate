@@ -92,9 +92,9 @@ test('plugin: common flow callbacks global state', async () => {
     const messages: string[] = []
     stateRef.with(() => ({
         id: TestPlugin,
-        instanceFactory: () => ({
+        instanceFactory: (initial, instanceFactory) => ({
             onInit() {
-                messages.push('onInit called')
+                messages.push(`onInit called, initial: ${JSON.stringify(initial)}, value: ${JSON.stringify(instanceFactory().value)}`)
             },
             onPreset: (path, state, newValue, prevValue) => {
                 messages.push(`onPreset called, [${path}]: ${JSON.stringify(state)}, ${JSON.stringify(prevValue)} => ${JSON.stringify(newValue)}`)
@@ -117,9 +117,11 @@ test('plugin: common flow callbacks global state', async () => {
         return useStateLink(stateRef)
     });
     expect(renderTimes).toStrictEqual(1);
-    expect(messages).toEqual(['onInit called'])
+    expect(messages).toEqual(
+        ['onInit called, initial: [{\"f1\":0,\"f2\":\"str\"}], value: [{\"f1\":0,\"f2\":\"str\"}]'])
     expect(result.current.nested[0].get().f1).toStrictEqual(0);
-    expect(messages).toEqual(['onInit called'])
+    expect(messages).toEqual(
+        ['onInit called, initial: [{\"f1\":0,\"f2\":\"str\"}], value: [{\"f1\":0,\"f2\":\"str\"}]'])
 
     act(() => {
         result.current.nested[0].nested.f1.set(p => p + 1);
