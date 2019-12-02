@@ -476,11 +476,12 @@ class StateLinkImpl<S> implements StateLink<S>,
 
         const maximumPropsForCherryPickUpdate = 5;
         
+        let updatedPath: Path;
+        let deletedOrInsertedProps = false
+        let totalUpdatedProps = 0
+    
         if (Array.isArray(currentValue)) {
-            let deletedOrInsertedProps = false
-            let totalUpdatedProps = 0
-            
-            const updatedPath = this.setUntracked((prevValue) => {
+            updatedPath = this.setUntracked((prevValue) => {
                 const deletedIndexes: number[] = []
                 Object.keys(sourceValue).sort().forEach(i => {
                     const index = Number(i);
@@ -502,19 +503,8 @@ class StateLinkImpl<S> implements StateLink<S>,
                 })
                 return prevValue
             }, sourceValue)
-            
-            if (updatedPath !== this.path || deletedOrInsertedProps ||
-                totalUpdatedProps > maximumPropsForCherryPickUpdate) {
-                return updatedPath
-            }
-            return Object.keys(sourceValue).map(p => updatedPath.slice().concat(p))
-        }
-        
-        if (typeof currentValue === 'object' && currentValue !== null) {
-            let deletedOrInsertedProps = false
-            let totalUpdatedProps = 0
-            
-            const updatedPath = this.setUntracked((prevValue) => {
+        } else if (typeof currentValue === 'object' && currentValue !== null) {
+            updatedPath = this.setUntracked((prevValue) => {
                 Object.keys(sourceValue).forEach(key => {
                     const newPropValue = sourceValue[key]
                     if (newPropValue === None) {
@@ -528,15 +518,15 @@ class StateLinkImpl<S> implements StateLink<S>,
                 })
                 return prevValue
             }, sourceValue)
-            
-            if (updatedPath !== this.path || deletedOrInsertedProps ||
-                totalUpdatedProps > maximumPropsForCherryPickUpdate) {
-                return updatedPath
-            }
-            return Object.keys(sourceValue).map(p => updatedPath.slice().concat(p))
+        } else {
+            return this.setUntracked(sourceValue as React.SetStateAction<S>)
         }
-        
-        return this.setUntracked(sourceValue as React.SetStateAction<S>)
+
+        if (updatedPath !== this.path || deletedOrInsertedProps ||
+            totalUpdatedProps > maximumPropsForCherryPickUpdate) {
+            return updatedPath
+        }
+        return Object.keys(sourceValue).map(p => updatedPath.slice().concat(p))
     }
     
     merge(sourceValue: SetPartialStateAction<S>) {
