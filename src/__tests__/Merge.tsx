@@ -108,8 +108,10 @@ test('object: should rerender used after merge complex', async () => {
     expect(result.current.nested.field1.get()).toStrictEqual(1);
 
     act(() => {
-        result.current.merge({ field8: 200, field6: None, field2: 3,
-            field4: None, field5: 2, field3: None, field7: 100 });
+        result.current.merge({
+            field8: 200, field6: None, field2: 3,
+            field4: None, field5: 2, field3: None, field7: 100
+        });
     });
     expect(renderTimes).toStrictEqual(2);
     expect(result.current.nested.field1.get()).toStrictEqual(1);
