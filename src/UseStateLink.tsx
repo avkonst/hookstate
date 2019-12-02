@@ -32,7 +32,10 @@ export type NestedInferredLink<S> =
 
 export type Path = ReadonlyArray<string | number>;
 
-export type SetPartialStateAction<S> = Partial<S> | ((prevValue: S) => Partial<S>);
+export type SetPartialStateAction<S> = 
+    S extends ReadonlyArray<(infer U)>
+    ? ReadonlyArray<U> | Record<number, U> | ((prevValue: S) => (ReadonlyArray<U> | Record<number, U>))
+    : Partial<S> | ((prevValue: S) => Partial<S>);
 
 export interface StateLink<S> {
     readonly path: Path;
@@ -471,7 +474,7 @@ class StateLinkImpl<S> implements StateLink<S>,
     mergeUntracked(sourceValue: SetPartialStateAction<S>) {
         const currentValue = this.getUntracked()
         if (typeof sourceValue === 'function') {
-            sourceValue = (sourceValue as ((prevValue: S) => S))(currentValue);
+            sourceValue = (sourceValue as Function)(currentValue);
         }
 
         const maximumPropsForCherryPickUpdate = 5;
@@ -481,7 +484,9 @@ class StateLinkImpl<S> implements StateLink<S>,
         let totalUpdatedProps = 0
     
         if (Array.isArray(currentValue)) {
-            updatedPath = this.setUntracked((prevValue) => {
+            if (Array.isArray(sourceValue)) {
+                updatedPath = this.setUntracked(currentValue.concat(sourceValue) as unknown as S, sourceValue)
+            } else {
                 const deletedIndexes: number[] = []
                 Object.keys(sourceValue).sort().forEach(i => {
                     const index = Number(i);
@@ -490,8 +495,8 @@ class StateLinkImpl<S> implements StateLink<S>,
                         deletedOrInsertedProps = true
                         deletedIndexes.push(index)
                     } else {
-                        deletedOrInsertedProps = deletedOrInsertedProps || !(index in prevValue)
-                        prevValue[index] = newPropValue
+                        deletedOrInsertedProps = deletedOrInsertedProps || !(index in currentValue)
+                        currentValue[index] = newPropValue
                     }
                     totalUpdatedProps += 1
                 });
@@ -499,27 +504,25 @@ class StateLinkImpl<S> implements StateLink<S>,
                 // so, delete one by one from the end
                 // this way index positions do not change
                 deletedIndexes.reverse().forEach(p => {
-                    (prevValue as unknown as Array<unknown>).splice(p, 1)
+                    (currentValue as unknown as []).splice(p, 1)
                 })
-                return prevValue
-            }, sourceValue)
+                updatedPath = this.setUntracked(currentValue, sourceValue)
+            }
         } else if (typeof currentValue === 'object' && currentValue !== null) {
-            updatedPath = this.setUntracked((prevValue) => {
-                Object.keys(sourceValue).forEach(key => {
-                    const newPropValue = sourceValue[key]
-                    if (newPropValue === None) {
-                        deletedOrInsertedProps = true
-                        delete prevValue[key]
-                    } else {
-                        deletedOrInsertedProps = deletedOrInsertedProps || !(key in prevValue)
-                        prevValue[key] = newPropValue
-                    }
-                    totalUpdatedProps += 0
-                })
-                return prevValue
-            }, sourceValue)
+            Object.keys(sourceValue).forEach(key => {
+                const newPropValue = sourceValue[key]
+                if (newPropValue === None) {
+                    deletedOrInsertedProps = true
+                    delete currentValue[key]
+                } else {
+                    deletedOrInsertedProps = deletedOrInsertedProps || !(key in currentValue)
+                    currentValue[key] = newPropValue
+                }
+                totalUpdatedProps += 0
+            })
+            updatedPath = this.setUntracked(currentValue, sourceValue)
         } else {
-            return this.setUntracked(sourceValue as React.SetStateAction<S>)
+            return this.setUntracked(sourceValue as S)
         }
 
         if (updatedPath !== this.path || deletedOrInsertedProps ||
