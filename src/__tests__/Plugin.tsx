@@ -4,6 +4,7 @@ import { renderHook, act } from '@testing-library/react-hooks';
 import React from 'react';
 
 const TestPlugin = Symbol('TestPlugin')
+const TestPluginUnknown = Symbol('TestPluginUnknown')
 test('plugin: common flow callbacks', async () => {
     let renderTimes = 0
     const messages: string[] = []
@@ -26,6 +27,9 @@ test('plugin: common flow callbacks', async () => {
                 },
                 onDestroy() {
                     messages.push('onDestroy called')
+                },
+                onExtension() {
+                    messages.push('onExtension called')
                 }
             })
         }))
@@ -55,17 +59,24 @@ test('plugin: common flow callbacks', async () => {
     expect(result.current.get()[0].field1).toStrictEqual(2);
     expect(Object.keys(result.current.nested[0].nested)).toEqual(['field1', 'field2']);
     expect(Object.keys(result.current.get()[0])).toEqual(['field1', 'field2']);
-    expect(messages.slice(5)).toEqual([])
+    expect(messages.slice(5)).toEqual([]);
+
+    (result.current.with(TestPlugin)[1] as { onExtension(): void; }).onExtension();
+    expect(messages.slice(5)).toEqual(['onExtension called']);
+
+    expect(() => result.current.with(TestPluginUnknown))
+    .toThrow('Plugin \'TestPluginUnknown\' has not been attached to the StateRef or StateLink. Hint: you might need to register the required plugin using \'with\' method. See https://github.com/avkonst/hookstate#plugins for more details')
 
     unmount()
-    expect(messages.slice(5)).toEqual(['onDestroy called'])
+    expect(messages.slice(6)).toEqual(['onDestroy called'])
 
     expect(result.current.get()[0].field1).toStrictEqual(2);
-    expect(messages.slice(6)).toEqual([])
+    expect(messages.slice(7)).toEqual([])
 
+    // TODO setting the state after destroy should not be allowed
     act(() => {
         result.current.nested[0].nested.field1.set(p => p + 1);
     });
     expect(renderTimes).toStrictEqual(3);
-    expect(messages.slice(6)).toEqual(['onPreset called', 'onSet called'])
+    expect(messages.slice(7)).toEqual(['onPreset called', 'onSet called'])
 });
