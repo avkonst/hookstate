@@ -32,10 +32,11 @@ export type NestedInferredLink<S> =
 
 export type Path = ReadonlyArray<string | number>;
 
-export type SetPartialStateAction<S> = 
-    S extends ReadonlyArray<(infer U)>
-    ? ReadonlyArray<U> | Record<number, U> | ((prevValue: S) => (ReadonlyArray<U> | Record<number, U>))
-    : Partial<S> | ((prevValue: S) => Partial<S>);
+export type SetPartialStateAction<S> =
+    S extends ReadonlyArray<(infer U)> ?
+        ReadonlyArray<U> | Record<number, U> | ((prevValue: S) => (ReadonlyArray<U> | Record<number, U>)) :
+    S extends object | string ? Partial<S> | ((prevValue: S) => Partial<S>) :
+    React.SetStateAction<S>;
 
 export interface StateLink<S> {
     readonly path: Path;
@@ -531,7 +532,7 @@ class StateLinkImpl<S> implements StateLink<S>,
             })
             updatedPath = this.setUntracked(currentValue, sourceValue)
         } else if (typeof currentValue === 'string') {
-            return this.setUntracked((currentValue + sourceValue.toString()) as unknown as S)
+            return this.setUntracked((currentValue + String(sourceValue)) as unknown as S)
         } else {
             return this.setUntracked(sourceValue as S)
         }
