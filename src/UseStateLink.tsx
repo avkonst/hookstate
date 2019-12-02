@@ -1025,17 +1025,48 @@ export function useStateLink<S, R>(
     return link;
 }
 
+/**
+ * @deprecated use accessStateLink instead
+ */
 export function useStateLinkUnmounted<R>(
     source: StateInf<R>,
 ): R;
+/**
+ * @deprecated use accessStateLink instead
+ */
 export function useStateLinkUnmounted<S>(
     source: StateRef<S>,
 ): StateLink<S>;
+/**
+ * @deprecated use accessStateLink instead
+ */
 export function useStateLinkUnmounted<S, R>(
     source: StateRef<S>,
     transform: (state: StateLink<S>) => R
 ): R;
+/**
+ * @deprecated use accessStateLink instead
+ */
 export function useStateLinkUnmounted<S, R>(
+    source: StateRef<S> | StateInf<R>,
+    transform?: (state: StateLink<S>) => R
+): StateLink<S> | R {
+    // tslint:disable-next-line: no-any
+    type AnyArgument = any; // typesafety is guaranteed by overloaded functions above
+    return accessStateLink(source as AnyArgument, transform as AnyArgument)
+}
+
+export function accessStateLink<R>(
+    source: StateInf<R>,
+): R;
+export function accessStateLink<S>(
+    source: StateRef<S>,
+): StateLink<S>;
+export function accessStateLink<S, R>(
+    source: StateRef<S>,
+    transform: (state: StateLink<S>) => R
+): R;
+export function accessStateLink<S, R>(
     source: StateRef<S> | StateInf<R>,
     transform?: (state: StateLink<S>) => R
 ): StateLink<S> | R {
