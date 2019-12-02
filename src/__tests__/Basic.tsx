@@ -1,4 +1,4 @@
-import { useStateLink, createStateLink, useStateLinkUnmounted, None } from './UseStateLink';
+import { useStateLink, createStateLink, useStateLinkUnmounted, None } from '../UseStateLink';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import React from 'react';
@@ -663,7 +663,7 @@ test('primitive: stale state should auto refresh', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        const result = useStateLink(0)
+        const r = useStateLink(0)
         React.useEffect(() => {
             // simulated subscription, long running process
             const timer = setInterval(() => {
@@ -671,12 +671,12 @@ test('primitive: stale state should auto refresh', async () => {
                 // which should be the latest
                 // even if the effect is not rerun on rerender
                 act(() => {
-                    result.set(result.value + 1) // 1 + 1
+                    r.set(r.value + 1) // 1 + 1
                 })
             }, 100)
             return () => clearInterval(timer)
         }, [])
-        return result
+        return r
     });
 
     act(() => {
@@ -702,14 +702,14 @@ test('primitive: state value should be the latest', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        const result = useStateLink(0)
+        const r = useStateLink(0)
         React.useEffect(() => {
             act(() => {
-                result.set(result.value + 1) // 0 + 1
-                result.set(result.value + 1) // 1 + 1
+                r.set(r.value + 1) // 0 + 1
+                r.set(r.value + 1) // 1 + 1
             })
         }, [])
-        return result
+        return r
     });
     expect(renderTimes).toStrictEqual(2);
     expect(result.current.get()).toStrictEqual(2);
