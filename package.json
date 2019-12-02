@@ -28,7 +28,7 @@
         "clean": "rimraf dist",
         "clean-deps": "rimraf node_modules",
         "test": "cross-env CI=1 react-scripts test --env=jsdom",
-        "test:watch": "react-scripts test --env=jsdom",
+        "test:watch": "react-scripts test --env=jsdom --watch",
         "check-updates": "ncu",
         "apply-updates": "ncu -u",
         "prepare": "yarn build"

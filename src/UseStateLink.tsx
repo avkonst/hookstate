@@ -172,6 +172,15 @@ class State implements Subscribable {
     }
 
     set(path: Path, value: StateValueAtPath, mergeValue: Partial<StateValueAtPath> | undefined): Path {
+        if (this._edition < 0) {
+            throw new StateLinkInvalidUsageError(
+                `set state for the destroyed state`,
+                path,
+                'make sure all asynchronous operations are cancelled (unsubscribed) when the state is destroyed. ' +
+                'Global state is explicitly destroyed at \'StateRef.destroy()\'. ' +
+                'Local state is automatically destroyed when a component is unmounted.')
+        }
+        
         if (path.length === 0) {
             // Root value UPDATE case,
 
@@ -319,8 +328,8 @@ class State implements Subscribable {
     }
 
     destroy() {
-        // TODO may need to block all coming calls after it is destroyed
         this._destroySubscribers.forEach(cb => cb(this._value))
+        this._edition = -1
     }
     
     toJSON() {

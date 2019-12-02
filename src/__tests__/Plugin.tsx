@@ -11,22 +11,22 @@ test('plugin: common flow callbacks', async () => {
     const { result, unmount } = renderHook(() => {
         renderTimes += 1;
         return useStateLink([{
-            field1: 0,
-            field2: 'str'
+            f1: 0,
+            f2: 'str'
         }]).with(() => ({
             id: TestPlugin,
             instanceFactory: () => ({
                 onInit() {
                     messages.push('onInit called')
                 },
-                onPreset() {
-                    messages.push('onPreset called')
+                onPreset: (path, state, newValue, prevValue) => {
+                    messages.push(`onPreset called, [${path}]: ${JSON.stringify(state)}, ${JSON.stringify(prevValue)} => ${JSON.stringify(newValue)}`)
                 },
-                onSet() {
-                    messages.push('onSet called')
+                onSet: (path, state, newValue, prevValue) => {
+                    messages.push(`onSet called, [${path}]: ${JSON.stringify(state)}, ${JSON.stringify(prevValue)} => ${JSON.stringify(newValue)}`)
                 },
-                onDestroy() {
-                    messages.push('onDestroy called')
+                onDestroy: (state) => {
+                    messages.push(`onDestroy called, ${JSON.stringify(state)}`)
                 },
                 onExtension() {
                     messages.push('onExtension called')
@@ -36,29 +36,29 @@ test('plugin: common flow callbacks', async () => {
     });
     expect(renderTimes).toStrictEqual(1);
     expect(messages).toEqual(['onInit called'])
-    expect(result.current.nested[0].get().field1).toStrictEqual(0);
+    expect(result.current.nested[0].get().f1).toStrictEqual(0);
     expect(messages).toEqual(['onInit called'])
 
     act(() => {
-        result.current.nested[0].nested.field1.set(p => p + 1);
+        result.current.nested[0].nested.f1.set(p => p + 1);
     });
     expect(renderTimes).toStrictEqual(2);
-    expect(messages.slice(1)).toEqual(['onPreset called', 'onSet called'])
+    expect(messages.slice(1)).toEqual(['onPreset called, [0,f1]: [{\"f1\":0,\"f2\":\"str\"}], 0 => 1', 'onSet called, [0,f1]: [{\"f1\":1,\"f2\":\"str\"}], 0 => 1'])
 
-    expect(result.current.get()[0].field1).toStrictEqual(1);
-    expect(Object.keys(result.current.nested[0].nested)).toEqual(['field1', 'field2']);
-    expect(Object.keys(result.current.get()[0])).toEqual(['field1', 'field2']);
+    expect(result.current.get()[0].f1).toStrictEqual(1);
+    expect(Object.keys(result.current.nested[0].nested)).toEqual(['f1', 'f2']);
+    expect(Object.keys(result.current.get()[0])).toEqual(['f1', 'f2']);
     expect(messages.slice(3)).toEqual([])
     
     act(() => {
-        result.current.nested[0].merge(p => ({ field1 : p.field1 + 1 }));
+        result.current.nested[0].merge(p => ({ f1 : p.f1 + 1 }));
     });
     expect(renderTimes).toStrictEqual(3);
-    expect(messages.slice(3)).toEqual(['onPreset called', 'onSet called'])
+    expect(messages.slice(3)).toEqual(['onPreset called, [0]: [{\"f1\":2,\"f2\":\"str\"}], {\"f1\":2,\"f2\":\"str\"} => {\"f1\":2,\"f2\":\"str\"}', 'onSet called, [0]: [{\"f1\":2,\"f2\":\"str\"}], {\"f1\":2,\"f2\":\"str\"} => {\"f1\":2,\"f2\":\"str\"}'])
 
-    expect(result.current.get()[0].field1).toStrictEqual(2);
-    expect(Object.keys(result.current.nested[0].nested)).toEqual(['field1', 'field2']);
-    expect(Object.keys(result.current.get()[0])).toEqual(['field1', 'field2']);
+    expect(result.current.get()[0].f1).toStrictEqual(2);
+    expect(Object.keys(result.current.nested[0].nested)).toEqual(['f1', 'f2']);
+    expect(Object.keys(result.current.get()[0])).toEqual(['f1', 'f2']);
     expect(messages.slice(5)).toEqual([]);
 
     (result.current.with(TestPlugin)[1] as { onExtension(): void; }).onExtension();
@@ -68,15 +68,17 @@ test('plugin: common flow callbacks', async () => {
     .toThrow('Plugin \'TestPluginUnknown\' has not been attached to the StateRef or StateLink. Hint: you might need to register the required plugin using \'with\' method. See https://github.com/avkonst/hookstate#plugins for more details')
 
     unmount()
-    expect(messages.slice(6)).toEqual(['onDestroy called'])
+    expect(messages.slice(6)).toEqual(['onDestroy called, [{\"f1\":2,\"f2\":\"str\"}]'])
 
-    expect(result.current.get()[0].field1).toStrictEqual(2);
+    expect(result.current.get()[0].f1).toStrictEqual(2);
     expect(messages.slice(7)).toEqual([])
 
     // TODO setting the state after destroy should not be allowed
     act(() => {
-        result.current.nested[0].nested.field1.set(p => p + 1);
+        expect(() => result.current.nested[0].nested.f1.set(p => p + 1)).toThrow(
+            'StateLink is used incorrectly. Attempted \'set state for the destroyed state\' at \'/0/f1\'. Hint: make sure all asynchronous operations are cancelled (unsubscribed) when the state is destroyed. Global state is explicitly destroyed at \'StateRef.destroy()\'. Local state is automatically destroyed when a component is unmounted.'
+        );
     });
     expect(renderTimes).toStrictEqual(3);
-    expect(messages.slice(7)).toEqual(['onPreset called', 'onSet called'])
+    expect(messages.slice(7)).toEqual([])
 });
