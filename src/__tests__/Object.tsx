@@ -180,10 +180,12 @@ test('object: should delete property when set to none', async () => {
     expect(renderTimes).toStrictEqual(4);
     expect(result.current.get()).toEqual({ field1: 1, field3: true });
 
-    // deleting root value
-    expect(() => result.current.set(None)).toThrow(`StateLink is used incorrectly. Attempted 'delete state' at '/'. Hint: did you mean to use state.set(undefined) instead of state.set(None)?`);
-    expect(renderTimes).toStrictEqual(4);
-    expect(result.current.get()).toEqual({ field1: 1, field3: true });
+    // deleting root value makes it promised
+    act(() => {
+        result.current.set(None)
+    })
+    expect(result.current.promised).toEqual(true)
+    expect(renderTimes).toStrictEqual(5);
 });
 
 test('object: should auto save latest state for unmounted', async () => {
