@@ -51,7 +51,7 @@ export interface StateLink<S> {
     // const myvalue: number = statelink.value ? statelink.value + 1 : 0; // <-- compiles
     // const myvalue: number = statelink.get() ? statelink.get() + 1 : 0; // <-- does not compile
     readonly value: S;
-    
+
     /** @warning experimental feature */
     readonly promised: boolean;
     /** @warning experimental feature */
@@ -175,27 +175,49 @@ class State implements Subscribable {
     private _destroySubscribers: Set<DestroyCallback> = new Set();
 
     private _plugins: Map<symbol, PluginInstance> = new Map();
-    
+
     private _promised: Promised | undefined;
-    
+
     constructor(private _value: StateValueAtRoot) {
         if (typeof _value === 'object' &&
             Promise.resolve(_value) as StateValueAtRoot === _value) {
-            this._promised = Promised.create(_value, this)
+            this._promised = this.createPromised(_value)
             this._value = None
         }
+    }
+
+    createPromised(newValue: StateValueAtPath) {
+        const promised = new Promised(
+            Promise.resolve(newValue),
+            (r: StateValueAtPath) => {
+                if (this.promised === promised && this.edition !== DestroyedEdition) {
+                    this.set(RootPath, r, undefined)
+                    this.update(RootPath)
+                }
+            },
+            () => {
+                if (this.promised === promised && this.edition !== DestroyedEdition) {
+                    this._edition += 1
+                    this.update(RootPath)
+                }
+            }
+        );
+        return promised;
     }
 
     get edition() {
         return this._edition;
     }
-    
+
     get promised() {
         return this._promised;
     }
-    
+
     get(path: Path) {
         let result = this._value;
+        if (result === None) {
+            return result;
+        }
         path.forEach(p => {
             result = result[p];
         });
@@ -212,25 +234,25 @@ class State implements Subscribable {
                 'Global state is explicitly destroyed at \'StateRef.destroy()\'. ' +
                 'Local state is automatically destroyed when a component is unmounted.')
         }
-        
+
         if (path.length === 0) {
             // Root value UPDATE case,
 
             if (value === None) {
                 // never ending promise, unless it is displaced by antoher set later on
-                this._promised = Promised.create(new Promise(() => { /* */ }), this)
+                this._promised = this.createPromised(new Promise(() => { /* */ }))
             } else if (typeof value === 'object' && Promise.resolve(value) === value) {
-                this._promised = Promised.create(value, this)
+                this._promised = this.createPromised(value)
                 value = None
             } else {
                 this._promised = undefined
             }
-            
+
             let prevValue = this._value;
             this.beforeSet(path, value, prevValue, mergeValue)
             this._value = value;
             this.afterSet(path, value, prevValue, mergeValue)
-            
+
             return path;
         }
 
@@ -240,12 +262,12 @@ class State implements Subscribable {
                 'set promise for nested property', path, ''
             )
         }
-        
+
         let target = this._value;
         for (let i = 0; i < path.length - 1; i += 1) {
             target = target[path[i]];
         }
-        
+
         const p = path[path.length - 1]
         if (p in target) {
             if (value !== None) {
@@ -254,7 +276,7 @@ class State implements Subscribable {
                 this.beforeSet(path, value, prevValue, mergeValue)
                 target[p] = value;
                 this.afterSet(path, value, prevValue, mergeValue)
-                
+
                 return path;
             } else {
                 // Property DELETE case
@@ -266,26 +288,26 @@ class State implements Subscribable {
                     delete target[p]
                 }
                 this.afterSet(path, value, prevValue, mergeValue)
-                
+
                 // if an array of object is about to loose existing property
                 // we consider it is the whole object is changed
                 // which is identified by upper path
                 return path.slice(0, -1)
             }
         }
-        
+
         if (value !== None) {
             // Property INSERT case
             this.beforeSet(path, value, None, mergeValue)
             target[p] = value;
             this.afterSet(path, value, None, mergeValue)
-            
+
             // if an array of object is about to be extended by new property
             // we consider it is the whole object is changed
             // which is identified by upper path
             return path.slice(0, -1)
         }
-        
+
         // Non-existing property DELETE case
         // no-op
         return path;
@@ -326,7 +348,7 @@ class State implements Subscribable {
             this._setSubscribers.forEach(cb => cb(path, this._value, value, prevValue, mergeValue))
         }
     }
-    
+
     getPlugin(pluginId: symbol) {
         const existingInstance = this._plugins.get(pluginId)
         if (existingInstance) {
@@ -378,7 +400,7 @@ class State implements Subscribable {
         this._destroySubscribers.forEach(cb => cb(this._value))
         this._edition = DestroyedEdition
     }
-    
+
     toJSON() {
         throw new StateLinkInvalidUsageError('toJSON()', RootPath,
         'did you mean to use JSON.stringify(state.get()) instead of JSON.stringify(state)?');
@@ -406,11 +428,11 @@ class StateRefImpl<S> implements StateRef<S> {
         this.state.register(pluginMeta);
         return this;
     }
-    
+
     wrap<R>(transform: (state: StateLink<S>, prev: R | undefined) => R): StateInf<R> {
         return new StateInfImpl(this, transform)
     }
-    
+
     destroy() {
         this.state.destroy()
     }
@@ -429,13 +451,13 @@ class StateInfImpl<S, R> implements StateInf<R> {
         this.wrapped.with(plugin);
         return this;
     }
-    
+
     wrap<R2>(transform: (state: R, prev: R2 | undefined) => R2): StateInf<R2> {
         return new StateInfImpl(this.wrapped, (s, p) => {
             return transform(this.transform(s, undefined), p)
         })
     }
-    
+
     destroy() {
         this.wrapped.destroy()
     }
@@ -445,7 +467,7 @@ class Promised {
     public fullfilled?: true;
     public error?: ErrorValueAtPath;
     public value?: StateValueAtPath;
-    
+
     constructor(public promise: Promise<StateValueAtPath> | undefined,
         onResolve: (r: StateValueAtPath) => void,
         onReject: () => void) {
@@ -462,24 +484,6 @@ class Promised {
                 onReject()
             })
         }
-    }
-    
-    static create(newValue: StateValueAtPath, state: State) {
-        const promised = new Promised(
-            Promise.resolve(newValue),
-            (r: StateValueAtPath) => {
-                if (state.promised === promised) {
-                    state.set(RootPath, r, undefined)
-                    state.update(RootPath)
-                }
-            },
-            () => {
-                if (state.promised === promised) {
-                    state.update(RootPath)
-                }
-            }
-        );
-        return promised;
     }
 }
 
@@ -525,9 +529,9 @@ class StateLinkImpl<S> implements StateLink<S>,
                 }
             }
         }
-        if (this.state.promised && !allowPromised) {
-            if (this.state.promised.error) {
-                throw this.state.promised.error;
+        if (this.valueSource === None && !allowPromised) {
+            if (this.state.promised!.error) {
+                throw this.state.promised!.error;
             }
             // TODO add hint
             throw new StateLinkInvalidUsageError('read promised state', this.path)
@@ -556,22 +560,24 @@ class StateLinkImpl<S> implements StateLink<S>,
     }
 
     get promised() {
-        if (this.state.promised && !this.state.promised.fullfilled) {
+        const currentValue = this.get(true) // marks used
+        if (currentValue === None && !this.state.promised!.fullfilled) {
             return true;
         }
         return false;
     }
-    
+
     get error() {
-        if (this.state.promised) {
-            if (this.state.promised.fullfilled) {
-                return this.state.promised.error;
+        const currentValue = this.get(true) // marks used
+        if (currentValue === None) {
+            if (this.state.promised!.fullfilled) {
+                return this.state.promised!.error;
             }
             this.get() // will throw 'read while promised' exception
         }
         return undefined;
     }
-    
+
     setUntracked(newValue: SetStateAction<S>, mergeValue?: Partial<StateValueAtPath>): Path {
         if (typeof newValue === 'function') {
             newValue = (newValue as ((prevValue: S) => S))(this.getUntracked());
@@ -596,11 +602,11 @@ class StateLinkImpl<S> implements StateLink<S>,
         }
 
         const maximumPropsForCherryPickUpdate = 5;
-        
+
         let updatedPath: Path;
         let deletedOrInsertedProps = false
         let totalUpdatedProps = 0
-    
+
         if (Array.isArray(currentValue)) {
             if (Array.isArray(sourceValue)) {
                 updatedPath = this.setUntracked(currentValue.concat(sourceValue) as unknown as S, sourceValue)
@@ -651,11 +657,11 @@ class StateLinkImpl<S> implements StateLink<S>,
         }
         return Object.keys(sourceValue).map(p => updatedPath.slice().concat(p))
     }
-    
+
     merge(sourceValue: SetPartialStateAction<S>) {
         this.update(this.mergeUntracked(sourceValue));
     }
-    
+
     update(path: Path | Path[]) {
         if (path.length === 0 || typeof path[0] === 'string' || typeof path[0] === 'number') {
             this.state.update(path as Path)

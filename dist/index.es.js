@@ -29,6 +29,7 @@ function __extends(d, b) {
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 }
 
+/** @warning experimental feature */
 var None = Symbol('none');
 //
 // INTERNAL IMPLEMENTATIONS
@@ -71,6 +72,7 @@ var DowngradedID = Symbol('Downgraded');
 var StateMemoID = Symbol('StateMemo');
 var ProxyMarkerID = Symbol('ProxyMarker');
 var RootPath = [];
+var DestroyedEdition = -1;
 var State = /** @class */ (function () {
     function State(_value) {
         this._value = _value;
@@ -80,6 +82,11 @@ var State = /** @class */ (function () {
         this._setSubscribers = new Set();
         this._destroySubscribers = new Set();
         this._plugins = new Map();
+        if (typeof _value === 'object' &&
+            Promise.resolve(_value) === _value) {
+            this._promised = Promised.create(_value, this);
+            this._value = None;
+        }
     }
     Object.defineProperty(State.prototype, "edition", {
         get: function () {
@@ -88,25 +95,53 @@ var State = /** @class */ (function () {
         enumerable: true,
         configurable: true
     });
+    Object.defineProperty(State.prototype, "promised", {
+        get: function () {
+            return this._promised;
+        },
+        enumerable: true,
+        configurable: true
+    });
     State.prototype.get = function (path) {
         var result = this._value;
+        if (result === None) {
+            return result;
+        }
         path.forEach(function (p) {
             result = result[p];
         });
         return result;
     };
-    State.prototype.set = function (path, value) {
+    State.prototype.set = function (path, value, mergeValue) {
+        if (this._edition < 0) {
+            // TODO convert to warning
+            throw new StateLinkInvalidUsageError("set state for the destroyed state", path, 'make sure all asynchronous operations are cancelled (unsubscribed) when the state is destroyed. ' +
+                'Global state is explicitly destroyed at \'StateRef.destroy()\'. ' +
+                'Local state is automatically destroyed when a component is unmounted.');
+        }
         if (path.length === 0) {
             // Root value UPDATE case,
             if (value === None) {
-                // Root value DELETE case not allowed at the moment
-                throw new StateLinkInvalidUsageError("delete state", path, 'did you mean to use state.set(undefined) instead of state.set(None)?');
+                // never ending promise, unless it is displaced by antoher set later on
+                this._promised = Promised.create(new Promise(function () { }), this);
+            }
+            else if (typeof value === 'object' && Promise.resolve(value) === value) {
+                this._promised = Promised.create(value, this);
+                value = None;
+            }
+            else {
+                this._promised = undefined;
             }
             var prevValue = this._value;
-            this.callOnPreset(path, value, prevValue);
+            this.beforeSet(path, value, prevValue, mergeValue);
             this._value = value;
-            this.callOnSet(path, value, prevValue);
+            this.afterSet(path, value, prevValue, mergeValue);
             return path;
+        }
+        if (typeof value === 'object' && Promise.resolve(value) === value) {
+            throw new StateLinkInvalidUsageError(
+            // TODO add hint
+            'set promise for nested property', path, '');
         }
         var target = this._value;
         for (var i = 0; i < path.length - 1; i += 1) {
@@ -117,22 +152,22 @@ var State = /** @class */ (function () {
             if (value !== None) {
                 // Property UPDATE case
                 var prevValue = target[p];
-                this.callOnPreset(path, value, prevValue);
+                this.beforeSet(path, value, prevValue, mergeValue);
                 target[p] = value;
-                this.callOnSet(path, value, prevValue);
+                this.afterSet(path, value, prevValue, mergeValue);
                 return path;
             }
             else {
                 // Property DELETE case
                 var prevValue = target[p];
-                this.callOnPreset(path, value, prevValue);
+                this.beforeSet(path, value, prevValue, mergeValue);
                 if (Array.isArray(target) && typeof p === 'number') {
                     target.splice(p, 1);
                 }
                 else {
                     delete target[p];
                 }
-                this.callOnSet(path, value, prevValue);
+                this.afterSet(path, value, prevValue, mergeValue);
                 // if an array of object is about to loose existing property
                 // we consider it is the whole object is changed
                 // which is identified by upper path
@@ -141,9 +176,9 @@ var State = /** @class */ (function () {
         }
         if (value !== None) {
             // Property INSERT case
-            this.callOnPreset(path, value, None);
+            this.beforeSet(path, value, None, mergeValue);
             target[p] = value;
-            this.callOnSet(path, value, None);
+            this.afterSet(path, value, None, mergeValue);
             // if an array of object is about to be extended by new property
             // we consider it is the whole object is changed
             // which is identified by upper path
@@ -166,21 +201,25 @@ var State = /** @class */ (function () {
         });
         actions.forEach(function (a) { return a(); });
     };
-    State.prototype.callOnPreset = function (path, value, prevValue) {
+    State.prototype.beforeSet = function (path, value, prevValue, mergeValue) {
         var _this = this;
-        this._presetSubscribers.forEach(function (cb) {
-            var presetResult = cb(path, _this._value, value, prevValue);
-            if (presetResult !== undefined) {
-                // plugin overrides the current value
-                // could be used for immutable later on
-                _this._value = presetResult;
-            }
-        });
+        if (this._edition !== DestroyedEdition) {
+            this._presetSubscribers.forEach(function (cb) {
+                var presetResult = cb(path, _this._value, value, prevValue, mergeValue);
+                if (presetResult !== undefined) {
+                    // plugin overrides the current value
+                    // could be used for immutable later on
+                    _this._value = presetResult;
+                }
+            });
+        }
     };
-    State.prototype.callOnSet = function (path, value, prevValue) {
+    State.prototype.afterSet = function (path, value, prevValue, mergeValue) {
         var _this = this;
-        this._edition += 1;
-        this._setSubscribers.forEach(function (cb) { return cb(path, _this._value, value, prevValue); });
+        if (this._edition !== DestroyedEdition) {
+            this._edition += 1;
+            this._setSubscribers.forEach(function (cb) { return cb(path, _this._value, value, prevValue, mergeValue); });
+        }
     };
     State.prototype.getPlugin = function (pluginId) {
         var existingInstance = this._plugins.get(pluginId);
@@ -207,10 +246,10 @@ var State = /** @class */ (function () {
             }
         }
         if (pluginInstance.onPreset) {
-            this._presetSubscribers.add(function (p, s, v, pv) { return pluginInstance.onPreset(p, s, v, pv); });
+            this._presetSubscribers.add(function (p, s, v, pv, mv) { return pluginInstance.onPreset(p, s, v, pv, mv); });
         }
         if (pluginInstance.onSet) {
-            this._setSubscribers.add(function (p, s, v, pv) { return pluginInstance.onSet(p, s, v, pv); });
+            this._setSubscribers.add(function (p, s, v, pv, mv) { return pluginInstance.onSet(p, s, v, pv, mv); });
         }
         if (pluginInstance.onDestroy) {
             this._destroySubscribers.add(function (s) { return pluginInstance.onDestroy(s); });
@@ -225,8 +264,8 @@ var State = /** @class */ (function () {
     };
     State.prototype.destroy = function () {
         var _this = this;
-        // TODO may need to block all coming calls after it is destroyed
         this._destroySubscribers.forEach(function (cb) { return cb(_this._value); });
+        this._edition = DestroyedEdition;
     };
     State.prototype.toJSON = function () {
         throw new StateLinkInvalidUsageError('toJSON()', RootPath, 'did you mean to use JSON.stringify(state.get()) instead of JSON.stringify(state)?');
@@ -282,6 +321,39 @@ var StateInfImpl = /** @class */ (function () {
     };
     return StateInfImpl;
 }());
+var Promised = /** @class */ (function () {
+    function Promised(promise, onResolve, onReject) {
+        var _this = this;
+        this.promise = promise;
+        if (promise) {
+            promise
+                .then(function (r) {
+                _this.fullfilled = true;
+                _this.value = r;
+                onResolve(r);
+            })
+                .catch(function (err) {
+                _this.fullfilled = true;
+                _this.error = err;
+                onReject();
+            });
+        }
+    }
+    Promised.create = function (newValue, state) {
+        var promised = new Promised(Promise.resolve(newValue), function (r) {
+            if (state.promised === promised) {
+                state.set(RootPath, r, undefined);
+                state.update(RootPath);
+            }
+        }, function () {
+            if (state.promised === promised) {
+                state.update(RootPath);
+            }
+        });
+        return promised;
+    };
+    return Promised;
+}());
 var StateLinkImpl = /** @class */ (function () {
     function StateLinkImpl(state, path, onUpdateUsed, valueSource, valueEdition) {
         this.state = state;
@@ -290,7 +362,7 @@ var StateLinkImpl = /** @class */ (function () {
         this.valueSource = valueSource;
         this.valueEdition = valueEdition;
     }
-    StateLinkImpl.prototype.refreshIfStale = function () {
+    StateLinkImpl.prototype.getUntracked = function (allowPromised) {
         if (this.valueEdition !== this.state.edition) {
             this.valueSource = this.state.get(this.path);
             this.valueEdition = this.state.edition;
@@ -308,58 +380,155 @@ var StateLinkImpl = /** @class */ (function () {
                 // when React scans which states to rerender on update
                 if (ValueCache in this) {
                     delete this[ValueCache];
-                    this.get();
+                    this.get(true);
                 }
                 if (NestedCache in this) {
                     delete this[NestedCache];
-                    this.nested;
+                    // tslint:disable-next-line no-unused-expression
+                    this.nested; // trigger call to mark 'nested' as used again
                 }
             }
         }
+        if (this.valueSource === None && !allowPromised) {
+            if (this.state.promised.error) {
+                throw this.state.promised.error;
+            }
+            // TODO add hint
+            throw new StateLinkInvalidUsageError('read promised state', this.path);
+        }
+        return this.valueSource;
+    };
+    StateLinkImpl.prototype.get = function (allowPromised) {
+        var currentValue = this.getUntracked(allowPromised);
+        if (this[ValueCache] === undefined) {
+            if (this.disabledTracking) {
+                this[ValueCache] = currentValue;
+            }
+            else if (Array.isArray(currentValue)) {
+                this[ValueCache] = this.valueArrayImpl(currentValue);
+            }
+            else if (typeof currentValue === 'object' && currentValue !== null) {
+                this[ValueCache] = this.valueObjectImpl(currentValue);
+            }
+            else {
+                this[ValueCache] = currentValue;
+            }
+        }
+        return this[ValueCache];
     };
     Object.defineProperty(StateLinkImpl.prototype, "value", {
         get: function () {
-            this.refreshIfStale();
-            if (this[ValueCache] === undefined) {
-                if (this.disabledTracking) {
-                    this[ValueCache] = this.valueSource;
-                }
-                else if (Array.isArray(this.valueSource)) {
-                    this[ValueCache] = this.valueArrayImpl();
-                }
-                else if (typeof this.valueSource === 'object' && this.valueSource !== null) {
-                    this[ValueCache] = this.valueObjectImpl();
-                }
-                else {
-                    this[ValueCache] = this.valueSource;
-                }
-            }
-            return this[ValueCache];
+            return this.get();
         },
         enumerable: true,
         configurable: true
     });
-    StateLinkImpl.prototype.getUntracked = function () {
-        this.refreshIfStale();
-        return this.valueSource;
-    };
-    StateLinkImpl.prototype.get = function () {
-        return this.value;
-    };
-    StateLinkImpl.prototype.setUntracked = function (newValue) {
+    Object.defineProperty(StateLinkImpl.prototype, "promised", {
+        get: function () {
+            var currentValue = this.get(true); // marks used
+            if (currentValue === None && !this.state.promised.fullfilled) {
+                return true;
+            }
+            return false;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(StateLinkImpl.prototype, "error", {
+        get: function () {
+            var currentValue = this.get(true); // marks used
+            if (currentValue === None) {
+                if (this.state.promised.fullfilled) {
+                    return this.state.promised.error;
+                }
+                this.get(); // will throw 'read while promised' exception
+            }
+            return undefined;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    StateLinkImpl.prototype.setUntracked = function (newValue, mergeValue) {
         if (typeof newValue === 'function') {
-            newValue = newValue(this.state.get(this.path));
+            newValue = newValue(this.getUntracked());
         }
         if (typeof newValue === 'object' && newValue !== null && newValue[ProxyMarkerID]) {
             throw new StateLinkInvalidUsageError("set(state.get() at '/" + newValue[ProxyMarkerID].path.join('/') + "')", this.path, 'did you mean to use state.set(lodash.cloneDeep(value)) instead of state.set(value)?');
         }
-        return this.state.set(this.path, newValue);
+        return this.state.set(this.path, newValue, mergeValue);
     };
     StateLinkImpl.prototype.set = function (newValue) {
         this.state.update(this.setUntracked(newValue));
     };
+    StateLinkImpl.prototype.mergeUntracked = function (sourceValue) {
+        var currentValue = this.getUntracked();
+        if (typeof sourceValue === 'function') {
+            sourceValue = sourceValue(currentValue);
+        }
+        var maximumPropsForCherryPickUpdate = 5;
+        var updatedPath;
+        var deletedOrInsertedProps = false;
+        var totalUpdatedProps = 0;
+        if (Array.isArray(currentValue)) {
+            if (Array.isArray(sourceValue)) {
+                updatedPath = this.setUntracked(currentValue.concat(sourceValue), sourceValue);
+            }
+            else {
+                var deletedIndexes_1 = [];
+                Object.keys(sourceValue).sort().forEach(function (i) {
+                    var index = Number(i);
+                    var newPropValue = sourceValue[index];
+                    if (newPropValue === None) {
+                        deletedOrInsertedProps = true;
+                        deletedIndexes_1.push(index);
+                    }
+                    else {
+                        deletedOrInsertedProps = deletedOrInsertedProps || !(index in currentValue);
+                        currentValue[index] = newPropValue;
+                    }
+                    totalUpdatedProps += 1;
+                });
+                // indexes are ascending sorted as per above
+                // so, delete one by one from the end
+                // this way index positions do not change
+                deletedIndexes_1.reverse().forEach(function (p) {
+                    currentValue.splice(p, 1);
+                });
+                updatedPath = this.setUntracked(currentValue, sourceValue);
+            }
+        }
+        else if (typeof currentValue === 'object' && currentValue !== null) {
+            Object.keys(sourceValue).forEach(function (key) {
+                var newPropValue = sourceValue[key];
+                if (newPropValue === None) {
+                    deletedOrInsertedProps = true;
+                    delete currentValue[key];
+                }
+                else {
+                    deletedOrInsertedProps = deletedOrInsertedProps || !(key in currentValue);
+                    currentValue[key] = newPropValue;
+                }
+                totalUpdatedProps += 0;
+            });
+            updatedPath = this.setUntracked(currentValue, sourceValue);
+        }
+        else if (typeof currentValue === 'string') {
+            return this.setUntracked((currentValue + String(sourceValue)));
+        }
+        else {
+            return this.setUntracked(sourceValue);
+        }
+        if (updatedPath !== this.path || deletedOrInsertedProps ||
+            totalUpdatedProps > maximumPropsForCherryPickUpdate) {
+            return updatedPath;
+        }
+        return Object.keys(sourceValue).map(function (p) { return updatedPath.slice().concat(p); });
+    };
+    StateLinkImpl.prototype.merge = function (sourceValue) {
+        this.update(this.mergeUntracked(sourceValue));
+    };
     StateLinkImpl.prototype.update = function (path) {
-        if (path.length === 0 || !Array.isArray(path[0])) {
+        if (path.length === 0 || typeof path[0] === 'string' || typeof path[0] === 'number') {
             this.state.update(path);
         }
         else {
@@ -424,13 +593,13 @@ var StateLinkImpl = /** @class */ (function () {
     };
     Object.defineProperty(StateLinkImpl.prototype, "nested", {
         get: function () {
-            this.refreshIfStale();
+            var currentValue = this.getUntracked();
             if (this[NestedCache] === undefined) {
-                if (Array.isArray(this.valueSource)) {
-                    this[NestedCache] = this.nestedArrayImpl();
+                if (Array.isArray(currentValue)) {
+                    this[NestedCache] = this.nestedArrayImpl(currentValue);
                 }
-                else if (typeof this.valueSource === 'object' && this.valueSource !== null) {
-                    this[NestedCache] = this.nestedObjectImpl();
+                else if (typeof currentValue === 'object' && currentValue !== null) {
+                    this[NestedCache] = this.nestedObjectImpl(currentValue);
                 }
                 else {
                     this[NestedCache] = undefined;
@@ -441,7 +610,7 @@ var StateLinkImpl = /** @class */ (function () {
         enumerable: true,
         configurable: true
     });
-    StateLinkImpl.prototype.nestedArrayImpl = function () {
+    StateLinkImpl.prototype.nestedArrayImpl = function (currentValue) {
         var _this = this;
         this.nestedLinksCache = this.nestedLinksCache || {};
         var proxyGetterCache = this.nestedLinksCache;
@@ -454,6 +623,9 @@ var StateLinkImpl = /** @class */ (function () {
             }
             if (key === ProxyMarkerID) {
                 return _this;
+            }
+            if (typeof key === 'symbol') {
+                return undefined;
             }
             var index = Number(key);
             if (!Number.isInteger(index)) {
@@ -470,11 +642,11 @@ var StateLinkImpl = /** @class */ (function () {
             proxyGetterCache[index] = r;
             return r;
         };
-        return this.proxyWrap(this.valueSource, getter);
+        return this.proxyWrap(currentValue, getter);
     };
-    StateLinkImpl.prototype.valueArrayImpl = function () {
+    StateLinkImpl.prototype.valueArrayImpl = function (currentValue) {
         var _this = this;
-        return this.proxyWrap(this.valueSource, function (target, key) {
+        return this.proxyWrap(currentValue, function (target, key) {
             if (key === 'length') {
                 return target.length;
             }
@@ -502,7 +674,7 @@ var StateLinkImpl = /** @class */ (function () {
             throw new StateLinkInvalidUsageError('set', _this.path, "did you mean to use 'state.nested[" + key + "].set(value)' instead of 'state[" + key + "] = value'?");
         });
     };
-    StateLinkImpl.prototype.nestedObjectImpl = function () {
+    StateLinkImpl.prototype.nestedObjectImpl = function (currentValue) {
         var _this = this;
         this.nestedLinksCache = this.nestedLinksCache || {};
         var proxyGetterCache = this.nestedLinksCache;
@@ -524,11 +696,11 @@ var StateLinkImpl = /** @class */ (function () {
             proxyGetterCache[key] = r;
             return r;
         };
-        return this.proxyWrap(this.valueSource, getter);
+        return this.proxyWrap(currentValue, getter);
     };
-    StateLinkImpl.prototype.valueObjectImpl = function () {
+    StateLinkImpl.prototype.valueObjectImpl = function (currentValue) {
         var _this = this;
-        return this.proxyWrap(this.valueSource, function (target, key) {
+        return this.proxyWrap(currentValue, function (target, key) {
             if (key === ProxyMarkerID) {
                 return _this;
             }
@@ -696,13 +868,7 @@ function injectTransform(link, transform) {
     }
     delete link[StateMemoID];
     injectedOnUpdateUsed = function () {
-        // need to create new one to make sure
-        // it does not pickup the stale cache of the original link after mutation
-        var overidingLink = new StateLinkImpl(link.state, link.path, link.onUpdateUsed, link.state.get(link.path), link.state.edition);
-        // and we should inject to onUpdate now
-        // so the overriding link is used to track used properties
-        link.onSet = function (path, actions) { return overidingLink.onSet(path, actions); };
-        var updatedResult = transform(overidingLink, result);
+        var updatedResult = transform(link, result);
         // if result is not changed, it does not affect the rendering result too
         // so, we skip triggering rerendering in this case
         if (!stateMemoEquals(updatedResult, result)) {
@@ -731,7 +897,13 @@ function useStateLink(source, transform) {
     }
     return link;
 }
+/**
+ * @deprecated use accessStateLink instead
+ */
 function useStateLinkUnmounted(source, transform) {
+    return accessStateLink(source, transform);
+}
+function accessStateLink(source, transform) {
     var stateRef = source instanceof StateInfImpl
         ? source.wrapped
         : source;
@@ -762,5 +934,5 @@ function Downgraded() {
     };
 }
 
-export { Downgraded, None, StateFragment, StateMemo, createStateLink, useStateLink, useStateLinkUnmounted };
+export { Downgraded, None, StateFragment, StateMemo, accessStateLink, createStateLink, useStateLink, useStateLinkUnmounted };
 //# sourceMappingURL=index.es.js.map

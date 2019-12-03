@@ -13,7 +13,7 @@ test('primitive: should rerender used on promise resolve', async () => {
     expect(result.current.get()).toStrictEqual(0);
 
     const promise = new Promise<number>(resolve => setTimeout(() => {
-        resolve(100)
+        act(() => resolve(100))
     }, 500))
     act(() => {
         result.current.set(promise);
@@ -24,11 +24,11 @@ test('primitive: should rerender used on promise resolve', async () => {
         .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
     expect(() => result.current.value)
         .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
-        
+
     await act(async () => {
         await promise;
     })
-    // expect(renderTimes).toStrictEqual(3);
+    expect(renderTimes).toStrictEqual(3);
     expect(result.current.promised).toStrictEqual(false);
     expect(result.current.error).toEqual(undefined);
     expect(result.current.value).toEqual(100);
@@ -53,11 +53,11 @@ test('primitive: should rerender used on promise resolved', async () => {
         .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
     expect(() => result.current.value)
         .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
-        
+
     await act(async () => {
         await promise;
     })
-    // expect(renderTimes).toStrictEqual(3);
+    expect(renderTimes).toStrictEqual(3);
     expect(result.current.promised).toStrictEqual(false);
     expect(result.current.error).toEqual(undefined);
     expect(result.current.value).toEqual(100);
@@ -73,7 +73,7 @@ test('primitive: should rerender used on promise reject', async () => {
     expect(result.current.get()).toStrictEqual(0);
 
     const promise = new Promise<number>((resolve, reject) => setTimeout(() => {
-        reject('some error promise')
+        act(() => reject('some error promise'))
     }, 500))
     act(() => {
         result.current.set(promise);
@@ -84,15 +84,16 @@ test('primitive: should rerender used on promise reject', async () => {
         .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
     expect(() => result.current.value)
         .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
-    
-    await act(async () => {
-        try {
-            await promise;
-        } catch (err) {
-            // ignore
-        }
-    })
-    // expect(renderTimes).toStrictEqual(3);
+
+    try {
+        await act(async () => {
+            await promise
+            return undefined
+        });
+    } catch (err) {
+        // ignore
+    }
+    expect(renderTimes).toStrictEqual(3);
     expect(result.current.promised).toStrictEqual(false);
     expect(result.current.error).toEqual('some error promise');
     expect(() => result.current.value).toThrow('some error promise');
@@ -117,7 +118,7 @@ test('primitive: should rerender used on promise rejected', async () => {
         .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
     expect(() => result.current.value)
         .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
-    
+
     await act(async () => {
         try {
             await promise;
@@ -125,7 +126,7 @@ test('primitive: should rerender used on promise rejected', async () => {
             // ignore
         }
     })
-    // expect(renderTimes).toStrictEqual(3);
+    expect(renderTimes).toStrictEqual(3);
     expect(result.current.promised).toStrictEqual(false);
     expect(result.current.error).toEqual('some error rejected');
     expect(() => result.current.value).toThrow('some error rejected');
@@ -136,7 +137,7 @@ test('primitive: should rerender used on promise resolve init', async () => {
     const { result } = renderHook(() => {
         renderTimes += 1;
         return useStateLink(new Promise<number>(resolve => setTimeout(() => {
-            resolve(100)
+            act(() => resolve(100))
         }, 500)))
     });
     expect(renderTimes).toStrictEqual(1);
@@ -147,9 +148,9 @@ test('primitive: should rerender used on promise resolve init', async () => {
         .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
 
     await act(async () => {
-        await new Promise(resolve => setTimeout(() => resolve(), 600));
+        await new Promise(resolve => setTimeout(() => act(() => resolve()), 600));
     })
-    // expect(renderTimes).toStrictEqual(2);
+    expect(renderTimes).toStrictEqual(2);
     expect(result.current.promised).toStrictEqual(false);
     expect(result.current.error).toEqual(undefined);
     expect(result.current.value).toEqual(100);
@@ -157,11 +158,11 @@ test('primitive: should rerender used on promise resolve init', async () => {
 
 test('primitive: should rerender used on promise resolve init global', async () => {
     let renderTimes = 0
-    
+
     const stateRef = createStateLink(new Promise<number>(resolve => setTimeout(() => {
-        resolve(100)
+        act(() => resolve(100))
     }, 500)))
-    
+
     const { result } = renderHook(() => {
         renderTimes += 1;
         return useStateLink(stateRef)
@@ -174,9 +175,9 @@ test('primitive: should rerender used on promise resolve init global', async () 
         .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
 
     await act(async () => {
-        await new Promise(resolve => setTimeout(() => resolve(), 600));
+        await new Promise(resolve => setTimeout(() => act(() => resolve()), 600));
     })
-    // expect(renderTimes).toStrictEqual(2);
+    expect(renderTimes).toStrictEqual(2);
     expect(result.current.promised).toStrictEqual(false);
     expect(result.current.error).toEqual(undefined);
     expect(result.current.value).toEqual(100);
@@ -184,11 +185,11 @@ test('primitive: should rerender used on promise resolve init global', async () 
 
 test('primitive: should rerender used on promise reject init global', async () => {
     let renderTimes = 0
-    
+
     const stateRef = createStateLink(new Promise<number>((resolve, reject) => setTimeout(() => {
-        reject('some error init global')
-    }, 1000)))
-    
+        act(() => reject('some error init global'))
+    }, 500)))
+
     const { result } = renderHook(() => {
         renderTimes += 1;
         return useStateLink(stateRef)
@@ -202,12 +203,12 @@ test('primitive: should rerender used on promise reject init global', async () =
 
     try {
         await act(async () => {
-            await new Promise(resolve => setTimeout(() => resolve(), 1100));
+            await new Promise(resolve => setTimeout(() => act(() => resolve()), 600));
         })
     } catch (err) {
         //
     }
-    // expect(renderTimes).toStrictEqual(2);
+    expect(renderTimes).toStrictEqual(2);
     expect(result.current.promised).toStrictEqual(false);
     expect(result.current.error).toEqual('some error init global');
     expect(() => result.current.value).toThrow('some error init global');
