@@ -20,11 +20,11 @@ test('plugin: common flow callbacks', async () => {
                 onInit() {
                     messages.push('onInit called')
                 },
-                onPreset: (path, state, newValue, prevValue) => {
-                    messages.push(`onPreset called, [${path}]: ${JSON.stringify(state)}, ${JSON.stringify(prevValue)} => ${JSON.stringify(newValue)}`)
+                onPreset: (path, state, newValue, prevValue, mergeValue) => {
+                    messages.push(`onPreset called, [${path}]: ${JSON.stringify(state)}, ${JSON.stringify(prevValue)} => ${JSON.stringify(newValue)}, ${JSON.stringify(mergeValue)}`)
                 },
-                onSet: (path, state, newValue, prevValue) => {
-                    messages.push(`onSet called, [${path}]: ${JSON.stringify(state)}, ${JSON.stringify(prevValue)} => ${JSON.stringify(newValue)}`)
+                onSet: (path, state, newValue, prevValue, mergeValue) => {
+                    messages.push(`onSet called, [${path}]: ${JSON.stringify(state)}, ${JSON.stringify(prevValue)} => ${JSON.stringify(newValue)}, ${JSON.stringify(mergeValue)}`)
                 },
                 onDestroy: (state) => {
                     messages.push(`onDestroy called, ${JSON.stringify(state)}`)
@@ -44,7 +44,7 @@ test('plugin: common flow callbacks', async () => {
         result.current.nested[0].nested.f1.set(p => p + 1);
     });
     expect(renderTimes).toStrictEqual(2);
-    expect(messages.slice(1)).toEqual(['onPreset called, [0,f1]: [{\"f1\":0,\"f2\":\"str\"}], 0 => 1', 'onSet called, [0,f1]: [{\"f1\":1,\"f2\":\"str\"}], 0 => 1'])
+    expect(messages.slice(1)).toEqual(['onPreset called, [0,f1]: [{\"f1\":0,\"f2\":\"str\"}], 0 => 1, undefined', 'onSet called, [0,f1]: [{\"f1\":1,\"f2\":\"str\"}], 0 => 1, undefined'])
 
     expect(result.current.get()[0].f1).toStrictEqual(1);
     expect(Object.keys(result.current.nested[0].nested)).toEqual(['f1', 'f2']);
@@ -55,7 +55,7 @@ test('plugin: common flow callbacks', async () => {
         result.current.nested[0].merge(p => ({ f1 : p.f1 + 1 }));
     });
     expect(renderTimes).toStrictEqual(3);
-    expect(messages.slice(3)).toEqual(['onPreset called, [0]: [{\"f1\":2,\"f2\":\"str\"}], {\"f1\":2,\"f2\":\"str\"} => {\"f1\":2,\"f2\":\"str\"}', 'onSet called, [0]: [{\"f1\":2,\"f2\":\"str\"}], {\"f1\":2,\"f2\":\"str\"} => {\"f1\":2,\"f2\":\"str\"}'])
+    expect(messages.slice(3)).toEqual(['onPreset called, [0]: [{\"f1\":2,\"f2\":\"str\"}], {\"f1\":2,\"f2\":\"str\"} => {\"f1\":2,\"f2\":\"str\"}, {\"f1\":2}', 'onSet called, [0]: [{\"f1\":2,\"f2\":\"str\"}], {\"f1\":2,\"f2\":\"str\"} => {\"f1\":2,\"f2\":\"str\"}, {\"f1\":2}'])
 
     expect(result.current.get()[0].f1).toStrictEqual(2);
     expect(Object.keys(result.current.nested[0].nested)).toEqual(['f1', 'f2']);
@@ -96,11 +96,11 @@ test('plugin: common flow callbacks global state', async () => {
             onInit() {
                 messages.push(`onInit called, initial: ${JSON.stringify(initial)}, value: ${JSON.stringify(instanceFactory().value)}`)
             },
-            onPreset: (path, state, newValue, prevValue) => {
-                messages.push(`onPreset called, [${path}]: ${JSON.stringify(state)}, ${JSON.stringify(prevValue)} => ${JSON.stringify(newValue)}`)
+            onPreset: (path, state, newValue, prevValue, mergeValue) => {
+                messages.push(`onPreset called, [${path}]: ${JSON.stringify(state)}, ${JSON.stringify(prevValue)} => ${JSON.stringify(newValue)}, ${JSON.stringify(mergeValue)}`)
             },
-            onSet: (path, state, newValue, prevValue) => {
-                messages.push(`onSet called, [${path}]: ${JSON.stringify(state)}, ${JSON.stringify(prevValue)} => ${JSON.stringify(newValue)}`)
+            onSet: (path, state, newValue, prevValue, mergeValue) => {
+                messages.push(`onSet called, [${path}]: ${JSON.stringify(state)}, ${JSON.stringify(prevValue)} => ${JSON.stringify(newValue)}, ${JSON.stringify(mergeValue)}`)
             },
             onDestroy: (state) => {
                 messages.push(`onDestroy called, ${JSON.stringify(state)}`)
@@ -127,7 +127,7 @@ test('plugin: common flow callbacks global state', async () => {
         result.current.nested[0].nested.f1.set(p => p + 1);
     });
     expect(renderTimes).toStrictEqual(2);
-    expect(messages.slice(1)).toEqual(['onPreset called, [0,f1]: [{\"f1\":0,\"f2\":\"str\"}], 0 => 1', 'onSet called, [0,f1]: [{\"f1\":1,\"f2\":\"str\"}], 0 => 1'])
+    expect(messages.slice(1)).toEqual(['onPreset called, [0,f1]: [{\"f1\":0,\"f2\":\"str\"}], 0 => 1, undefined', 'onSet called, [0,f1]: [{\"f1\":1,\"f2\":\"str\"}], 0 => 1, undefined'])
 
     expect(result.current.get()[0].f1).toStrictEqual(1);
     expect(Object.keys(result.current.nested[0].nested)).toEqual(['f1', 'f2']);
@@ -138,7 +138,7 @@ test('plugin: common flow callbacks global state', async () => {
         result.current.nested[0].merge(p => ({ f1 : p.f1 + 1 }));
     });
     expect(renderTimes).toStrictEqual(3);
-    expect(messages.slice(3)).toEqual(['onPreset called, [0]: [{\"f1\":2,\"f2\":\"str\"}], {\"f1\":2,\"f2\":\"str\"} => {\"f1\":2,\"f2\":\"str\"}', 'onSet called, [0]: [{\"f1\":2,\"f2\":\"str\"}], {\"f1\":2,\"f2\":\"str\"} => {\"f1\":2,\"f2\":\"str\"}'])
+    expect(messages.slice(3)).toEqual(['onPreset called, [0]: [{\"f1\":2,\"f2\":\"str\"}], {\"f1\":2,\"f2\":\"str\"} => {\"f1\":2,\"f2\":\"str\"}, {\"f1\":2}', 'onSet called, [0]: [{\"f1\":2,\"f2\":\"str\"}], {\"f1\":2,\"f2\":\"str\"} => {\"f1\":2,\"f2\":\"str\"}, {\"f1\":2}'])
 
     expect(result.current.get()[0].f1).toStrictEqual(2);
     expect(Object.keys(result.current.nested[0].nested)).toEqual(['f1', 'f2']);
@@ -161,7 +161,7 @@ test('plugin: common flow callbacks global state', async () => {
         result.current.nested[0].nested.f1.set(p => p + 1)
     });
     expect(renderTimes).toStrictEqual(3);
-    expect(messages.slice(6)).toEqual(['onPreset called, [0,f1]: [{\"f1\":2,\"f2\":\"str\"}], 2 => 3', 'onSet called, [0,f1]: [{\"f1\":3,\"f2\":\"str\"}], 2 => 3'])
+    expect(messages.slice(6)).toEqual(['onPreset called, [0,f1]: [{\"f1\":2,\"f2\":\"str\"}], 2 => 3, undefined', 'onSet called, [0,f1]: [{\"f1\":3,\"f2\":\"str\"}], 2 => 3, undefined'])
     
     stateRef.destroy()
     expect(messages.slice(8)).toEqual(['onDestroy called, [{\"f1\":3,\"f2\":\"str\"}]'])
