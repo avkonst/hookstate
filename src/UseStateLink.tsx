@@ -1,4 +1,5 @@
 import React from 'react';
+import { instanceOf } from 'prop-types';
 
 //
 // DECLARATIONS
@@ -32,6 +33,8 @@ export type NestedInferredLink<S> =
 
 export type Path = ReadonlyArray<string | number>;
 
+export type SetStateAction<S> = (S | Promise<S>) | ((prevState: S) => (S | Promise<S>));
+
 export type SetPartialStateAction<S> =
     S extends ReadonlyArray<(infer U)> ?
         ReadonlyArray<U> | Record<number, U> | ((prevValue: S) => (ReadonlyArray<U> | Record<number, U>)) :
@@ -48,9 +51,14 @@ export interface StateLink<S> {
     // const myvalue: number = statelink.value ? statelink.value + 1 : 0; // <-- compiles
     // const myvalue: number = statelink.get() ? statelink.get() + 1 : 0; // <-- does not compile
     readonly value: S;
+    
+    /** @warning experimental feature */
+    readonly promised: boolean;
+    /** @warning experimental feature */
+    readonly error: ErrorValueAtPath | undefined;
 
     get(): S;
-    set(newValue: React.SetStateAction<S>): void;
+    set(newValue: SetStateAction<S>): void;
     merge(newValue: SetPartialStateAction<S>): void;
 
     with(plugin: () => Plugin): StateLink<S>;
@@ -59,7 +67,7 @@ export interface StateLink<S> {
 
 export interface StateLinkPlugable<S> {
     getUntracked(): S;
-    setUntracked(newValue: React.SetStateAction<S>): Path;
+    setUntracked(newValue: SetStateAction<S>): Path;
     mergeUntracked(mergeValue: SetPartialStateAction<S>): Path | Path[];
     update(path: Path | Path[]): void;
 }
@@ -69,7 +77,12 @@ export interface StateLinkPlugable<S> {
 export type StateValueAtRoot = any;
 // tslint:disable-next-line: no-any
 export type StateValueAtPath = any;
+// tslint:disable-next-line: no-any
+export type ErrorValueAtPath = any;
 
+export type InitialValueAtRoot<S> = S | Promise<S> | (() => S | Promise<S>)
+
+/** @warning experimental feature */
 export const None = Symbol('none') as StateValueAtPath;
 
 export interface PluginInstance {
@@ -147,6 +160,7 @@ const StateMemoID = Symbol('StateMemo');
 const ProxyMarkerID = Symbol('ProxyMarker');
 
 const RootPath: Path = [];
+const DestroyedEdition = -1
 
 class State implements Subscribable {
     private _edition: number = 0;
@@ -194,9 +208,9 @@ class State implements Subscribable {
             }
             
             let prevValue = this._value;
-            this.callOnPreset(path, value, prevValue)
+            this.beforeSet(path, value, prevValue)
             this._value = value;
-            this.callOnSet(path, value, prevValue)
+            this.afterSet(path, value, prevValue)
             
             return path;
         }
@@ -211,21 +225,21 @@ class State implements Subscribable {
             if (value !== None) {
                 // Property UPDATE case
                 let prevValue = target[p]
-                this.callOnPreset(path, value, prevValue)
+                this.beforeSet(path, value, prevValue)
                 target[p] = value;
-                this.callOnSet(path, value, prevValue)
+                this.afterSet(path, value, prevValue)
                 
                 return path;
             } else {
                 // Property DELETE case
                 let prevValue = target[p]
-                this.callOnPreset(path, value, prevValue)
+                this.beforeSet(path, value, prevValue)
                 if (Array.isArray(target) && typeof p === 'number') {
                     target.splice(p, 1)
                 } else {
                     delete target[p]
                 }
-                this.callOnSet(path, value, prevValue)
+                this.afterSet(path, value, prevValue)
                 
                 // if an array of object is about to loose existing property
                 // we consider it is the whole object is changed
@@ -236,9 +250,9 @@ class State implements Subscribable {
         
         if (value !== None) {
             // Property INSERT case
-            this.callOnPreset(path, value, None)
+            this.beforeSet(path, value, None)
             target[p] = value;
-            this.callOnSet(path, value, None)
+            this.afterSet(path, value, None)
             
             // if an array of object is about to be extended by new property
             // we consider it is the whole object is changed
@@ -265,7 +279,7 @@ class State implements Subscribable {
         actions.forEach(a => a());
     }
 
-    callOnPreset(path: Path, value: StateValueAtPath, prevValue: StateValueAtPath) {
+    beforeSet(path: Path, value: StateValueAtPath, prevValue: StateValueAtPath) {
         this._presetSubscribers.forEach(cb => {
             const presetResult = cb(path, this._value, value, prevValue)
             if (presetResult !== undefined) {
@@ -276,7 +290,7 @@ class State implements Subscribable {
         })
     }
 
-    callOnSet(path: Path, value: StateValueAtPath, prevValue: StateValueAtPath) {
+    afterSet(path: Path, value: StateValueAtPath, prevValue: StateValueAtPath) {
         this._edition += 1;
         this._setSubscribers.forEach(cb => cb(path, this._value, value, prevValue))
     }
@@ -330,7 +344,7 @@ class State implements Subscribable {
 
     destroy() {
         this._destroySubscribers.forEach(cb => cb(this._value))
-        this._edition = -1
+        this._edition = DestroyedEdition
     }
     
     toJSON() {
@@ -395,6 +409,55 @@ class StateInfImpl<S, R> implements StateInf<R> {
     }
 }
 
+class Promised {
+    public fullfilled?: true;
+    public error?: ErrorValueAtPath;
+    public value?: StateValueAtPath;
+    
+    constructor(public promise: Promise<StateValueAtPath> | undefined,
+        onResolve: (r: StateValueAtPath) => void,
+        onReject: () => void) {
+        if (promise) {
+            promise
+            .then(r => {
+                this.fullfilled = true
+                this.value = r
+                onResolve(r)
+            })
+            .catch(err => {
+                this.fullfilled = true
+                this.error = err
+                onReject()
+            })
+        }
+    }
+    
+    toJSON() {
+        // TODO Downgraded plugin exposes PromisedImpl values
+        // promised values should not be visible to serialisers
+        return undefined;
+    }
+    
+    static create(newValue: StateValueAtPath, linkAccessor: () => StateLinkImpl<StateValueAtPath>) {
+        const promised = new Promised(
+            Promise.resolve(newValue),
+            (r: StateValueAtPath) => {
+                const link = linkAccessor()
+                if (link.getUntracked(true) as StateValueAtPath === promised) {
+                    link.set(r)
+                }
+            },
+            () => {
+                const link = linkAccessor()
+                if (link.getUntracked(true) as StateValueAtPath === promised) {
+                    link.set(promised)
+                }
+            }
+        );
+        return promised;
+    }
+}
+
 class StateLinkImpl<S> implements StateLink<S>,
     StateLinkPlugable<S>, Subscribable, Subscriber {
     public disabledTracking: boolean | undefined;
@@ -410,7 +473,7 @@ class StateLinkImpl<S> implements StateLink<S>,
         public valueEdition: number
     ) { }
 
-    private refreshIfStale() {
+    getUntracked(returnPromised?: boolean) {
         if (this.valueEdition !== this.state.edition) {
             this.valueSource = this.state.get(this.path)
             this.valueEdition = this.state.edition
@@ -437,47 +500,77 @@ class StateLinkImpl<S> implements StateLink<S>,
                 }
             }
         }
-    }
-    
-    getUntracked() {
-        this.refreshIfStale()
+        if (!returnPromised && this.valueSource instanceof Promised) {
+            if (this.valueSource.error) {
+                throw this.valueSource.error;
+            }
+            // TODO add hint
+            throw new StateLinkInvalidUsageError('read promised state', this.path)
+        }
         return this.valueSource;
     }
 
-    get() {
-        return this.value
-    }
-
-    get value(): S {
-        this.refreshIfStale()
+    get(returnPromised?: boolean) {
+        const currentValue = this.getUntracked(returnPromised)
         if (this[ValueCache] === undefined) {
             if (this.disabledTracking) {
-                this[ValueCache] = this.valueSource;
-            } else if (Array.isArray(this.valueSource)) {
-                this[ValueCache] = this.valueArrayImpl();
-            } else if (typeof this.valueSource === 'object' && this.valueSource !== null) {
-                this[ValueCache] = this.valueObjectImpl();
+                this[ValueCache] = currentValue;
+            } else if (currentValue instanceof Promised) {
+                this[ValueCache] = currentValue;
+            } else if (Array.isArray(currentValue)) {
+                this[ValueCache] = this.valueArrayImpl(currentValue);
+            } else if (typeof currentValue === 'object' && currentValue !== null) {
+                this[ValueCache] = this.valueObjectImpl(currentValue as unknown as object);
             } else {
-                this[ValueCache] = this.valueSource;
+                this[ValueCache] = currentValue;
             }
         }
         return this[ValueCache] as S;
     }
 
-    setUntracked(newValue: React.SetStateAction<S>, mergeValue?: Partial<StateValueAtPath>): Path {
+    get value(): S {
+        return this.get()
+    }
+
+    get promised() {
+        const currentValue = this.get(true)
+        if (currentValue instanceof Promised) {
+            return !currentValue.fullfilled
+        }
+        return false;
+    }
+    
+    get error() {
+        const currentValue = this.get(true)
+        if (currentValue instanceof Promised) {
+            if (!currentValue.fullfilled) {
+                this.get() // will throw 'read while promised' exception
+            }
+            return currentValue.error;
+        }
+        return undefined;
+    }
+    
+    setUntracked(newValue: SetStateAction<S>, mergeValue?: Partial<StateValueAtPath>): Path {
         if (typeof newValue === 'function') {
             newValue = (newValue as ((prevValue: S) => S))(this.getUntracked());
         }
-        if (typeof newValue === 'object' && newValue !== null && newValue[ProxyMarkerID]) {
-            throw new StateLinkInvalidUsageError(
-                `set(state.get() at '/${newValue[ProxyMarkerID].path.join('/')}')`,
-                this.path,
-                'did you mean to use state.set(lodash.cloneDeep(value)) instead of state.set(value)?')
+        if (typeof newValue === 'object' && newValue !== null) {
+            if (newValue[ProxyMarkerID]) {
+                throw new StateLinkInvalidUsageError(
+                    `set(state.get() at '/${newValue[ProxyMarkerID].path.join('/')}')`,
+                    this.path,
+                    'did you mean to use state.set(lodash.cloneDeep(value)) instead of state.set(value)?')
+            }
+            if (Promise.resolve(newValue) === newValue) {
+                const promised = Promised.create(newValue, () => this)
+                newValue = promised as unknown as S;
+            }
         }
         return this.state.set(this.path, newValue, mergeValue);
     }
 
-    set(newValue: React.SetStateAction<S>) {
+    set(newValue: SetStateAction<S>) {
         this.state.update(this.setUntracked(newValue));
     }
 
@@ -620,12 +713,12 @@ class StateLinkImpl<S> implements StateLink<S>,
     }
 
     get nested(): NestedInferredLink<S> {
-        this.refreshIfStale()
+        const currentValue = this.getUntracked()
         if (this[NestedCache] === undefined) {
-            if (Array.isArray(this.valueSource)) {
-                this[NestedCache] = this.nestedArrayImpl();
-            } else if (typeof this.valueSource === 'object' && this.valueSource !== null) {
-                this[NestedCache] = this.nestedObjectImpl();
+            if (Array.isArray(currentValue)) {
+                this[NestedCache] = this.nestedArrayImpl(currentValue);
+            } else if (typeof currentValue === 'object' && currentValue !== null) {
+                this[NestedCache] = this.nestedObjectImpl(currentValue as unknown as object);
             } else {
                 this[NestedCache] = undefined;
             }
@@ -633,7 +726,7 @@ class StateLinkImpl<S> implements StateLink<S>,
         return this[NestedCache] as NestedInferredLink<S>;
     }
 
-    private nestedArrayImpl(): NestedInferredLink<S> {
+    private nestedArrayImpl(currentValue: StateValueAtPath[]): NestedInferredLink<S> {
         this.nestedLinksCache = this.nestedLinksCache || {};
         const proxyGetterCache = this.nestedLinksCache;
 
@@ -671,13 +764,12 @@ class StateLinkImpl<S> implements StateLink<S>,
             proxyGetterCache[index] = r;
             return r;
         };
-        return this.proxyWrap(this.valueSource as unknown as object, getter) as
+        return this.proxyWrap(currentValue, getter) as
             unknown as NestedInferredLink<S>;
     }
 
-    private valueArrayImpl(): S {
-        return this.proxyWrap(
-            this.valueSource as unknown as object,
+    private valueArrayImpl(currentValue: StateValueAtPath[]): S {
+        return this.proxyWrap(currentValue,
             (target: object, key: PropertyKey) => {
                 if (key === 'length') {
                     return (target as []).length;
@@ -710,7 +802,7 @@ class StateLinkImpl<S> implements StateLink<S>,
         ) as unknown as S;
     }
 
-    private nestedObjectImpl(): NestedInferredLink<S> {
+    private nestedObjectImpl(currentValue: object): NestedInferredLink<S> {
         this.nestedLinksCache = this.nestedLinksCache || {};
         const proxyGetterCache = this.nestedLinksCache;
 
@@ -738,13 +830,12 @@ class StateLinkImpl<S> implements StateLink<S>,
             proxyGetterCache[key] = r;
             return r;
         };
-        return this.proxyWrap(this.valueSource as unknown as object, getter) as
+        return this.proxyWrap(currentValue, getter) as
             unknown as NestedInferredLink<S>;
     }
 
-    private valueObjectImpl(): S {
-        return this.proxyWrap(
-            this.valueSource as unknown as object,
+    private valueObjectImpl(currentValue: object): S {
+        return this.proxyWrap(currentValue,
             (target: object, key: PropertyKey) => {
                 if (key === ProxyMarkerID) {
                     return this;
@@ -848,17 +939,25 @@ const NoAction = () => { /* empty */ };
 const NoActionUnmounted = () => { /* empty */ };
 NoActionUnmounted[UnmountedCallback] = true
 
-function createState<S>(initial: S | (() => S)): State {
-    let initialValue: S = initial as S;
+function createState<S>(initial: InitialValueAtRoot<S>): State {
+    let initialValue: S | Promise<S> = initial as (S | Promise<S>);
     if (typeof initial === 'function') {
-        initialValue = (initial as (() => S))();
+        initialValue = (initial as (() => S | Promise<S>))();
     }
-    if (typeof initialValue === 'object' && initialValue[ProxyMarkerID]) {
-        throw new StateLinkInvalidUsageError(
-            `create/useStateLink(state.get() at '/${initialValue[ProxyMarkerID].path.join('/')}')`,
-            RootPath,
-            'did you mean to use create/useStateLink(state) OR ' +
-            'create/useStateLink(lodash.cloneDeep(state.get())) instead of create/useStateLink(state.get())?')
+    if (typeof initialValue === 'object') {
+        if (initialValue[ProxyMarkerID]) {
+            throw new StateLinkInvalidUsageError(
+                `create/useStateLink(state.get() at '/${initialValue[ProxyMarkerID].path.join('/')}')`,
+                RootPath,
+                'did you mean to use create/useStateLink(state) OR ' +
+                'create/useStateLink(lodash.cloneDeep(state.get())) instead of create/useStateLink(state.get())?')
+        }
+        if (Promise.resolve(initialValue) as StateValueAtRoot === initialValue) {
+            const promised = Promised.create(initialValue,
+                () => useStateLinkUnmounted(new StateRefImpl(state)) as StateLinkImpl<StateValueAtRoot>)
+            const state = new State(promised)
+            return state;
+        }
     }
     return new State(initialValue);
 }
@@ -903,7 +1002,7 @@ function useGlobalStateLink<S>(stateRef: StateRefImpl<S>): StateLinkImpl<S> {
         NoAction);
 }
 
-function useLocalStateLink<S>(initialState: S | (() => S)): StateLinkImpl<S> {
+function useLocalStateLink<S>(initialState: InitialValueAtRoot<S>): StateLinkImpl<S> {
     const [value, setValue] = React.useState(() => ({ state: createState(initialState) }));
     return useSubscribedStateLink(
         value.state,
@@ -926,7 +1025,7 @@ function useScopedStateLink<S>(originLink: StateLinkImpl<S>): StateLinkImpl<S> {
 }
 
 function useAutoStateLink<S>(
-    initialState: S | (() => S) | StateLink<S> | StateRef<S>
+    initialState: InitialValueAtRoot<S> | StateLink<S> | StateRef<S>
 ): StateLinkImpl<S> {
     if (initialState instanceof StateLinkImpl) {
         // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -938,7 +1037,7 @@ function useAutoStateLink<S>(
     }
 
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useLocalStateLink(initialState as S | (() => S));
+    return useLocalStateLink(initialState as InitialValueAtRoot<S>);
 }
 
 function injectTransform<S, R>(
@@ -980,14 +1079,14 @@ function injectTransform<S, R>(
 /// EXPORTED IMPLEMENTATIONS
 ///
 export function createStateLink<S>(
-    initial: S | (() => S)
+    initial: InitialValueAtRoot<S>
 ): StateRef<S>;
 export function createStateLink<S, R>(
-    initial: S | (() => S),
+    initial: InitialValueAtRoot<S>,
     transform: (state: StateLink<S>, prev: R | undefined) => R
 ): StateInf<R>;
 export function createStateLink<S, R>(
-    initial: S | (() => S),
+    initial: InitialValueAtRoot<S>,
     transform?: (state: StateLink<S>, prev: R | undefined) => R
 ): StateRef<S> | StateInf<R> {
     const ref = new StateRefImpl<S>(createState(initial));
@@ -1008,19 +1107,19 @@ export function useStateLink<S, R>(
     transform: (state: StateLink<S>, prev: R | undefined) => R
 ): R;
 export function useStateLink<S>(
-    source: S | (() => S)
+    source: InitialValueAtRoot<S>
 ): StateLink<S>;
 export function useStateLink<S, R>(
-    source: S | (() => S),
+    source: InitialValueAtRoot<S>,
     transform: (state: StateLink<S>, prev: R | undefined) => R
 ): R;
 export function useStateLink<S, R>(
-    source: S | (() => S) | StateLink<S> | StateRef<S> | StateInf<R>,
+    source: InitialValueAtRoot<S> | StateLink<S> | StateRef<S> | StateInf<R>,
     transform?: (state: StateLink<S>, prev: R | undefined) => R
 ): StateLink<S> | R {
     const state = source instanceof StateInfImpl
         ? source.wrapped as unknown as StateRef<S>
-        : source as (S | (() => S) | StateLink<S> | StateRef<S>);
+        : source as (InitialValueAtRoot<S> | StateLink<S> | StateRef<S>);
     const link = useAutoStateLink(state);
     if (source instanceof StateInfImpl) {
         return injectTransform(link, source.transform);
@@ -1116,20 +1215,20 @@ export function StateFragment<S, E extends {}, R>(
 ): React.ReactElement;
 export function StateFragment<S>(
     props: {
-        state: S | (() => S),
+        state: InitialValueAtRoot<S>,
         children: (state: StateLink<S>) => React.ReactElement,
     }
 ): React.ReactElement;
 export function StateFragment<S, R>(
     props: {
-        state: S | (() => S),
+        state: InitialValueAtRoot<S>,
         transform: (state: StateLink<S>, prev: R | undefined) => R,
         children: (state: R) => React.ReactElement,
     }
 ): React.ReactElement;
 export function StateFragment<S, E extends {}, R>(
     props: {
-        state: S | (() => S) | StateLink<S> | StateRef<S> | StateInf<R>,
+        state: InitialValueAtRoot<S> | StateLink<S> | StateRef<S> | StateInf<R>,
         transform?: (state: StateLink<S>, prev: R | undefined) => R,
         children: (state: StateLink<S> | R) => React.ReactElement,
     }
