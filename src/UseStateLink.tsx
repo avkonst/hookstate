@@ -180,9 +180,11 @@ class State implements Subscribable {
 
     constructor(private _value: StateValueAtRoot) {
         if (typeof _value === 'object' &&
-            Promise.resolve(_value) as StateValueAtRoot === _value) {
+            Promise.resolve(_value) === _value) {
             this._promised = this.createPromised(_value)
             this._value = None
+        } else if (_value === None) {
+            this._promised = this.createPromised(new Promise(() => { /* */ }))
         }
     }
 

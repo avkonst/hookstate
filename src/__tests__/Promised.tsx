@@ -34,6 +34,66 @@ test('primitive: should rerender used on promise resolve', async () => {
     expect(result.current.value).toEqual(100);
 });
 
+test('primitive: should rerender used on promise resolve manual', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useStateLink(None)
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(result.current.promised).toStrictEqual(true);
+    expect(() => result.current.error)
+        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+    expect(() => result.current.value)
+        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+
+    act(() => {
+        result.current.set(100);
+    });
+
+    expect(renderTimes).toStrictEqual(2);
+    expect(result.current.promised).toStrictEqual(false);
+    expect(result.current.error).toEqual(undefined);
+    expect(result.current.value).toEqual(100);
+});
+
+test('primitive: should rerender used on promise resolve second', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useStateLink(new Promise<number>(resolve => setTimeout(() => {
+            act(() => resolve(100))
+        }, 500)))
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(result.current.promised).toStrictEqual(true);
+    expect(() => result.current.error)
+        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+    expect(() => result.current.value)
+        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+
+    const promise = new Promise<number>(resolve => setTimeout(() => {
+        act(() => resolve(200))
+    }, 500))
+    act(() => {
+        result.current.set(promise);
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(result.current.promised).toStrictEqual(true);
+    expect(() => result.current.error)
+        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+    expect(() => result.current.value)
+        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+
+    await act(async () => {
+        await promise;
+    })
+    expect(renderTimes).toStrictEqual(3);
+    expect(result.current.promised).toStrictEqual(false);
+    expect(result.current.error).toEqual(undefined);
+    expect(result.current.value).toEqual(200);
+});
+
 test('primitive: should rerender used on promise resolved', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
