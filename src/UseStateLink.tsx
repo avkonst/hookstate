@@ -91,9 +91,11 @@ export interface PluginInstance {
     // it is only applicable for plugins attached via stateref, not via statelink
     readonly onInit?: () => StateValueAtRoot | void,
     readonly onPreset?: (path: Path, prevState: StateValueAtRoot,
-        newValue: StateValueAtPath, prevValue: StateValueAtPath) => void | StateValueAtRoot,
+        newValue: StateValueAtPath, prevValue: StateValueAtPath,
+        mergeValue: StateValueAtPath | undefined) => void | StateValueAtRoot,
     readonly onSet?: (path: Path, newState: StateValueAtRoot,
-        newValue: StateValueAtPath, prevValue: StateValueAtPath) => void,
+        newValue: StateValueAtPath, prevValue: StateValueAtPath,
+        mergeValue: StateValueAtPath | undefined) => void,
     readonly onDestroy?: (state: StateValueAtRoot) => void,
 };
 
@@ -145,9 +147,11 @@ interface Subscriber {
 }
 
 type PresetCallback = (path: Path, prevState: StateValueAtRoot,
-    newValue: StateValueAtPath, prevValue: StateValueAtPath) => void | StateValueAtRoot;
+    newValue: StateValueAtPath, prevValue: StateValueAtPath,
+    mergeValue: StateValueAtPath | undefined) => void | StateValueAtRoot;
 type SetCallback = (path: Path, newState: StateValueAtRoot,
-    newValue: StateValueAtPath, prevValue: StateValueAtPath) => void;
+    newValue: StateValueAtPath, prevValue: StateValueAtPath,
+    mergeValue: StateValueAtPath | undefined) => void;
 type DestroyCallback = (state: StateValueAtRoot) => void;
 
 interface Subscribable {
@@ -223,9 +227,9 @@ class State implements Subscribable {
             }
             
             let prevValue = this._value;
-            this.beforeSet(path, value, prevValue)
+            this.beforeSet(path, value, prevValue, mergeValue)
             this._value = value;
-            this.afterSet(path, value, prevValue)
+            this.afterSet(path, value, prevValue, mergeValue)
             
             return path;
         }
@@ -247,21 +251,21 @@ class State implements Subscribable {
             if (value !== None) {
                 // Property UPDATE case
                 let prevValue = target[p]
-                this.beforeSet(path, value, prevValue)
+                this.beforeSet(path, value, prevValue, mergeValue)
                 target[p] = value;
-                this.afterSet(path, value, prevValue)
+                this.afterSet(path, value, prevValue, mergeValue)
                 
                 return path;
             } else {
                 // Property DELETE case
                 let prevValue = target[p]
-                this.beforeSet(path, value, prevValue)
+                this.beforeSet(path, value, prevValue, mergeValue)
                 if (Array.isArray(target) && typeof p === 'number') {
                     target.splice(p, 1)
                 } else {
                     delete target[p]
                 }
-                this.afterSet(path, value, prevValue)
+                this.afterSet(path, value, prevValue, mergeValue)
                 
                 // if an array of object is about to loose existing property
                 // we consider it is the whole object is changed
@@ -272,9 +276,9 @@ class State implements Subscribable {
         
         if (value !== None) {
             // Property INSERT case
-            this.beforeSet(path, value, None)
+            this.beforeSet(path, value, None, mergeValue)
             target[p] = value;
-            this.afterSet(path, value, None)
+            this.afterSet(path, value, None, mergeValue)
             
             // if an array of object is about to be extended by new property
             // we consider it is the whole object is changed
@@ -301,10 +305,11 @@ class State implements Subscribable {
         actions.forEach(a => a());
     }
 
-    beforeSet(path: Path, value: StateValueAtPath, prevValue: StateValueAtPath) {
+    beforeSet(path: Path, value: StateValueAtPath, prevValue: StateValueAtPath,
+        mergeValue: StateValueAtPath | undefined) {
         if (this._edition !== DestroyedEdition) {
             this._presetSubscribers.forEach(cb => {
-                const presetResult = cb(path, this._value, value, prevValue)
+                const presetResult = cb(path, this._value, value, prevValue, mergeValue)
                 if (presetResult !== undefined) {
                     // plugin overrides the current value
                     // could be used for immutable later on
@@ -314,10 +319,11 @@ class State implements Subscribable {
         }
     }
 
-    afterSet(path: Path, value: StateValueAtPath, prevValue: StateValueAtPath) {
+    afterSet(path: Path, value: StateValueAtPath, prevValue: StateValueAtPath,
+        mergeValue: StateValueAtPath | undefined) {
         if (this._edition !== DestroyedEdition) {
             this._edition += 1;
-            this._setSubscribers.forEach(cb => cb(path, this._value, value, prevValue))
+            this._setSubscribers.forEach(cb => cb(path, this._value, value, prevValue, mergeValue))
         }
     }
     
@@ -349,10 +355,10 @@ class State implements Subscribable {
             }
         }
         if (pluginInstance.onPreset) {
-            this._presetSubscribers.add((p, s, v, pv) => pluginInstance.onPreset!(p, s, v, pv))
+            this._presetSubscribers.add((p, s, v, pv, mv) => pluginInstance.onPreset!(p, s, v, pv, mv))
         }
         if (pluginInstance.onSet) {
-            this._setSubscribers.add((p, s, v, pv) => pluginInstance.onSet!(p, s, v, pv))
+            this._setSubscribers.add((p, s, v, pv, mv) => pluginInstance.onSet!(p, s, v, pv, mv))
         }
         if (pluginInstance.onDestroy) {
             this._destroySubscribers.add((s) => pluginInstance.onDestroy!(s))
