@@ -1,5 +1,4 @@
 import React from 'react';
-import { instanceOf } from 'prop-types';
 
 //
 // DECLARATIONS
