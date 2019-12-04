@@ -1,4 +1,4 @@
-import { StateInf, StateLink, Plugin } from './Declarations';
+import { StateInf, StateLink, Plugin } from '../Declarations';
 import { SynteticID } from './SharedImpl';
 import { StateRefImpl } from './StateRefImpl';
 

@@ -1,5 +1,5 @@
 import { Plugin, StateLink, StateLinkPlugable, Path,
-    None, SetStateAction, StateValueAtPath, SetPartialStateAction, PluginInstance, NestedInferredLink } from './Declarations'
+    None, SetStateAction, StateValueAtPath, SetPartialStateAction, PluginInstance, NestedInferredLink } from '../Declarations'
 import { Subscribable, Subscriber, UnmountedCallback, ProxyMarkerID, DowngradedID } from './SharedImpl';
 import { State } from './StateImpl';
 import { StateLinkInvalidUsageError } from './Exceptions';

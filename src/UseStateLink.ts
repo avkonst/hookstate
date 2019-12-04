@@ -1,11 +1,11 @@
 import React from 'react';
-import { UnmountedCallback, ProxyMarkerID, RootPath, Subscribable, StateMemoID, NoAction, NoActionUnmounted } from './SharedImpl';
+import { UnmountedCallback, ProxyMarkerID, RootPath, Subscribable, StateMemoID, NoAction, NoActionUnmounted } from './internals/SharedImpl';
 import { InitialValueAtRoot, Path, StateLink, StateRef, StateInf } from './Declarations';
-import { State } from './StateImpl';
-import { StateLinkInvalidUsageError } from './Exceptions';
-import { StateLinkImpl } from './StateLinkImpl';
-import { StateRefImpl } from './StateRefImpl';
-import { StateInfImpl } from './StateInfImpl';
+import { State } from './internals/StateImpl';
+import { StateLinkInvalidUsageError } from './internals/Exceptions';
+import { StateLinkImpl } from './internals/StateLinkImpl';
+import { StateRefImpl } from './internals/StateRefImpl';
+import { StateInfImpl } from './internals/StateInfImpl';
 import { Downgraded } from './Downgraded';
 
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;

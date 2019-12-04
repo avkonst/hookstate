@@ -1,10 +1,10 @@
-import { StateValueAtPath, Path, StateValueAtRoot, PluginInstance, None, Plugin, ErrorValueAtPath } from './Declarations';
+import { StateValueAtPath, Path, StateValueAtRoot, PluginInstance, None, Plugin, ErrorValueAtPath } from '../Declarations';
 import { RootPath, Subscribable, Subscriber, NoActionUnmounted } from './SharedImpl';
 import { StateLinkInvalidUsageError, PluginUnknownError, PluginInvalidRegistrationError } from './Exceptions';
-import { useStateLinkUnmounted } from './UseStateLink';
+import { useStateLinkUnmounted } from '../UseStateLink';
 import { StateRefImpl } from './StateRefImpl';
 import { StateLinkImpl } from './StateLinkImpl';
-import { Downgraded } from './Downgraded';
+import { Downgraded } from '../Downgraded';
 
 type PresetCallback = (path: Path, prevState: StateValueAtRoot,
     newValue: StateValueAtPath, prevValue: StateValueAtPath,

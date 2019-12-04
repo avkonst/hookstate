@@ -1,4 +1,4 @@
-import { Path } from './Declarations';
+import { Path } from '../Declarations';
 
 export const RootPath: Path = [];
 

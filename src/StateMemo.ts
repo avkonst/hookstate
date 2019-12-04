@@ -1,5 +1,5 @@
 import { StateLink } from './Declarations';
-import { StateMemoID } from './SharedImpl';
+import { StateMemoID } from './internals/SharedImpl';
 
 export function StateMemo<S, R>(
     transform: (state: StateLink<S>, prev: R | undefined) => R,
