@@ -50,13 +50,13 @@ export interface StateLink<S> {
     // const myvalue: number = statelink.value ? statelink.value + 1 : 0; // <-- compiles
     // const myvalue: number = statelink.get() ? statelink.get() + 1 : 0; // <-- does not compile
     readonly value: S;
+    get(): S;
 
     /** @warning experimental feature */
     readonly promised: boolean;
     /** @warning experimental feature */
     readonly error: ErrorValueAtPath | undefined;
 
-    get(): S;
     set(newValue: SetStateAction<S>): void;
     merge(newValue: SetPartialStateAction<S>): void;
 
