@@ -60,6 +60,9 @@ export interface StateLink<S> {
     set(newValue: SetStateAction<S>): void;
     merge(newValue: SetPartialStateAction<S>): void;
 
+    /** @warning experimental feature */
+    batch(action: () => void): void;
+    
     with(plugin: () => Plugin): StateLink<S>;
     with(pluginId: symbol): [StateLink<S> & StateLinkPlugable<S>, PluginInstance];
 }
@@ -68,7 +71,7 @@ export interface StateLinkPlugable<S> {
     getUntracked(): S;
     setUntracked(newValue: SetStateAction<S>): Path;
     mergeUntracked(mergeValue: SetPartialStateAction<S>): Path | Path[];
-    update(path: Path | Path[]): void;
+    update(paths: Path[]): void;
 }
 
 // type alias to highlight the places where we are dealing with root state value
@@ -142,7 +145,7 @@ class PluginUnknownError extends Error {
 }
 
 interface Subscriber {
-    onSet(path: Path, actions: (() => void)[]): void;
+    onSet(paths: Path[], actions: (() => void)[]): void;
 }
 
 type PresetCallback = (path: Path, prevState: StateValueAtRoot,
@@ -175,7 +178,11 @@ class State implements Subscribable {
 
     private _plugins: Map<symbol, PluginInstance> = new Map();
 
-    private _promised: Promised | undefined;
+    private _promised?: Promised;
+    
+    private _batches = 0;
+    private _batchesPendingPaths?: Path[];
+    private _batchesPendingActions?: (() => void)[];
 
     constructor(private _value: StateValueAtRoot) {
         if (typeof _value === 'object' &&
@@ -183,23 +190,24 @@ class State implements Subscribable {
             this._promised = this.createPromised(_value)
             this._value = None
         } else if (_value === None) {
-            this._promised = this.createPromised(new Promise(() => { /* */ }))
+            this._promised = this.createPromised(undefined)
         }
     }
 
-    createPromised(newValue: StateValueAtPath) {
+    createPromised(newValue: StateValueAtPath | undefined) {
         const promised = new Promised(
-            Promise.resolve(newValue),
+            newValue ? Promise.resolve(newValue) : undefined,
             (r: StateValueAtPath) => {
                 if (this.promised === promised && this.edition !== DestroyedEdition) {
+                    this._promised = undefined
                     this.set(RootPath, r, undefined)
-                    this.update(RootPath)
+                    this.update([RootPath])
                 }
             },
             () => {
                 if (this.promised === promised && this.edition !== DestroyedEdition) {
                     this._edition += 1
-                    this.update(RootPath)
+                    this.update([RootPath])
                 }
             }
         );
@@ -240,13 +248,16 @@ class State implements Subscribable {
             // Root value UPDATE case,
 
             if (value === None) {
-                // never ending promise, unless it is displaced by antoher set later on
-                this._promised = this.createPromised(new Promise(() => { /* */ }))
+                this._promised = this.createPromised(undefined)
             } else if (typeof value === 'object' && Promise.resolve(value) === value) {
                 this._promised = this.createPromised(value)
                 value = None
-            } else {
-                this._promised = undefined
+            } else if (this.promised && !this.promised.empty) {
+                // TODO add hint
+                throw new StateLinkInvalidUsageError(
+                    `write promised state`,
+                    path,
+                    '')
             }
 
             let prevValue = this._value;
@@ -254,6 +265,12 @@ class State implements Subscribable {
             this._value = value;
             this.afterSet(path, value, prevValue, mergeValue)
 
+            if (this._batchesPendingActions && this._value !== None) {
+                const actions = this._batchesPendingActions
+                this._batchesPendingActions = undefined
+                actions.forEach(a => a())
+            }            
+    
             return path;
         }
 
@@ -314,17 +331,15 @@ class State implements Subscribable {
         return path;
     }
 
-    update(path: Path) {
+    update(paths: Path[]) {
+        if (this._batches) {
+            this._batchesPendingPaths = this._batchesPendingPaths || []
+            this._batchesPendingPaths = this._batchesPendingPaths.concat(paths)
+            return;
+        }
+        
         const actions: (() => void)[] = [];
-        this._subscribers.forEach(s => s.onSet(path, actions));
-        actions.forEach(a => a());
-    }
-
-    updateBatch(paths: Path[]) {
-        const actions: (() => void)[] = [];
-        paths.forEach(path => {
-            this._subscribers.forEach(s => s.onSet(path, actions));
-        })
+        this._subscribers.forEach(s => s.onSet(paths, actions));
         actions.forEach(a => a());
     }
 
@@ -348,6 +363,26 @@ class State implements Subscribable {
             this._edition += 1;
             this._setSubscribers.forEach(cb => cb(path, this._value, value, prevValue, mergeValue))
         }
+    }
+
+    startBatch(): void {
+        this._batches += 1
+    }
+    
+    finishBatch(): void {
+        this._batches -= 1
+        if (this._batches === 0) {
+            if (this._batchesPendingPaths) {
+                const paths = this._batchesPendingPaths
+                this._batchesPendingPaths = undefined
+                this.update(paths)
+            }
+        }
+    }
+    
+    postponeBatch(action: () => void): void {
+        this._batchesPendingActions = this._batchesPendingActions || []
+        this._batchesPendingActions.push(action)
     }
 
     getPlugin(pluginId: symbol) {
@@ -468,6 +503,7 @@ class Promised {
     public fullfilled?: true;
     public error?: ErrorValueAtPath;
     public value?: StateValueAtPath;
+    public empty?: boolean;
 
     constructor(public promise: Promise<StateValueAtPath> | undefined,
         onResolve: (r: StateValueAtPath) => void,
@@ -484,6 +520,8 @@ class Promised {
                 this.error = err
                 onReject()
             })
+        } else {
+            this.empty = true;
         }
     }
 }
@@ -531,8 +569,8 @@ class StateLinkImpl<S> implements StateLink<S>,
             }
         }
         if (this.valueSource === None && !allowPromised) {
-            if (this.state.promised!.error) {
-                throw this.state.promised!.error;
+            if (this.state.promised && this.state.promised.error) {
+                throw this.state.promised.error;
             }
             // TODO add hint
             throw new StateLinkInvalidUsageError('read promised state', this.path)
@@ -562,7 +600,7 @@ class StateLinkImpl<S> implements StateLink<S>,
 
     get promised() {
         const currentValue = this.get(true) // marks used
-        if (currentValue === None && !this.state.promised!.fullfilled) {
+        if (currentValue === None && this.state.promised && !this.state.promised.fullfilled) {
             return true;
         }
         return false;
@@ -571,8 +609,8 @@ class StateLinkImpl<S> implements StateLink<S>,
     get error() {
         const currentValue = this.get(true) // marks used
         if (currentValue === None) {
-            if (this.state.promised!.fullfilled) {
-                return this.state.promised!.error;
+            if (this.state.promised && this.state.promised.fullfilled) {
+                return this.state.promised.error;
             }
             this.get() // will throw 'read while promised' exception
         }
@@ -593,16 +631,14 @@ class StateLinkImpl<S> implements StateLink<S>,
     }
 
     set(newValue: React.SetStateAction<S>) {
-        this.state.update(this.setUntracked(newValue));
+        this.state.update([this.setUntracked(newValue)]);
     }
 
-    mergeUntracked(sourceValue: SetPartialStateAction<S>) {
+    mergeUntracked(sourceValue: SetPartialStateAction<S>): Path[] {
         const currentValue = this.getUntracked()
         if (typeof sourceValue === 'function') {
             sourceValue = (sourceValue as Function)(currentValue);
         }
-
-        const maximumPropsForCherryPickUpdate = 5;
 
         let updatedPath: Path;
         let deletedOrInsertedProps = false
@@ -647,30 +683,37 @@ class StateLinkImpl<S> implements StateLink<S>,
             })
             updatedPath = this.setUntracked(currentValue, sourceValue)
         } else if (typeof currentValue === 'string') {
-            return this.setUntracked((currentValue + String(sourceValue)) as unknown as S)
+            return [this.setUntracked((currentValue + String(sourceValue)) as unknown as S)]
         } else {
-            return this.setUntracked(sourceValue as S)
+            return [this.setUntracked(sourceValue as S)]
         }
 
-        if (updatedPath !== this.path || deletedOrInsertedProps ||
-            totalUpdatedProps > maximumPropsForCherryPickUpdate) {
-            return updatedPath
+        if (updatedPath !== this.path || deletedOrInsertedProps) {
+            return [updatedPath]
         }
         return Object.keys(sourceValue).map(p => updatedPath.slice().concat(p))
     }
 
     merge(sourceValue: SetPartialStateAction<S>) {
-        this.update(this.mergeUntracked(sourceValue));
+        this.state.update(this.mergeUntracked(sourceValue));
     }
 
-    update(path: Path | Path[]) {
-        if (path.length === 0 || typeof path[0] === 'string' || typeof path[0] === 'number') {
-            this.state.update(path as Path)
-        } else {
-            this.state.updateBatch(path as Path[])
+    batch(action: () => void): void {
+        if (this.promised) {
+            return this.state.postponeBatch(() => this.batch(action))
+        }
+        try {
+            this.state.startBatch()
+            action()
+        } finally {
+            this.state.finishBatch()
         }
     }
-
+    
+    update(paths: Path[]) {
+        this.state.update(paths)
+    }
+    
     with(plugin: () => Plugin): StateLink<S>;
     with(pluginId: symbol): [StateLink<S> & StateLinkPlugable<S>, PluginInstance];
     with(plugin: (() => Plugin) | symbol):
@@ -699,36 +742,38 @@ class StateLinkImpl<S> implements StateLink<S>,
         this.subscribers!.delete(l);
     }
 
-    onSet(path: Path, actions: (() => void)[]) {
-        this.updateIfUsed(path, actions)
+    onSet(paths: Path[], actions: (() => void)[]) {
+        this.updateIfUsed(paths, actions)
     }
 
-    private updateIfUsed(path: Path, actions: (() => void)[]): boolean {
+    private updateIfUsed(paths: Path[], actions: (() => void)[]): boolean {
         const update = () => {
             if (this.disabledTracking &&
                 (ValueCache in this || NestedCache in this)) {
                 actions.push(this.onUpdateUsed);
                 return true;
             }
-            const firstChildKey = path[this.path.length];
-            if (firstChildKey === undefined) {
-                if (ValueCache in this || NestedCache in this) {
-                    actions.push(this.onUpdateUsed);
-                    return true;
+            for (let path of paths) {
+                const firstChildKey = path[this.path.length];
+                if (firstChildKey === undefined) {
+                    if (ValueCache in this || NestedCache in this) {
+                        actions.push(this.onUpdateUsed);
+                        return true;
+                    }
+                } else {
+                    const firstChildValue = this.nestedLinksCache && this.nestedLinksCache[firstChildKey];
+                    if (firstChildValue && firstChildValue.updateIfUsed(paths, actions)) {
+                        return true;
+                    }
                 }
-                return false;
             }
-            const firstChildValue = this.nestedLinksCache && this.nestedLinksCache[firstChildKey];
-            if (firstChildValue === undefined) {
-                return false;
-            }
-            return firstChildValue.updateIfUsed(path, actions);
+            return false;
         }
 
         const updated = update();
         if (!updated && this.subscribers !== undefined) {
             this.subscribers.forEach(s => {
-                s.onSet(path, actions)
+                s.onSet(paths, actions)
             })
         }
         return updated;

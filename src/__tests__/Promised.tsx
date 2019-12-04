@@ -25,6 +25,9 @@ test('primitive: should rerender used on promise resolve', async () => {
     expect(() => result.current.value)
         .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
 
+    expect(() => result.current.set(200))
+        .toThrow('StateLink is used incorrectly. Attempted \'write promised state\' at \'/\'')
+        
     await act(async () => {
         await promise;
     })
