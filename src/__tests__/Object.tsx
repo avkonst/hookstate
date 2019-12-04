@@ -1,4 +1,4 @@
-import { useStateLink, createStateLink, useStateLinkUnmounted, None } from '../UseStateLink';
+import { useStateLink, createStateLink, useStateLinkUnmounted, None } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import React from 'react';
@@ -40,10 +40,10 @@ test('object: should not rerender used symbol properties', async () => {
     expect(TestSymbol in result.current.nested).toEqual(false)
     expect(result.current.get()[TestSymbol]).toEqual(undefined)
     expect(result.current.nested[TestSymbol]).toEqual(undefined)
-    
+
     expect(() => { result.current.get().field1 = 100 })
     .toThrow('StateLink is used incorrectly. Attempted \'set\' at \'/\'. Hint: did you mean to use \'state.nested.field1.set(value)\' instead of \'state.field1 = value\'?')
-    
+
     result.current.get()[TestSymbol] = 100
 
     expect(renderTimes).toStrictEqual(1);
@@ -114,7 +114,7 @@ test('object: should not rerender unused property', async () => {
         })
     });
     expect(renderTimes).toStrictEqual(1);
-    
+
     act(() => {
         result.current.nested.field1.set(p => p + 1);
     });
@@ -151,7 +151,7 @@ test('object: should delete property when set to none', async () => {
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.get().field1).toStrictEqual(0);
-    
+
     act(() => {
         // deleting existing property
         result.current.nested.field1.set(None);
@@ -165,7 +165,7 @@ test('object: should delete property when set to none', async () => {
     });
     expect(renderTimes).toStrictEqual(2);
     expect(result.current.get()).toEqual({ field2: 'str', field3: true });
-    
+
     act(() => {
         // inserting property
         result.current.nested.field1.set(1);

@@ -1,4 +1,4 @@
-import { useStateLink, createStateLink, useStateLinkUnmounted, None } from '../UseStateLink';
+import { useStateLink, createStateLink, useStateLinkUnmounted, None } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import React from 'react';
@@ -50,7 +50,7 @@ test('plugin: common flow callbacks', async () => {
     expect(Object.keys(result.current.nested[0].nested)).toEqual(['f1', 'f2']);
     expect(Object.keys(result.current.get()[0])).toEqual(['f1', 'f2']);
     expect(messages.slice(3)).toEqual([])
-    
+
     act(() => {
         result.current.nested[0].merge(p => ({ f1 : p.f1 + 1 }));
     });
@@ -110,7 +110,7 @@ test('plugin: common flow callbacks global state', async () => {
             }
         })
     }))
-    
+
     let renderTimes = 0
     const { result, unmount } = renderHook(() => {
         renderTimes += 1;
@@ -133,7 +133,7 @@ test('plugin: common flow callbacks global state', async () => {
     expect(Object.keys(result.current.nested[0].nested)).toEqual(['f1', 'f2']);
     expect(Object.keys(result.current.get()[0])).toEqual(['f1', 'f2']);
     expect(messages.slice(3)).toEqual([])
-    
+
     act(() => {
         result.current.nested[0].merge(p => ({ f1 : p.f1 + 1 }));
     });
@@ -162,7 +162,7 @@ test('plugin: common flow callbacks global state', async () => {
     });
     expect(renderTimes).toStrictEqual(3);
     expect(messages.slice(6)).toEqual(['onPreset called, [0,f1]: [{\"f1\":2,\"f2\":\"str\"}], 2 => 3, undefined', 'onSet called, [0,f1]: [{\"f1\":3,\"f2\":\"str\"}], 2 => 3, undefined'])
-    
+
     stateRef.destroy()
     expect(messages.slice(8)).toEqual(['onDestroy called, [{\"f1\":3,\"f2\":\"str\"}]'])
 

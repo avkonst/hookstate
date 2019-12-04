@@ -1,4 +1,4 @@
-import { useStateLink, createStateLink, useStateLinkUnmounted, None, StateMemo } from '../UseStateLink';
+import { useStateLink, createStateLink, useStateLinkUnmounted, None, StateMemo } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import React from 'react';
@@ -133,7 +133,7 @@ test('object: should not rerender used after unmount', async () => {
     expect(child.result.current).toStrictEqual(302);
     expect(parentRenderTimes).toStrictEqual(1);
     expect(childRenderTimes).toStrictEqual(3);
-    
+
     // again
     act(() => {
         parent.result.current.nested.fieldUsedByChild.set(p => p + 1);
@@ -143,7 +143,7 @@ test('object: should not rerender used after unmount', async () => {
     expect(child.result.current).toStrictEqual(303);
     expect(parentRenderTimes).toStrictEqual(1);
     expect(childRenderTimes).toStrictEqual(4);
-    
+
     child.unmount()
     act(() => {
         parent.result.current.nested.fieldUsedByChild.set(p => p + 1);

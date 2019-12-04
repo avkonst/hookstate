@@ -1,4 +1,4 @@
-import { useStateLink, createStateLink, useStateLinkUnmounted, None } from '../UseStateLink';
+import { useStateLink, createStateLink, useStateLinkUnmounted, None } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import React from 'react';
@@ -74,7 +74,7 @@ test('object: should rerender used', async () => {
 
 test('primitive: global state', async () => {
     const stateRef = createStateLink(0)
-    
+
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
@@ -132,11 +132,11 @@ test('primitive: stale state should auto refresh', async () => {
     });
     expect(renderTimes).toStrictEqual(2);
     expect(result.current.get()).toStrictEqual(1);
-    
+
     await new Promise(resolve => setTimeout(() => resolve(), 110));
     expect(renderTimes).toStrictEqual(3);
     expect(result.current.get()).toStrictEqual(2);
-    
+
     act(() => {
         result.current.set(p => p + 1);
     });

@@ -1,4 +1,4 @@
-import { useStateLink, createStateLink, useStateLinkUnmounted, None } from '../UseStateLink';
+import { useStateLink } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import React from 'react';
@@ -77,7 +77,7 @@ test('array: should not rerender used undefined properties', async () => {
     // tslint:disable-next-line: no-string-literal
     expect(result.current.value['field']).toEqual(undefined)
     expect(result.current.value[2]).toEqual(undefined)
-    
+
     act(() => {
         result.current.nested[0].set(1);
     });
@@ -107,7 +107,7 @@ test('array: should not rerender used symbol properties', async () => {
     expect(result.current.get().length).toStrictEqual(2);
     expect(result.current.get()[TestSymbol]).toEqual(undefined)
     expect(result.current.nested[TestSymbol]).toEqual(undefined)
-    
+
     result.current.get()[TestSymbol] = 100
 
     expect(() => { result.current.get()[0] = 100 })

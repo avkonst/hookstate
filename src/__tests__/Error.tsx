@@ -1,4 +1,4 @@
-import { useStateLink, createStateLink, useStateLinkUnmounted, None } from '../UseStateLink';
+import { useStateLink, createStateLink, useStateLinkUnmounted, None } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import React from 'react';
@@ -59,7 +59,7 @@ test('error: should not allow serialization of statelink', async () => {
     const state1 = renderHook(() => {
         return useStateLink({ prop1: [0, 0] })
     });
-    
+
     expect(() => JSON.stringify(state1))
     .toThrow('StateLink is used incorrectly. Attempted \'toJSON()\' at \'/\'. Hint: did you mean to use JSON.stringify(state.get()) instead of JSON.stringify(state)?')
 });

@@ -1,4 +1,4 @@
-import { useStateLink, createStateLink, useStateLinkUnmounted, None } from '../UseStateLink';
+import { useStateLink, createStateLink, useStateLinkUnmounted, None } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import React from 'react';
@@ -104,7 +104,7 @@ test('complex: should not rerender unused property', async () => {
         }])
     });
     expect(renderTimes).toStrictEqual(1);
-    
+
     act(() => {
         result.current.nested[0].nested.field1.set(p => p + 1);
     });
@@ -141,7 +141,7 @@ test('complex: should delete property when set to none', async () => {
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.nested[0].get().field1).toStrictEqual(0);
-    
+
     act(() => {
         // deleting existing property
         result.current.nested[0].nested.field1.set(None);
@@ -156,7 +156,7 @@ test('complex: should delete property when set to none', async () => {
     });
     expect(renderTimes).toStrictEqual(2);
     expect(result.current.nested[0].get()).toEqual({ field2: 'str', field3: true });
-    
+
     act(() => {
         // inserting property
         result.current.nested[0].nested.field1.set(1);
