@@ -111,6 +111,14 @@ var State = /** @class */ (function () {
                 _this._edition += 1;
                 _this.update([RootPath]);
             }
+        }, function () {
+            if (_this._batchesPendingActions &&
+                _this._value !== None &&
+                _this.edition !== DestroyedEdition) {
+                var actions = _this._batchesPendingActions;
+                _this._batchesPendingActions = undefined;
+                actions.forEach(function (a) { return a(); });
+            }
         });
         return promised;
     };
@@ -154,7 +162,7 @@ var State = /** @class */ (function () {
                 this._promised = this.createPromised(value);
                 value = None;
             }
-            else if (this.promised && !this.promised.empty) {
+            else if (this.promised && !this.promised.resolver) {
                 // TODO add hint
                 throw new StateLinkInvalidUsageError("write promised state", path, '');
             }
@@ -162,10 +170,9 @@ var State = /** @class */ (function () {
             this.beforeSet(path, value, prevValue, mergeValue);
             this._value = value;
             this.afterSet(path, value, prevValue, mergeValue);
-            if (this._batchesPendingActions && this._value !== None) {
-                var actions = this._batchesPendingActions;
-                this._batchesPendingActions = undefined;
-                actions.forEach(function (a) { return a(); });
+            if (prevValue === None && this._value !== None &&
+                this.promised && this.promised.resolver) {
+                this.promised.resolver();
             }
             return path;
         }
@@ -362,25 +369,27 @@ var StateInfImpl = /** @class */ (function () {
     return StateInfImpl;
 }());
 var Promised = /** @class */ (function () {
-    function Promised(promise, onResolve, onReject) {
+    function Promised(promise, onResolve, onReject, onPostResolve) {
         var _this = this;
         this.promise = promise;
-        if (promise) {
-            promise
-                .then(function (r) {
-                _this.fullfilled = true;
-                _this.value = r;
-                onResolve(r);
-            })
-                .catch(function (err) {
-                _this.fullfilled = true;
-                _this.error = err;
-                onReject();
+        if (!promise) {
+            promise = new Promise(function (resolve) {
+                _this.resolver = resolve;
             });
         }
-        else {
-            this.empty = true;
-        }
+        this.promise = promise
+            .then(function (r) {
+            _this.fullfilled = true;
+            if (!_this.resolver) {
+                onResolve(r);
+            }
+        })
+            .catch(function (err) {
+            _this.fullfilled = true;
+            _this.error = err;
+            onReject();
+        })
+            .then(function () { return onPostResolve(); });
     }
     return Promised;
 }());

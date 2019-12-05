@@ -59,7 +59,7 @@ export interface StateLink<S> {
 
     /** @warning experimental feature */
     batch(action: () => void): void;
-    
+
     with(plugin: () => Plugin): StateLink<S>;
     with(pluginId: symbol): [StateLink<S> & StateLinkPlugable<S>, PluginInstance];
 }
@@ -176,7 +176,7 @@ class State implements Subscribable {
     private _plugins: Map<symbol, PluginInstance> = new Map();
 
     private _promised?: Promised;
-    
+
     private _batches = 0;
     private _batchesPendingPaths?: Path[];
     private _batchesPendingActions?: (() => void)[];
@@ -205,6 +205,15 @@ class State implements Subscribable {
                 if (this.promised === promised && this.edition !== DestroyedEdition) {
                     this._edition += 1
                     this.update([RootPath])
+                }
+            },
+            () => {
+                if (this._batchesPendingActions &&
+                    this._value !== None &&
+                    this.edition !== DestroyedEdition) {
+                    const actions = this._batchesPendingActions
+                    this._batchesPendingActions = undefined
+                    actions.forEach(a => a())
                 }
             }
         );
@@ -249,7 +258,7 @@ class State implements Subscribable {
             } else if (typeof value === 'object' && Promise.resolve(value) === value) {
                 this._promised = this.createPromised(value)
                 value = None
-            } else if (this.promised && !this.promised.empty) {
+            } else if (this.promised && !this.promised.resolver) {
                 // TODO add hint
                 throw new StateLinkInvalidUsageError(
                     `write promised state`,
@@ -262,12 +271,11 @@ class State implements Subscribable {
             this._value = value;
             this.afterSet(path, value, prevValue, mergeValue)
 
-            if (this._batchesPendingActions && this._value !== None) {
-                const actions = this._batchesPendingActions
-                this._batchesPendingActions = undefined
-                actions.forEach(a => a())
-            }            
-    
+            if (prevValue === None && this._value !== None &&
+                this.promised && this.promised.resolver) {
+                this.promised.resolver()
+            }
+
             return path;
         }
 
@@ -334,7 +342,7 @@ class State implements Subscribable {
             this._batchesPendingPaths = this._batchesPendingPaths.concat(paths)
             return;
         }
-        
+
         const actions: (() => void)[] = [];
         this._subscribers.forEach(s => s.onSet(paths, actions));
         actions.forEach(a => a());
@@ -365,7 +373,7 @@ class State implements Subscribable {
     startBatch(): void {
         this._batches += 1
     }
-    
+
     finishBatch(): void {
         this._batches -= 1
         if (this._batches === 0) {
@@ -376,7 +384,7 @@ class State implements Subscribable {
             }
         }
     }
-    
+
     postponeBatch(action: () => void): void {
         this._batchesPendingActions = this._batchesPendingActions || []
         this._batchesPendingActions.push(action)
@@ -430,7 +438,7 @@ class State implements Subscribable {
             this.edition
         ).with(Downgraded) // it does not matter how it is used, it is not subscribed anyway
     }
-    
+
     subscribe(l: Subscriber) {
         this._subscribers.add(l);
     }
@@ -459,12 +467,12 @@ class StateInfImpl<S, R> implements StateInf<R> {
     // tslint:disable-next-line: variable-name
     public __synteticTypeInferenceMarkerInf = SynteticID;
     public disabledTracking: boolean | undefined;
-    
+
     constructor(
         public readonly state: State,
         public readonly transform?: (state: StateLink<S>, prev: R | undefined) => R,
     ) { }
-    
+
     access() {
         const link = this.state.accessUnmounted() as StateLink<S>
         if (this.transform) {
@@ -501,27 +509,30 @@ class StateInfImpl<S, R> implements StateInf<R> {
 class Promised {
     public fullfilled?: true;
     public error?: ErrorValueAtPath;
-    public value?: StateValueAtPath;
-    public empty?: boolean;
+    public resolver?: () => void;
 
     constructor(public promise: Promise<StateValueAtPath> | undefined,
         onResolve: (r: StateValueAtPath) => void,
-        onReject: () => void) {
-        if (promise) {
-            promise
+        onReject: () => void,
+        onPostResolve: () => void) {
+        if (!promise) {
+            promise = new Promise<StateValueAtRoot>(resolve => {
+                this.resolver = resolve;
+            })
+        }
+        this.promise = promise
             .then(r => {
                 this.fullfilled = true
-                this.value = r
-                onResolve(r)
+                if (!this.resolver) {
+                    onResolve(r)
+                }
             })
             .catch(err => {
                 this.fullfilled = true
                 this.error = err
                 onReject()
             })
-        } else {
-            this.empty = true;
-        }
+            .then(() => onPostResolve())
     }
 }
 
@@ -708,11 +719,11 @@ class StateLinkImpl<S> implements StateLink<S>,
             this.state.finishBatch()
         }
     }
-    
+
     update(paths: Path[]) {
         this.state.update(paths)
     }
-    
+
     with(plugin: () => Plugin): StateLink<S>;
     with(pluginId: symbol): [StateLink<S> & StateLinkPlugable<S>, PluginInstance];
     with(plugin: (() => Plugin) | symbol):

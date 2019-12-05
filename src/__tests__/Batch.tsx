@@ -1,4 +1,4 @@
-import { useStateLink } from '../';
+import { useStateLink, None } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import React from 'react';
@@ -114,20 +114,60 @@ test('object: should rerender used via nested batch promised', async () => {
 
     expect(() => result.current.set(200))
         .toThrow('StateLink is used incorrectly. Attempted \'write promised state\' at \'/\'')
-    
+
     act(() => {
         result.current.batch(() => {
-            expect(renderTimes).toStrictEqual(2);
+            expect(renderTimes).toStrictEqual(3);
             result.current.set(p => p + 100)
-            expect(renderTimes).toStrictEqual(2);
+            expect(renderTimes).toStrictEqual(3);
             result.current.set(p => p + 100)
             expect(renderTimes).toStrictEqual(3);
         });
     })
-    
+
     await act(async () => {
         await promise;
     })
+    expect(renderTimes).toStrictEqual(3);
+    expect(result.current.promised).toStrictEqual(false);
+    expect(result.current.error).toEqual(undefined);
+    expect(result.current.value).toEqual(300);
+});
+
+test('object: should rerender used via nested batch promised manual', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useStateLink<number>(None)
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(result.current.promised).toStrictEqual(true);
+    expect(() => result.current.error)
+        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+    expect(() => result.current.value)
+        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+
+    act(() => {
+        result.current.batch(() => {
+            act(() => {
+                expect(renderTimes).toStrictEqual(2);
+                result.current.set(p => p + 100)
+                expect(renderTimes).toStrictEqual(2);
+                result.current.set(p => p + 100)
+                expect(renderTimes).toStrictEqual(2);
+            })
+        });
+    })
+
+    expect(renderTimes).toStrictEqual(1);
+    act(() => {
+        result.current.set(100)
+    })
+    expect(renderTimes).toStrictEqual(2);
+    expect(result.current.value).toEqual(100); // mark used
+
+    await act(async () => new Promise(resolve => setTimeout(() => resolve(), 100)))
+
     expect(renderTimes).toStrictEqual(3);
     expect(result.current.promised).toStrictEqual(false);
     expect(result.current.error).toEqual(undefined);
@@ -168,7 +208,7 @@ test('object: should rerender used via scoped batched updates', async () => {
     expect(child.result.current.nested.fieldUsedByBoth.get()).toStrictEqual(200);
     expect(parentRenderTimes).toStrictEqual(1);
     expect(childRenderTimes).toStrictEqual(2);
-    
+
     act(() => {
         child.result.current.batch(() => {
             child.result.current.nested.fieldUsedByChild.set(p => p + 1);
