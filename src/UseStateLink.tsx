@@ -4,6 +4,9 @@ import React from 'react';
 // DECLARATIONS
 //
 
+/**
+ * @deprecated use StateInf<StateLink<S>> instead.
+ */
 export type StateRef<S> = StateInf<StateLink<S>>
 
 // R captures the type of result of transform function
