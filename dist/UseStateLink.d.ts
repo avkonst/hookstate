@@ -1,12 +1,11 @@
 import React from 'react';
-export interface StateRef<S> {
-    __synteticTypeInferenceMarkerRef: symbol;
-    with(plugin: () => Plugin): StateRef<S>;
-    wrap<R>(transform: (state: StateLink<S>, prev: R | undefined) => R): StateInf<R>;
-    destroy(): void;
-}
+/**
+ * @deprecated use StateInf<StateLink<S>> instead.
+ */
+export declare type StateRef<S> = StateInf<StateLink<S>>;
 export interface StateInf<R> {
     __synteticTypeInferenceMarkerInf: symbol;
+    access(): R;
     with(plugin: () => Plugin): StateInf<R>;
     wrap<R2>(transform: (state: R, prev: R2 | undefined) => R2): StateInf<R2>;
     destroy(): void;
@@ -21,13 +20,15 @@ export interface StateLink<S> {
     readonly path: Path;
     readonly nested: NestedInferredLink<S>;
     readonly value: S;
+    get(): S;
     /** @warning experimental feature */
     readonly promised: boolean;
     /** @warning experimental feature */
     readonly error: ErrorValueAtPath | undefined;
-    get(): S;
     set(newValue: SetStateAction<S>): void;
     merge(newValue: SetPartialStateAction<S>): void;
+    /** @warning experimental feature */
+    batch(action: () => void): void;
     with(plugin: () => Plugin): StateLink<S>;
     with(pluginId: symbol): [StateLink<S> & StateLinkPlugable<S>, PluginInstance];
 }
@@ -35,7 +36,7 @@ export interface StateLinkPlugable<S> {
     getUntracked(): S;
     setUntracked(newValue: SetStateAction<S>): Path;
     mergeUntracked(mergeValue: SetPartialStateAction<S>): Path | Path[];
-    update(path: Path | Path[]): void;
+    update(paths: Path[]): void;
 }
 export declare type StateValueAtRoot = any;
 export declare type StateValueAtPath = any;
@@ -53,32 +54,27 @@ export interface Plugin {
     readonly id: symbol;
     readonly instanceFactory: (initial: StateValueAtRoot, linkFactory: () => StateLink<StateValueAtRoot>) => PluginInstance;
 }
-export declare function createStateLink<S>(initial: InitialValueAtRoot<S>): StateRef<S>;
+export declare function createStateLink<S>(initial: InitialValueAtRoot<S>): StateInf<StateLink<S>>;
 export declare function createStateLink<S, R>(initial: InitialValueAtRoot<S>, transform: (state: StateLink<S>, prev: R | undefined) => R): StateInf<R>;
+export declare function useStateLink<S>(source: StateLink<S>): StateLink<S>;
+export declare function useStateLink<S, R>(source: StateLink<S>, transform: (state: StateLink<S>, prev: R | undefined) => R): R;
+export declare function useStateLink<S>(source: StateInf<StateLink<S>>): StateLink<S>;
+export declare function useStateLink<S, R>(source: StateInf<StateLink<S>>, transform: (state: StateLink<S>, prev: R | undefined) => R): R;
 export declare function useStateLink<R>(source: StateInf<R>): R;
-export declare function useStateLink<S>(source: StateLink<S> | StateRef<S>): StateLink<S>;
-export declare function useStateLink<S, R>(source: StateLink<S> | StateRef<S>, transform: (state: StateLink<S>, prev: R | undefined) => R): R;
 export declare function useStateLink<S>(source: InitialValueAtRoot<S>): StateLink<S>;
 export declare function useStateLink<S, R>(source: InitialValueAtRoot<S>, transform: (state: StateLink<S>, prev: R | undefined) => R): R;
 /**
- * @deprecated use accessStateLink instead
- */
-export declare function useStateLinkUnmounted<R>(source: StateInf<R>): R;
-/**
- * @deprecated use accessStateLink instead
+ * @deprecated use source.access() instead
  */
 export declare function useStateLinkUnmounted<S>(source: StateRef<S>): StateLink<S>;
 /**
- * @deprecated use accessStateLink instead
+ * @deprecated use source.wrap(transform).access() instead
  */
 export declare function useStateLinkUnmounted<S, R>(source: StateRef<S>, transform: (state: StateLink<S>) => R): R;
-export declare function accessStateLink<R>(source: StateInf<R>): R;
-export declare function accessStateLink<S>(source: StateRef<S>): StateLink<S>;
-export declare function accessStateLink<S, R>(source: StateRef<S>, transform: (state: StateLink<S>) => R): R;
-export declare function StateFragment<R>(props: {
-    state: StateInf<R>;
-    children: (state: R) => React.ReactElement;
-}): React.ReactElement;
+/**
+ * @deprecated use source.access() instead
+ */
+export declare function useStateLinkUnmounted<R>(source: StateInf<R>): R;
 export declare function StateFragment<S>(props: {
     state: StateLink<S> | StateRef<S>;
     children: (state: StateLink<S>) => React.ReactElement;
@@ -86,6 +82,10 @@ export declare function StateFragment<S>(props: {
 export declare function StateFragment<S, E extends {}, R>(props: {
     state: StateLink<S> | StateRef<S>;
     transform: (state: StateLink<S>, prev: R | undefined) => R;
+    children: (state: R) => React.ReactElement;
+}): React.ReactElement;
+export declare function StateFragment<R>(props: {
+    state: StateInf<R>;
     children: (state: R) => React.ReactElement;
 }): React.ReactElement;
 export declare function StateFragment<S>(props: {
@@ -99,4 +99,7 @@ export declare function StateFragment<S, R>(props: {
 }): React.ReactElement;
 export declare function StateMemo<S, R>(transform: (state: StateLink<S>, prev: R | undefined) => R, equals?: (next: R, prev: R) => boolean): (link: StateLink<S>, prev: R | undefined) => R;
 export declare function Downgraded(): Plugin;
+/**
+ * @depracated default export is deprecated
+ */
 export default useStateLink;

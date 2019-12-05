@@ -54,7 +54,7 @@ var PluginInvalidRegistrationError = /** @class */ (function (_super) {
     __extends(PluginInvalidRegistrationError, _super);
     function PluginInvalidRegistrationError(id, path) {
         return _super.call(this, "Plugin with onInit, which overrides initial value, " +
-            "should be attached to StateRef instance, but not to StateLink instance. " +
+            "should be attached to StateInf instance, but not to StateLink instance. " +
             ("Attempted 'with(" + extractSymbol(id) + ")' at '/" + path.join('/') + "'")) || this;
     }
     return PluginInvalidRegistrationError;
@@ -62,7 +62,7 @@ var PluginInvalidRegistrationError = /** @class */ (function (_super) {
 var PluginUnknownError = /** @class */ (function (_super) {
     __extends(PluginUnknownError, _super);
     function PluginUnknownError(s) {
-        return _super.call(this, "Plugin '" + extractSymbol(s) + "' has not been attached to the StateRef or StateLink. " +
+        return _super.call(this, "Plugin '" + extractSymbol(s) + "' has not been attached to the StateInf or StateLink. " +
             "Hint: you might need to register the required plugin using 'with' method. " +
             "See https://github.com/avkonst/hookstate#plugins for more details") || this;
     }
@@ -82,12 +82,32 @@ var State = /** @class */ (function () {
         this._setSubscribers = new Set();
         this._destroySubscribers = new Set();
         this._plugins = new Map();
+        this._batches = 0;
         if (typeof _value === 'object' &&
             Promise.resolve(_value) === _value) {
-            this._promised = Promised.create(_value, this);
+            this._promised = this.createPromised(_value);
             this._value = None;
         }
+        else if (_value === None) {
+            this._promised = this.createPromised(undefined);
+        }
     }
+    State.prototype.createPromised = function (newValue) {
+        var _this = this;
+        var promised = new Promised(newValue ? Promise.resolve(newValue) : undefined, function (r) {
+            if (_this.promised === promised && _this.edition !== DestroyedEdition) {
+                _this._promised = undefined;
+                _this.set(RootPath, r, undefined);
+                _this.update([RootPath]);
+            }
+        }, function () {
+            if (_this.promised === promised && _this.edition !== DestroyedEdition) {
+                _this._edition += 1;
+                _this.update([RootPath]);
+            }
+        });
+        return promised;
+    };
     Object.defineProperty(State.prototype, "edition", {
         get: function () {
             return this._edition;
@@ -116,26 +136,31 @@ var State = /** @class */ (function () {
         if (this._edition < 0) {
             // TODO convert to warning
             throw new StateLinkInvalidUsageError("set state for the destroyed state", path, 'make sure all asynchronous operations are cancelled (unsubscribed) when the state is destroyed. ' +
-                'Global state is explicitly destroyed at \'StateRef.destroy()\'. ' +
+                'Global state is explicitly destroyed at \'StateInf.destroy()\'. ' +
                 'Local state is automatically destroyed when a component is unmounted.');
         }
         if (path.length === 0) {
             // Root value UPDATE case,
             if (value === None) {
-                // never ending promise, unless it is displaced by antoher set later on
-                this._promised = Promised.create(new Promise(function () { }), this);
+                this._promised = this.createPromised(undefined);
             }
             else if (typeof value === 'object' && Promise.resolve(value) === value) {
-                this._promised = Promised.create(value, this);
+                this._promised = this.createPromised(value);
                 value = None;
             }
-            else {
-                this._promised = undefined;
+            else if (this.promised && !this.promised.empty) {
+                // TODO add hint
+                throw new StateLinkInvalidUsageError("write promised state", path, '');
             }
             var prevValue = this._value;
             this.beforeSet(path, value, prevValue, mergeValue);
             this._value = value;
             this.afterSet(path, value, prevValue, mergeValue);
+            if (this._batchesPendingActions && this._value !== None) {
+                var actions = this._batchesPendingActions;
+                this._batchesPendingActions = undefined;
+                actions.forEach(function (a) { return a(); });
+            }
             return path;
         }
         if (typeof value === 'object' && Promise.resolve(value) === value) {
@@ -188,17 +213,14 @@ var State = /** @class */ (function () {
         // no-op
         return path;
     };
-    State.prototype.update = function (path) {
+    State.prototype.update = function (paths) {
+        if (this._batches) {
+            this._batchesPendingPaths = this._batchesPendingPaths || [];
+            this._batchesPendingPaths = this._batchesPendingPaths.concat(paths);
+            return;
+        }
         var actions = [];
-        this._subscribers.forEach(function (s) { return s.onSet(path, actions); });
-        actions.forEach(function (a) { return a(); });
-    };
-    State.prototype.updateBatch = function (paths) {
-        var _this = this;
-        var actions = [];
-        paths.forEach(function (path) {
-            _this._subscribers.forEach(function (s) { return s.onSet(path, actions); });
-        });
+        this._subscribers.forEach(function (s) { return s.onSet(paths, actions); });
         actions.forEach(function (a) { return a(); });
     };
     State.prototype.beforeSet = function (path, value, prevValue, mergeValue) {
@@ -221,6 +243,23 @@ var State = /** @class */ (function () {
             this._setSubscribers.forEach(function (cb) { return cb(path, _this._value, value, prevValue, mergeValue); });
         }
     };
+    State.prototype.startBatch = function () {
+        this._batches += 1;
+    };
+    State.prototype.finishBatch = function () {
+        this._batches -= 1;
+        if (this._batches === 0) {
+            if (this._batchesPendingPaths) {
+                var paths = this._batchesPendingPaths;
+                this._batchesPendingPaths = undefined;
+                this.update(paths);
+            }
+        }
+    };
+    State.prototype.postponeBatch = function (action) {
+        this._batchesPendingActions = this._batchesPendingActions || [];
+        this._batchesPendingActions.push(action);
+    };
     State.prototype.getPlugin = function (pluginId) {
         var existingInstance = this._plugins.get(pluginId);
         if (existingInstance) {
@@ -234,7 +273,7 @@ var State = /** @class */ (function () {
         if (existingInstance) {
             return;
         }
-        var pluginInstance = plugin.instanceFactory(this._value, function () { return useStateLinkUnmounted(new StateRefImpl(_this)); });
+        var pluginInstance = plugin.instanceFactory(this._value, function () { return _this.accessUnmounted(); });
         this._plugins.set(plugin.id, pluginInstance);
         if (pluginInstance.onInit) {
             var initValue = pluginInstance.onInit();
@@ -256,6 +295,9 @@ var State = /** @class */ (function () {
         }
         return;
     };
+    State.prototype.accessUnmounted = function () {
+        return new StateLinkImpl(this, RootPath, NoActionUnmounted, this.get(RootPath), this.edition).with(Downgraded); // it does not matter how it is used, it is not subscribed anyway
+    };
     State.prototype.subscribe = function (l) {
         this._subscribers.add(l);
     };
@@ -276,13 +318,21 @@ var SynteticID = Symbol('SynteticTypeInferenceMarker');
 var ValueCache = Symbol('ValueCache');
 var NestedCache = Symbol('NestedCache');
 var UnmountedCallback = Symbol('UnmountedCallback');
-var StateRefImpl = /** @class */ (function () {
-    function StateRefImpl(state) {
+var StateInfImpl = /** @class */ (function () {
+    function StateInfImpl(state, transform) {
         this.state = state;
+        this.transform = transform;
         // tslint:disable-next-line: variable-name
-        this.__synteticTypeInferenceMarkerRef = SynteticID;
+        this.__synteticTypeInferenceMarkerInf = SynteticID;
     }
-    StateRefImpl.prototype.with = function (plugin) {
+    StateInfImpl.prototype.access = function () {
+        var link = this.state.accessUnmounted();
+        if (this.transform) {
+            return this.transform(link, undefined);
+        }
+        return link;
+    };
+    StateInfImpl.prototype.with = function (plugin) {
         var pluginMeta = plugin();
         if (pluginMeta.id === DowngradedID) {
             this.disabledTracking = true;
@@ -291,33 +341,17 @@ var StateRefImpl = /** @class */ (function () {
         this.state.register(pluginMeta);
         return this;
     };
-    StateRefImpl.prototype.wrap = function (transform) {
-        return new StateInfImpl(this, transform);
-    };
-    StateRefImpl.prototype.destroy = function () {
-        this.state.destroy();
-    };
-    return StateRefImpl;
-}());
-var StateInfImpl = /** @class */ (function () {
-    function StateInfImpl(wrapped, transform) {
-        this.wrapped = wrapped;
-        this.transform = transform;
-        // tslint:disable-next-line: variable-name
-        this.__synteticTypeInferenceMarkerInf = SynteticID;
-    }
-    StateInfImpl.prototype.with = function (plugin) {
-        this.wrapped.with(plugin);
-        return this;
-    };
     StateInfImpl.prototype.wrap = function (transform) {
-        var _this = this;
-        return new StateInfImpl(this.wrapped, function (s, p) {
-            return transform(_this.transform(s, undefined), p);
+        var currentTransform = this.transform;
+        return new StateInfImpl(this.state, function (s, p) {
+            if (currentTransform) {
+                return transform(currentTransform(s, undefined), p);
+            }
+            return transform(s, p);
         });
     };
     StateInfImpl.prototype.destroy = function () {
-        this.wrapped.destroy();
+        this.state.destroy();
     };
     return StateInfImpl;
 }());
@@ -338,20 +372,10 @@ var Promised = /** @class */ (function () {
                 onReject();
             });
         }
+        else {
+            this.empty = true;
+        }
     }
-    Promised.create = function (newValue, state) {
-        var promised = new Promised(Promise.resolve(newValue), function (r) {
-            if (state.promised === promised) {
-                state.set(RootPath, r, undefined);
-                state.update(RootPath);
-            }
-        }, function () {
-            if (state.promised === promised) {
-                state.update(RootPath);
-            }
-        });
-        return promised;
-    };
     return Promised;
 }());
 var StateLinkImpl = /** @class */ (function () {
@@ -390,7 +414,7 @@ var StateLinkImpl = /** @class */ (function () {
             }
         }
         if (this.valueSource === None && !allowPromised) {
-            if (this.state.promised.error) {
+            if (this.state.promised && this.state.promised.error) {
                 throw this.state.promised.error;
             }
             // TODO add hint
@@ -426,7 +450,7 @@ var StateLinkImpl = /** @class */ (function () {
     Object.defineProperty(StateLinkImpl.prototype, "promised", {
         get: function () {
             var currentValue = this.get(true); // marks used
-            if (currentValue === None && !this.state.promised.fullfilled) {
+            if (currentValue === None && this.state.promised && !this.state.promised.fullfilled) {
                 return true;
             }
             return false;
@@ -438,7 +462,7 @@ var StateLinkImpl = /** @class */ (function () {
         get: function () {
             var currentValue = this.get(true); // marks used
             if (currentValue === None) {
-                if (this.state.promised.fullfilled) {
+                if (this.state.promised && this.state.promised.fullfilled) {
                     return this.state.promised.error;
                 }
                 this.get(); // will throw 'read while promised' exception
@@ -458,17 +482,15 @@ var StateLinkImpl = /** @class */ (function () {
         return this.state.set(this.path, newValue, mergeValue);
     };
     StateLinkImpl.prototype.set = function (newValue) {
-        this.state.update(this.setUntracked(newValue));
+        this.state.update([this.setUntracked(newValue)]);
     };
     StateLinkImpl.prototype.mergeUntracked = function (sourceValue) {
         var currentValue = this.getUntracked();
         if (typeof sourceValue === 'function') {
             sourceValue = sourceValue(currentValue);
         }
-        var maximumPropsForCherryPickUpdate = 5;
         var updatedPath;
         var deletedOrInsertedProps = false;
-        var totalUpdatedProps = 0;
         if (Array.isArray(currentValue)) {
             if (Array.isArray(sourceValue)) {
                 updatedPath = this.setUntracked(currentValue.concat(sourceValue), sourceValue);
@@ -486,7 +508,6 @@ var StateLinkImpl = /** @class */ (function () {
                         deletedOrInsertedProps = deletedOrInsertedProps || !(index in currentValue);
                         currentValue[index] = newPropValue;
                     }
-                    totalUpdatedProps += 1;
                 });
                 // indexes are ascending sorted as per above
                 // so, delete one by one from the end
@@ -508,32 +529,38 @@ var StateLinkImpl = /** @class */ (function () {
                     deletedOrInsertedProps = deletedOrInsertedProps || !(key in currentValue);
                     currentValue[key] = newPropValue;
                 }
-                totalUpdatedProps += 0;
             });
             updatedPath = this.setUntracked(currentValue, sourceValue);
         }
         else if (typeof currentValue === 'string') {
-            return this.setUntracked((currentValue + String(sourceValue)));
+            return [this.setUntracked((currentValue + String(sourceValue)))];
         }
         else {
-            return this.setUntracked(sourceValue);
+            return [this.setUntracked(sourceValue)];
         }
-        if (updatedPath !== this.path || deletedOrInsertedProps ||
-            totalUpdatedProps > maximumPropsForCherryPickUpdate) {
-            return updatedPath;
+        if (updatedPath !== this.path || deletedOrInsertedProps) {
+            return [updatedPath];
         }
         return Object.keys(sourceValue).map(function (p) { return updatedPath.slice().concat(p); });
     };
     StateLinkImpl.prototype.merge = function (sourceValue) {
-        this.update(this.mergeUntracked(sourceValue));
+        this.state.update(this.mergeUntracked(sourceValue));
     };
-    StateLinkImpl.prototype.update = function (path) {
-        if (path.length === 0 || typeof path[0] === 'string' || typeof path[0] === 'number') {
-            this.state.update(path);
+    StateLinkImpl.prototype.batch = function (action) {
+        var _this = this;
+        if (this.promised) {
+            return this.state.postponeBatch(function () { return _this.batch(action); });
         }
-        else {
-            this.state.updateBatch(path);
+        try {
+            this.state.startBatch();
+            action();
         }
+        finally {
+            this.state.finishBatch();
+        }
+    };
+    StateLinkImpl.prototype.update = function (paths) {
+        this.state.update(paths);
     };
     StateLinkImpl.prototype.with = function (plugin) {
         if (typeof plugin === 'function') {
@@ -558,10 +585,10 @@ var StateLinkImpl = /** @class */ (function () {
     StateLinkImpl.prototype.unsubscribe = function (l) {
         this.subscribers.delete(l);
     };
-    StateLinkImpl.prototype.onSet = function (path, actions) {
-        this.updateIfUsed(path, actions);
+    StateLinkImpl.prototype.onSet = function (paths, actions) {
+        this.updateIfUsed(paths, actions);
     };
-    StateLinkImpl.prototype.updateIfUsed = function (path, actions) {
+    StateLinkImpl.prototype.updateIfUsed = function (paths, actions) {
         var _this = this;
         var update = function () {
             if (_this.disabledTracking &&
@@ -569,24 +596,28 @@ var StateLinkImpl = /** @class */ (function () {
                 actions.push(_this.onUpdateUsed);
                 return true;
             }
-            var firstChildKey = path[_this.path.length];
-            if (firstChildKey === undefined) {
-                if (ValueCache in _this || NestedCache in _this) {
-                    actions.push(_this.onUpdateUsed);
-                    return true;
+            for (var _i = 0, paths_1 = paths; _i < paths_1.length; _i++) {
+                var path = paths_1[_i];
+                var firstChildKey = path[_this.path.length];
+                if (firstChildKey === undefined) {
+                    if (ValueCache in _this || NestedCache in _this) {
+                        actions.push(_this.onUpdateUsed);
+                        return true;
+                    }
                 }
-                return false;
+                else {
+                    var firstChildValue = _this.nestedLinksCache && _this.nestedLinksCache[firstChildKey];
+                    if (firstChildValue && firstChildValue.updateIfUsed(paths, actions)) {
+                        return true;
+                    }
+                }
             }
-            var firstChildValue = _this.nestedLinksCache && _this.nestedLinksCache[firstChildKey];
-            if (firstChildValue === undefined) {
-                return false;
-            }
-            return firstChildValue.updateIfUsed(path, actions);
+            return false;
         };
         var updated = update();
         if (!updated && this.subscribers !== undefined) {
             this.subscribers.forEach(function (s) {
-                s.onSet(path, actions);
+                s.onSet(paths, actions);
             });
         }
         return updated;
@@ -824,9 +855,9 @@ function useSubscribedStateLink(state, path, update, subscribeTarget, disabledTr
     React.useEffect(function () { return function () { return onDestroy(); }; }, []);
     return link;
 }
-function useGlobalStateLink(stateRef) {
-    var _a = React.useState({ state: stateRef.state }), value = _a[0], setValue = _a[1];
-    return useSubscribedStateLink(value.state, RootPath, function () { return setValue({ state: value.state }); }, value.state, stateRef.disabledTracking, NoAction);
+function useGlobalStateLink(stateInf) {
+    var _a = React.useState({ state: stateInf.state }), value = _a[0], setValue = _a[1];
+    return useSubscribedStateLink(value.state, RootPath, function () { return setValue({ state: value.state }); }, value.state, stateInf.disabledTracking, NoAction);
 }
 function useLocalStateLink(initialState) {
     var _a = React.useState(function () { return ({ state: createState(initialState) }); }), value = _a[0], setValue = _a[1];
@@ -841,7 +872,7 @@ function useAutoStateLink(initialState) {
         // eslint-disable-next-line react-hooks/rules-of-hooks
         return useScopedStateLink(initialState);
     }
-    if (initialState instanceof StateRefImpl) {
+    if (initialState instanceof StateInfImpl) {
         // eslint-disable-next-line react-hooks/rules-of-hooks
         return useGlobalStateLink(initialState);
     }
@@ -878,18 +909,15 @@ function injectTransform(link, transform) {
     return result;
 }
 function createStateLink(initial, transform) {
-    var ref = new StateRefImpl(createState(initial));
+    var ref = new StateInfImpl(createState(initial));
     if (transform) {
-        return new StateInfImpl(ref, transform);
+        return ref.wrap(transform);
     }
     return ref;
 }
 function useStateLink(source, transform) {
-    var state = source instanceof StateInfImpl
-        ? source.wrapped
-        : source;
-    var link = useAutoStateLink(state);
-    if (source instanceof StateInfImpl) {
+    var link = useAutoStateLink(source);
+    if (source instanceof StateInfImpl && source.transform) {
         return injectTransform(link, source.transform);
     }
     if (transform) {
@@ -898,23 +926,17 @@ function useStateLink(source, transform) {
     return link;
 }
 /**
- * @deprecated use accessStateLink instead
+ * @deprecated use StateInf.wrap/access instead
  */
 function useStateLinkUnmounted(source, transform) {
-    return accessStateLink(source, transform);
-}
-function accessStateLink(source, transform) {
-    var stateRef = source instanceof StateInfImpl
-        ? source.wrapped
-        : source;
-    var link = new StateLinkImpl(stateRef.state, RootPath, NoActionUnmounted, stateRef.state.get(RootPath), stateRef.state.edition).with(Downgraded); // it does not matter how it is used, it is not subscribed anyway
-    if (source instanceof StateInfImpl) {
-        return source.transform(link, undefined);
+    var stateInf = source;
+    if (stateInf.transform) {
+        return source.access();
     }
     if (transform) {
-        return transform(link);
+        return transform(source.access());
     }
-    return link;
+    return source.access();
 }
 function StateFragment(props) {
     var scoped = useStateLink(props.state, props.transform);
@@ -934,5 +956,5 @@ function Downgraded() {
     };
 }
 
-export { Downgraded, None, StateFragment, StateMemo, accessStateLink, createStateLink, useStateLink, useStateLinkUnmounted };
+export { Downgraded, None, StateFragment, StateMemo, createStateLink, useStateLink, useStateLinkUnmounted };
 //# sourceMappingURL=index.es.js.map
