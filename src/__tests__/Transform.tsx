@@ -1,4 +1,4 @@
-import { useStateLink, StateMemo } from '../UseStateLink';
+import { useStateLink, StateMemo } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import React from 'react';
