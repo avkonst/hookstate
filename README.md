@@ -9,9 +9,10 @@
 
 <p align="center">
   <a href="#why-hookstate">Why?</a> •
-  <a href="https://hookstate.js.org/">Demos / Examples</a> •
+  <a href="#quick-start">Demos / Examples</a> •
   <a href="#api-documentation">Documentation</a> •
   <a href="#plugins">Plugins</a>
+  <a href="./CHANGELOG.md">Changelog</a>
 </p>
 
 <p align="center">
@@ -66,19 +67,19 @@ For the complete example application built with Hookstate, check out [this demo]
 
 > Create the state:
 ```tsx
-const stateRef = createStateLink(0);
+const stateInf = createStateLink(0);
 ```
 > and use it *within* a React component:
 ```tsx
 export function ExampleComponent() {
-  const state = useStateLink(stateRef);
+  const state = useStateLink(stateInf);
   return <p>State value: {state.value}
     <button onClick={() => state.set(p => p + 1)}>Increment</button></p>
 }
 ```
 > and *outside* of a React component:
 ```tsx
-setInterval(() => useStateLinkUnmounted(stateRef).set(p => p + 1), 3000)
+setInterval(() => stateInf.access().set(p => p + 1), 3000)
 ```
 
 ## Used By
@@ -110,35 +111,30 @@ It supports all recent browsers and works where React works. If you need to poly
 
 ### `createStateLink`
 
-This function creates a reference to a **global** state. The first argument is the initial value to assign to the state. For example ([see it running](https://hookstate.js.org/global-complex-from-documentation)):
+This function creates a reference to a **global** state. The first argument of generic type `S` is the initial value to assign to the state. The return type is [`StateInf<R>`](#stateinf). By default, generic `R` type is a [`StateLink<S>`](#statelink). You can wrap the state reference by your custom state access interface using the second [`transform` argument](#transform-argument). In this case `R` type is the result type of the `transform` function.
+
+For example ([see it running](https://hookstate.js.org/global-complex-from-documentation)):
 
 ```tsx
 interface Task { name: string; priority?: number }
 const initialValue: Task[] = [{ name: 'First Task' }];
-const stateRef = createStateLink(initialValue);
+const stateInf = createStateLink(initialValue);
 ```
 
-You can attach various [plugins](#plugins) using `with` method of the state reference.
+### `StateInf`
 
-You can also wrap the state reference by your custom state access interface using the second [`transform` argument](#transform-argument).
+The type of an object returned by `createStateLink`. The `StateInf` variable has got the following methods and properties:
 
-### `useStateLinkUnmounted`
-
-This function opens access to the state. It **can** be used outside of a React component. The first argument should be a result of the [`createStateLink`](#createstatelink) function. For example ([see it running](https://hookstate.js.org/global-complex-from-documentation)):
+- `with(...)` - attaches various [plugins](#plugins) to extend the functionality of the state
+- `wrap(...)` - transforms state access interface similarly to [`transform` argument](#transform-argument) for the `createStateLink`
+- `destroy()` - destroys the state, so the resources (if any allocated by custom plugins) can be released, and the state can be closed.
+- `access()` - this function opens access to the state. It **can** be used outside of a React component to read and update the state object. For example ([see it running](https://hookstate.js.org/global-complex-from-documentation)):
 
 ```tsx
-setTimeout(() => useStateLinkUnmounted(stateRef)
+setTimeout(() => stateInf.access()
     .set(tasks => tasks.concat([{ name: 'Second task by timeout', priority: 1 }]))
 , 5000) // adds new task 5 seconds after website load
 ```
-
-The result variable is of type [`StateLink`](#statelink).
-
-The result state link inherits all the plugins attached to the state reference.
-
-You can attach more [plugins](#plugins) using `with` method of the state link.
-
-You can also wrap the [state link](#statelink) by your custom state access interface using the second [`transform` argument](#transform-argument).
 
 ### `useStateLink`
 
@@ -147,7 +143,7 @@ This function opens access to the state. It **must** be used within a functional
 
     ```tsx
     export const ExampleComponent = () => {
-        const state = useStateLink(stateRef);
+        const state = useStateLink(stateInf);
         return <button onClick={() => state.set(tasks => tasks.concat([{ name: 'Untitled' }]))} >
             Add task
         </button>
@@ -198,6 +194,7 @@ The `StateLink` variable has got the following methods and properties:
 
 - `get()` or `value` - returns the instance of data in the state
 - `set(...)` or `set((prevState) => ...)` - function which allows to mutate the state value. If `path === []`, it is similar to the `setState` variable returned by `React.useState` hook. If `path !== []`, it sets only the segment of the state value, pointed out by the path. The `set` function will not accept partial updates. It can be done by combining `set` with `nested`. There is the `Mutate` [plugin](#plugins), which adds helpful methods to mutate arrays and objects.
+- `merge(...)` or `merge((prevState) => ...)` - similarly to `set` method updates the state. If target current state value is an object, it does partial update for the object. If state value is an array and the `merge` argument is an array too, it concatenates the current value with `merge` value and sets it to the state. If state value is an array and the `merge` argument is an object, it does partial update for the current array value. If target current state value is a string, it concatenates the current state value string with the `merge` argument converted to string and sets the result to the state.
 - `path` 'Javascript' object 'path' to an element relative to the root object in the state. For example:
 
     ```tsx
