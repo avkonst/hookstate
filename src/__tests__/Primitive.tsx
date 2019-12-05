@@ -1,4 +1,4 @@
-import { useStateLink, createStateLink, useStateLinkUnmounted, None } from '../UseStateLink';
+import { useStateLink, createStateLink } from '../UseStateLink';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import React from 'react';
@@ -73,12 +73,12 @@ test('object: should rerender used', async () => {
 });
 
 test('primitive: global state', async () => {
-    const stateRef = createStateLink(0)
+    const stateInf = createStateLink(0)
     
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useStateLink(stateRef)
+        return useStateLink(stateInf)
     });
 
     expect(result.current.get()).toStrictEqual(0);
@@ -92,9 +92,9 @@ test('primitive: global state', async () => {
 test('primitive: global state created locally', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
-        const stateRef = createStateLink(0)
+        const stateInf = createStateLink(0)
         renderTimes += 1;
-        return useStateLink(stateRef)
+        return useStateLink(stateInf)
     });
 
     expect(result.current.get()).toStrictEqual(0);

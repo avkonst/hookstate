@@ -4,20 +4,14 @@ import React from 'react';
 // DECLARATIONS
 //
 
-export interface StateRef<S> {
-    // placed to make sure type inference does not match compatible structure
-    // on useStateLink call
-    __synteticTypeInferenceMarkerRef: symbol;
-    with(plugin: () => Plugin): StateRef<S>;
-    wrap<R>(transform: (state: StateLink<S>, prev: R | undefined) => R): StateInf<R>
-    destroy(): void
-}
+export type StateRef<S> = StateInf<StateLink<S>>
 
 // R captures the type of result of transform function
 export interface StateInf<R> {
     // placed to make sure type inference does not match empty structure
     // on useStateLink call
     __synteticTypeInferenceMarkerInf: symbol;
+    access(): R;
     with(plugin: () => Plugin): StateInf<R>;
     wrap<R2>(transform: (state: R, prev: R2 | undefined) => R2): StateInf<R2>
     destroy(): void;
@@ -90,7 +84,7 @@ export const None = Symbol('none') as StateValueAtPath;
 export interface PluginInstance {
     // if returns defined value,
     // it overrides the current / initial value in the state
-    // it is only applicable for plugins attached via stateref, not via statelink
+    // it is only applicable for plugins attached via stateinf, not via statelink
     readonly onInit?: () => StateValueAtRoot | void,
     readonly onPreset?: (path: Path, prevState: StateValueAtRoot,
         newValue: StateValueAtPath, prevValue: StateValueAtPath,
@@ -131,14 +125,14 @@ function extractSymbol(s: symbol) {
 class PluginInvalidRegistrationError extends Error {
     constructor(id: symbol, path: Path) {
         super(`Plugin with onInit, which overrides initial value, ` +
-        `should be attached to StateRef instance, but not to StateLink instance. ` +
+        `should be attached to StateInf instance, but not to StateLink instance. ` +
         `Attempted 'with(${extractSymbol(id)})' at '/${path.join('/')}'`)
     }
 }
 
 class PluginUnknownError extends Error {
     constructor(s: symbol) {
-        super(`Plugin '${extractSymbol(s)}' has not been attached to the StateRef or StateLink. ` +
+        super(`Plugin '${extractSymbol(s)}' has not been attached to the StateInf or StateLink. ` +
             `Hint: you might need to register the required plugin using 'with' method. ` +
             `See https://github.com/avkonst/hookstate#plugins for more details`)
     }
@@ -240,7 +234,7 @@ class State implements Subscribable {
                 `set state for the destroyed state`,
                 path,
                 'make sure all asynchronous operations are cancelled (unsubscribed) when the state is destroyed. ' +
-                'Global state is explicitly destroyed at \'StateRef.destroy()\'. ' +
+                'Global state is explicitly destroyed at \'StateInf.destroy()\'. ' +
                 'Local state is automatically destroyed when a component is unmounted.')
         }
 
@@ -400,7 +394,7 @@ class State implements Subscribable {
         }
         const pluginInstance = plugin.instanceFactory(
             this._value,
-            () => useStateLinkUnmounted(new StateRefImpl(this))
+            () => this.accessUnmounted()
         );
         this._plugins.set(plugin.id, pluginInstance);
         if (pluginInstance.onInit) {
@@ -424,6 +418,16 @@ class State implements Subscribable {
         return;
     }
 
+    accessUnmounted() {
+        return new StateLinkImpl<StateValueAtRoot>(
+            this,
+            RootPath,
+            NoActionUnmounted,
+            this.get(RootPath),
+            this.edition
+        ).with(Downgraded) // it does not matter how it is used, it is not subscribed anyway
+    }
+    
     subscribe(l: Subscriber) {
         this._subscribers.add(l);
     }
@@ -448,14 +452,25 @@ const ValueCache = Symbol('ValueCache');
 const NestedCache = Symbol('NestedCache');
 const UnmountedCallback = Symbol('UnmountedCallback');
 
-class StateRefImpl<S> implements StateRef<S> {
+class StateInfImpl<S, R> implements StateInf<R> {
     // tslint:disable-next-line: variable-name
-    public __synteticTypeInferenceMarkerRef = SynteticID;
+    public __synteticTypeInferenceMarkerInf = SynteticID;
     public disabledTracking: boolean | undefined;
+    
+    constructor(
+        public readonly state: State,
+        public readonly transform?: (state: StateLink<S>, prev: R | undefined) => R,
+    ) { }
+    
+    access() {
+        const link = this.state.accessUnmounted() as StateLink<S>
+        if (this.transform) {
+            return this.transform(link, undefined)
+        }
+        return link as unknown as R;
+    }
 
-    constructor(public state: State) { }
-
-    with(plugin: () => Plugin): StateRef<S> {
+    with(plugin: () => Plugin): StateInf<R> {
         const pluginMeta = plugin()
         if (pluginMeta.id === DowngradedID) {
             this.disabledTracking = true;
@@ -465,37 +480,18 @@ class StateRefImpl<S> implements StateRef<S> {
         return this;
     }
 
-    wrap<R>(transform: (state: StateLink<S>, prev: R | undefined) => R): StateInf<R> {
-        return new StateInfImpl(this, transform)
-    }
-
-    destroy() {
-        this.state.destroy()
-    }
-}
-
-class StateInfImpl<S, R> implements StateInf<R> {
-    // tslint:disable-next-line: variable-name
-    public __synteticTypeInferenceMarkerInf = SynteticID;
-
-    constructor(
-        public readonly wrapped: StateRefImpl<S>,
-        public readonly transform: (state: StateLink<S>, prev: R | undefined) => R,
-    ) { }
-
-    with(plugin: () => Plugin): StateInf<R> {
-        this.wrapped.with(plugin);
-        return this;
-    }
-
     wrap<R2>(transform: (state: R, prev: R2 | undefined) => R2): StateInf<R2> {
-        return new StateInfImpl(this.wrapped, (s, p) => {
-            return transform(this.transform(s, undefined), p)
+        const currentTransform = this.transform;
+        return new StateInfImpl<S, R2>(this.state, (s, p) => {
+            if (currentTransform) {
+                return transform(currentTransform(s, undefined), p)
+            }
+            return transform(s as unknown as R, p)
         })
     }
 
     destroy() {
-        this.wrapped.destroy()
+        this.state.destroy()
     }
 }
 
@@ -1050,14 +1046,14 @@ function useSubscribedStateLink<S>(
     return link;
 }
 
-function useGlobalStateLink<S>(stateRef: StateRefImpl<S>): StateLinkImpl<S> {
-    const [value, setValue] = React.useState({ state: stateRef.state });
+function useGlobalStateLink<S>(stateInf: StateInfImpl<S, StateLink<S>>): StateLinkImpl<S> {
+    const [value, setValue] = React.useState({ state: stateInf.state });
     return useSubscribedStateLink(
         value.state,
         RootPath,
         () => setValue({ state: value.state }),
         value.state,
-        stateRef.disabledTracking,
+        stateInf.disabledTracking,
         NoAction);
 }
 
@@ -1084,15 +1080,15 @@ function useScopedStateLink<S>(originLink: StateLinkImpl<S>): StateLinkImpl<S> {
 }
 
 function useAutoStateLink<S>(
-    initialState: InitialValueAtRoot<S> | StateLink<S> | StateRef<S>
+    initialState: InitialValueAtRoot<S> | StateLink<S> | StateInf<StateLink<S>>
 ): StateLinkImpl<S> {
     if (initialState instanceof StateLinkImpl) {
         // eslint-disable-next-line react-hooks/rules-of-hooks
         return useScopedStateLink(initialState as StateLinkImpl<S>);
     }
-    if (initialState instanceof StateRefImpl) {
+    if (initialState instanceof StateInfImpl) {
         // eslint-disable-next-line react-hooks/rules-of-hooks
-        return useGlobalStateLink(initialState as StateRefImpl<S>);
+        return useGlobalStateLink(initialState as StateInfImpl<S, StateLink<S>>);
     }
 
     // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -1139,7 +1135,7 @@ function injectTransform<S, R>(
 ///
 export function createStateLink<S>(
     initial: InitialValueAtRoot<S>
-): StateRef<S>;
+): StateInf<StateLink<S>>;
 export function createStateLink<S, R>(
     initial: InitialValueAtRoot<S>,
     transform: (state: StateLink<S>, prev: R | undefined) => R
@@ -1147,23 +1143,30 @@ export function createStateLink<S, R>(
 export function createStateLink<S, R>(
     initial: InitialValueAtRoot<S>,
     transform?: (state: StateLink<S>, prev: R | undefined) => R
-): StateRef<S> | StateInf<R> {
-    const ref = new StateRefImpl<S>(createState(initial));
+): StateInf<StateLink<S>> | StateInf<R> {
+    const ref = new StateInfImpl<S, StateLink<S>>(createState(initial));
     if (transform) {
-        return new StateInfImpl(ref, transform)
+        return ref.wrap(transform)
     }
     return ref;
 }
 
-export function useStateLink<R>(
-    source: StateInf<R>
-): R;
 export function useStateLink<S>(
-    source: StateLink<S> | StateRef<S>
+    source: StateLink<S>
 ): StateLink<S>;
 export function useStateLink<S, R>(
-    source: StateLink<S> | StateRef<S>,
+    source: StateLink<S>,
     transform: (state: StateLink<S>, prev: R | undefined) => R
+): R;
+export function useStateLink<S>(
+    source: StateInf<StateLink<S>>
+): StateLink<S>;
+export function useStateLink<S, R>(
+    source: StateInf<StateLink<S>>,
+    transform: (state: StateLink<S>, prev: R | undefined) => R
+): R;
+export function useStateLink<R>(
+    source: StateInf<R>
 ): R;
 export function useStateLink<S>(
     source: InitialValueAtRoot<S>
@@ -1173,14 +1176,11 @@ export function useStateLink<S, R>(
     transform: (state: StateLink<S>, prev: R | undefined) => R
 ): R;
 export function useStateLink<S, R>(
-    source: InitialValueAtRoot<S> | StateLink<S> | StateRef<S> | StateInf<R>,
+    source: InitialValueAtRoot<S> | StateLink<S> | StateInf<StateLink<S>> | StateInf<R>,
     transform?: (state: StateLink<S>, prev: R | undefined) => R
 ): StateLink<S> | R {
-    const state = source instanceof StateInfImpl
-        ? source.wrapped as unknown as StateRef<S>
-        : source as (InitialValueAtRoot<S> | StateLink<S> | StateRef<S>);
-    const link = useAutoStateLink(state);
-    if (source instanceof StateInfImpl) {
+    const link = useAutoStateLink(source as InitialValueAtRoot<S> | StateLink<S> | StateInf<StateLink<S>>);
+    if (source instanceof StateInfImpl && source.transform) {
         return injectTransform(link, source.transform);
     }
     if (transform) {
@@ -1190,75 +1190,41 @@ export function useStateLink<S, R>(
 }
 
 /**
- * @deprecated use accessStateLink instead
- */
-export function useStateLinkUnmounted<R>(
-    source: StateInf<R>,
-): R;
-/**
- * @deprecated use accessStateLink instead
+ * @deprecated use source.access() instead
  */
 export function useStateLinkUnmounted<S>(
     source: StateRef<S>,
 ): StateLink<S>;
 /**
- * @deprecated use accessStateLink instead
+ * @deprecated use source.wrap(transform).access() instead
  */
 export function useStateLinkUnmounted<S, R>(
     source: StateRef<S>,
     transform: (state: StateLink<S>) => R
 ): R;
 /**
- * @deprecated use accessStateLink instead
+ * @deprecated use source.access() instead
+ */
+export function useStateLinkUnmounted<R>(
+    source: StateInf<R>,
+): R;
+/**
+ * @deprecated use StateInf.wrap/access instead
  */
 export function useStateLinkUnmounted<S, R>(
     source: StateRef<S> | StateInf<R>,
     transform?: (state: StateLink<S>) => R
 ): StateLink<S> | R {
-    // tslint:disable-next-line: no-any
-    type AnyArgument = any; // typesafety is guaranteed by overloaded functions above
-    return accessStateLink(source as AnyArgument, transform as AnyArgument)
-}
-
-export function accessStateLink<R>(
-    source: StateInf<R>,
-): R;
-export function accessStateLink<S>(
-    source: StateRef<S>,
-): StateLink<S>;
-export function accessStateLink<S, R>(
-    source: StateRef<S>,
-    transform: (state: StateLink<S>) => R
-): R;
-export function accessStateLink<S, R>(
-    source: StateRef<S> | StateInf<R>,
-    transform?: (state: StateLink<S>) => R
-): StateLink<S> | R {
-    const stateRef = source instanceof StateInfImpl
-        ? source.wrapped as StateRefImpl<S>
-        : source as StateRefImpl<S>;
-    const link = new StateLinkImpl<S>(
-        stateRef.state,
-        RootPath,
-        NoActionUnmounted,
-        stateRef.state.get(RootPath),
-        stateRef.state.edition
-    ).with(Downgraded) // it does not matter how it is used, it is not subscribed anyway
-    if (source instanceof StateInfImpl) {
-        return source.transform(link, undefined);
+    const stateInf = source as StateInfImpl<S, StateLink<S>>
+    if (stateInf.transform) {
+        return source.access()
     }
     if (transform) {
-        return transform(link);
+        return transform(source.access() as StateLink<S>);
     }
-    return link;
+    return source.access();
 }
 
-export function StateFragment<R>(
-    props: {
-        state: StateInf<R>,
-        children: (state: R) => React.ReactElement,
-    }
-): React.ReactElement;
 export function StateFragment<S>(
     props: {
         state: StateLink<S> | StateRef<S>,
@@ -1269,6 +1235,12 @@ export function StateFragment<S, E extends {}, R>(
     props: {
         state: StateLink<S> | StateRef<S>,
         transform: (state: StateLink<S>, prev: R | undefined) => R,
+        children: (state: R) => React.ReactElement,
+    }
+): React.ReactElement;
+export function StateFragment<R>(
+    props: {
+        state: StateInf<R>,
         children: (state: R) => React.ReactElement,
     }
 ): React.ReactElement;
@@ -1287,7 +1259,7 @@ export function StateFragment<S, R>(
 ): React.ReactElement;
 export function StateFragment<S, E extends {}, R>(
     props: {
-        state: InitialValueAtRoot<S> | StateLink<S> | StateRef<S> | StateInf<R>,
+        state: InitialValueAtRoot<S> | StateLink<S> | StateInf<StateLink<S>> | StateInf<R>,
         transform?: (state: StateLink<S>, prev: R | undefined) => R,
         children: (state: StateLink<S> | R) => React.ReactElement,
     }
@@ -1315,4 +1287,7 @@ export function Downgraded(): Plugin {
     }
 }
 
+/**
+ * @depracated default export is deprecated
+ */
 export default useStateLink;

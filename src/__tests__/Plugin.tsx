@@ -1,4 +1,4 @@
-import { useStateLink, createStateLink, useStateLinkUnmounted, None } from '../UseStateLink';
+import { useStateLink, createStateLink } from '../UseStateLink';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import React from 'react';
@@ -66,7 +66,7 @@ test('plugin: common flow callbacks', async () => {
     expect(messages.slice(5)).toEqual(['onExtension called']);
 
     expect(() => result.current.with(TestPluginUnknown))
-    .toThrow('Plugin \'TestPluginUnknown\' has not been attached to the StateRef or StateLink. Hint: you might need to register the required plugin using \'with\' method. See https://github.com/avkonst/hookstate#plugins for more details')
+    .toThrow('Plugin \'TestPluginUnknown\' has not been attached to the StateInf or StateLink. Hint: you might need to register the required plugin using \'with\' method. See https://github.com/avkonst/hookstate#plugins for more details')
 
     unmount()
     expect(messages.slice(6)).toEqual(['onDestroy called, [{\"f1\":2,\"f2\":\"str\"}]'])
@@ -76,21 +76,21 @@ test('plugin: common flow callbacks', async () => {
 
     act(() => {
         expect(() => result.current.nested[0].nested.f1.set(p => p + 1)).toThrow(
-            'StateLink is used incorrectly. Attempted \'set state for the destroyed state\' at \'/0/f1\'. Hint: make sure all asynchronous operations are cancelled (unsubscribed) when the state is destroyed. Global state is explicitly destroyed at \'StateRef.destroy()\'. Local state is automatically destroyed when a component is unmounted.'
+            'StateLink is used incorrectly. Attempted \'set state for the destroyed state\' at \'/0/f1\'. Hint: make sure all asynchronous operations are cancelled (unsubscribed) when the state is destroyed. Global state is explicitly destroyed at \'StateInf.destroy()\'. Local state is automatically destroyed when a component is unmounted.'
         );
     });
     expect(renderTimes).toStrictEqual(3);
     expect(messages.slice(7)).toEqual([])
 });
 
-const stateRef = createStateLink([{
+const stateInf = createStateLink([{
     f1: 0,
     f2: 'str'
 }], l => l)
 
 test('plugin: common flow callbacks global state', async () => {
     const messages: string[] = []
-    stateRef.with(() => ({
+    stateInf.with(() => ({
         id: TestPlugin,
         instanceFactory: (initial, instanceFactory) => ({
             onInit() {
@@ -114,7 +114,7 @@ test('plugin: common flow callbacks global state', async () => {
     let renderTimes = 0
     const { result, unmount } = renderHook(() => {
         renderTimes += 1;
-        return useStateLink(stateRef)
+        return useStateLink(stateInf)
     });
     expect(renderTimes).toStrictEqual(1);
     expect(messages).toEqual(
@@ -149,7 +149,7 @@ test('plugin: common flow callbacks global state', async () => {
     expect(messages.slice(5)).toEqual(['onExtension called']);
 
     expect(() => result.current.with(TestPluginUnknown))
-    .toThrow('Plugin \'TestPluginUnknown\' has not been attached to the StateRef or StateLink. Hint: you might need to register the required plugin using \'with\' method. See https://github.com/avkonst/hookstate#plugins for more details')
+    .toThrow('Plugin \'TestPluginUnknown\' has not been attached to the StateInf or StateLink. Hint: you might need to register the required plugin using \'with\' method. See https://github.com/avkonst/hookstate#plugins for more details')
 
     unmount()
     expect(messages.slice(6)).toEqual([])
@@ -163,12 +163,12 @@ test('plugin: common flow callbacks global state', async () => {
     expect(renderTimes).toStrictEqual(3);
     expect(messages.slice(6)).toEqual(['onPreset called, [0,f1]: [{\"f1\":2,\"f2\":\"str\"}], 2 => 3, undefined', 'onSet called, [0,f1]: [{\"f1\":3,\"f2\":\"str\"}], 2 => 3, undefined'])
     
-    stateRef.destroy()
+    stateInf.destroy()
     expect(messages.slice(8)).toEqual(['onDestroy called, [{\"f1\":3,\"f2\":\"str\"}]'])
 
     act(() => {
         expect(() => result.current.nested[0].nested.f1.set(p => p + 1)).toThrow(
-            'StateLink is used incorrectly. Attempted \'set state for the destroyed state\' at \'/0/f1\'. Hint: make sure all asynchronous operations are cancelled (unsubscribed) when the state is destroyed. Global state is explicitly destroyed at \'StateRef.destroy()\'. Local state is automatically destroyed when a component is unmounted.'
+            'StateLink is used incorrectly. Attempted \'set state for the destroyed state\' at \'/0/f1\'. Hint: make sure all asynchronous operations are cancelled (unsubscribed) when the state is destroyed. Global state is explicitly destroyed at \'StateInf.destroy()\'. Local state is automatically destroyed when a component is unmounted.'
         );
     });
     expect(renderTimes).toStrictEqual(3);

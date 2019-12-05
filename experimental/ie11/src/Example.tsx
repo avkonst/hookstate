@@ -4,14 +4,14 @@ import { createStateLink, useStateLink, useStateLinkUnmounted, StateLink } from 
 interface Task { name: string; priority: number| undefined  }
 
 const initialValue: Task[] = [{ name: 'First Task', priority: undefined }];
-const stateRef = createStateLink(initialValue);
+const stateInf = createStateLink(initialValue);
 
-setTimeout(() => useStateLinkUnmounted(stateRef)
+setTimeout(() => useStateLinkUnmounted(stateInf)
     .set(tasks => tasks.concat([{ name: 'Second task by timeout', priority: 1 }]))
 , 5000) // adds new task 5 seconds after website load
 
 export const ExampleComponent = () => {
-    const state: StateLink<Task[]> = useStateLink(stateRef);
+    const state: StateLink<Task[]> = useStateLink(stateInf);
     return <>
         <JsonDump state={state} />
         {state.nested.map((taskState: StateLink<Task>, taskIndex) =>

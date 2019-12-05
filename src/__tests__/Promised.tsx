@@ -1,4 +1,4 @@
-import { useStateLink, createStateLink, useStateLinkUnmounted, None, Downgraded } from '../UseStateLink';
+import { useStateLink, createStateLink, None } from '../UseStateLink';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import React from 'react';
@@ -222,13 +222,13 @@ test('primitive: should rerender used on promise resolve init', async () => {
 test('primitive: should rerender used on promise resolve init global', async () => {
     let renderTimes = 0
 
-    const stateRef = createStateLink(new Promise<number>(resolve => setTimeout(() => {
+    const stateInf = createStateLink(new Promise<number>(resolve => setTimeout(() => {
         act(() => resolve(100))
     }, 500)))
 
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useStateLink(stateRef)
+        return useStateLink(stateInf)
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.promised).toStrictEqual(true);
@@ -249,13 +249,13 @@ test('primitive: should rerender used on promise resolve init global', async () 
 test('primitive: should rerender used on promise reject init global', async () => {
     let renderTimes = 0
 
-    const stateRef = createStateLink(new Promise<number>((resolve, reject) => setTimeout(() => {
+    const stateInf = createStateLink(new Promise<number>((resolve, reject) => setTimeout(() => {
         act(() => reject('some error init global'))
     }, 500)))
 
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useStateLink(stateRef)
+        return useStateLink(stateInf)
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.promised).toStrictEqual(true);

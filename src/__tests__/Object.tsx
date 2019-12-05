@@ -1,4 +1,4 @@
-import { useStateLink, createStateLink, useStateLinkUnmounted, None } from '../UseStateLink';
+import { useStateLink, createStateLink, None } from '../UseStateLink';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import React from 'react';
@@ -198,7 +198,7 @@ test('object: should auto save latest state for unmounted', async () => {
         renderTimes += 1;
         return useStateLink(state)
     });
-    const unmountedLink = useStateLinkUnmounted(state).nested
+    const unmountedLink = state.access().nested
     expect(unmountedLink.field1.get()).toStrictEqual(0);
     expect(result.current.get().field1).toStrictEqual(0);
 
