@@ -5,20 +5,14 @@ import React from 'react';
 //
 
 /**
- * @deprecated use StateInf<StateLink<S>> instead.
+ * @deprecated, declared for backward compatibility.
  */
 export type StateRef<S> = StateInf<StateLink<S>>
 
-// R captures the type of result of transform function
-export interface StateInf<R> {
-    // placed to make sure type inference does not match empty structure
-    // on useStateLink call
-    __synteticTypeInferenceMarkerInf: symbol;
-    access(): R;
-    with(plugin: () => Plugin): StateInf<R>;
-    wrap<R2>(transform: (state: R, prev: R2 | undefined) => R2): StateInf<R2>
-    destroy(): void;
-}
+/**
+ * @deprecated, declared for backward compatibility.
+ */
+export type StateInf<S> = S extends StateLink<infer U> ? DestroyableStateLink<U> : DestroyableWrappedStateLink<S>
 
 // TODO add support for Map and Set
 export type NestedInferredLink<S> =
@@ -62,6 +56,32 @@ export interface StateLink<S> {
 
     with(plugin: () => Plugin): StateLink<S>;
     with(pluginId: symbol): [StateLink<S> & StateLinkPlugable<S>, PluginInstance];
+    
+    wrap<R>(transform: (state: StateLink<S>, prev: R | undefined) => R): WrappedStateLink<R>;
+}
+
+export interface DestroyableStateLink<S> extends StateLink<S> {
+    access(): StateLink<S>; // for symetry and compatibility with DestroyableWrappedStateLink
+    wrap<R>(transform: (state: DestroyableStateLink<S>, prev: R | undefined) => R): DestroyableWrappedStateLink<R>;
+    
+    destroy(): void;
+}
+
+export interface WrappedStateLink<R> {
+    // placed to make sure type inference does not match empty structure
+    // on useStateLink call
+    __synteticTypeInferenceMarkerInf: symbol;
+
+    with(plugin: () => Plugin): WrappedStateLink<R>;
+    wrap<R2>(transform: (state: R, prev: R2 | undefined) => R2): WrappedStateLink<R2>
+}
+
+export interface DestroyableWrappedStateLink<R> extends WrappedStateLink<R> {
+    access(): R;
+    with(plugin: () => Plugin): DestroyableWrappedStateLink<R>;
+    wrap<R2>(transform: (state: R, prev: R2 | undefined) => R2): DestroyableWrappedStateLink<R2>
+    
+    destroy(): void;
 }
 
 export interface StateLinkPlugable<S> {
@@ -463,44 +483,31 @@ const ValueCache = Symbol('ValueCache');
 const NestedCache = Symbol('NestedCache');
 const UnmountedCallback = Symbol('UnmountedCallback');
 
-class StateInfImpl<S, R> implements StateInf<R> {
+class WrappedStateLinkImpl<S, R> implements DestroyableWrappedStateLink<R> {
     // tslint:disable-next-line: variable-name
     public __synteticTypeInferenceMarkerInf = SynteticID;
     public disabledTracking: boolean | undefined;
 
     constructor(
-        public readonly state: State,
-        public readonly transform?: (state: StateLink<S>, prev: R | undefined) => R,
+        public readonly state: StateLinkImpl<S>,
+        public readonly transform: (state: DestroyableStateLink<S>, prev: R | undefined) => R,
     ) { }
 
     access() {
-        const link = this.state.accessUnmounted() as StateLink<S>
-        if (this.transform) {
-            return this.transform(link, undefined)
-        }
-        return link as unknown as R;
+        return this.transform(this.state, undefined)
     }
 
-    with(plugin: () => Plugin): StateInf<R> {
-        const pluginMeta = plugin()
-        if (pluginMeta.id === DowngradedID) {
-            this.disabledTracking = true;
-            return this;
-        }
-        this.state.register(pluginMeta);
+    with(plugin: () => Plugin): DestroyableWrappedStateLink<R> {
+        this.state.with(plugin);
         return this;
     }
-
-    wrap<R2>(transform: (state: R, prev: R2 | undefined) => R2): StateInf<R2> {
-        const currentTransform = this.transform;
-        return new StateInfImpl<S, R2>(this.state, (s, p) => {
-            if (currentTransform) {
-                return transform(currentTransform(s, undefined), p)
-            }
-            return transform(s as unknown as R, p)
+    
+    wrap<R2>(transform: (state: R, prev: R2 | undefined) => R2): DestroyableWrappedStateLink<R2> {
+        return new WrappedStateLinkImpl<S, R2>(this.state, (s, p) => {
+            return transform(this.transform(s, undefined), p)
         })
     }
-
+    
     destroy() {
         this.state.destroy()
     }
@@ -536,7 +543,7 @@ class Promised {
     }
 }
 
-class StateLinkImpl<S> implements StateLink<S>,
+class StateLinkImpl<S> implements DestroyableStateLink<S>,
     StateLinkPlugable<S>, Subscribable, Subscriber {
     public disabledTracking: boolean | undefined;
     private subscribers: Set<Subscriber> | undefined;
@@ -739,6 +746,18 @@ class StateLinkImpl<S> implements StateLink<S>,
         } else {
             return [this, this.state.getPlugin(plugin)];
         }
+    }
+    
+    access(): DestroyableStateLink<S> {
+        return this;
+    }
+    
+    wrap<R>(transform: (state: DestroyableStateLink<S>, prev: R | undefined) => R): DestroyableWrappedStateLink<R> {
+        return new WrappedStateLinkImpl<S, R>(this, transform)
+    }
+    
+    destroy(): void {
+        this.state.destroy()
     }
 
     subscribe(l: Subscriber) {
@@ -1060,58 +1079,9 @@ function useSubscribedStateLink<S>(
     return link;
 }
 
-function useGlobalStateLink<S>(stateInf: StateInfImpl<S, StateLink<S>>): StateLinkImpl<S> {
-    const [value, setValue] = React.useState({ state: stateInf.state });
-    return useSubscribedStateLink(
-        value.state,
-        RootPath,
-        () => setValue({ state: value.state }),
-        value.state,
-        stateInf.disabledTracking,
-        NoAction);
-}
-
-function useLocalStateLink<S>(initialState: InitialValueAtRoot<S>): StateLinkImpl<S> {
-    const [value, setValue] = React.useState(() => ({ state: createState(initialState) }));
-    return useSubscribedStateLink(
-        value.state,
-        RootPath,
-        () => setValue({ state: value.state }),
-        value.state,
-        undefined,
-        () => value.state.destroy());
-}
-
-function useScopedStateLink<S>(originLink: StateLinkImpl<S>): StateLinkImpl<S> {
-    const [, setValue] = React.useState({});
-    return useSubscribedStateLink(
-        originLink.state,
-        originLink.path,
-        () => setValue({}),
-        originLink,
-        originLink.disabledTracking,
-        NoAction);
-}
-
-function useAutoStateLink<S>(
-    initialState: InitialValueAtRoot<S> | StateLink<S> | StateInf<StateLink<S>>
-): StateLinkImpl<S> {
-    if (initialState instanceof StateLinkImpl) {
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        return useScopedStateLink(initialState as StateLinkImpl<S>);
-    }
-    if (initialState instanceof StateInfImpl) {
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        return useGlobalStateLink(initialState as StateInfImpl<S, StateLink<S>>);
-    }
-
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useLocalStateLink(initialState as InitialValueAtRoot<S>);
-}
-
 function injectTransform<S, R>(
     link: StateLinkImpl<S>,
-    transform: (state: StateLink<S>, prev: R | undefined) => R
+    transform: (state: DestroyableStateLink<S>, prev: R | undefined) => R
 ) {
     if (link.onUpdateUsed[UnmountedCallback]) {
         // this is unmounted link
@@ -1149,38 +1119,33 @@ function injectTransform<S, R>(
 ///
 export function createStateLink<S>(
     initial: InitialValueAtRoot<S>
-): StateInf<StateLink<S>>;
+): DestroyableStateLink<S>;
+/// @deprecated use createStateLink(initial).wrap(transform) instead
 export function createStateLink<S, R>(
     initial: InitialValueAtRoot<S>,
     transform: (state: StateLink<S>, prev: R | undefined) => R
-): StateInf<R>;
+): DestroyableWrappedStateLink<R>;
 export function createStateLink<S, R>(
     initial: InitialValueAtRoot<S>,
     transform?: (state: StateLink<S>, prev: R | undefined) => R
-): StateInf<StateLink<S>> | StateInf<R> {
-    const ref = new StateInfImpl<S, StateLink<S>>(createState(initial));
+): DestroyableStateLink<S> | DestroyableWrappedStateLink<R> {
+    const stateLink = createState(initial).accessUnmounted() as StateLinkImpl<S>
     if (transform) {
-        return ref.wrap(transform)
+        return stateLink.wrap(transform)
     }
-    return ref;
+    return stateLink
 }
 
 export function useStateLink<S>(
     source: StateLink<S>
 ): StateLink<S>;
+/// @deprecated use useStateLink(source.wrap(transform)) instead
 export function useStateLink<S, R>(
     source: StateLink<S>,
     transform: (state: StateLink<S>, prev: R | undefined) => R
 ): R;
-export function useStateLink<S>(
-    source: StateInf<StateLink<S>>
-): StateLink<S>;
-export function useStateLink<S, R>(
-    source: StateInf<StateLink<S>>,
-    transform: (state: StateLink<S>, prev: R | undefined) => R
-): R;
 export function useStateLink<R>(
-    source: StateInf<R>
+    source: WrappedStateLink<R>
 ): R;
 export function useStateLink<S>(
     source: InitialValueAtRoot<S>
@@ -1190,71 +1155,104 @@ export function useStateLink<S, R>(
     transform: (state: StateLink<S>, prev: R | undefined) => R
 ): R;
 export function useStateLink<S, R>(
-    source: InitialValueAtRoot<S> | StateLink<S> | StateInf<StateLink<S>> | StateInf<R>,
+    source: InitialValueAtRoot<S> | StateLink<S> | WrappedStateLink<R>,
     transform?: (state: StateLink<S>, prev: R | undefined) => R
 ): StateLink<S> | R {
-    const link = useAutoStateLink(source as InitialValueAtRoot<S> | StateLink<S> | StateInf<StateLink<S>>);
-    if (source instanceof StateInfImpl && source.transform) {
-        return injectTransform(link, source.transform);
+    const [parentLink, tf] =
+        source instanceof StateLinkImpl ?
+            [source as StateLinkImpl<S>, transform] :
+            source instanceof WrappedStateLinkImpl ?
+                [source.state as StateLinkImpl<S>, source.transform] :
+                [undefined, transform];
+    if (parentLink) {
+        if (parentLink.onUpdateUsed === NoActionUnmounted) {
+            // eslint-disable-next-line react-hooks/rules-of-hooks
+            const [value, setValue] = React.useState({ state: parentLink.state });
+            const link = useSubscribedStateLink<S>(
+                value.state,
+                parentLink.path,
+                () => setValue({ state: value.state }),
+                value.state,
+                parentLink.disabledTracking,
+                NoAction);
+            return tf ? injectTransform(link, tf) : link;
+        } else {
+            // eslint-disable-next-line react-hooks/rules-of-hooks
+            const [, setValue] = React.useState({});
+            const link = useSubscribedStateLink<S>(
+                parentLink.state,
+                parentLink.path,
+                () => setValue({}),
+                parentLink,
+                parentLink.disabledTracking,
+                NoAction);
+            return tf ? injectTransform(link, tf) : link;
+        }
+    } else {
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const [value, setValue] = React.useState(() => ({ state: createState(source) }));
+        const link = useSubscribedStateLink<S>(
+            value.state,
+            RootPath,
+            () => setValue({ state: value.state }),
+            value.state,
+            undefined,
+            () => value.state.destroy());
+        return tf ? injectTransform(link, tf) : link;
     }
-    if (transform) {
-        return injectTransform(link, transform);
-    }
-    return link;
 }
 
 /**
- * @deprecated use source.access() instead
+ * @deprecated use source directly instead
  */
 export function useStateLinkUnmounted<S>(
-    source: StateRef<S>,
+    source: DestroyableStateLink<S>,
 ): StateLink<S>;
 /**
  * @deprecated use source.wrap(transform).access() instead
  */
 export function useStateLinkUnmounted<S, R>(
-    source: StateRef<S>,
+    source: DestroyableStateLink<S>,
     transform: (state: StateLink<S>) => R
 ): R;
 /**
  * @deprecated use source.access() instead
  */
 export function useStateLinkUnmounted<R>(
-    source: StateInf<R>,
+    source: DestroyableWrappedStateLink<R>,
 ): R;
 /**
- * @deprecated use StateInf.wrap/access instead
+ * @deprecated use source directly, source.access() or source.wrap(transform).access() instead
  */
 export function useStateLinkUnmounted<S, R>(
-    source: StateRef<S> | StateInf<R>,
+    source: DestroyableStateLink<S> | DestroyableWrappedStateLink<R>,
     transform?: (state: StateLink<S>) => R
 ): StateLink<S> | R {
-    const stateInf = source as StateInfImpl<S, StateLink<S>>
-    if (stateInf.transform) {
+    if (source instanceof WrappedStateLinkImpl) {
         return source.access()
     }
     if (transform) {
-        return transform(source.access() as StateLink<S>);
+        return transform(source as DestroyableStateLink<S>)
     }
-    return source.access();
+    return source as DestroyableStateLink<S>;
 }
 
 export function StateFragment<S>(
     props: {
-        state: StateLink<S> | StateRef<S>,
+        state: StateLink<S>,
         children: (state: StateLink<S>) => React.ReactElement,
     }
 ): React.ReactElement;
 export function StateFragment<S, E extends {}, R>(
     props: {
-        state: StateLink<S> | StateRef<S>,
+        state: StateLink<S>,
         transform: (state: StateLink<S>, prev: R | undefined) => R,
         children: (state: R) => React.ReactElement,
     }
 ): React.ReactElement;
 export function StateFragment<R>(
     props: {
-        state: StateInf<R>,
+        state: WrappedStateLink<R>,
         children: (state: R) => React.ReactElement,
     }
 ): React.ReactElement;
@@ -1273,7 +1271,7 @@ export function StateFragment<S, R>(
 ): React.ReactElement;
 export function StateFragment<S, E extends {}, R>(
     props: {
-        state: InitialValueAtRoot<S> | StateLink<S> | StateInf<StateLink<S>> | StateInf<R>,
+        state: InitialValueAtRoot<S> | StateLink<S> | WrappedStateLink<R>,
         transform?: (state: StateLink<S>, prev: R | undefined) => R,
         children: (state: StateLink<S> | R) => React.ReactElement,
     }
