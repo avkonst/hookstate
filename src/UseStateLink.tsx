@@ -1120,7 +1120,6 @@ function injectTransform<S, R>(
 export function createStateLink<S>(
     initial: InitialValueAtRoot<S>
 ): DestroyableStateLink<S>;
-/// @deprecated use createStateLink(initial).wrap(transform) instead
 export function createStateLink<S, R>(
     initial: InitialValueAtRoot<S>,
     transform: (state: StateLink<S>, prev: R | undefined) => R
@@ -1139,7 +1138,6 @@ export function createStateLink<S, R>(
 export function useStateLink<S>(
     source: StateLink<S>
 ): StateLink<S>;
-/// @deprecated use useStateLink(source.wrap(transform)) instead
 export function useStateLink<S, R>(
     source: StateLink<S>,
     transform: (state: StateLink<S>, prev: R | undefined) => R
