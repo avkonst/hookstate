@@ -103,6 +103,8 @@ export type InitialValueAtRoot<S> = S | Promise<S> | (() => S | Promise<S>)
 
 /** @warning experimental feature */
 export const None = Symbol('none') as StateValueAtPath;
+/** @warning experimental feature */
+export const DevTools = Symbol('DevTools');
 
 export interface PluginInstance {
     // if returns defined value,
@@ -1130,6 +1132,9 @@ export function createStateLink<S, R>(
     transform?: (state: StateLink<S>, prev: R | undefined) => R
 ): DestroyableStateLink<S> | DestroyableWrappedStateLink<R> {
     const stateLink = createState(initial).accessUnmounted() as StateLinkImpl<S>
+    if (createStateLink[DevTools]) {
+        stateLink.with(createStateLink[DevTools])
+    }
     if (transform) {
         return stateLink.wrap(transform)
     }
@@ -1197,6 +1202,9 @@ export function useStateLink<S, R>(
             value.state,
             undefined,
             () => value.state.destroy());
+        if (useStateLink[DevTools]) {
+            link.with(useStateLink[DevTools])
+        }
         return tf ? injectTransform(link, tf) : link;
     }
 }
