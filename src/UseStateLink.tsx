@@ -453,7 +453,7 @@ class State implements Subscribable {
         return new StateLinkImpl<StateValueAtRoot>(
             this,
             RootPath,
-            NoActionUnmounted,
+            NoActionOnUpdate,
             this.get(RootPath),
             this.edition
         ).with(Downgraded) // it does not matter how it is used, it is not subscribed anyway
@@ -482,6 +482,10 @@ const SynteticID = Symbol('SynteticTypeInferenceMarker');
 const ValueCache = Symbol('ValueCache');
 const NestedCache = Symbol('NestedCache');
 const UnmountedCallback = Symbol('UnmountedCallback');
+
+const NoActionOnDestroy = () => { /* empty */ };
+const NoActionOnUpdate = () => { /* empty */ };
+NoActionOnUpdate[UnmountedCallback] = true
 
 class WrappedStateLinkImpl<S, R> implements DestroyableWrappedStateLink<R> {
     // tslint:disable-next-line: variable-name
@@ -1031,9 +1035,6 @@ class StateLinkImpl<S> implements DestroyableStateLink<S>,
 }
 
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
-const NoAction = () => { /* empty */ };
-const NoActionUnmounted = () => { /* empty */ };
-NoActionUnmounted[UnmountedCallback] = true
 
 function createState<S>(initial: InitialValueAtRoot<S>): State {
     let initialValue: S | Promise<S> = initial as (S | Promise<S>);
@@ -1163,7 +1164,7 @@ export function useStateLink<S, R>(
                 [source.state as StateLinkImpl<S>, source.transform] :
                 [undefined, transform];
     if (parentLink) {
-        if (parentLink.onUpdateUsed === NoActionUnmounted) {
+        if (parentLink.onUpdateUsed === NoActionOnUpdate) {
             // eslint-disable-next-line react-hooks/rules-of-hooks
             const [value, setValue] = React.useState({ state: parentLink.state });
             const link = useSubscribedStateLink<S>(
@@ -1172,7 +1173,7 @@ export function useStateLink<S, R>(
                 () => setValue({ state: value.state }),
                 value.state,
                 parentLink.disabledTracking,
-                NoAction);
+                NoActionOnDestroy);
             return tf ? injectTransform(link, tf) : link;
         } else {
             // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -1183,7 +1184,7 @@ export function useStateLink<S, R>(
                 () => setValue({}),
                 parentLink,
                 parentLink.disabledTracking,
-                NoAction);
+                NoActionOnDestroy);
             return tf ? injectTransform(link, tf) : link;
         }
     } else {
