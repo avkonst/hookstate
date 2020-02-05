@@ -75,7 +75,7 @@ export interface StateLink<S> {
     wrap<R>(transform: (state: StateLink<S>, prev: R | undefined) => R): WrappedStateLink<R>;
 
     with(plugin: () => Plugin): StateLink<S>;
-    with(pluginId: symbol): [StateLink<S> & StateLinkPlugable<S>, PluginInstance];
+    with(pluginId: symbol): [StateLink<S> & StateLinkPlugable<S>, PluginInstance | PluginCallbacks];
 }
 
 export interface DestroyableStateLink<S> extends StateLink<S> {
@@ -124,6 +124,24 @@ export const None = Symbol('none') as StateValueAtPath;
 /** @warning experimental feature */
 export const DevTools = Symbol('DevTools');
 
+export interface PluginCallbacksOnSetArgument {
+    readonly path: Path,
+    readonly state?: StateValueAtRoot,
+    readonly previous?: StateValueAtPath,
+    readonly value?: StateValueAtPath,
+    readonly merged?: StateValueAtPath,
+}
+
+export interface PluginCallbacksOnDestroyArgument {
+    readonly state?: StateValueAtRoot,
+}
+
+export interface PluginCallbacks {
+    readonly onSet?: (arg: PluginCallbacksOnSetArgument) => void,
+    readonly onDestroy?: (arg: PluginCallbacksOnDestroyArgument) => void,
+};
+
+/** @deprecated by PluginCallbacks */
 export interface PluginInstance {
     // if returns defined value,
     // it overrides the current / initial value in the state
@@ -140,7 +158,10 @@ export interface PluginInstance {
 
 export interface Plugin {
     readonly id: symbol;
-    readonly instanceFactory: (
+    readonly create?: (state: StateLink<StateValueAtRoot>) => PluginCallbacks;
+
+    /** @deprecated use create instead */
+    readonly instanceFactory?: (
         initial: StateValueAtRoot, linkFactory: () => StateLink<StateValueAtRoot>
     ) => PluginInstance;
 }
@@ -165,14 +186,6 @@ function extractSymbol(s: symbol) {
     return result;
 }
 
-class PluginInvalidRegistrationError extends Error {
-    constructor(id: symbol, path: Path) {
-        super(`Plugin with onInit, which overrides initial value, ` +
-        `should be attached to StateInf instance, but not to StateLink instance. ` +
-        `Attempted 'with(${extractSymbol(id)})' at '/${path.join('/')}'`)
-    }
-}
-
 class PluginUnknownError extends Error {
     constructor(s: symbol) {
         super(`Plugin '${extractSymbol(s)}' has not been attached to the StateInf or StateLink. ` +
@@ -184,14 +197,6 @@ class PluginUnknownError extends Error {
 interface Subscriber {
     onSet(paths: Path[], actions: (() => void)[]): void;
 }
-
-type PresetCallback = (path: Path, prevState: StateValueAtRoot,
-    newValue: StateValueAtPath, prevValue: StateValueAtPath,
-    mergeValue: StateValueAtPath | undefined) => void | StateValueAtRoot;
-type SetCallback = (path: Path, newState: StateValueAtRoot,
-    newValue: StateValueAtPath, prevValue: StateValueAtPath,
-    mergeValue: StateValueAtPath | undefined) => void;
-type DestroyCallback = (state: StateValueAtRoot) => void;
 
 interface Subscribable {
     subscribe(l: Subscriber): void;
@@ -205,15 +210,16 @@ const ProxyMarkerID = Symbol('ProxyMarker');
 const RootPath: Path = [];
 const DestroyedEdition = -1
 
+type Writeable<T> = { -readonly [P in keyof T]: T[P] };
+
 class State implements Subscribable {
     private _edition: number = 0;
 
     private _subscribers: Set<Subscriber> = new Set();
-    private _presetSubscribers: Set<PresetCallback> = new Set();
-    private _setSubscribers: Set<SetCallback> = new Set();
-    private _destroySubscribers: Set<DestroyCallback> = new Set();
+    private _setSubscribers: Set<Required<PluginCallbacks>['onSet']> = new Set();
+    private _destroySubscribers: Set<Required<PluginCallbacks>['onDestroy']> = new Set();
 
-    private _plugins: Map<symbol, PluginInstance> = new Map();
+    private _plugins: Map<symbol, PluginInstance | PluginCallbacks> = new Map();
 
     private _promised?: Promised;
 
@@ -293,12 +299,21 @@ class State implements Subscribable {
         if (path.length === 0) {
             // Root value UPDATE case,
 
+            const onSetArg: Writeable<PluginCallbacksOnSetArgument> = {
+                path: path,
+                state: this._value,
+                value: value,
+                previous: this._value,
+                merged: mergeValue
+            }
             if (value === None) {
                 this._promised = this.createPromised(undefined)
+                delete onSetArg.value
             } else if (typeof value === 'object' && Promise.resolve(value) === value) {
                 this._promised = this.createPromised(value)
                 value = None
-            } else if (this.promised && !this.promised.resolver) {
+                delete onSetArg.value
+            } else if (this._promised && !this._promised.resolver) {
                 // TODO add hint
                 throw new StateLinkInvalidUsageError(
                     `write promised state`,
@@ -307,9 +322,12 @@ class State implements Subscribable {
             }
 
             let prevValue = this._value;
-            this.beforeSet(path, value, prevValue, mergeValue)
+            if (prevValue === None) {
+                delete onSetArg.previous
+                delete onSetArg.state
+            }
             this._value = value;
-            this.afterSet(path, value, prevValue, mergeValue)
+            this.afterSet(onSetArg)
 
             if (prevValue === None && this._value !== None &&
                 this.promised && this.promised.resolver) {
@@ -336,21 +354,30 @@ class State implements Subscribable {
             if (value !== None) {
                 // Property UPDATE case
                 let prevValue = target[p]
-                this.beforeSet(path, value, prevValue, mergeValue)
                 target[p] = value;
-                this.afterSet(path, value, prevValue, mergeValue)
+                this.afterSet({
+                    path: path,
+                    state: this._value,
+                    value: value,
+                    previous: prevValue,
+                    merged: mergeValue
+                })
 
                 return path;
             } else {
                 // Property DELETE case
                 let prevValue = target[p]
-                this.beforeSet(path, value, prevValue, mergeValue)
                 if (Array.isArray(target) && typeof p === 'number') {
                     target.splice(p, 1)
                 } else {
                     delete target[p]
                 }
-                this.afterSet(path, value, prevValue, mergeValue)
+                this.afterSet({
+                    path: path,
+                    state: this._value,
+                    previous: prevValue,
+                    merged: mergeValue
+                })
 
                 // if an array of object is about to loose existing property
                 // we consider it is the whole object is changed
@@ -361,9 +388,13 @@ class State implements Subscribable {
 
         if (value !== None) {
             // Property INSERT case
-            this.beforeSet(path, value, None, mergeValue)
             target[p] = value;
-            this.afterSet(path, value, None, mergeValue)
+            this.afterSet({
+                path: path,
+                state: this._value,
+                value: value,
+                merged: mergeValue
+            })
 
             // if an array of object is about to be extended by new property
             // we consider it is the whole object is changed
@@ -388,25 +419,10 @@ class State implements Subscribable {
         actions.forEach(a => a());
     }
 
-    beforeSet(path: Path, value: StateValueAtPath, prevValue: StateValueAtPath,
-        mergeValue: StateValueAtPath | undefined) {
-        if (this._edition !== DestroyedEdition) {
-            this._presetSubscribers.forEach(cb => {
-                const presetResult = cb(path, this._value, value, prevValue, mergeValue)
-                if (presetResult !== undefined) {
-                    // plugin overrides the current value
-                    // could be used for immutable later on
-                    this._value = presetResult
-                }
-            })
-        }
-    }
-
-    afterSet(path: Path, value: StateValueAtPath, prevValue: StateValueAtPath,
-        mergeValue: StateValueAtPath | undefined) {
+    afterSet(params: PluginCallbacksOnSetArgument) {
         if (this._edition !== DestroyedEdition) {
             this._edition += 1;
-            this._setSubscribers.forEach(cb => cb(path, this._value, value, prevValue, mergeValue))
+            this._setSubscribers.forEach(cb => cb(params))
         }
     }
 
@@ -438,35 +454,36 @@ class State implements Subscribable {
         throw new PluginUnknownError(pluginId)
     }
 
-    register(plugin: Plugin, path?: Path | undefined) {
+    register(plugin: Plugin) {
         const existingInstance = this._plugins.get(plugin.id)
         if (existingInstance) {
             return;
         }
-        const pluginInstance = plugin.instanceFactory(
-            this._value,
-            () => this.accessUnmounted()
-        );
-        this._plugins.set(plugin.id, pluginInstance);
-        if (pluginInstance.onInit) {
-            const initValue = pluginInstance.onInit()
-            if (initValue !== undefined) {
-                if (path) {
-                    throw new PluginInvalidRegistrationError(plugin.id, path);
-                }
-                this._value = initValue;
+        
+        if (plugin.instanceFactory) {
+            const pluginInstance = plugin.instanceFactory(
+                this._value,
+                () => this.accessUnmounted()
+            );
+            this._plugins.set(plugin.id, pluginInstance);
+            if (pluginInstance.onSet) {
+                this._setSubscribers.add((p) => pluginInstance.onSet!(p.path, p.state, p.value, p.previous, p.merged))
+            }
+            if (pluginInstance.onDestroy) {
+                this._destroySubscribers.add((p) => pluginInstance.onDestroy!(p.state))
             }
         }
-        if (pluginInstance.onPreset) {
-            this._presetSubscribers.add((p, s, v, pv, mv) => pluginInstance.onPreset!(p, s, v, pv, mv))
+        
+        if (plugin.create) {
+            const pluginCallbacks = plugin.create(this.accessUnmounted());
+            this._plugins.set(plugin.id, pluginCallbacks);
+            if (pluginCallbacks.onSet) {
+                this._setSubscribers.add((p) => pluginCallbacks.onSet!(p))
+            }
+            if (pluginCallbacks.onDestroy) {
+                this._destroySubscribers.add((p) => pluginCallbacks.onDestroy!(p))
+            }
         }
-        if (pluginInstance.onSet) {
-            this._setSubscribers.add((p, s, v, pv, mv) => pluginInstance.onSet!(p, s, v, pv, mv))
-        }
-        if (pluginInstance.onDestroy) {
-            this._destroySubscribers.add((s) => pluginInstance.onDestroy!(s))
-        }
-        return;
     }
 
     accessUnmounted() {
@@ -488,7 +505,7 @@ class State implements Subscribable {
     }
 
     destroy() {
-        this._destroySubscribers.forEach(cb => cb(this._value))
+        this._destroySubscribers.forEach(cb => cb(this._value !== None ? { state: this._value } : {}))
         this._edition = DestroyedEdition
     }
 
@@ -764,16 +781,16 @@ class StateLinkImpl<S> implements DestroyableStateLink<S>,
     }
     
     with(plugin: () => Plugin): StateLink<S>;
-    with(pluginId: symbol): [StateLink<S> & StateLinkPlugable<S>, PluginInstance];
+    with(pluginId: symbol): [StateLink<S> & StateLinkPlugable<S>, PluginInstance | PluginCallbacks];
     with(plugin: (() => Plugin) | symbol):
-        StateLink<S> | [StateLink<S> & StateLinkPlugable<S>, PluginInstance] {
+        StateLink<S> | [StateLink<S> & StateLinkPlugable<S>, PluginInstance | PluginCallbacks] {
         if (typeof plugin === 'function') {
             const pluginMeta = plugin();
             if (pluginMeta.id === DowngradedID) {
                 this.disabledTracking = true;
                 return this;
             }
-            this.state.register(pluginMeta, this.path);
+            this.state.register(pluginMeta);
             return this;
         } else {
             return [this, this.state.getPlugin(plugin)];

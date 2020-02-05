@@ -17,23 +17,20 @@ test('plugin: common flow callbacks', async () => {
             f2: 'str'
         }]).with(() => ({
             id: TestPlugin,
-            instanceFactory: () => ({
-                onInit() {
-                    messages.push('onInit called')
-                },
-                onPreset: (path, state, newValue, prevValue, mergeValue) => {
-                    messages.push(`onPreset called, [${path}]: ${JSON.stringify(state)}, ${JSON.stringify(prevValue)} => ${JSON.stringify(newValue)}, ${JSON.stringify(mergeValue)}`)
-                },
-                onSet: (path, state, newValue, prevValue, mergeValue) => {
-                    messages.push(`onSet called, [${path}]: ${JSON.stringify(state)}, ${JSON.stringify(prevValue)} => ${JSON.stringify(newValue)}, ${JSON.stringify(mergeValue)}`)
-                },
-                onDestroy: (state) => {
-                    messages.push(`onDestroy called, ${JSON.stringify(state)}`)
-                },
-                onExtension() {
-                    messages.push('onExtension called')
+            create: () => {
+                messages.push('onInit called')
+                return {
+                    onSet: (p) => {
+                        messages.push(`onSet called, [${p.path}]: ${JSON.stringify(p.state)}, ${JSON.stringify(p.previous)} => ${JSON.stringify(p.value)}, ${JSON.stringify(p.merged)}`)
+                    },
+                    onDestroy: (p) => {
+                        messages.push(`onDestroy called, ${JSON.stringify(p.state)}`)
+                    },
+                    onExtension() {
+                        messages.push('onExtension called')
+                    }
                 }
-            })
+            }
         }))
     });
     expect(renderTimes).toStrictEqual(1);
@@ -45,35 +42,35 @@ test('plugin: common flow callbacks', async () => {
         result.current.nested[0].nested.f1.set(p => p + 1);
     });
     expect(renderTimes).toStrictEqual(2);
-    expect(messages.slice(1)).toEqual(['onPreset called, [0,f1]: [{\"f1\":0,\"f2\":\"str\"}], 0 => 1, undefined', 'onSet called, [0,f1]: [{\"f1\":1,\"f2\":\"str\"}], 0 => 1, undefined'])
+    expect(messages.slice(1)).toEqual(['onSet called, [0,f1]: [{\"f1\":1,\"f2\":\"str\"}], 0 => 1, undefined'])
 
     expect(result.current.get()[0].f1).toStrictEqual(1);
     expect(Object.keys(result.current.nested[0].nested)).toEqual(['f1', 'f2']);
     expect(Object.keys(result.current.get()[0])).toEqual(['f1', 'f2']);
-    expect(messages.slice(3)).toEqual([])
+    expect(messages.slice(2)).toEqual([])
     
     act(() => {
         result.current.nested[0].merge(p => ({ f1 : p.f1 + 1 }));
     });
     expect(renderTimes).toStrictEqual(3);
-    expect(messages.slice(3)).toEqual(['onPreset called, [0]: [{\"f1\":2,\"f2\":\"str\"}], {\"f1\":2,\"f2\":\"str\"} => {\"f1\":2,\"f2\":\"str\"}, {\"f1\":2}', 'onSet called, [0]: [{\"f1\":2,\"f2\":\"str\"}], {\"f1\":2,\"f2\":\"str\"} => {\"f1\":2,\"f2\":\"str\"}, {\"f1\":2}'])
+    expect(messages.slice(2)).toEqual(['onSet called, [0]: [{\"f1\":2,\"f2\":\"str\"}], {\"f1\":2,\"f2\":\"str\"} => {\"f1\":2,\"f2\":\"str\"}, {\"f1\":2}'])
 
     expect(result.current.get()[0].f1).toStrictEqual(2);
     expect(Object.keys(result.current.nested[0].nested)).toEqual(['f1', 'f2']);
     expect(Object.keys(result.current.get()[0])).toEqual(['f1', 'f2']);
-    expect(messages.slice(5)).toEqual([]);
+    expect(messages.slice(3)).toEqual([]);
 
     (result.current.with(TestPlugin)[1] as { onExtension(): void; }).onExtension();
-    expect(messages.slice(5)).toEqual(['onExtension called']);
+    expect(messages.slice(3)).toEqual(['onExtension called']);
 
     expect(() => result.current.with(TestPluginUnknown))
     .toThrow('Plugin \'TestPluginUnknown\' has not been attached to the StateInf or StateLink. Hint: you might need to register the required plugin using \'with\' method. See https://github.com/avkonst/hookstate#plugins for more details')
 
     unmount()
-    expect(messages.slice(6)).toEqual(['onDestroy called, [{\"f1\":2,\"f2\":\"str\"}]'])
+    expect(messages.slice(4)).toEqual(['onDestroy called, [{\"f1\":2,\"f2\":\"str\"}]'])
 
     expect(result.current.get()[0].f1).toStrictEqual(2);
-    expect(messages.slice(7)).toEqual([])
+    expect(messages.slice(5)).toEqual([])
 
     act(() => {
         expect(() => result.current.nested[0].nested.f1.set(p => p + 1)).toThrow(
@@ -81,7 +78,7 @@ test('plugin: common flow callbacks', async () => {
         );
     });
     expect(renderTimes).toStrictEqual(3);
-    expect(messages.slice(7)).toEqual([])
+    expect(messages.slice(5)).toEqual([])
 });
 
 const stateInf = createStateLink([{
@@ -93,23 +90,20 @@ test('plugin: common flow callbacks global state', async () => {
     const messages: string[] = []
     stateInf.with(() => ({
         id: TestPlugin,
-        instanceFactory: (initial, instanceFactory) => ({
-            onInit() {
-                messages.push(`onInit called, initial: ${JSON.stringify(initial)}, value: ${JSON.stringify(instanceFactory().value)}`)
-            },
-            onPreset: (path, state, newValue, prevValue, mergeValue) => {
-                messages.push(`onPreset called, [${path}]: ${JSON.stringify(state)}, ${JSON.stringify(prevValue)} => ${JSON.stringify(newValue)}, ${JSON.stringify(mergeValue)}`)
-            },
-            onSet: (path, state, newValue, prevValue, mergeValue) => {
-                messages.push(`onSet called, [${path}]: ${JSON.stringify(state)}, ${JSON.stringify(prevValue)} => ${JSON.stringify(newValue)}, ${JSON.stringify(mergeValue)}`)
-            },
-            onDestroy: (state) => {
-                messages.push(`onDestroy called, ${JSON.stringify(state)}`)
-            },
-            onExtension() {
-                messages.push('onExtension called')
+        create: (state) => {
+            messages.push(`onInit called, initial: ${JSON.stringify(state.value)}`)
+            return {
+                onSet: (p) => {
+                    messages.push(`onSet called, [${p.path}]: ${JSON.stringify(p.state)}, ${JSON.stringify(p.previous)} => ${JSON.stringify(p.value)}, ${JSON.stringify(p.merged)}`)
+                },
+                onDestroy: (p) => {
+                    messages.push(`onDestroy called, ${JSON.stringify(p.state)}`)
+                },
+                onExtension() {
+                    messages.push('onExtension called')
+                }
             }
-        })
+        }
     }))
     
     let renderTimes = 0
@@ -119,53 +113,53 @@ test('plugin: common flow callbacks global state', async () => {
     });
     expect(renderTimes).toStrictEqual(1);
     expect(messages).toEqual(
-        ['onInit called, initial: [{\"f1\":0,\"f2\":\"str\"}], value: [{\"f1\":0,\"f2\":\"str\"}]'])
+        ['onInit called, initial: [{\"f1\":0,\"f2\":\"str\"}]'])
     expect(result.current.nested[0].get().f1).toStrictEqual(0);
     expect(messages).toEqual(
-        ['onInit called, initial: [{\"f1\":0,\"f2\":\"str\"}], value: [{\"f1\":0,\"f2\":\"str\"}]'])
+        ['onInit called, initial: [{\"f1\":0,\"f2\":\"str\"}]'])
 
     act(() => {
         result.current.nested[0].nested.f1.set(p => p + 1);
     });
     expect(renderTimes).toStrictEqual(2);
-    expect(messages.slice(1)).toEqual(['onPreset called, [0,f1]: [{\"f1\":0,\"f2\":\"str\"}], 0 => 1, undefined', 'onSet called, [0,f1]: [{\"f1\":1,\"f2\":\"str\"}], 0 => 1, undefined'])
+    expect(messages.slice(1)).toEqual(['onSet called, [0,f1]: [{\"f1\":1,\"f2\":\"str\"}], 0 => 1, undefined'])
 
     expect(result.current.get()[0].f1).toStrictEqual(1);
     expect(Object.keys(result.current.nested[0].nested)).toEqual(['f1', 'f2']);
     expect(Object.keys(result.current.get()[0])).toEqual(['f1', 'f2']);
-    expect(messages.slice(3)).toEqual([])
+    expect(messages.slice(2)).toEqual([])
     
     act(() => {
         result.current.nested[0].merge(p => ({ f1 : p.f1 + 1 }));
     });
     expect(renderTimes).toStrictEqual(3);
-    expect(messages.slice(3)).toEqual(['onPreset called, [0]: [{\"f1\":2,\"f2\":\"str\"}], {\"f1\":2,\"f2\":\"str\"} => {\"f1\":2,\"f2\":\"str\"}, {\"f1\":2}', 'onSet called, [0]: [{\"f1\":2,\"f2\":\"str\"}], {\"f1\":2,\"f2\":\"str\"} => {\"f1\":2,\"f2\":\"str\"}, {\"f1\":2}'])
+    expect(messages.slice(2)).toEqual(['onSet called, [0]: [{\"f1\":2,\"f2\":\"str\"}], {\"f1\":2,\"f2\":\"str\"} => {\"f1\":2,\"f2\":\"str\"}, {\"f1\":2}'])
 
     expect(result.current.get()[0].f1).toStrictEqual(2);
     expect(Object.keys(result.current.nested[0].nested)).toEqual(['f1', 'f2']);
     expect(Object.keys(result.current.get()[0])).toEqual(['f1', 'f2']);
-    expect(messages.slice(5)).toEqual([]);
+    expect(messages.slice(3)).toEqual([]);
 
     (result.current.with(TestPlugin)[1] as { onExtension(): void; }).onExtension();
-    expect(messages.slice(5)).toEqual(['onExtension called']);
+    expect(messages.slice(3)).toEqual(['onExtension called']);
 
     expect(() => result.current.with(TestPluginUnknown))
     .toThrow('Plugin \'TestPluginUnknown\' has not been attached to the StateInf or StateLink. Hint: you might need to register the required plugin using \'with\' method. See https://github.com/avkonst/hookstate#plugins for more details')
 
     unmount()
-    expect(messages.slice(6)).toEqual([])
+    expect(messages.slice(4)).toEqual([])
 
     expect(result.current.get()[0].f1).toStrictEqual(2);
-    expect(messages.slice(6)).toEqual([])
+    expect(messages.slice(4)).toEqual([])
 
     act(() => {
         result.current.nested[0].nested.f1.set(p => p + 1)
     });
     expect(renderTimes).toStrictEqual(3);
-    expect(messages.slice(6)).toEqual(['onPreset called, [0,f1]: [{\"f1\":2,\"f2\":\"str\"}], 2 => 3, undefined', 'onSet called, [0,f1]: [{\"f1\":3,\"f2\":\"str\"}], 2 => 3, undefined'])
+    expect(messages.slice(4)).toEqual(['onSet called, [0,f1]: [{\"f1\":3,\"f2\":\"str\"}], 2 => 3, undefined'])
     
     stateInf.destroy()
-    expect(messages.slice(8)).toEqual(['onDestroy called, [{\"f1\":3,\"f2\":\"str\"}]'])
+    expect(messages.slice(5)).toEqual(['onDestroy called, [{\"f1\":3,\"f2\":\"str\"}]'])
 
     act(() => {
         expect(() => result.current.nested[0].nested.f1.set(p => p + 1)).toThrow(
@@ -173,30 +167,27 @@ test('plugin: common flow callbacks global state', async () => {
         );
     });
     expect(renderTimes).toStrictEqual(3);
-    expect(messages.slice(9)).toEqual([])
+    expect(messages.slice(6)).toEqual([])
 });
 
 test('plugin: common flow callbacks devtools', async () => {
     const messages: string[] = []
     useStateLink[DevTools] = () => ({
         id: TestPlugin,
-        instanceFactory: () => ({
-            onInit() {
-                messages.push('onInit called')
-            },
-            onPreset: (path, state, newValue, prevValue, mergeValue) => {
-                messages.push(`onPreset called, [${path}]: ${JSON.stringify(state)}, ${JSON.stringify(prevValue)} => ${JSON.stringify(newValue)}, ${JSON.stringify(mergeValue)}`)
-            },
-            onSet: (path, state, newValue, prevValue, mergeValue) => {
-                messages.push(`onSet called, [${path}]: ${JSON.stringify(state)}, ${JSON.stringify(prevValue)} => ${JSON.stringify(newValue)}, ${JSON.stringify(mergeValue)}`)
-            },
-            onDestroy: (state) => {
-                messages.push(`onDestroy called, ${JSON.stringify(state)}`)
-            },
-            onExtension() {
-                messages.push('onExtension called')
+        create: () => {
+            messages.push('onInit called')
+            return {
+                onSet: (p) => {
+                    messages.push(`onSet called, [${p.path}]: ${JSON.stringify(p.state)}, ${JSON.stringify(p.previous)} => ${JSON.stringify(p.value)}, ${JSON.stringify(p.merged)}`)
+                },
+                onDestroy: (p) => {
+                    messages.push(`onDestroy called, ${JSON.stringify(p.state)}`)
+                },
+                onExtension() {
+                    messages.push('onExtension called')
+                }
             }
-        })
+        }
     } as Plugin)
     
     try {
@@ -217,35 +208,35 @@ test('plugin: common flow callbacks devtools', async () => {
             result.current.nested[0].nested.f1.set(p => p + 1);
         });
         expect(renderTimes).toStrictEqual(2);
-        expect(messages.slice(1)).toEqual(['onPreset called, [0,f1]: [{\"f1\":0,\"f2\":\"str\"}], 0 => 1, undefined', 'onSet called, [0,f1]: [{\"f1\":1,\"f2\":\"str\"}], 0 => 1, undefined'])
+        expect(messages.slice(1)).toEqual(['onSet called, [0,f1]: [{\"f1\":1,\"f2\":\"str\"}], 0 => 1, undefined'])
 
         expect(result.current.get()[0].f1).toStrictEqual(1);
         expect(Object.keys(result.current.nested[0].nested)).toEqual(['f1', 'f2']);
         expect(Object.keys(result.current.get()[0])).toEqual(['f1', 'f2']);
-        expect(messages.slice(3)).toEqual([])
+        expect(messages.slice(2)).toEqual([])
         
         act(() => {
             result.current.nested[0].merge(p => ({ f1 : p.f1 + 1 }));
         });
         expect(renderTimes).toStrictEqual(3);
-        expect(messages.slice(3)).toEqual(['onPreset called, [0]: [{\"f1\":2,\"f2\":\"str\"}], {\"f1\":2,\"f2\":\"str\"} => {\"f1\":2,\"f2\":\"str\"}, {\"f1\":2}', 'onSet called, [0]: [{\"f1\":2,\"f2\":\"str\"}], {\"f1\":2,\"f2\":\"str\"} => {\"f1\":2,\"f2\":\"str\"}, {\"f1\":2}'])
+        expect(messages.slice(2)).toEqual(['onSet called, [0]: [{\"f1\":2,\"f2\":\"str\"}], {\"f1\":2,\"f2\":\"str\"} => {\"f1\":2,\"f2\":\"str\"}, {\"f1\":2}'])
 
         expect(result.current.get()[0].f1).toStrictEqual(2);
         expect(Object.keys(result.current.nested[0].nested)).toEqual(['f1', 'f2']);
         expect(Object.keys(result.current.get()[0])).toEqual(['f1', 'f2']);
-        expect(messages.slice(5)).toEqual([]);
+        expect(messages.slice(3)).toEqual([]);
 
         (result.current.with(TestPlugin)[1] as { onExtension(): void; }).onExtension();
-        expect(messages.slice(5)).toEqual(['onExtension called']);
+        expect(messages.slice(3)).toEqual(['onExtension called']);
 
         expect(() => result.current.with(TestPluginUnknown))
         .toThrow('Plugin \'TestPluginUnknown\' has not been attached to the StateInf or StateLink. Hint: you might need to register the required plugin using \'with\' method. See https://github.com/avkonst/hookstate#plugins for more details')
 
         unmount()
-        expect(messages.slice(6)).toEqual(['onDestroy called, [{\"f1\":2,\"f2\":\"str\"}]'])
+        expect(messages.slice(4)).toEqual(['onDestroy called, [{\"f1\":2,\"f2\":\"str\"}]'])
 
         expect(result.current.get()[0].f1).toStrictEqual(2);
-        expect(messages.slice(7)).toEqual([])
+        expect(messages.slice(5)).toEqual([])
 
         act(() => {
             expect(() => result.current.nested[0].nested.f1.set(p => p + 1)).toThrow(
@@ -253,7 +244,7 @@ test('plugin: common flow callbacks devtools', async () => {
             );
         });
         expect(renderTimes).toStrictEqual(3);
-        expect(messages.slice(7)).toEqual([])
+        expect(messages.slice(5)).toEqual([])
     
     } finally {
         delete useStateLink[DevTools];
@@ -264,23 +255,20 @@ test('plugin: common flow callbacks global state devtools', async () => {
     const messages: string[] = []
     createStateLink[DevTools] = () => ({
         id: TestPlugin,
-        instanceFactory: (initial, instanceFactory) => ({
-            onInit() {
-                messages.push(`onInit called, initial: ${JSON.stringify(initial)}, value: ${JSON.stringify(instanceFactory().value)}`)
-            },
-            onPreset: (path, state, newValue, prevValue, mergeValue) => {
-                messages.push(`onPreset called, [${path}]: ${JSON.stringify(state)}, ${JSON.stringify(prevValue)} => ${JSON.stringify(newValue)}, ${JSON.stringify(mergeValue)}`)
-            },
-            onSet: (path, state, newValue, prevValue, mergeValue) => {
-                messages.push(`onSet called, [${path}]: ${JSON.stringify(state)}, ${JSON.stringify(prevValue)} => ${JSON.stringify(newValue)}, ${JSON.stringify(mergeValue)}`)
-            },
-            onDestroy: (state) => {
-                messages.push(`onDestroy called, ${JSON.stringify(state)}`)
-            },
-            onExtension() {
-                messages.push('onExtension called')
+        create: (state) => {
+            messages.push(`onInit called, initial: ${JSON.stringify(state.value)}`)
+            return {
+                onSet: (p) => {
+                    messages.push(`onSet called, [${p.path}]: ${JSON.stringify(p.state)}, ${JSON.stringify(p.previous)} => ${JSON.stringify(p.value)}, ${JSON.stringify(p.merged)}`)
+                },
+                onDestroy: (p) => {
+                    messages.push(`onDestroy called, ${JSON.stringify(p.state)}`)
+                },
+                onExtension() {
+                    messages.push('onExtension called')
+                }
             }
-        })
+        }
     } as Plugin)
     
     try {
@@ -296,53 +284,53 @@ test('plugin: common flow callbacks global state devtools', async () => {
         });
         expect(renderTimes).toStrictEqual(1);
         expect(messages).toEqual(
-            ['onInit called, initial: [{\"f1\":0,\"f2\":\"str\"}], value: [{\"f1\":0,\"f2\":\"str\"}]'])
+            ['onInit called, initial: [{\"f1\":0,\"f2\":\"str\"}]'])
         expect(result.current.nested[0].get().f1).toStrictEqual(0);
         expect(messages).toEqual(
-            ['onInit called, initial: [{\"f1\":0,\"f2\":\"str\"}], value: [{\"f1\":0,\"f2\":\"str\"}]'])
+            ['onInit called, initial: [{\"f1\":0,\"f2\":\"str\"}]'])
 
         act(() => {
             result.current.nested[0].nested.f1.set(p => p + 1);
         });
         expect(renderTimes).toStrictEqual(2);
-        expect(messages.slice(1)).toEqual(['onPreset called, [0,f1]: [{\"f1\":0,\"f2\":\"str\"}], 0 => 1, undefined', 'onSet called, [0,f1]: [{\"f1\":1,\"f2\":\"str\"}], 0 => 1, undefined'])
+        expect(messages.slice(1)).toEqual(['onSet called, [0,f1]: [{\"f1\":1,\"f2\":\"str\"}], 0 => 1, undefined'])
 
         expect(result.current.get()[0].f1).toStrictEqual(1);
         expect(Object.keys(result.current.nested[0].nested)).toEqual(['f1', 'f2']);
         expect(Object.keys(result.current.get()[0])).toEqual(['f1', 'f2']);
-        expect(messages.slice(3)).toEqual([])
+        expect(messages.slice(2)).toEqual([])
         
         act(() => {
             result.current.nested[0].merge(p => ({ f1 : p.f1 + 1 }));
         });
         expect(renderTimes).toStrictEqual(3);
-        expect(messages.slice(3)).toEqual(['onPreset called, [0]: [{\"f1\":2,\"f2\":\"str\"}], {\"f1\":2,\"f2\":\"str\"} => {\"f1\":2,\"f2\":\"str\"}, {\"f1\":2}', 'onSet called, [0]: [{\"f1\":2,\"f2\":\"str\"}], {\"f1\":2,\"f2\":\"str\"} => {\"f1\":2,\"f2\":\"str\"}, {\"f1\":2}'])
+        expect(messages.slice(2)).toEqual(['onSet called, [0]: [{\"f1\":2,\"f2\":\"str\"}], {\"f1\":2,\"f2\":\"str\"} => {\"f1\":2,\"f2\":\"str\"}, {\"f1\":2}'])
 
         expect(result.current.get()[0].f1).toStrictEqual(2);
         expect(Object.keys(result.current.nested[0].nested)).toEqual(['f1', 'f2']);
         expect(Object.keys(result.current.get()[0])).toEqual(['f1', 'f2']);
-        expect(messages.slice(5)).toEqual([]);
+        expect(messages.slice(3)).toEqual([]);
 
         (result.current.with(TestPlugin)[1] as { onExtension(): void; }).onExtension();
-        expect(messages.slice(5)).toEqual(['onExtension called']);
+        expect(messages.slice(3)).toEqual(['onExtension called']);
 
         expect(() => result.current.with(TestPluginUnknown))
         .toThrow('Plugin \'TestPluginUnknown\' has not been attached to the StateInf or StateLink. Hint: you might need to register the required plugin using \'with\' method. See https://github.com/avkonst/hookstate#plugins for more details')
 
         unmount()
-        expect(messages.slice(6)).toEqual([])
+        expect(messages.slice(4)).toEqual([])
 
         expect(result.current.get()[0].f1).toStrictEqual(2);
-        expect(messages.slice(6)).toEqual([])
+        expect(messages.slice(4)).toEqual([])
 
         act(() => {
             result.current.nested[0].nested.f1.set(p => p + 1)
         });
         expect(renderTimes).toStrictEqual(3);
-        expect(messages.slice(6)).toEqual(['onPreset called, [0,f1]: [{\"f1\":2,\"f2\":\"str\"}], 2 => 3, undefined', 'onSet called, [0,f1]: [{\"f1\":3,\"f2\":\"str\"}], 2 => 3, undefined'])
+        expect(messages.slice(4)).toEqual(['onSet called, [0,f1]: [{\"f1\":3,\"f2\":\"str\"}], 2 => 3, undefined'])
         
         stateRef.destroy()
-        expect(messages.slice(8)).toEqual(['onDestroy called, [{\"f1\":3,\"f2\":\"str\"}]'])
+        expect(messages.slice(5)).toEqual(['onDestroy called, [{\"f1\":3,\"f2\":\"str\"}]'])
 
         act(() => {
             expect(() => result.current.nested[0].nested.f1.set(p => p + 1)).toThrow(
@@ -350,7 +338,7 @@ test('plugin: common flow callbacks global state devtools', async () => {
             );
         });
         expect(renderTimes).toStrictEqual(3);
-        expect(messages.slice(9)).toEqual([])
+        expect(messages.slice(6)).toEqual([])
     } finally {
         delete createStateLink[DevTools]
     }
