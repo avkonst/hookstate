@@ -64,6 +64,31 @@ test('array: should rerender used length changed', async () => {
     expect(Object.keys(result.current.get())).toEqual(['0', '1', '2']);
 });
 
+test('array: should rerender when keys used', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        const value = [0, 1];
+        // tslint:disable-next-line: no-string-literal
+        value['poluted'] = 1;
+        return useStateLink<number[]>([0, 1])
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(result.current.keys).toEqual([0, 1]);
+
+    act(() => {
+        result.current.nested[0].set(p => p);
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(result.current.keys).toEqual([0, 1]);
+
+    act(() => {
+        result.current.nested[3].set(3);
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(result.current.keys).toEqual([0, 1, 3]);
+});
+
 test('array: should not rerender used undefined properties', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {

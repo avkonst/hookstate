@@ -35,6 +35,22 @@ test('primitive: should rerender used when set to the same', async () => {
     expect(result.current.get()).toStrictEqual(0);
 });
 
+test('primitive: should rerender when keys used', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useStateLink('value')
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(result.current.keys).toEqual(undefined);
+
+    act(() => {
+        result.current.set(p => p);
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(result.current.keys).toEqual(undefined);
+});
+
 test('primitive: should not rerender unused', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {

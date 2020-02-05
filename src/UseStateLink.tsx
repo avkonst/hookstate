@@ -21,6 +21,12 @@ export type NestedInferredLink<S> =
     S extends object ? { readonly [K in keyof Required<S>]: StateLink<S[K]>; } :
     undefined;
 
+export type NestedInferredKeys<S> =
+    S extends ReadonlyArray<infer _> ? ReadonlyArray<number> :
+    S extends null ? undefined :
+    S extends object ? ReadonlyArray<keyof S> :
+    undefined;
+
 export type Path = ReadonlyArray<string | number>;
 
 export type SetStateAction<S> = (S | Promise<S>) | ((prevState: S) => (S | Promise<S>));
@@ -41,8 +47,9 @@ export type OnlyNullable<S> =
             never;
     
 export interface StateLink<S> {
-    readonly path: Path;
-    readonly nested: NestedInferredLink<S>;
+    get(): S;
+    set(newValue: SetStateAction<S>): void;
+    merge(newValue: SetPartialStateAction<S>): void;
 
     // keep value in addition to get() because typescript compiler
     // does not handle elimination of undefined with get(), like in this example:
@@ -50,25 +57,25 @@ export interface StateLink<S> {
     // const myvalue: number = statelink.value ? statelink.value + 1 : 0; // <-- compiles
     // const myvalue: number = statelink.get() ? statelink.get() + 1 : 0; // <-- does not compile
     readonly value: S;
-    get(): S;
 
     /** @warning experimental feature */
     readonly promised: boolean;
     /** @warning experimental feature */
     readonly error: ErrorValueAtPath | undefined;
 
-    set(newValue: SetStateAction<S>): void;
-    merge(newValue: SetPartialStateAction<S>): void;
+    readonly path: Path;
+    readonly nested: NestedInferredLink<S>;
+    readonly keys: NestedInferredKeys<S>;
+
+    denull(): StateLink<NonNullable<S>> | OnlyNullable<S>;
 
     /** @warning experimental feature */
     batch(action: () => void): void;
-    
-    denull(): StateLink<NonNullable<S>> | OnlyNullable<S>;
+
+    wrap<R>(transform: (state: StateLink<S>, prev: R | undefined) => R): WrappedStateLink<R>;
 
     with(plugin: () => Plugin): StateLink<S>;
     with(pluginId: symbol): [StateLink<S> & StateLinkPlugable<S>, PluginInstance];
-    
-    wrap<R>(transform: (state: StateLink<S>, prev: R | undefined) => R): WrappedStateLink<R>;
 }
 
 export interface DestroyableStateLink<S> extends StateLink<S> {
@@ -749,11 +756,9 @@ class StateLinkImpl<S> implements DestroyableStateLink<S>,
     }
 
     denull(): StateLink<NonNullable<S>> | OnlyNullable<S>  {
-        if (this.value === null) {
-            return null as OnlyNullable<S>;
-        }
-        if (this.value === undefined) {
-            return undefined as OnlyNullable<S>;
+        const value = this.get()
+        if (value === null || value === undefined) {
+            return value as unknown as OnlyNullable<S>;
         }
         return this as unknown as StateLink<NonNullable<S>>;
     }
@@ -835,6 +840,18 @@ class StateLinkImpl<S> implements DestroyableStateLink<S>,
         return updated;
     }
 
+    get keys(): NestedInferredKeys<S> {
+        const value = this.get()
+        if (Array.isArray(value)) {
+            return Object.keys(value).map(i => Number(i)).filter(i => Number.isInteger(i)) as
+                unknown as NestedInferredKeys<S>;
+        }
+        if (typeof value === 'object' && value !== null) {
+            return Object.keys(value) as unknown as NestedInferredKeys<S>;
+        }
+        return undefined as NestedInferredKeys<S>;
+    }
+    
     get nested(): NestedInferredLink<S> {
         const currentValue = this.getUntracked()
         if (this[NestedCache] === undefined) {
@@ -911,7 +928,7 @@ class StateLinkImpl<S> implements DestroyableStateLink<S>,
                 if (!Number.isInteger(index)) {
                     return undefined;
                 }
-                return (this.nested)![index].value;
+                return (this.nested)![index].get();
             },
             (target: object, key: PropertyKey, value: StateValueAtPath) => {
                 if (typeof key === 'symbol') {

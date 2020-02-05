@@ -75,6 +75,36 @@ test('object: should rerender used when set to the same', async () => {
     expect(Object.keys(result.current.get())).toEqual(['field']);
 });
 
+test('object: should rerender when keys used', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useStateLink<{field: number, optional?: number} | null>({
+            field: 1
+        })
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(result.current.keys).toEqual(['field']);
+
+    act(() => {
+        result.current.nested!.field.set(p => p);
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(result.current.keys).toEqual(['field']);
+
+    act(() => {
+        result.current.nested!.optional.set(2);
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(result.current.keys).toEqual(['field', 'optional']);
+
+    act(() => {
+        result.current.set(null);
+    });
+    expect(renderTimes).toStrictEqual(3);
+    expect(result.current.keys).toEqual(undefined);
+});
+
 test('object: should rerender unused when new element', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
