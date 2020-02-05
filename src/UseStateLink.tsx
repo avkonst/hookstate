@@ -31,6 +31,15 @@ export type SetPartialStateAction<S> =
     S extends object | string ? Partial<S> | ((prevValue: S) => Partial<S>) :
     React.SetStateAction<S>;
 
+export type OnlyNullable<S> = 
+    S extends null ?
+        S extends undefined ?
+            null | undefined :
+            null :
+        S extends undefined ?
+            undefined :
+            never;
+    
 export interface StateLink<S> {
     readonly path: Path;
     readonly nested: NestedInferredLink<S>;
@@ -53,6 +62,8 @@ export interface StateLink<S> {
 
     /** @warning experimental feature */
     batch(action: () => void): void;
+    
+    denull(): StateLink<NonNullable<S>> | OnlyNullable<S>;
 
     with(plugin: () => Plugin): StateLink<S>;
     with(pluginId: symbol): [StateLink<S> & StateLinkPlugable<S>, PluginInstance];
@@ -737,6 +748,16 @@ class StateLinkImpl<S> implements DestroyableStateLink<S>,
         this.state.update(paths)
     }
 
+    denull(): StateLink<NonNullable<S>> | OnlyNullable<S>  {
+        if (this.value === null) {
+            return null as OnlyNullable<S>;
+        }
+        if (this.value === undefined) {
+            return undefined as OnlyNullable<S>;
+        }
+        return this as unknown as StateLink<NonNullable<S>>;
+    }
+    
     with(plugin: () => Plugin): StateLink<S>;
     with(pluginId: symbol): [StateLink<S> & StateLinkPlugable<S>, PluginInstance];
     with(plugin: (() => Plugin) | symbol):

@@ -224,3 +224,20 @@ test('object: should set to null', async () => {
     });
     expect(renderTimes).toStrictEqual(2);
 });
+
+test('object: should denull', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useStateLink<{} | null>({})
+    });
+
+    const state = result.current.denull()
+    expect(state ? state.value : null).toEqual({})
+    act(() => {
+        result.current.set(p => null);
+        result.current.set(null);
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(result.current.denull()).toEqual(null)
+});
