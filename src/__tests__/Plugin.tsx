@@ -20,6 +20,12 @@ test('plugin: common flow callbacks', async () => {
             create: () => {
                 messages.push('onInit called')
                 return {
+                    onBatchStart: (p) => {
+                        messages.push(`onBatchStart called, [${p.path}]: ${JSON.stringify(p.state)}, context: ${JSON.stringify(p.context)}`)
+                    },
+                    onBatchFinish: (p) => {
+                        messages.push(`onBatchFinish called, [${p.path}]: ${JSON.stringify(p.state)}, context: ${JSON.stringify(p.context)}`)
+                    },
                     onSet: (p) => {
                         messages.push(`onSet called, [${p.path}]: ${JSON.stringify(p.state)}, ${JSON.stringify(p.previous)} => ${JSON.stringify(p.value)}, ${JSON.stringify(p.merged)}`)
                     },
@@ -63,14 +69,21 @@ test('plugin: common flow callbacks', async () => {
     (result.current.with(TestPlugin)[1] as { onExtension(): void; }).onExtension();
     expect(messages.slice(3)).toEqual(['onExtension called']);
 
+    result.current.batch((s) => {
+        messages.push(`batch executed, state: ${JSON.stringify(s.value)}`)
+    }, {
+        context: 'custom context'
+    })
+    expect(messages.slice(4)).toEqual(['onBatchStart called, []: [{\"f1\":2,\"f2\":\"str\"}], context: \"custom context\"', 'batch executed, state: [{\"f1\":2,\"f2\":\"str\"}]', 'onBatchFinish called, []: [{\"f1\":2,\"f2\":\"str\"}], context: \"custom context\"'])
+    
     expect(() => result.current.with(TestPluginUnknown))
     .toThrow('Plugin \'TestPluginUnknown\' has not been attached to the StateInf or StateLink. Hint: you might need to register the required plugin using \'with\' method. See https://github.com/avkonst/hookstate#plugins for more details')
 
     unmount()
-    expect(messages.slice(4)).toEqual(['onDestroy called, [{\"f1\":2,\"f2\":\"str\"}]'])
+    expect(messages.slice(7)).toEqual(['onDestroy called, [{\"f1\":2,\"f2\":\"str\"}]'])
 
     expect(result.current.get()[0].f1).toStrictEqual(2);
-    expect(messages.slice(5)).toEqual([])
+    expect(messages.slice(8)).toEqual([])
 
     act(() => {
         expect(() => result.current.nested[0].nested.f1.set(p => p + 1)).toThrow(
@@ -78,7 +91,7 @@ test('plugin: common flow callbacks', async () => {
         );
     });
     expect(renderTimes).toStrictEqual(3);
-    expect(messages.slice(5)).toEqual([])
+    expect(messages.slice(8)).toEqual([])
 });
 
 const stateInf = createStateLink([{

@@ -70,7 +70,10 @@ export interface StateLink<S> {
     denull(): StateLink<NonNullable<S>> | OnlyNullable<S>;
 
     /** @warning experimental feature */
-    batch(action: () => void): void;
+    batch(action: (s: StateLink<S>) => void, options?: {
+        ifPromised?: 'postpone' | 'discard' | 'reject' | 'execute',
+        context?: CustomContext
+    }): void;
 
     wrap<R>(transform: (state: StateLink<S>, prev: R | undefined) => R): WrappedStateLink<R>;
 
@@ -116,6 +119,8 @@ export type StateValueAtRoot = any;
 export type StateValueAtPath = any;
 // tslint:disable-next-line: no-any
 export type ErrorValueAtPath = any;
+// tslint:disable-next-line: no-any
+export type CustomContext = any;
 
 export type InitialValueAtRoot<S> = S | Promise<S> | (() => S | Promise<S>)
 
@@ -136,9 +141,17 @@ export interface PluginCallbacksOnDestroyArgument {
     readonly state?: StateValueAtRoot,
 }
 
+export interface PluginCallbacksOnBatchArgument {
+    readonly path: Path,
+    readonly state?: StateValueAtRoot,
+    readonly context?: CustomContext,
+}
+
 export interface PluginCallbacks {
     readonly onSet?: (arg: PluginCallbacksOnSetArgument) => void,
     readonly onDestroy?: (arg: PluginCallbacksOnDestroyArgument) => void,
+    readonly onBatchStart?: (arg: PluginCallbacksOnBatchArgument) => void,
+    readonly onBatchFinish?: (arg: PluginCallbacksOnBatchArgument) => void,
 };
 
 /** @deprecated by PluginCallbacks */
@@ -218,6 +231,8 @@ class State implements Subscribable {
     private _subscribers: Set<Subscriber> = new Set();
     private _setSubscribers: Set<Required<PluginCallbacks>['onSet']> = new Set();
     private _destroySubscribers: Set<Required<PluginCallbacks>['onDestroy']> = new Set();
+    private _batchStartSubscribers: Set<Required<PluginCallbacks>['onBatchStart']> = new Set();
+    private _batchFinishSubscribers: Set<Required<PluginCallbacks>['onBatchFinish']> = new Set();
 
     private _plugins: Map<symbol, PluginInstance | PluginCallbacks> = new Map();
 
@@ -426,11 +441,33 @@ class State implements Subscribable {
         }
     }
 
-    startBatch(): void {
+    startBatch(path: Path, options?: { context?:  CustomContext }): void {
         this._batches += 1
+        
+        const cbArgument: Writeable<PluginCallbacksOnBatchArgument> = {
+            path: path
+        }
+        if (options && 'context' in options) {
+            cbArgument.context = options.context
+        }
+        if (this._value !== None) {
+            cbArgument.state = this._value
+        }
+        this._batchStartSubscribers.forEach(cb => cb(cbArgument))
     }
 
-    finishBatch(): void {
+    finishBatch(path: Path, options?: { context?:  CustomContext }): void {
+        const cbArgument: Writeable<PluginCallbacksOnBatchArgument> = {
+            path: path
+        }
+        if (options && 'context' in options) {
+            cbArgument.context = options.context
+        }
+        if (this._value !== None) {
+            cbArgument.state = this._value
+        }
+        this._batchFinishSubscribers.forEach(cb => cb(cbArgument))
+        
         this._batches -= 1
         if (this._batches === 0) {
             if (this._batchesPendingPaths) {
@@ -482,6 +519,12 @@ class State implements Subscribable {
             }
             if (pluginCallbacks.onDestroy) {
                 this._destroySubscribers.add((p) => pluginCallbacks.onDestroy!(p))
+            }
+            if (pluginCallbacks.onBatchStart) {
+                this._batchStartSubscribers.add((p) => pluginCallbacks.onBatchStart!(p))
+            }
+            if (pluginCallbacks.onBatchFinish) {
+                this._batchFinishSubscribers.add((p) => pluginCallbacks.onBatchFinish!(p))
             }
         }
     }
@@ -756,15 +799,27 @@ class StateLinkImpl<S> implements DestroyableStateLink<S>,
         this.state.update(this.mergeUntracked(sourceValue));
     }
 
-    batch(action: () => void): void {
+    batch(action: (s: StateLink<S>) => void, options?: {
+        ifPromised?: 'postpone' | 'discard' | 'reject' | 'execute',
+        context?: CustomContext
+    }): void {
         if (this.promised) {
-            return this.state.postponeBatch(() => this.batch(action))
+            const ifPromised = options && options.ifPromised || 'reject'
+            if (ifPromised === 'postpone') {
+                return this.state.postponeBatch(() => this.batch(action, options))
+            }
+            if (ifPromised === 'discard') {
+                return;
+            }
+            if (ifPromised === 'reject') {
+                this.get(); // this will throw (default behavior)
+            }
         }
         try {
-            this.state.startBatch()
-            action()
+            this.state.startBatch(this.path, options)
+            action(this)
         } finally {
-            this.state.finishBatch()
+            this.state.finishBatch(this.path, options)
         }
     }
 

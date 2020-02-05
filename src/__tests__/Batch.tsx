@@ -115,6 +115,41 @@ test('object: should rerender used via nested batch promised', async () => {
     expect(() => result.current.set(200))
         .toThrow('StateLink is used incorrectly. Attempted \'write promised state\' at \'/\'')
 
+    let executed = false;
+    act(() => {
+        expect(() => result.current.batch(() => {
+            executed = true;
+            expect(renderTimes).toStrictEqual(3);
+            result.current.set(10000)
+            expect(renderTimes).toStrictEqual(3);
+        })).toThrow(`StateLink is used incorrectly. Attempted 'read promised state' at '/'`)
+    })
+    expect(executed).toBeFalsy()
+    
+    act(() => {
+        expect(() => result.current.batch(() => {
+            executed = true;
+            expect(renderTimes).toStrictEqual(3);
+            result.current.set(10000)
+            expect(renderTimes).toStrictEqual(3);
+        }, {
+            ifPromised: 'reject'
+        })).toThrow(`StateLink is used incorrectly. Attempted 'read promised state' at '/'`)
+    })
+    expect(executed).toBeFalsy()
+    
+    executed = false;
+    act(() => {
+        expect(() => result.current.batch(() => {
+            executed = true;
+            result.current.set(10000)
+            expect(renderTimes).toStrictEqual(3);
+        }, {
+            ifPromised: 'execute'
+        })).toThrow(`StateLink is used incorrectly. Attempted 'write promised state' at '/'`)
+    })
+    expect(executed).toBeTruthy()
+
     act(() => {
         result.current.batch(() => {
             expect(renderTimes).toStrictEqual(3);
@@ -122,6 +157,20 @@ test('object: should rerender used via nested batch promised', async () => {
             expect(renderTimes).toStrictEqual(3);
             result.current.set(p => p + 100)
             expect(renderTimes).toStrictEqual(3);
+        }, {
+            ifPromised: 'discard'
+        });
+    })
+
+    act(() => {
+        result.current.batch(() => {
+            expect(renderTimes).toStrictEqual(3);
+            result.current.set(p => p + 100)
+            expect(renderTimes).toStrictEqual(3);
+            result.current.set(p => p + 100)
+            expect(renderTimes).toStrictEqual(3);
+        }, {
+            ifPromised: 'postpone'
         });
     })
 
@@ -156,6 +205,8 @@ test('object: should rerender used via nested batch promised manual', async () =
                 result.current.set(p => p + 100)
                 expect(renderTimes).toStrictEqual(2);
             })
+        }, {
+            ifPromised: 'postpone'
         });
     })
 
