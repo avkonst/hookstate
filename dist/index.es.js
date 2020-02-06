@@ -31,6 +31,8 @@ function __extends(d, b) {
 
 /** @warning experimental feature */
 var None = Symbol('none');
+/** @warning experimental feature */
+var DevTools = Symbol('DevTools');
 //
 // INTERNAL IMPLEMENTATIONS
 //
@@ -50,15 +52,6 @@ function extractSymbol(s) {
     }
     return result;
 }
-var PluginInvalidRegistrationError = /** @class */ (function (_super) {
-    __extends(PluginInvalidRegistrationError, _super);
-    function PluginInvalidRegistrationError(id, path) {
-        return _super.call(this, "Plugin with onInit, which overrides initial value, " +
-            "should be attached to StateInf instance, but not to StateLink instance. " +
-            ("Attempted 'with(" + extractSymbol(id) + ")' at '/" + path.join('/') + "'")) || this;
-    }
-    return PluginInvalidRegistrationError;
-}(Error));
 var PluginUnknownError = /** @class */ (function (_super) {
     __extends(PluginUnknownError, _super);
     function PluginUnknownError(s) {
@@ -78,9 +71,10 @@ var State = /** @class */ (function () {
         this._value = _value;
         this._edition = 0;
         this._subscribers = new Set();
-        this._presetSubscribers = new Set();
         this._setSubscribers = new Set();
         this._destroySubscribers = new Set();
+        this._batchStartSubscribers = new Set();
+        this._batchFinishSubscribers = new Set();
         this._plugins = new Map();
         this._batches = 0;
         if (typeof _value === 'object' &&
@@ -149,21 +143,33 @@ var State = /** @class */ (function () {
         }
         if (path.length === 0) {
             // Root value UPDATE case,
+            var onSetArg = {
+                path: path,
+                state: this._value,
+                value: value,
+                previous: this._value,
+                merged: mergeValue
+            };
             if (value === None) {
                 this._promised = this.createPromised(undefined);
+                delete onSetArg.value;
             }
             else if (typeof value === 'object' && Promise.resolve(value) === value) {
                 this._promised = this.createPromised(value);
                 value = None;
+                delete onSetArg.value;
             }
-            else if (this.promised && !this.promised.resolver) {
+            else if (this._promised && !this._promised.resolver) {
                 // TODO add hint
                 throw new StateLinkInvalidUsageError("write promised state", path, '');
             }
             var prevValue = this._value;
-            this.beforeSet(path, value, prevValue, mergeValue);
+            if (prevValue === None) {
+                delete onSetArg.previous;
+                delete onSetArg.state;
+            }
             this._value = value;
-            this.afterSet(path, value, prevValue, mergeValue);
+            this.afterSet(onSetArg);
             if (prevValue === None && this._value !== None &&
                 this.promised && this.promised.resolver) {
                 this.promised.resolver();
@@ -184,22 +190,31 @@ var State = /** @class */ (function () {
             if (value !== None) {
                 // Property UPDATE case
                 var prevValue = target[p];
-                this.beforeSet(path, value, prevValue, mergeValue);
                 target[p] = value;
-                this.afterSet(path, value, prevValue, mergeValue);
+                this.afterSet({
+                    path: path,
+                    state: this._value,
+                    value: value,
+                    previous: prevValue,
+                    merged: mergeValue
+                });
                 return path;
             }
             else {
                 // Property DELETE case
                 var prevValue = target[p];
-                this.beforeSet(path, value, prevValue, mergeValue);
                 if (Array.isArray(target) && typeof p === 'number') {
                     target.splice(p, 1);
                 }
                 else {
                     delete target[p];
                 }
-                this.afterSet(path, value, prevValue, mergeValue);
+                this.afterSet({
+                    path: path,
+                    state: this._value,
+                    previous: prevValue,
+                    merged: mergeValue
+                });
                 // if an array of object is about to loose existing property
                 // we consider it is the whole object is changed
                 // which is identified by upper path
@@ -208,9 +223,13 @@ var State = /** @class */ (function () {
         }
         if (value !== None) {
             // Property INSERT case
-            this.beforeSet(path, value, None, mergeValue);
             target[p] = value;
-            this.afterSet(path, value, None, mergeValue);
+            this.afterSet({
+                path: path,
+                state: this._value,
+                value: value,
+                merged: mergeValue
+            });
             // if an array of object is about to be extended by new property
             // we consider it is the whole object is changed
             // which is identified by upper path
@@ -230,30 +249,36 @@ var State = /** @class */ (function () {
         this._subscribers.forEach(function (s) { return s.onSet(paths, actions); });
         actions.forEach(function (a) { return a(); });
     };
-    State.prototype.beforeSet = function (path, value, prevValue, mergeValue) {
-        var _this = this;
-        if (this._edition !== DestroyedEdition) {
-            this._presetSubscribers.forEach(function (cb) {
-                var presetResult = cb(path, _this._value, value, prevValue, mergeValue);
-                if (presetResult !== undefined) {
-                    // plugin overrides the current value
-                    // could be used for immutable later on
-                    _this._value = presetResult;
-                }
-            });
-        }
-    };
-    State.prototype.afterSet = function (path, value, prevValue, mergeValue) {
-        var _this = this;
+    State.prototype.afterSet = function (params) {
         if (this._edition !== DestroyedEdition) {
             this._edition += 1;
-            this._setSubscribers.forEach(function (cb) { return cb(path, _this._value, value, prevValue, mergeValue); });
+            this._setSubscribers.forEach(function (cb) { return cb(params); });
         }
     };
-    State.prototype.startBatch = function () {
+    State.prototype.startBatch = function (path, options) {
         this._batches += 1;
+        var cbArgument = {
+            path: path
+        };
+        if (options && 'context' in options) {
+            cbArgument.context = options.context;
+        }
+        if (this._value !== None) {
+            cbArgument.state = this._value;
+        }
+        this._batchStartSubscribers.forEach(function (cb) { return cb(cbArgument); });
     };
-    State.prototype.finishBatch = function () {
+    State.prototype.finishBatch = function (path, options) {
+        var cbArgument = {
+            path: path
+        };
+        if (options && 'context' in options) {
+            cbArgument.context = options.context;
+        }
+        if (this._value !== None) {
+            cbArgument.state = this._value;
+        }
+        this._batchFinishSubscribers.forEach(function (cb) { return cb(cbArgument); });
         this._batches -= 1;
         if (this._batches === 0) {
             if (this._batchesPendingPaths) {
@@ -274,36 +299,41 @@ var State = /** @class */ (function () {
         }
         throw new PluginUnknownError(pluginId);
     };
-    State.prototype.register = function (plugin, path) {
+    State.prototype.register = function (plugin) {
         var _this = this;
         var existingInstance = this._plugins.get(plugin.id);
         if (existingInstance) {
             return;
         }
-        var pluginInstance = plugin.instanceFactory(this._value, function () { return _this.accessUnmounted(); });
-        this._plugins.set(plugin.id, pluginInstance);
-        if (pluginInstance.onInit) {
-            var initValue = pluginInstance.onInit();
-            if (initValue !== undefined) {
-                if (path) {
-                    throw new PluginInvalidRegistrationError(plugin.id, path);
-                }
-                this._value = initValue;
+        if (plugin.instanceFactory) {
+            var pluginInstance_1 = plugin.instanceFactory(this._value, function () { return _this.accessUnmounted(); });
+            this._plugins.set(plugin.id, pluginInstance_1);
+            if (pluginInstance_1.onSet) {
+                this._setSubscribers.add(function (p) { return pluginInstance_1.onSet(p.path, p.state, p.value, p.previous, p.merged); });
+            }
+            if (pluginInstance_1.onDestroy) {
+                this._destroySubscribers.add(function (p) { return pluginInstance_1.onDestroy(p.state); });
             }
         }
-        if (pluginInstance.onPreset) {
-            this._presetSubscribers.add(function (p, s, v, pv, mv) { return pluginInstance.onPreset(p, s, v, pv, mv); });
+        if (plugin.create) {
+            var pluginCallbacks_1 = plugin.create(this.accessUnmounted());
+            this._plugins.set(plugin.id, pluginCallbacks_1);
+            if (pluginCallbacks_1.onSet) {
+                this._setSubscribers.add(function (p) { return pluginCallbacks_1.onSet(p); });
+            }
+            if (pluginCallbacks_1.onDestroy) {
+                this._destroySubscribers.add(function (p) { return pluginCallbacks_1.onDestroy(p); });
+            }
+            if (pluginCallbacks_1.onBatchStart) {
+                this._batchStartSubscribers.add(function (p) { return pluginCallbacks_1.onBatchStart(p); });
+            }
+            if (pluginCallbacks_1.onBatchFinish) {
+                this._batchFinishSubscribers.add(function (p) { return pluginCallbacks_1.onBatchFinish(p); });
+            }
         }
-        if (pluginInstance.onSet) {
-            this._setSubscribers.add(function (p, s, v, pv, mv) { return pluginInstance.onSet(p, s, v, pv, mv); });
-        }
-        if (pluginInstance.onDestroy) {
-            this._destroySubscribers.add(function (s) { return pluginInstance.onDestroy(s); });
-        }
-        return;
     };
     State.prototype.accessUnmounted = function () {
-        return new StateLinkImpl(this, RootPath, NoActionUnmounted, this.get(RootPath), this.edition).with(Downgraded); // it does not matter how it is used, it is not subscribed anyway
+        return new StateLinkImpl(this, RootPath, NoActionOnUpdate, this.get(RootPath), this.edition).with(Downgraded); // it does not matter how it is used, it is not subscribed anyway
     };
     State.prototype.subscribe = function (l) {
         this._subscribers.add(l);
@@ -313,7 +343,7 @@ var State = /** @class */ (function () {
     };
     State.prototype.destroy = function () {
         var _this = this;
-        this._destroySubscribers.forEach(function (cb) { return cb(_this._value); });
+        this._destroySubscribers.forEach(function (cb) { return cb(_this._value !== None ? { state: _this._value } : {}); });
         this._edition = DestroyedEdition;
     };
     State.prototype.toJSON = function () {
@@ -325,42 +355,33 @@ var SynteticID = Symbol('SynteticTypeInferenceMarker');
 var ValueCache = Symbol('ValueCache');
 var NestedCache = Symbol('NestedCache');
 var UnmountedCallback = Symbol('UnmountedCallback');
-var StateInfImpl = /** @class */ (function () {
-    function StateInfImpl(state, transform) {
+var NoActionOnDestroy = function () { };
+var NoActionOnUpdate = function () { };
+NoActionOnUpdate[UnmountedCallback] = true;
+var WrappedStateLinkImpl = /** @class */ (function () {
+    function WrappedStateLinkImpl(state, transform) {
         this.state = state;
         this.transform = transform;
         // tslint:disable-next-line: variable-name
         this.__synteticTypeInferenceMarkerInf = SynteticID;
     }
-    StateInfImpl.prototype.access = function () {
-        var link = this.state.accessUnmounted();
-        if (this.transform) {
-            return this.transform(link, undefined);
-        }
-        return link;
+    WrappedStateLinkImpl.prototype.access = function () {
+        return this.transform(this.state, undefined);
     };
-    StateInfImpl.prototype.with = function (plugin) {
-        var pluginMeta = plugin();
-        if (pluginMeta.id === DowngradedID) {
-            this.disabledTracking = true;
-            return this;
-        }
-        this.state.register(pluginMeta);
+    WrappedStateLinkImpl.prototype.with = function (plugin) {
+        this.state.with(plugin);
         return this;
     };
-    StateInfImpl.prototype.wrap = function (transform) {
-        var currentTransform = this.transform;
-        return new StateInfImpl(this.state, function (s, p) {
-            if (currentTransform) {
-                return transform(currentTransform(s, undefined), p);
-            }
-            return transform(s, p);
+    WrappedStateLinkImpl.prototype.wrap = function (transform) {
+        var _this = this;
+        return new WrappedStateLinkImpl(this.state, function (s, p) {
+            return transform(_this.transform(s, undefined), p);
         });
     };
-    StateInfImpl.prototype.destroy = function () {
+    WrappedStateLinkImpl.prototype.destroy = function () {
         this.state.destroy();
     };
-    return StateInfImpl;
+    return WrappedStateLinkImpl;
 }());
 var Promised = /** @class */ (function () {
     function Promised(promise, onResolve, onReject, onPostResolve) {
@@ -555,21 +576,37 @@ var StateLinkImpl = /** @class */ (function () {
     StateLinkImpl.prototype.merge = function (sourceValue) {
         this.state.update(this.mergeUntracked(sourceValue));
     };
-    StateLinkImpl.prototype.batch = function (action) {
+    StateLinkImpl.prototype.batch = function (action, options) {
         var _this = this;
         if (this.promised) {
-            return this.state.postponeBatch(function () { return _this.batch(action); });
+            var ifPromised = options && options.ifPromised || 'reject';
+            if (ifPromised === 'postpone') {
+                return this.state.postponeBatch(function () { return _this.batch(action, options); });
+            }
+            if (ifPromised === 'discard') {
+                return;
+            }
+            if (ifPromised === 'reject') {
+                this.get(); // this will throw (default behavior)
+            }
         }
         try {
-            this.state.startBatch();
-            action();
+            this.state.startBatch(this.path, options);
+            action(this);
         }
         finally {
-            this.state.finishBatch();
+            this.state.finishBatch(this.path, options);
         }
     };
     StateLinkImpl.prototype.update = function (paths) {
         this.state.update(paths);
+    };
+    StateLinkImpl.prototype.denull = function () {
+        var value = this.get();
+        if (value === null || value === undefined) {
+            return value;
+        }
+        return this;
     };
     StateLinkImpl.prototype.with = function (plugin) {
         if (typeof plugin === 'function') {
@@ -578,12 +615,21 @@ var StateLinkImpl = /** @class */ (function () {
                 this.disabledTracking = true;
                 return this;
             }
-            this.state.register(pluginMeta, this.path);
+            this.state.register(pluginMeta);
             return this;
         }
         else {
             return [this, this.state.getPlugin(plugin)];
         }
+    };
+    StateLinkImpl.prototype.access = function () {
+        return this;
+    };
+    StateLinkImpl.prototype.wrap = function (transform) {
+        return new WrappedStateLinkImpl(this, transform);
+    };
+    StateLinkImpl.prototype.destroy = function () {
+        this.state.destroy();
     };
     StateLinkImpl.prototype.subscribe = function (l) {
         if (this.subscribers === undefined) {
@@ -631,6 +677,20 @@ var StateLinkImpl = /** @class */ (function () {
         }
         return updated;
     };
+    Object.defineProperty(StateLinkImpl.prototype, "keys", {
+        get: function () {
+            var value = this.get();
+            if (Array.isArray(value)) {
+                return Object.keys(value).map(function (i) { return Number(i); }).filter(function (i) { return Number.isInteger(i); });
+            }
+            if (typeof value === 'object' && value !== null) {
+                return Object.keys(value);
+            }
+            return undefined;
+        },
+        enumerable: true,
+        configurable: true
+    });
     Object.defineProperty(StateLinkImpl.prototype, "nested", {
         get: function () {
             var currentValue = this.getUntracked();
@@ -704,7 +764,7 @@ var StateLinkImpl = /** @class */ (function () {
             if (!Number.isInteger(index)) {
                 return undefined;
             }
-            return (_this.nested)[index].value;
+            return (_this.nested)[index].get();
         }, function (target, key, value) {
             if (typeof key === 'symbol') {
                 // allow clients to associate hidden cache with state values
@@ -835,9 +895,6 @@ var StateLinkImpl = /** @class */ (function () {
     return StateLinkImpl;
 }());
 var useIsomorphicLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
-var NoAction = function () { };
-var NoActionUnmounted = function () { };
-NoActionUnmounted[UnmountedCallback] = true;
 function createState(initial) {
     var initialValue = initial;
     if (typeof initial === 'function') {
@@ -863,30 +920,6 @@ function useSubscribedStateLink(state, path, update, subscribeTarget, disabledTr
     });
     React.useEffect(function () { return function () { return onDestroy(); }; }, []);
     return link;
-}
-function useGlobalStateLink(stateInf) {
-    var _a = React.useState({ state: stateInf.state }), value = _a[0], setValue = _a[1];
-    return useSubscribedStateLink(value.state, RootPath, function () { return setValue({ state: value.state }); }, value.state, stateInf.disabledTracking, NoAction);
-}
-function useLocalStateLink(initialState) {
-    var _a = React.useState(function () { return ({ state: createState(initialState) }); }), value = _a[0], setValue = _a[1];
-    return useSubscribedStateLink(value.state, RootPath, function () { return setValue({ state: value.state }); }, value.state, undefined, function () { return value.state.destroy(); });
-}
-function useScopedStateLink(originLink) {
-    var _a = React.useState({}), setValue = _a[1];
-    return useSubscribedStateLink(originLink.state, originLink.path, function () { return setValue({}); }, originLink, originLink.disabledTracking, NoAction);
-}
-function useAutoStateLink(initialState) {
-    if (initialState instanceof StateLinkImpl) {
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        return useScopedStateLink(initialState);
-    }
-    if (initialState instanceof StateInfImpl) {
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        return useGlobalStateLink(initialState);
-    }
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useLocalStateLink(initialState);
 }
 function injectTransform(link, transform) {
     if (link.onUpdateUsed[UnmountedCallback]) {
@@ -918,34 +951,56 @@ function injectTransform(link, transform) {
     return result;
 }
 function createStateLink(initial, transform) {
-    var ref = new StateInfImpl(createState(initial));
-    if (transform) {
-        return ref.wrap(transform);
+    var stateLink = createState(initial).accessUnmounted();
+    if (createStateLink[DevTools]) {
+        stateLink.with(createStateLink[DevTools]);
     }
-    return ref;
+    if (transform) {
+        return stateLink.wrap(transform);
+    }
+    return stateLink;
 }
 function useStateLink(source, transform) {
-    var link = useAutoStateLink(source);
-    if (source instanceof StateInfImpl && source.transform) {
-        return injectTransform(link, source.transform);
+    var _a = source instanceof StateLinkImpl ?
+        [source, transform] :
+        source instanceof WrappedStateLinkImpl ?
+            [source.state, source.transform] :
+            [undefined, transform], parentLink = _a[0], tf = _a[1];
+    if (parentLink) {
+        if (parentLink.onUpdateUsed === NoActionOnUpdate) {
+            // eslint-disable-next-line react-hooks/rules-of-hooks
+            var _b = React.useState({ state: parentLink.state }), value_1 = _b[0], setValue_1 = _b[1];
+            var link = useSubscribedStateLink(value_1.state, parentLink.path, function () { return setValue_1({ state: value_1.state }); }, value_1.state, parentLink.disabledTracking, NoActionOnDestroy);
+            return tf ? injectTransform(link, tf) : link;
+        }
+        else {
+            // eslint-disable-next-line react-hooks/rules-of-hooks
+            var _c = React.useState({}), setValue_2 = _c[1];
+            var link = useSubscribedStateLink(parentLink.state, parentLink.path, function () { return setValue_2({}); }, parentLink, parentLink.disabledTracking, NoActionOnDestroy);
+            return tf ? injectTransform(link, tf) : link;
+        }
     }
-    if (transform) {
-        return injectTransform(link, transform);
+    else {
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        var _d = React.useState(function () { return ({ state: createState(source) }); }), value_2 = _d[0], setValue_3 = _d[1];
+        var link = useSubscribedStateLink(value_2.state, RootPath, function () { return setValue_3({ state: value_2.state }); }, value_2.state, undefined, function () { return value_2.state.destroy(); });
+        if (useStateLink[DevTools]) {
+            link.with(useStateLink[DevTools]);
+        }
+        return tf ? injectTransform(link, tf) : link;
     }
-    return link;
 }
 /**
- * @deprecated use StateInf.wrap/access instead
+ * @deprecated use source directly, source.access() or source.wrap(transform).access() instead
  */
 function useStateLinkUnmounted(source, transform) {
-    var stateInf = source;
-    if (stateInf.transform) {
+    if (source instanceof WrappedStateLinkImpl) {
         return source.access();
     }
     if (transform) {
-        return transform(source.access());
+        return transform(source);
     }
-    return source.access();
+    return source;
 }
 function StateFragment(props) {
     var scoped = useStateLink(props.state, props.transform);
@@ -965,5 +1020,5 @@ function Downgraded() {
     };
 }
 
-export { Downgraded, None, StateFragment, StateMemo, createStateLink, useStateLink, useStateLinkUnmounted };
+export { DevTools, Downgraded, None, StateFragment, StateMemo, createStateLink, useStateLink, useStateLinkUnmounted };
 //# sourceMappingURL=index.es.js.map
