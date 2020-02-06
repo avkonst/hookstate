@@ -151,7 +151,7 @@ var State = /** @class */ (function () {
             // Root value UPDATE case,
             var onSetArg = {
                 path: path,
-                state: this._value,
+                state: value,
                 value: value,
                 previous: this._value,
                 merged: mergeValue
@@ -159,11 +159,13 @@ var State = /** @class */ (function () {
             if (value === None) {
                 this._promised = this.createPromised(undefined);
                 delete onSetArg.value;
+                delete onSetArg.state;
             }
             else if (typeof value === 'object' && Promise.resolve(value) === value) {
                 this._promised = this.createPromised(value);
                 value = None;
                 delete onSetArg.value;
+                delete onSetArg.state;
             }
             else if (this._promised && !this._promised.resolver) {
                 // TODO add hint
@@ -172,7 +174,6 @@ var State = /** @class */ (function () {
             var prevValue = this._value;
             if (prevValue === None) {
                 delete onSetArg.previous;
-                delete onSetArg.state;
             }
             this._value = value;
             this.afterSet(onSetArg);
