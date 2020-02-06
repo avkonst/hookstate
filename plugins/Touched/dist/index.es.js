@@ -57,7 +57,7 @@ var TouchedPluginInstance = /** @class */ (function () {
         };
     }
     TouchedPluginInstance.prototype.onSet = function (p) {
-        this.setTouched(p);
+        this.setTouched(p.path);
     };
     return TouchedPluginInstance;
 }());
@@ -72,7 +72,7 @@ function Touched(self) {
     }
     return {
         id: PluginID,
-        instanceFactory: function () {
+        create: function () {
             return new TouchedPluginInstance();
         }
     };

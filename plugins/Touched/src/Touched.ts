@@ -1,5 +1,5 @@
 
-import { Path, Plugin, PluginInstance, StateLink, Downgraded, StateValueAtPath } from '@hookstate/core';
+import { Path, Plugin, StateLink, Downgraded, StateValueAtPath, PluginCallbacks, PluginCallbacksOnSetArgument } from '@hookstate/core';
 
 import { Initial } from '@hookstate/initial';
 
@@ -10,11 +10,11 @@ export interface TouchedExtensions {
 
 const PluginID = Symbol('Touched');
 
-class TouchedPluginInstance implements PluginInstance {
+class TouchedPluginInstance implements PluginCallbacks {
     private touchedState: object | undefined = undefined;
 
-    onSet(p: Path) {
-        this.setTouched(p)
+    onSet(p: PluginCallbacksOnSetArgument) {
+        this.setTouched(p.path)
     }
 
     setTouched = (path: Path) => {
@@ -82,7 +82,7 @@ export function Touched<S>(self?: StateLink<S>): Plugin | TouchedExtensions {
     }
     return {
         id: PluginID,
-        instanceFactory: () => {
+        create: () => {
             return new TouchedPluginInstance();
         }
     }
