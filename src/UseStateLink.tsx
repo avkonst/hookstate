@@ -316,7 +316,7 @@ class State implements Subscribable {
 
             const onSetArg: Writeable<PluginCallbacksOnSetArgument> = {
                 path: path,
-                state: this._value,
+                state: value,
                 value: value,
                 previous: this._value,
                 merged: mergeValue
@@ -324,10 +324,12 @@ class State implements Subscribable {
             if (value === None) {
                 this._promised = this.createPromised(undefined)
                 delete onSetArg.value
+                delete onSetArg.state
             } else if (typeof value === 'object' && Promise.resolve(value) === value) {
                 this._promised = this.createPromised(value)
                 value = None
                 delete onSetArg.value
+                delete onSetArg.state
             } else if (this._promised && !this._promised.resolver) {
                 // TODO add hint
                 throw new StateLinkInvalidUsageError(
@@ -339,7 +341,6 @@ class State implements Subscribable {
             let prevValue = this._value;
             if (prevValue === None) {
                 delete onSetArg.previous
-                delete onSetArg.state
             }
             this._value = value;
             this.afterSet(onSetArg)
