@@ -4,16 +4,17 @@ import {
     Path,
     StateValueAtRoot,
     StateValueAtPath,
-    PluginInstance,
+    PluginCallbacks,
     StateLink,
-    StateLinkPlugable
+    StateLinkPlugable,
+    PluginCallbacksOnSetArgument
 } from '@hookstate/core';
 
 export interface LoggerExtensions {
     log(): void;
 }
 
-class LoggerPluginInstance implements PluginInstance {
+class LoggerPluginInstance implements PluginCallbacks {
     toJsonTrimmed(s: StateValueAtPath) {
         const limit = 100;
         const r = JSON.stringify(s);
@@ -23,19 +24,12 @@ class LoggerPluginInstance implements PluginInstance {
         return r;
     }
 
-    onInit() {
-        // tslint:disable-next-line: no-console
-        console.log(`[hookstate]: logger attached`);
-    }
-    onSet(path: Path, newState: StateValueAtRoot, newValue: StateValueAtPath) {
+    onSet(p: PluginCallbacksOnSetArgument) {
         // tslint:disable-next-line: no-console
         console.log(
-            `[hookstate]: new value set at path '/${path.join('/')}': ` +
-            `${this.toJsonTrimmed(newValue)}`,
-            {
-                path: path,
-                value: newValue
-            });
+            `[hookstate]: new value set at path '/${p.path.join('/')}': ` +
+            `${this.toJsonTrimmed(p.value)}`,
+            p);
     }
 
     log(l: StateLink<StateValueAtPath> & StateLinkPlugable<StateValueAtPath>) {
@@ -65,7 +59,9 @@ export function Logger<S>(self?: StateLink<S>): Plugin | LoggerExtensions {
     }
     return {
         id: PluginID,
-        instanceFactory: () => {
+        create: () => {
+            // tslint:disable-next-line: no-console
+            console.log(`[hookstate]: logger attached`);
             return new LoggerPluginInstance();
         }
     }

@@ -34,7 +34,19 @@ test('logger: should log objects untracked', async () => {
             // tslint:disable-next-line: quotemark
             ["[hookstate]: current value at path '/: {\"prop\":1}'", { path: [], value: { prop: 1 }}],
             // tslint:disable-next-line: quotemark
-            ["[hookstate]: new value set at path '/': {\"prop\":2}", { path: [], value: { prop: 2 }}],
+            ["[hookstate]: new value set at path '/': {\"prop\":2}", {
+                merged: undefined,
+                path: [],
+                previous: {
+                    prop: 1,
+                },
+                state: {
+                    prop: 2,
+                },
+                value: {
+                    prop: 2,
+                },
+            }],
         ]);
 
         act(() => {
@@ -45,14 +57,17 @@ test('logger: should log objects untracked', async () => {
         // tslint:disable-next-line: no-console
         expect(console.log).toHaveBeenCalledTimes(4);
         // tslint:disable-next-line: no-any no-console
-        expect((console.log as any).mock.calls).toEqual([
-            ['[hookstate]: logger attached'],
+        expect((console.log as any).mock.calls.slice(3)).toEqual([
             // tslint:disable-next-line: quotemark
-            ["[hookstate]: current value at path '/: {\"prop\":1}'", { path: [], value: { prop: 1 }}],
-            // tslint:disable-next-line: quotemark
-            ["[hookstate]: new value set at path '/': {\"prop\":2}", { path: [], value: { prop: 3 }}],
-            // tslint:disable-next-line: quotemark
-            ["[hookstate]: new value set at path '/prop': 3", { path: ['prop'], value: 3}]
+            ["[hookstate]: new value set at path '/prop': 3", {
+                merged: undefined,
+                path: ['prop'],
+                previous: 2,
+                state: {
+                    prop: 3,
+                },
+                value: 3,
+            }]
         ]);
     } finally {
         restoreConsole();
@@ -88,7 +103,19 @@ test('logger: should log undefined prop', async () => {
             // tslint:disable-next-line: quotemark
             ["[hookstate]: current value at path '/: {}'", { path: [], value: { prop: undefined }}],
             // tslint:disable-next-line: quotemark
-            ["[hookstate]: new value set at path '/': {\"prop\":null}", { path: [], value: { prop: null }}],
+            ["[hookstate]: new value set at path '/': {\"prop\":null}", {
+                merged: undefined,
+                path: [],
+                previous: {
+                    prop: undefined,
+                },
+                state: {
+                    prop: null,
+                },
+                value: {
+                    prop: null,
+                },
+            }],
         ]);
 
         expect(renderTimes).toStrictEqual(1);
@@ -129,7 +156,9 @@ test('logger: should log undefined value', async () => {
             // tslint:disable-next-line: quotemark
             ["[hookstate]: current value at path '/: undefined'", { path: [], value: undefined}],
             // tslint:disable-next-line: quotemark
-            ["[hookstate]: new value set at path '/': null", { path: [], value: null}],
+            ["[hookstate]: new value set at path '/': null", {
+                path: [], value: null, merged: undefined, state: null, previous: undefined
+            }],
         ]);
     } finally {
         restoreConsole();

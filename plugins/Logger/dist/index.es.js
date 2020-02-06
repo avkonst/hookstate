@@ -9,17 +9,10 @@ var LoggerPluginInstance = /** @class */ (function () {
         }
         return r;
     };
-    LoggerPluginInstance.prototype.onInit = function () {
+    LoggerPluginInstance.prototype.onSet = function (p) {
         // tslint:disable-next-line: no-console
-        console.log("[hookstate]: logger attached");
-    };
-    LoggerPluginInstance.prototype.onSet = function (path, newState, newValue) {
-        // tslint:disable-next-line: no-console
-        console.log("[hookstate]: new value set at path '/" + path.join('/') + "': " +
-            ("" + this.toJsonTrimmed(newValue)), {
-            path: path,
-            value: newValue
-        });
+        console.log("[hookstate]: new value set at path '/" + p.path.join('/') + "': " +
+            ("" + this.toJsonTrimmed(p.value)), p);
     };
     LoggerPluginInstance.prototype.log = function (l) {
         // tslint:disable-next-line: no-console
@@ -42,7 +35,9 @@ function Logger(self) {
     }
     return {
         id: PluginID,
-        instanceFactory: function () {
+        create: function () {
+            // tslint:disable-next-line: no-console
+            console.log("[hookstate]: logger attached");
             return new LoggerPluginInstance();
         }
     };
