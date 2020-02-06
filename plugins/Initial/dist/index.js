@@ -39,8 +39,8 @@ function Initial(self) {
     }
     return {
         id: PluginID,
-        instanceFactory: function (initialValue) {
-            return new InitialPluginInstance(initialValue);
+        create: function (state) {
+            return new InitialPluginInstance(state.value);
         }
     };
 }

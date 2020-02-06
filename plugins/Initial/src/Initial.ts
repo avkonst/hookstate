@@ -52,8 +52,8 @@ export function Initial<S>(self?: StateLink<S>): Plugin | InitialExtensions<S> {
     }
     return {
         id: PluginID,
-        instanceFactory: (initialValue: StateValueAtRoot) => {
-            return new InitialPluginInstance(initialValue) as {}
+        create: (state: StateLink<StateValueAtRoot>) => {
+            return new InitialPluginInstance(state.value) as {}
         }
     }
 }
