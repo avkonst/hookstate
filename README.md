@@ -58,28 +58,41 @@ Any questions? Just ask by raising a github ticket.
 
 ## Quick start
 
-See [the code sample below and other demos](https://hookstate.js.org) running online. You will learn how to use Hookstate and what it can do in few minutes.
+See the code samples below and other demos [running online](https://hookstate.js.org). You will learn how to use Hookstate and what it can do in few minutes.
 
 For more detailed explanation read the [API documentation](#api-documentation).
 
 For the complete example application built with Hookstate, check out [this demo](https://hookstate-example-app.netlify.com/) and it's [source code](https://github.com/avkonst/hookstate-example-app).
 
 
+### Global state
+
 > Create the state:
 ```tsx
-const stateInf = createStateLink(0);
+const stateLink = createStateLink(0);
 ```
 > and use it *within* a React component:
 ```tsx
 export function ExampleComponent() {
-  const state = useStateLink(stateInf);
-  return <p>State value: {state.value}
+  const state = useStateLink(stateLink);
+  return <p>State value: {state.get()}
     <button onClick={() => state.set(p => p + 1)}>Increment</button></p>
 }
 ```
 > and *outside* of a React component:
 ```tsx
-setInterval(() => stateInf.access().set(p => p + 1), 3000)
+setInterval(() => stateLink.set(p => p + 1), 3000)
+```
+
+### Local state
+
+> create local state and use *within* a React component:
+```tsx
+export function ExampleComponent() {
+  const state = useStateLink(0);
+  return <p>State value: {state.get()}
+    <button onClick={() => state.set(p => p + 1)}>Increment</button></p>
+}
 ```
 
 ## Used By
@@ -118,7 +131,7 @@ For example ([see it running](https://hookstate.js.org/global-complex-from-docum
 ```tsx
 interface Task { name: string; priority?: number }
 const initialValue: Task[] = [{ name: 'First Task' }];
-const stateInf = createStateLink(initialValue);
+const stateLink = createStateLink(initialValue);
 ```
 
 ### `StateInf`
@@ -131,7 +144,7 @@ The type of an object returned by `createStateLink`. The `StateInf` variable has
 - `access()` - this function opens access to the state. It **can** be used outside of a React component to read and update the state object. For example ([see it running](https://hookstate.js.org/global-complex-from-documentation)):
 
 ```tsx
-setTimeout(() => stateInf.access()
+setTimeout(() => stateLink.access()
     .set(tasks => tasks.concat([{ name: 'Second task by timeout', priority: 1 }]))
 , 5000) // adds new task 5 seconds after website load
 ```
@@ -143,7 +156,7 @@ This function opens access to the state. It **must** be used within a functional
 
     ```tsx
     export const ExampleComponent = () => {
-        const state = useStateLink(stateInf);
+        const state = useStateLink(stateLink);
         return <button onClick={() => state.set(tasks => tasks.concat([{ name: 'Untitled' }]))} >
             Add task
         </button>
@@ -180,7 +193,7 @@ The **global state** can be consumed by:
 
 The result of `useStateLink` is of type [`StateLink`](#statelink).
 
-The result state link inherits all the plugins attached to the provided state reference (**global state** mode) or to the parent component state link (**scoped state** mode).
+The result state link inherits all the plugins attached to the provided state link (**global state** mode) or to the parent component state link (**scoped state** mode).
 
 You can attach more [plugins](#plugins) using `with` method of the state link.
 
