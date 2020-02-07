@@ -334,7 +334,10 @@ var State = /** @class */ (function () {
         }
     };
     State.prototype.accessUnmounted = function () {
-        return new StateLinkImpl(this, RootPath, NoActionOnUpdate, this.get(RootPath), this.edition).with(Downgraded); // it does not matter how it is used, it is not subscribed anyway
+        return new StateLinkImpl(this, RootPath, NoActionOnUpdate, this.get(RootPath), this.edition
+        // TODO downgraded plugin should not be used here as it affects all inherited links (which is temporary fixed in the useStateLink)
+        // instead optimisations are possible based on checks of onUpdateUsed === NoActionOnUpdate
+        ).with(Downgraded); // it does not matter how it is used, it is not subscribed anyway
     };
     State.prototype.subscribe = function (l) {
         this._subscribers.add(l);
@@ -456,7 +459,7 @@ var StateLinkImpl = /** @class */ (function () {
     StateLinkImpl.prototype.get = function (allowPromised) {
         var currentValue = this.getUntracked(allowPromised);
         if (this[ValueCache] === undefined) {
-            if (this.disabledTracking) {
+            if (this.isDowngraded) {
                 this[ValueCache] = currentValue;
             }
             else if (Array.isArray(currentValue)) {
@@ -613,7 +616,7 @@ var StateLinkImpl = /** @class */ (function () {
         if (typeof plugin === 'function') {
             var pluginMeta = plugin();
             if (pluginMeta.id === DowngradedID) {
-                this.disabledTracking = true;
+                this.isDowngraded = true;
                 return this;
             }
             this.state.register(pluginMeta);
@@ -647,7 +650,7 @@ var StateLinkImpl = /** @class */ (function () {
     StateLinkImpl.prototype.updateIfUsed = function (paths, actions) {
         var _this = this;
         var update = function () {
-            if (_this.disabledTracking &&
+            if (_this.isDowngraded &&
                 (ValueCache in _this || NestedCache in _this)) {
                 actions.push(_this.onUpdateUsed);
                 return true;
@@ -737,8 +740,8 @@ var StateLinkImpl = /** @class */ (function () {
                 return cachehit;
             }
             var r = new StateLinkImpl(_this.state, _this.path.slice().concat(index), _this.onUpdateUsed, target[index], _this.valueEdition);
-            if (_this.disabledTracking) {
-                r.disabledTracking = true;
+            if (_this.isDowngraded) {
+                r.isDowngraded = true;
             }
             proxyGetterCache[index] = r;
             return r;
@@ -791,8 +794,8 @@ var StateLinkImpl = /** @class */ (function () {
                 return cachehit;
             }
             var r = new StateLinkImpl(_this.state, _this.path.slice().concat(key.toString()), _this.onUpdateUsed, target[key], _this.valueEdition);
-            if (_this.disabledTracking) {
-                r.disabledTracking = true;
+            if (_this.isDowngraded) {
+                r.isDowngraded = true;
             }
             proxyGetterCache[key] = r;
             return r;
@@ -971,13 +974,13 @@ function useStateLink(source, transform) {
         if (parentLink.onUpdateUsed === NoActionOnUpdate) {
             // eslint-disable-next-line react-hooks/rules-of-hooks
             var _b = React.useState({ state: parentLink.state }), value_1 = _b[0], setValue_1 = _b[1];
-            var link = useSubscribedStateLink(value_1.state, parentLink.path, function () { return setValue_1({ state: value_1.state }); }, value_1.state, parentLink.disabledTracking, NoActionOnDestroy);
+            var link = useSubscribedStateLink(value_1.state, parentLink.path, function () { return setValue_1({ state: value_1.state }); }, value_1.state, undefined, NoActionOnDestroy);
             return tf ? injectTransform(link, tf) : link;
         }
         else {
             // eslint-disable-next-line react-hooks/rules-of-hooks
             var _c = React.useState({}), setValue_2 = _c[1];
-            var link = useSubscribedStateLink(parentLink.state, parentLink.path, function () { return setValue_2({}); }, parentLink, parentLink.disabledTracking, NoActionOnDestroy);
+            var link = useSubscribedStateLink(parentLink.state, parentLink.path, function () { return setValue_2({}); }, parentLink, parentLink.isDowngraded, NoActionOnDestroy);
             return tf ? injectTransform(link, tf) : link;
         }
     }
