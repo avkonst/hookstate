@@ -3,19 +3,23 @@ var PluginID = Symbol('LocalPersistence');
 function Persistence(localStorageKey) {
     return function () { return ({
         id: PluginID,
-        instanceFactory: function (initial) {
+        create: function (state) {
+            var persisted = localStorage.getItem(localStorageKey);
+            if (persisted !== null) {
+                var result = JSON.parse(persisted);
+                state.set(result);
+            }
+            else if (!state.promised) {
+                localStorage.setItem(localStorageKey, JSON.stringify(state.value));
+            }
             return {
-                onInit: function () {
-                    var persisted = localStorage.getItem(localStorageKey);
-                    if (persisted !== null) {
-                        var result = JSON.parse(persisted);
-                        return result;
+                onSet: function (p) {
+                    if ('state' in p) {
+                        localStorage.setItem(localStorageKey, JSON.stringify(p.state));
                     }
-                    localStorage.setItem(localStorageKey, JSON.stringify(initial));
-                    return initial;
-                },
-                onSet: function (p, v) {
-                    localStorage.setItem(localStorageKey, JSON.stringify(v));
+                    else {
+                        localStorage.removeItem(localStorageKey);
+                    }
                 }
             };
         }
