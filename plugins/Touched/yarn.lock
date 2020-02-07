@@ -1707,10 +1707,10 @@
   dependencies:
     "@hapi/hoek" "8.x.x"
 
-"@hookstate/core@^1.5.1":
-  version "1.5.1"
-  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-1.5.1.tgz#f57de0ac92cef4ce13284ce9c0eeda5610d659f9"
-  integrity sha512-rtG2c4T+ltrD288NGn2B4gzUomL/WF97JPAsjkjCUgmt+ywXPgcDsRtgZxMt5Ofx3revbMQq3hSPKuviGyReTQ==
+"@hookstate/core@^1.5.2":
+  version "1.5.2"
+  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-1.5.2.tgz#4031309ec417422920df0efd0f5b31301da23fbe"
+  integrity sha512-BTCvtFteyB2UuhY+U7P6+/ffoEQ89mpWUPlvJFCOK/uJlNj/fIcyoanjwrKf+wqNlTejIFixt4W2hof9r4uCTQ==
 
 "@hookstate/initial@^1.5.1":
   version "1.5.1"

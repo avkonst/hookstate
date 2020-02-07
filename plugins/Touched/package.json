@@ -1,6 +1,6 @@
 {
     "name": "@hookstate/touched",
-    "version": "1.5.1",
+    "version": "1.5.2",
     "description": "Plugin for @hookstate/core to enable tracking of touched data (form) fields.",
     "license": "MIT",
     "author": {
@@ -35,11 +35,11 @@
     },
     "dependencies": {},
     "peerDependencies": {
-        "@hookstate/core": "^1.5.1",
+        "@hookstate/core": "^1.5.2",
         "@hookstate/initial": "^1.5.1"
     },
     "devDependencies": {
-        "@hookstate/core": "^1.5.1",
+        "@hookstate/core": "^1.5.2",
         "@hookstate/initial": "^1.5.1",
         "@testing-library/react": "9.4.0",
         "@testing-library/react-hooks": "3.2.1",
