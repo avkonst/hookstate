@@ -18,6 +18,7 @@ export function Untracked<S>(self?: StateLink<S>): Plugin | UntrackedExtensions<
         }
     }
     return {
-        id: PluginID
+        id: PluginID,
+        create: () => ({})
     }
 }

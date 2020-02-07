@@ -8,7 +8,8 @@ function Untracked(self) {
         };
     }
     return {
-        id: PluginID
+        id: PluginID,
+        create: function () { return ({}); }
     };
 }
 
