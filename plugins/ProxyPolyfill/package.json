@@ -31,6 +31,6 @@
         "dist"
     ],
     "devDependencies": {
-        "npm-check-updates": "3.1.25"
+        "npm-check-updates": "4.0.1"
     }
 }
