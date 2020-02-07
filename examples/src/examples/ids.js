@@ -15,8 +15,6 @@ const ExampleIds = {
     PluginTouched: 'plugin-touched',
     PluginLogger: 'plugin-logger',
     PluginPersistence: 'plugin-persistence',
-    PluginPersistence2: 'plugin-persistence2',
-    PluginMutate: 'plugin-mutate',
     PluginValidation: 'plugin-validation',
     PluginUntracked: 'plugin-untracked'
 }

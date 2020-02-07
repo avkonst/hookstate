@@ -227,20 +227,20 @@ This allows to 'walk' the tree and access/mutate nested compex data in very conv
 
 ### `Transform` argument
 
-`createStateLink`, `useStateLinkUnmounted` and `useStateLink` functions accept the second argument, which allows to wrap the state link by custom state access interface. The transform argument is a callback which receives the original [state link](#statelink) variable and should return any custom state access instance.
+`createStateLink`, `useStateLink` and `StateLink.wrap()` functions accept the last argument, which allows to wrap the state link by custom state access interface. The transform argument is a callback which receives the original [state link](#statelink) variable and should return any custom state access instance.
 
 Examples for all possible combinations:
 
-- **global state**, wrapped state reference:
+- **global state**, `createStateLink` with transform:
 
     ```tsx
-    const stateInf = createStateLink(initialValue, s => ({
+    const stateLink = createStateLink(initialValue, s => ({
         addTask = (t: Task) => s.set(tasks => tasks.concat([t]))
     }));
-    export const useTaskStoreUnmounted = () => useStateLinkUnmounted(stateInf)
-    export const useTaskStore = () => useStateLink(stateInf)
+    export const getTaskStore = () => stateLink.access()
+    export const useTaskStore = () => useStateLink(stateLink)
 
-    useTaskStoreUnmounted().addTask({ name: 'Untitled' })
+    getTaskStore().addTask({ name: 'Untitled' })
 
     export const ExampleComponent = () => {
         const state = useTasksStore();
@@ -249,24 +249,24 @@ Examples for all possible combinations:
         </button>
     }
     ```
-- **global state**, wrapped state link:
+- **global state**, `StateLink` with transform:
 
     ```tsx
-    const stateRef = createStateLink(initialValue);
+    const stateLink = createStateLink(initialValue);
     const transform = (s: StateLink<Task[]>) => ({
         addTask = (t: Task) => s.set(tasks => tasks.concat([t]))
     })
 
-    useStateLinkUnmounted(stateRef, transform).addTask({ name: 'Untitled' })
+    stateLink.wrap(transform).addTask({ name: 'Untitled' })
 
     export const ExampleComponent = () => {
-        const state = useStateLink(stateRef, transform);
+        const state = useStateLink(stateLink.wrap(transform));
         return <button onClick={() => state.addTask({ name: 'Untitled' })}>
             Add task
         </button>
     }
     ```
-- **local state**:
+- **local state**: `useStateLink` with transform:
 
     ```tsx
     export const ExampleComponent = () => {
@@ -278,7 +278,7 @@ Examples for all possible combinations:
         </button>
     }
     ```
-- **scoped state**:
+- **scoped state**: `useStateLink` with transform:
 
     ```tsx
     const TaskViewer = (props: { taskState: StateLink<Task> }) => {
@@ -334,7 +334,6 @@ Initial | Enables access to an initial value of a [`StateLink`](#statelink) and 
 Touched | Helps with tracking of *touched* form field(s). | [Demo](https://hookstate.js.org/plugin-touched) | `@hookstate/touched` | [![npm version](https://img.shields.io/npm/v/@hookstate/touched.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/touched)
 Validation | Enables validation and error / warning messages for a state. Usefull for validation of form fields and form states. | [Demo](https://hookstate.js.org/plugin-validation) | `@hookstate/validation` | [![npm version](https://img.shields.io/npm/v/@hookstate/validation.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/validation)
 Persistence | Enables persistence of managed states to browser's local storage. | [Demo](https://hookstate.js.org/plugin-persistence) | `@hookstate/persistence` | [![npm version](https://img.shields.io/npm/v/@hookstate/persistence.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/persistence)
-Mutate | Adds mutate actions specific for arrays (push, pop, insert, remove, swap, etc..), objects (merge, etc.), strings and numbers. | [Demo](https://hookstate.js.org/plugin-mutate) | `@hookstate/mutate` | [![npm version](https://img.shields.io/npm/v/@hookstate/mutate.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/mutate)
 Logger | Logs state updates and current value of a [`StateLink`](#statelink) to the development console. | [Demo](https://hookstate.js.org/plugin-logger) | `@hookstate/logger` | [![npm version](https://img.shields.io/npm/v/@hookstate/logger.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/logger)
 Untracked | Enables access to `StateLink`'s `get` and `set` methods which do not track usage or state update. It means these operations do not influence rendering at all. Applicable in specific usecases. You should understand what you are doing when you use it. | [Demo](https://hookstate.js.org/plugin-untracked) | `@hookstate/untracked` | [![npm version](https://img.shields.io/npm/v/@hookstate/untracked.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/untracked)
 Downgraded | Turns off optimizations for a StateLink by stopping tracking of it's value usage and assuming the entire state is *used* if StateLink's value is accessed at least once. |  | `@hookstate/core` | [![npm version](https://img.shields.io/npm/v/@hookstate/core.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/core)

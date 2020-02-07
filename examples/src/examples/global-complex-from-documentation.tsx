@@ -1,17 +1,17 @@
 import React from 'react';
-import { createStateLink, useStateLink, useStateLinkUnmounted, StateLink } from '@hookstate/core';
+import { createStateLink, useStateLink, StateLink } from '@hookstate/core';
 
 interface Task { name: string; priority?: number }
 
 const initialValue: Task[] = [{ name: 'First Task' }];
-const stateRef = createStateLink(initialValue);
+const stateLink = createStateLink(initialValue);
 
-setTimeout(() => useStateLinkUnmounted(stateRef)
+setTimeout(() => stateLink.access()
     .set(tasks => tasks.concat([{ name: 'Second task by timeout', priority: 1 }]))
 , 5000) // adds new task 5 seconds after website load
 
 export const ExampleComponent = () => {
-    const state: StateLink<Task[]> = useStateLink(stateRef);
+    const state: StateLink<Task[]> = useStateLink(stateLink);
     return <>
         <JsonDump state={state} />
         {state.nested.map((taskState: StateLink<Task>, taskIndex) =>

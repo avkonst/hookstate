@@ -1,3 +1,20 @@
+# 1.5.0
+
+### `StateInf<S>` is deprecated
+`StateInf` is type aliased to the new type returned by
+`createStateLink`. The API change is almost backward compatible.
+It means that the return type has changed and different depending whether transform argument is used or not,
+but it should not break compilation or cause behaviour issues.
+
+### `StateLink<S>.wrap()` method
+Now any state link can be wrapped by a custom interface, not only global state.
+
+### `StateLink<S>.batch()` method improved
+Experimental Batch API has been improved.
+
+### `PluginInstance` is deprecated
+Plugin integration has been changed. This will be removed when all official plugins migrate.
+
 # 1.4.0
 
 ### New `StateLink<S>.merge()` method

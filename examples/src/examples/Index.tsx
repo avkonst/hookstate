@@ -17,8 +17,6 @@ import { ExampleComponent as ExamplePluginInitialStateFragment } from './plugin-
 import { ExampleComponent as ExamplePluginTouched } from './plugin-touched';
 import { ExampleComponent as ExamplePluginLogger } from './plugin-logger';
 import { ExampleComponent as ExamplePluginPersistence } from './plugin-persistence';
-import { ExampleComponent as ExamplePluginPersistence2 } from './plugin-persistence2';
-import { ExampleComponent as ExamplePluginMutate } from './plugin-mutate';
 import { ExampleComponent as ExamplePluginValidation } from './plugin-validation';
 import { ExampleComponent as ExamplePluginUntracked } from './plugin-untracked';
 
@@ -174,17 +172,6 @@ ExamplesRepo.set(ExampleIds.PluginPersistence, {
     description: <>Code sample and demo for
     the <a href="https://github.com/avkonst/hookstate#plugins">Persistence plugin</a>.</>,
     demo: <ExamplePluginPersistence />
-});
-ExamplesRepo.set(ExampleIds.PluginPersistence2, {
-    name: 'Plugin: Persistence, Local Storage, Synchronized Across Tabs',
-    description: <>Experimental code to synchronize state across multiple tabs (will be extracted to a separate plugin in the future)</>,
-    demo: <ExamplePluginPersistence2 />
-});
-ExamplesRepo.set(ExampleIds.PluginMutate, {
-    name: 'Plugin: Mutate',
-    description: <>Code sample and demo for
-    the <a href="https://github.com/avkonst/hookstate#plugins">Mutate plugin</a>.</>,
-    demo: <ExamplePluginMutate />
 });
 ExamplesRepo.set(ExampleIds.PluginUntracked, {
     name: 'Plugin: Untracked',

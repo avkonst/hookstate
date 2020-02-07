@@ -4,7 +4,7 @@ import { useStateLink, StateLink } from '@hookstate/core';
 interface Node { name: string; children?: Node[] }
 
 export const ExampleComponent = () => {
-    const state = useStateLink<Node[]>([
+    const state = useStateLink<Node[] | undefined>([
         {
             name: 'Node 1',
             children: [
@@ -53,7 +53,7 @@ function NodeListEditor(props: { nodes: StateLink<Node[] | undefined> }) {
     </div>
 }
 
-function JsonDump(props: { state: StateLink<Node[]> }) {
+function JsonDump(props: { state: StateLink<Node[] | undefined> }) {
     // useStateLink is optinal for performance
     // could use props.state everywhere instead
     const state = useStateLink(props.state);

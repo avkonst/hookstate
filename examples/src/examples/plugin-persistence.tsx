@@ -4,11 +4,11 @@ import { Persistence } from '@hookstate/persistence';
 
 interface Task { name: string }
 
-const stateRef = createStateLink([{ name: 'First Task' }, { name: 'Second Task' }] as Task[])
+const stateLink = createStateLink([{ name: 'First Task' }, { name: 'Second Task' }] as Task[])
     .with(Persistence('plugin-persisted-data-key')); // localStorage key to load from / save to
 
 export const ExampleComponent = () => {
-    const state = useStateLink(stateRef)
+    const state = useStateLink(stateLink)
     return <>
         {state.nested.map((taskState, taskIndex) => {
             return <p key={taskIndex}>

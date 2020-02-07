@@ -1,10 +1,10 @@
 import React from 'react';
 import { createStateLink, useStateLink, StateFragment } from '@hookstate/core';
 
-const stateRef = createStateLink({ priority: 0, task: 'Untitled Task' });
+const stateLink = createStateLink({ priority: 0, task: 'Untitled Task' });
 
 export const ExampleComponent = () => {
-    const state = useStateLink(stateRef)
+    const state = useStateLink(stateLink)
     return <>
         <StateFragment state={state}>{scopedstate => {
             return <p>

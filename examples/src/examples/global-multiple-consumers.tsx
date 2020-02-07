@@ -1,10 +1,10 @@
 import React from 'react';
 import { createStateLink, useStateLink } from '@hookstate/core';
 
-const stateRef = createStateLink({ priority: 0, task: 'Untitled Task' });
+const stateLink = createStateLink({ priority: 0, task: 'Untitled Task' });
 
 const TaskView = () => {
-    const state = useStateLink(stateRef);
+    const state = useStateLink(stateLink);
     return <p>
         Last render at: {(new Date()).toISOString()} <br/>
         <span>Task name: {state.value.task} </span>
@@ -13,7 +13,7 @@ const TaskView = () => {
 }
 
 const PriorityView = () => {
-    const state = useStateLink(stateRef);
+    const state = useStateLink(stateLink);
     return <p>
         Last render at: {(new Date()).toISOString()} <br/>
         <span>Task priority: {state.value.priority} </span>
@@ -22,7 +22,7 @@ const PriorityView = () => {
 }
 
 const JsonDump = () => {
-    const state = useStateLink(stateRef);
+    const state = useStateLink(stateLink);
     return <p>
         Last render at: {(new Date()).toISOString()} <br/>
         Current state: {JSON.stringify(state.value)}

@@ -1,12 +1,12 @@
 import React from 'react';
-import { createStateLink, useStateLink, useStateLinkUnmounted, StateLink } from '@hookstate/core';
+import { createStateLink, useStateLink, StateLink } from '@hookstate/core';
 
 interface Task { name: string; priority: number| undefined  }
 
 const initialValue: Task[] = [{ name: 'First Task', priority: undefined }];
 const stateInf = createStateLink(initialValue);
 
-setTimeout(() => useStateLinkUnmounted(stateInf)
+setTimeout(() => stateInf.access()
     .set(tasks => tasks.concat([{ name: 'Second task by timeout', priority: 1 }]))
 , 5000) // adds new task 5 seconds after website load
 
