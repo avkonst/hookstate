@@ -167,7 +167,7 @@ function Validation(self) {
     }
     return {
         id: PluginID,
-        instanceFactory: function () { return new ValidationPluginInstance(); }
+        create: function () { return new ValidationPluginInstance(); }
     };
 }
 
