@@ -8,8 +8,7 @@ function Untracked(self) {
         };
     }
     return {
-        id: PluginID,
-        instanceFactory: function () { return ({}); }
+        id: PluginID
     };
 }
 
