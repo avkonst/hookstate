@@ -537,6 +537,8 @@ class State implements Subscribable {
             NoActionOnUpdate,
             this.get(RootPath),
             this.edition
+            // TODO downgraded plugin should not be used here as it affects all inherited links (which is temporary fixed in the useStateLink)
+            // instead optimisations are possible based on checks of onUpdateUsed === NoActionOnUpdate
         ).with(Downgraded) // it does not matter how it is used, it is not subscribed anyway
     }
 
@@ -630,7 +632,7 @@ class Promised {
 
 class StateLinkImpl<S> implements DestroyableStateLink<S>,
     StateLinkPlugable<S>, Subscribable, Subscriber {
-    public disabledTracking: boolean | undefined;
+    public isDowngraded: boolean | undefined;
     private subscribers: Set<Subscriber> | undefined;
 
     private nestedLinksCache: Record<string | number, StateLinkImpl<S[keyof S]>> | undefined;
@@ -683,7 +685,7 @@ class StateLinkImpl<S> implements DestroyableStateLink<S>,
     get(allowPromised?: boolean) {
         const currentValue = this.getUntracked(allowPromised)
         if (this[ValueCache] === undefined) {
-            if (this.disabledTracking) {
+            if (this.isDowngraded) {
                 this[ValueCache] = currentValue;
             } else if (Array.isArray(currentValue)) {
                 this[ValueCache] = this.valueArrayImpl(currentValue);
@@ -843,7 +845,7 @@ class StateLinkImpl<S> implements DestroyableStateLink<S>,
         if (typeof plugin === 'function') {
             const pluginMeta = plugin();
             if (pluginMeta.id === DowngradedID) {
-                this.disabledTracking = true;
+                this.isDowngraded = true;
                 return this;
             }
             this.state.register(pluginMeta);
@@ -882,7 +884,7 @@ class StateLinkImpl<S> implements DestroyableStateLink<S>,
 
     private updateIfUsed(paths: Path[], actions: (() => void)[]): boolean {
         const update = () => {
-            if (this.disabledTracking &&
+            if (this.isDowngraded &&
                 (ValueCache in this || NestedCache in this)) {
                 actions.push(this.onUpdateUsed);
                 return true;
@@ -971,8 +973,8 @@ class StateLinkImpl<S> implements DestroyableStateLink<S>,
                 target[index],
                 this.valueEdition
             )
-            if (this.disabledTracking) {
-                r.disabledTracking = true;
+            if (this.isDowngraded) {
+                r.isDowngraded = true;
             }
             proxyGetterCache[index] = r;
             return r;
@@ -1037,8 +1039,8 @@ class StateLinkImpl<S> implements DestroyableStateLink<S>,
                 target[key],
                 this.valueEdition
             );
-            if (this.disabledTracking) {
-                r.disabledTracking = true;
+            if (this.isDowngraded) {
+                r.isDowngraded = true;
             }
             proxyGetterCache[key] = r;
             return r;
@@ -1288,7 +1290,7 @@ export function useStateLink<S, R>(
                 parentLink.path,
                 () => setValue({ state: value.state }),
                 value.state,
-                parentLink.disabledTracking,
+                undefined,
                 NoActionOnDestroy);
             return tf ? injectTransform(link, tf) : link;
         } else {
@@ -1299,7 +1301,7 @@ export function useStateLink<S, R>(
                 parentLink.path,
                 () => setValue({}),
                 parentLink,
-                parentLink.disabledTracking,
+                parentLink.isDowngraded,
                 NoActionOnDestroy);
             return tf ? injectTransform(link, tf) : link;
         }
