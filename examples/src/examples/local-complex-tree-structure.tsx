@@ -41,11 +41,11 @@ function NodeListEditor(props: { nodes: StateLink<Node[] | undefined> }) {
     // could use props.nodes everywhere instead
     const state = useStateLink(props.nodes);
     return <div style={{ paddingLeft: 20 }}>
-        {state.nested && state.nested.map((nodeState: StateLink<Node>) =>
-            <>
+        {state.nested && state.nested.map((nodeState: StateLink<Node>, i) =>
+            <div key={i}>
                 <NodeNameEditor nameState={nodeState.nested.name} />
                 <NodeListEditor nodes={nodeState.nested.children} />
-            </>
+            </div>
         )}
         <p><button onClick={() => state.set(nodes => (nodes || []).concat([{ name: 'Untitled' }]))}>
             Add Node

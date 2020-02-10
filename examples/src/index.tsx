@@ -5,10 +5,14 @@ import 'core-js/features/array/from';
 
 import React from 'react';
 import ReactDOM from 'react-dom';
-import App from './App';
 import * as serviceWorker from './serviceWorker';
 
 import ReactGA from 'react-ga';
+
+import { InitDevTools } from './DevTools';
+import App from './App';
+
+InitDevTools()
 
 const trackingId = 'UA-146415947-1';
 ReactGA.initialize(trackingId);
