@@ -1,0 +1,48 @@
+{
+  "name": "docs",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@hookstate/core": "1.5.2",
+    "@hookstate/initial": "1.5.2",
+    "@hookstate/logger": "1.5.2",
+    "@hookstate/mutate": "1.2.3",
+    "@hookstate/persistence": "1.5.2",
+    "@hookstate/touched": "1.5.2",
+    "@hookstate/untracked": "1.5.3",
+    "@hookstate/validation": "1.5.2",
+    "@types/jest": "25.1.2",
+    "@types/lodash.clonedeep": "4.5.6",
+    "@types/lodash.isequal": "4.5.5",
+    "@types/node": "13.7.0",
+    "@types/react": "16.9.19",
+    "@types/react-dom": "16.9.5",
+    "broadcast-channel": "3.0.4",
+    "core-js": "3.6.4",
+    "lodash.clonedeep": "4.5.0",
+    "lodash.isequal": "4.5.0",
+    "react": "^16.12.0",
+    "react-dom": "^16.12.0",
+    "react-ga": "2.7.0",
+    "react-scripts": "3.3.1",
+    "react-use": "13.24.0",
+    "redux": "4.0.5",
+    "redux-devtools-extension": "2.13.8",
+    "typescript": "3.7.5"
+  },
+  "devDependencies": {
+    "@storybook/addon-actions": "^5.3.12",
+    "@storybook/addon-docs": "^5.3.12",
+    "@storybook/addon-links": "^5.3.12",
+    "@storybook/addons": "^5.3.12",
+    "@storybook/preset-create-react-app": "^1.5.2",
+    "@storybook/react": "^5.3.12",
+    "babel-loader": "^8.0.6",
+    "npm-check-updates": "4.0.1",
+    "react-is": "^16.12.0"
+  },
+  "scripts": {
+    "storybook": "start-storybook -p 9009",
+    "build-storybook": "build-storybook"
+  }
+}
