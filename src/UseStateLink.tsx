@@ -531,7 +531,6 @@ const ValueCache = Symbol('ValueCache');
 const NestedCache = Symbol('NestedCache');
 const UnmountedCallback = Symbol('UnmountedCallback');
 
-const NoActionOnDestroy = () => { /* empty */ };
 const NoActionOnUpdate = () => { /* empty */ };
 NoActionOnUpdate[UnmountedCallback] = true
 
@@ -1133,8 +1132,7 @@ function useSubscribedStateLink<S>(
     path: Path,
     update: () => void,
     subscribeTarget: Subscribable,
-    disabledTracking: boolean | undefined,
-    onDestroy: () => void
+    disabledTracking: boolean | undefined
 ) {
     const link = new StateLinkImpl<S>(
         state,
@@ -1153,7 +1151,6 @@ function useSubscribedStateLink<S>(
             subscribeTarget.unsubscribe(link);
         }
     });
-    React.useEffect(() => () => onDestroy(), []);
     return link;
 }
 
@@ -1245,6 +1242,7 @@ export function useStateLink<S, R>(
                 [undefined, transform];
     if (parentLink) {
         if (parentLink.onUpdateUsed === NoActionOnUpdate) {
+            // Global state mount
             // eslint-disable-next-line react-hooks/rules-of-hooks
             const [value, setValue] = React.useState({ state: parentLink.state });
             const link = useSubscribedStateLink<S>(
@@ -1252,10 +1250,10 @@ export function useStateLink<S, R>(
                 parentLink.path,
                 () => setValue({ state: value.state }),
                 value.state,
-                undefined,
-                NoActionOnDestroy);
+                undefined);
             return tf ? injectTransform(link, tf) : link;
         } else {
+            // Scoped state mount
             // eslint-disable-next-line react-hooks/rules-of-hooks
             const [, setValue] = React.useState({});
             const link = useSubscribedStateLink<S>(
@@ -1263,11 +1261,11 @@ export function useStateLink<S, R>(
                 parentLink.path,
                 () => setValue({}),
                 parentLink,
-                parentLink.isDowngraded,
-                NoActionOnDestroy);
+                parentLink.isDowngraded);
             return tf ? injectTransform(link, tf) : link;
         }
     } else {
+        // Local state mount
         // eslint-disable-next-line react-hooks/rules-of-hooks
         const [value, setValue] = React.useState(() => ({ state: createState(source) }));
         const link = useSubscribedStateLink<S>(
@@ -1275,8 +1273,8 @@ export function useStateLink<S, R>(
             RootPath,
             () => setValue({ state: value.state }),
             value.state,
-            undefined,
-            () => value.state.destroy());
+            undefined);
+        React.useEffect(() => () => value.state.destroy(), []);
         if (useStateLink[DevTools]) {
             link.with(useStateLink[DevTools])
         }
