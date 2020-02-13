@@ -210,6 +210,29 @@ test('array: should rerender used after merge concat', async () => {
     expect(result.current.value).toEqual([1, 2, 3, 4, 5, 6, 100, 200]);
 });
 
+test('array: should rerender used after merge concat (scoped)', async () => {
+    let renderTimes = 0
+    let renderTimesNested = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useStateLink([1, 2, 3, 4, 5, 6]);
+    })
+    const nested = renderHook(() => {
+        renderTimesNested += 1;
+        return useStateLink(result.current);
+    })
+    expect(renderTimes).toStrictEqual(1);
+    expect(result.current.keys).toStrictEqual([0, 1, 2, 3, 4, 5]);
+    expect(nested.result.current.nested[0].get()).toStrictEqual(1);
+
+    act(() => {
+        result.current.merge([100, 200]);
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(result.current.nested[0].get()).toStrictEqual(1);
+    expect(result.current.value).toEqual([1, 2, 3, 4, 5, 6, 100, 200]);
+});
+
 test('array: should rerender used after merge delete', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {

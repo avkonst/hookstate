@@ -746,11 +746,10 @@ class StateLinkImpl<S> implements DestroyableStateLink<S>,
 
         let updatedPath: Path;
         let deletedOrInsertedProps = false
-        let totalUpdatedProps = 0
 
         if (Array.isArray(currentValue)) {
             if (Array.isArray(sourceValue)) {
-                updatedPath = this.setUntracked(currentValue.concat(sourceValue) as unknown as S, sourceValue)
+                return [this.setUntracked(currentValue.concat(sourceValue) as unknown as S, sourceValue)]
             } else {
                 const deletedIndexes: number[] = []
                 Object.keys(sourceValue).sort().forEach(i => {
@@ -763,7 +762,6 @@ class StateLinkImpl<S> implements DestroyableStateLink<S>,
                         deletedOrInsertedProps = deletedOrInsertedProps || !(index in currentValue)
                         currentValue[index] = newPropValue
                     }
-                    totalUpdatedProps += 1
                 });
                 // indexes are ascending sorted as per above
                 // so, delete one by one from the end
@@ -783,7 +781,6 @@ class StateLinkImpl<S> implements DestroyableStateLink<S>,
                     deletedOrInsertedProps = deletedOrInsertedProps || !(key in currentValue)
                     currentValue[key] = newPropValue
                 }
-                totalUpdatedProps += 0
             })
             updatedPath = this.setUntracked(currentValue, sourceValue)
         } else if (typeof currentValue === 'string') {
