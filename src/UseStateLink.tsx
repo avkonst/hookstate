@@ -67,6 +67,7 @@ export interface StateLink<S> {
     readonly nested: NestedInferredLink<S>;
     readonly keys: NestedInferredKeys<S>;
 
+    /** @warning experimental feature */
     denull(): StateLink<NonNullable<S>> | OnlyNullable<S>;
 
     /** @warning experimental feature */
@@ -78,7 +79,7 @@ export interface StateLink<S> {
     wrap<R>(transform: (state: StateLink<S>, prev: R | undefined) => R): WrappedStateLink<R>;
 
     with(plugin: () => Plugin): StateLink<S>;
-    with(pluginId: symbol): [StateLink<S> & StateLinkPlugable<S>, PluginInstance | PluginCallbacks];
+    with(pluginId: symbol): [StateLink<S> & StateLinkPlugable<S>, PluginCallbacks];
 }
 
 export interface DestroyableStateLink<S> extends StateLink<S> {
@@ -154,29 +155,9 @@ export interface PluginCallbacks {
     readonly onBatchFinish?: (arg: PluginCallbacksOnBatchArgument) => void,
 };
 
-/** @deprecated by PluginCallbacks */
-export interface PluginInstance {
-    // if returns defined value,
-    // it overrides the current / initial value in the state
-    // it is only applicable for plugins attached via stateinf, not via statelink
-    readonly onInit?: () => StateValueAtRoot | void,
-    readonly onPreset?: (path: Path, prevState: StateValueAtRoot,
-        newValue: StateValueAtPath, prevValue: StateValueAtPath,
-        mergeValue: StateValueAtPath | undefined) => void | StateValueAtRoot,
-    readonly onSet?: (path: Path, newState: StateValueAtRoot,
-        newValue: StateValueAtPath, prevValue: StateValueAtPath,
-        mergeValue: StateValueAtPath | undefined) => void,
-    readonly onDestroy?: (state: StateValueAtRoot) => void,
-};
-
 export interface Plugin {
     readonly id: symbol;
-    readonly create?: (state: StateLink<StateValueAtRoot>) => PluginCallbacks;
-
-    /** @deprecated use create instead */
-    readonly instanceFactory?: (
-        initial: StateValueAtRoot, linkFactory: () => StateLink<StateValueAtRoot>
-    ) => PluginInstance;
+    readonly create: (state: StateLink<StateValueAtRoot>) => PluginCallbacks;
 }
 
 //
@@ -234,7 +215,7 @@ class State implements Subscribable {
     private _batchStartSubscribers: Set<Required<PluginCallbacks>['onBatchStart']> = new Set();
     private _batchFinishSubscribers: Set<Required<PluginCallbacks>['onBatchFinish']> = new Set();
 
-    private _plugins: Map<symbol, PluginInstance | PluginCallbacks> = new Map();
+    private _plugins: Map<symbol, PluginCallbacks> = new Map();
 
     private _promised?: Promised;
 
@@ -498,35 +479,19 @@ class State implements Subscribable {
             return;
         }
         
-        if (plugin.instanceFactory) {
-            const pluginInstance = plugin.instanceFactory(
-                this._value,
-                () => this.accessUnmounted()
-            );
-            this._plugins.set(plugin.id, pluginInstance);
-            if (pluginInstance.onSet) {
-                this._setSubscribers.add((p) => pluginInstance.onSet!(p.path, p.state, p.value, p.previous, p.merged))
-            }
-            if (pluginInstance.onDestroy) {
-                this._destroySubscribers.add((p) => pluginInstance.onDestroy!(p.state))
-            }
+        const pluginCallbacks = plugin.create(this.accessUnmounted());
+        this._plugins.set(plugin.id, pluginCallbacks);
+        if (pluginCallbacks.onSet) {
+            this._setSubscribers.add((p) => pluginCallbacks.onSet!(p))
         }
-        
-        if (plugin.create) {
-            const pluginCallbacks = plugin.create(this.accessUnmounted());
-            this._plugins.set(plugin.id, pluginCallbacks);
-            if (pluginCallbacks.onSet) {
-                this._setSubscribers.add((p) => pluginCallbacks.onSet!(p))
-            }
-            if (pluginCallbacks.onDestroy) {
-                this._destroySubscribers.add((p) => pluginCallbacks.onDestroy!(p))
-            }
-            if (pluginCallbacks.onBatchStart) {
-                this._batchStartSubscribers.add((p) => pluginCallbacks.onBatchStart!(p))
-            }
-            if (pluginCallbacks.onBatchFinish) {
-                this._batchFinishSubscribers.add((p) => pluginCallbacks.onBatchFinish!(p))
-            }
+        if (pluginCallbacks.onDestroy) {
+            this._destroySubscribers.add((p) => pluginCallbacks.onDestroy!(p))
+        }
+        if (pluginCallbacks.onBatchStart) {
+            this._batchStartSubscribers.add((p) => pluginCallbacks.onBatchStart!(p))
+        }
+        if (pluginCallbacks.onBatchFinish) {
+            this._batchFinishSubscribers.add((p) => pluginCallbacks.onBatchFinish!(p))
         }
     }
 
@@ -836,9 +801,9 @@ class StateLinkImpl<S> implements DestroyableStateLink<S>,
     }
     
     with(plugin: () => Plugin): StateLink<S>;
-    with(pluginId: symbol): [StateLink<S> & StateLinkPlugable<S>, PluginInstance | PluginCallbacks];
+    with(pluginId: symbol): [StateLink<S> & StateLinkPlugable<S>, PluginCallbacks];
     with(plugin: (() => Plugin) | symbol):
-        StateLink<S> | [StateLink<S> & StateLinkPlugable<S>, PluginInstance | PluginCallbacks] {
+        StateLink<S> | [StateLink<S> & StateLinkPlugable<S>, PluginCallbacks] {
         if (typeof plugin === 'function') {
             const pluginMeta = plugin();
             if (pluginMeta.id === DowngradedID) {
@@ -1412,7 +1377,7 @@ export function StateMemo<S, R>(
 export function Downgraded(): Plugin {
     return {
         id: DowngradedID,
-        instanceFactory: () => ({})
+        create: () => ({})
     }
 }
 
