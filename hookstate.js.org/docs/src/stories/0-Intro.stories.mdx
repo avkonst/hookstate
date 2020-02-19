@@ -26,7 +26,7 @@ or in effects) and/or it's children components.
 ### Important notes
 
 The `useStateLink` forces a component to rerender everytime, when:
-* a segment/part of the state data is changed *AND only if*
+* a segment/part of the state data is updated *AND only if*
 * this segement was **used** by the component during or after the latest rendering.
 
 For example, if your state value is `{ a: 1, b: 2 }` and
@@ -56,21 +56,22 @@ destroyed stores, the states should be destroyed as advised above.
 
 When a state is used by only one component, and maybe it's children,
 it is recommended to use *local* state instead of *global*.
-Here `useStateLink` behaves similarly to `React.useState`, but the
-returned instance of `StateLink` has got more features, which are covered in the following chapters
-of the documentation.
+In this case `useStateLink` behaves similarly to `React.useState`, but the
+returned instance of `StateLink` has got more features,
+which are covered in the following chapters of the documentation.
 
 <PreviewSample example="local-getting-started" />
 
 ### Important notes
 
 Local state is automatically created by `useStateLink` when the first argument
-is not an instance of `StateLink` (for instance, the result of `createStateLink`).
+is NOT an instance of `StateLink` (for example, the result of `createStateLink`).
 
-Local (per component state) is created when component is mounted
+Local (per component) state is created when a component is mounted
 and automatically destroyed when a component is unmounted.
 
-The same as for the global state, `useStateLink` forces a component to rerender when:
-* a segment/part of the state data is changed *AND only if*
+The same as with the global state, `useStateLink` forces a component to rerender when:
+* a segment/part of the state data is updated *AND only if*
 * this segement was **used** by the component during or after the latest rendering.
 
+You can use as many local states within the same component as you need.
