@@ -29,7 +29,7 @@ export interface ExampleMeta {
     demo: React.ReactElement;
 }
 
-const baseUrl = 'https://raw.githubusercontent.com/avkonst/hookstate/master/examples/src/website/'
+const baseUrl = 'https://raw.githubusercontent.com/avkonst/hookstate/master/hookstate.js.org/docs/src/examples/'
 
 export const ExampleCodeUrl = (id: string) => `${baseUrl}${id}.tsx`;
 
