@@ -31,7 +31,7 @@ export default create({
 //   inputTextColor: 'black',
 //   inputBorderRadius: 4,
 
-  brandTitle: 'My custom storybook',
-  brandUrl: 'https://example.com',
-  brandImage: 'https://placehold.it/350x150',
+  brandTitle: 'Hookstate',
+  brandUrl: 'https://hookstate.js.org',
+  brandImage: 'https://hookstate.js.org/logo.png',
 });
