@@ -7,7 +7,10 @@ https://hookstate.netlify.com/* https://hookstate.js.org/:splat 301!
 /checkline /version.json 200
 
 # the storybook handles routes internally, including non-existing pages
-/docs/* /index.html 200​
+/docs/* /docs/index.html 200​
+
+# the demo sample app handles routes internally, including non-existing pages
+/demo-todolist/* /demo-todolist/index.html 200​
 
 # the application handles routes internally, including non-existing pages
 /* /index.html 200​
