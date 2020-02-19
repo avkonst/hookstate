@@ -20,7 +20,6 @@ import { ExampleComponent as ExamplePluginPersistence } from './plugin-persisten
 import { ExampleComponent as ExamplePluginValidation } from './plugin-validation.tsx';
 import { ExampleComponent as ExamplePluginUntracked } from './plugin-untracked.tsx';
 
-import { A } from 'hookrouter';
 import ExampleIds from './ids';
 
 export interface ExampleMeta {
@@ -34,7 +33,7 @@ const baseUrl = 'https://raw.githubusercontent.com/avkonst/hookstate/master/exam
 export const ExampleCodeUrl = (id: string) => `${baseUrl}${id}.tsx`;
 
 const ExampleLink = (props: {id: string, title?: string}) =>
-    <A href={props.id}>{props.title ? props.title : ExamplesRepo.get(props.id)!.name}</A>
+    <a href={props.id}>{props.title ? props.title : ExamplesRepo.get(props.id)!.name}</a>
 
 const StateLinkHref = () =>
     <code><a href="https://github.com/avkonst/hookstate#statelink">StateLink</a></code>

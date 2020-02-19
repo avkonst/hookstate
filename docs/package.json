@@ -42,6 +42,8 @@
     "react-is": "^16.12.0"
   },
   "scripts": {
+    "start": "start-storybook -p 9009",
+    "build": "build-storybook",
     "storybook": "start-storybook -p 9009",
     "build-storybook": "build-storybook"
   }
