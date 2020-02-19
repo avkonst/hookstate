@@ -28,7 +28,7 @@ const App: React.FC = () => {
             <br/><span style={{ fontSize: '0.7em' }}>
               This is a sample application with <a
                 style={{ color: '#09d3ac' }}
-                href="https://github.com/avkonst/hookstate-example-app"
+                href="https://github.com/avkonst/hookstate/tree/master/hookstate.js.org/demos/todolist"
                 target="_blank"
                 rel="noopener noreferrer"
               >source code</a> available on Github. 
