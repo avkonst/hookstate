@@ -31,7 +31,7 @@ const PreviewWithAsyncSource = (props: React.PropsWithChildren<{ url: string }>)
         codeString = code.value ? code.value.toString() : `Failure to load code sample from: ${props.url}`;
     }
 
-    return <Preview mdxSource={codeString} language="tsx">{props.children}</Preview>
+    return <Preview mdxSource={codeString}>{props.children}</Preview>
 };
 
 export const PreviewSample = (props: { example?: string }) => {
