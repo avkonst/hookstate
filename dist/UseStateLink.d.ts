@@ -27,6 +27,7 @@ export interface StateLink<S> {
     readonly path: Path;
     readonly nested: NestedInferredLink<S>;
     readonly keys: NestedInferredKeys<S>;
+    /** @warning experimental feature */
     denull(): StateLink<NonNullable<S>> | OnlyNullable<S>;
     /** @warning experimental feature */
     batch(action: (s: StateLink<S>) => void, options?: {
@@ -35,7 +36,7 @@ export interface StateLink<S> {
     }): void;
     wrap<R>(transform: (state: StateLink<S>, prev: R | undefined) => R): WrappedStateLink<R>;
     with(plugin: () => Plugin): StateLink<S>;
-    with(pluginId: symbol): [StateLink<S> & StateLinkPlugable<S>, PluginInstance | PluginCallbacks];
+    with(pluginId: symbol): [StateLink<S> & StateLinkPlugable<S>, PluginCallbacks];
 }
 export interface DestroyableStateLink<S> extends StateLink<S> {
     access(): StateLink<S>;
@@ -89,18 +90,9 @@ export interface PluginCallbacks {
     readonly onBatchStart?: (arg: PluginCallbacksOnBatchArgument) => void;
     readonly onBatchFinish?: (arg: PluginCallbacksOnBatchArgument) => void;
 }
-/** @deprecated by PluginCallbacks */
-export interface PluginInstance {
-    readonly onInit?: () => StateValueAtRoot | void;
-    readonly onPreset?: (path: Path, prevState: StateValueAtRoot, newValue: StateValueAtPath, prevValue: StateValueAtPath, mergeValue: StateValueAtPath | undefined) => void | StateValueAtRoot;
-    readonly onSet?: (path: Path, newState: StateValueAtRoot, newValue: StateValueAtPath, prevValue: StateValueAtPath, mergeValue: StateValueAtPath | undefined) => void;
-    readonly onDestroy?: (state: StateValueAtRoot) => void;
-}
 export interface Plugin {
     readonly id: symbol;
-    readonly create?: (state: StateLink<StateValueAtRoot>) => PluginCallbacks;
-    /** @deprecated use create instead */
-    readonly instanceFactory?: (initial: StateValueAtRoot, linkFactory: () => StateLink<StateValueAtRoot>) => PluginInstance;
+    readonly create: (state: StateLink<StateValueAtRoot>) => PluginCallbacks;
 }
 export declare function createStateLink<S>(initial: InitialValueAtRoot<S>): DestroyableStateLink<S>;
 export declare function createStateLink<S, R>(initial: InitialValueAtRoot<S>, transform: (state: StateLink<S>, prev: R | undefined) => R): DestroyableWrappedStateLink<R>;

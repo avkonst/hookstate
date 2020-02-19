@@ -301,36 +301,23 @@ var State = /** @class */ (function () {
         throw new PluginUnknownError(pluginId);
     };
     State.prototype.register = function (plugin) {
-        var _this = this;
         var existingInstance = this._plugins.get(plugin.id);
         if (existingInstance) {
             return;
         }
-        if (plugin.instanceFactory) {
-            var pluginInstance_1 = plugin.instanceFactory(this._value, function () { return _this.accessUnmounted(); });
-            this._plugins.set(plugin.id, pluginInstance_1);
-            if (pluginInstance_1.onSet) {
-                this._setSubscribers.add(function (p) { return pluginInstance_1.onSet(p.path, p.state, p.value, p.previous, p.merged); });
-            }
-            if (pluginInstance_1.onDestroy) {
-                this._destroySubscribers.add(function (p) { return pluginInstance_1.onDestroy(p.state); });
-            }
+        var pluginCallbacks = plugin.create(this.accessUnmounted());
+        this._plugins.set(plugin.id, pluginCallbacks);
+        if (pluginCallbacks.onSet) {
+            this._setSubscribers.add(function (p) { return pluginCallbacks.onSet(p); });
         }
-        if (plugin.create) {
-            var pluginCallbacks_1 = plugin.create(this.accessUnmounted());
-            this._plugins.set(plugin.id, pluginCallbacks_1);
-            if (pluginCallbacks_1.onSet) {
-                this._setSubscribers.add(function (p) { return pluginCallbacks_1.onSet(p); });
-            }
-            if (pluginCallbacks_1.onDestroy) {
-                this._destroySubscribers.add(function (p) { return pluginCallbacks_1.onDestroy(p); });
-            }
-            if (pluginCallbacks_1.onBatchStart) {
-                this._batchStartSubscribers.add(function (p) { return pluginCallbacks_1.onBatchStart(p); });
-            }
-            if (pluginCallbacks_1.onBatchFinish) {
-                this._batchFinishSubscribers.add(function (p) { return pluginCallbacks_1.onBatchFinish(p); });
-            }
+        if (pluginCallbacks.onDestroy) {
+            this._destroySubscribers.add(function (p) { return pluginCallbacks.onDestroy(p); });
+        }
+        if (pluginCallbacks.onBatchStart) {
+            this._batchStartSubscribers.add(function (p) { return pluginCallbacks.onBatchStart(p); });
+        }
+        if (pluginCallbacks.onBatchFinish) {
+            this._batchFinishSubscribers.add(function (p) { return pluginCallbacks.onBatchFinish(p); });
         }
     };
     State.prototype.accessUnmounted = function () {
@@ -359,7 +346,6 @@ var SynteticID = Symbol('SynteticTypeInferenceMarker');
 var ValueCache = Symbol('ValueCache');
 var NestedCache = Symbol('NestedCache');
 var UnmountedCallback = Symbol('UnmountedCallback');
-var NoActionOnDestroy = function () { };
 var NoActionOnUpdate = function () { };
 NoActionOnUpdate[UnmountedCallback] = true;
 var WrappedStateLinkImpl = /** @class */ (function () {
@@ -527,7 +513,7 @@ var StateLinkImpl = /** @class */ (function () {
         var deletedOrInsertedProps = false;
         if (Array.isArray(currentValue)) {
             if (Array.isArray(sourceValue)) {
-                updatedPath = this.setUntracked(currentValue.concat(sourceValue), sourceValue);
+                return [this.setUntracked(currentValue.concat(sourceValue), sourceValue)];
             }
             else {
                 var deletedIndexes_1 = [];
@@ -910,7 +896,7 @@ function createState(initial) {
     }
     return new State(initialValue);
 }
-function useSubscribedStateLink(state, path, update, subscribeTarget, disabledTracking, onDestroy) {
+function useSubscribedStateLink(state, path, update, subscribeTarget, disabledTracking) {
     var link = new StateLinkImpl(state, path, update, state.get(path), state.edition);
     if (disabledTracking) {
         link.with(Downgraded);
@@ -922,7 +908,6 @@ function useSubscribedStateLink(state, path, update, subscribeTarget, disabledTr
             subscribeTarget.unsubscribe(link);
         };
     });
-    React.useEffect(function () { return function () { return onDestroy(); }; }, []);
     return link;
 }
 function injectTransform(link, transform) {
@@ -972,22 +957,26 @@ function useStateLink(source, transform) {
             [undefined, transform], parentLink = _a[0], tf = _a[1];
     if (parentLink) {
         if (parentLink.onUpdateUsed === NoActionOnUpdate) {
+            // Global state mount
             // eslint-disable-next-line react-hooks/rules-of-hooks
             var _b = React.useState({ state: parentLink.state }), value_1 = _b[0], setValue_1 = _b[1];
-            var link = useSubscribedStateLink(value_1.state, parentLink.path, function () { return setValue_1({ state: value_1.state }); }, value_1.state, undefined, NoActionOnDestroy);
+            var link = useSubscribedStateLink(value_1.state, parentLink.path, function () { return setValue_1({ state: value_1.state }); }, value_1.state, undefined);
             return tf ? injectTransform(link, tf) : link;
         }
         else {
+            // Scoped state mount
             // eslint-disable-next-line react-hooks/rules-of-hooks
             var _c = React.useState({}), setValue_2 = _c[1];
-            var link = useSubscribedStateLink(parentLink.state, parentLink.path, function () { return setValue_2({}); }, parentLink, parentLink.isDowngraded, NoActionOnDestroy);
+            var link = useSubscribedStateLink(parentLink.state, parentLink.path, function () { return setValue_2({}); }, parentLink, parentLink.isDowngraded);
             return tf ? injectTransform(link, tf) : link;
         }
     }
     else {
+        // Local state mount
         // eslint-disable-next-line react-hooks/rules-of-hooks
         var _d = React.useState(function () { return ({ state: createState(source) }); }), value_2 = _d[0], setValue_3 = _d[1];
-        var link = useSubscribedStateLink(value_2.state, RootPath, function () { return setValue_3({ state: value_2.state }); }, value_2.state, undefined, function () { return value_2.state.destroy(); });
+        var link = useSubscribedStateLink(value_2.state, RootPath, function () { return setValue_3({ state: value_2.state }); }, value_2.state, undefined);
+        React.useEffect(function () { return function () { return value_2.state.destroy(); }; }, []);
         if (useStateLink[DevTools]) {
             link.with(useStateLink[DevTools]);
         }
@@ -1020,7 +1009,7 @@ function StateMemo(transform, equals) {
 function Downgraded() {
     return {
         id: DowngradedID,
-        instanceFactory: function () { return ({}); }
+        create: function () { return ({}); }
     };
 }
 
