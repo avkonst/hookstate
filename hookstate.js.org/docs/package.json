@@ -44,7 +44,7 @@
   "scripts": {
     "start": "start-storybook -p 9009",
     "build": "build-storybook",
-    "build-site": "build-storybook && cp -r storybook-static ../website/build/docs",
+    "build-site": "build-storybook && cp -r storybook-static ../index/build/docs",
     "storybook": "start-storybook -p 9009",
     "build-storybook": "build-storybook"
   }
