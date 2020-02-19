@@ -43,7 +43,8 @@
     "scripts": {
         "prestart": "concat -o public/outdated-browser.min.js node_modules/outdated-browser-rework/dist/outdated-browser-rework.min.js src/outdated-browser-override.js && concat -o  public/outdated-browser.css node_modules/outdated-browser-rework/dist/style.css src/outdated-browser-override.css",
         "start": "react-scripts start",
-        "build": "react-scripts build && cp .netlify-headers build/_headers && cp .netlify-redirects build/_redirects && node sitemap.js",
+        "build": "react-scripts build",
+        "build-site": "react-scripts build && cp .netlify-headers build/_headers && cp .netlify-redirects build/_redirects && node sitemap.js",
         "test": "react-scripts test",
         "serve": "serve -s build",
         "check-updates": "ncu",

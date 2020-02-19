@@ -6,5 +6,8 @@ https://hookstate.netlify.com/* https://hookstate.js.org/:splat 301!
 # this path is used by the app to check internet connectivity
 /checkline /version.json 200
 
+# the storybook handles routes internally, including non-existing pages
+/docs/* /index.html 200​
+
 # the application handles routes internally, including non-existing pages
 /* /index.html 200​
