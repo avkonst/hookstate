@@ -33,5 +33,5 @@ export default create({
 
   brandTitle: 'Hookstate',
   brandUrl: 'https://hookstate.js.org',
-  brandImage: 'https://placehold.it/350x150',
+  brandImage: 'https://hookstate.js.org/logo.png',
 });
