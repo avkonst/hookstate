@@ -1,11 +1,77 @@
 
 import { Meta, Story, Preview } from '@storybook/addon-docs/blocks';
-import { VersionInfo } from '../PreviewSample.tsx';
+import { PreviewSample } from '../PreviewSample.tsx';
 
-<Meta title="Usage / Core" id="0" />
+<Meta title="Introduction / Getting Started" id="getting-started" />
 
-# Version info
+<Story name="Global state" ><br /></Story>
 
-Code samples in this documentation are rendered with the following versions of Hookstate components:
+# Creating and using global state
 
-<VersionInfo />
+Let's start with an example, explanation after. No boilerplate - create the state and use it:
+
+<PreviewSample example="global-getting-started" />
+
+The state is created by calling `createStateLink`. The first argument is the initial state value.
+The result value is an instance of `StateLink`,
+which **can be** used directly to get and set the state value outside of a react component.
+
+When you need to use the state in a functional `React` component,
+pass the created state to `useStateLink` function
+and use the returned result in the component's logic.
+The returned result is an instance of `StateLink` too,
+which **must be** used within a react component (during rendering
+or in effects) and/or it's children components.
+
+### Important notes
+
+The `useStateLink` forces a component to rerender everytime, when:
+* a segment/part of the state data is updated *AND only if*
+* this segement was **used** by the component during or after the latest rendering.
+
+For example, if your state value is `{ a: 1, b: 2 }` and
+a component uses only `a` property of the state, it will rerender
+only when the whole state object is updated or when `a` property is updated.
+Setting the state value/property to the same value is also considered as an update.
+
+You can create as many global states as you need.
+
+A component can use one or many states,
+i.e. you may call `useStateLink` multiple times for multiple states.
+
+The same state can be used by multiple different components.
+
+The `useStateLink` is a hook and should follow React's rules of hooks.
+
+When you do not need the global state anymore, it should be destroyed by calling
+`destroy()` method of the state link created by `createStateLink` function.
+This is necessary for some plugins, which allocate native resources, like subscription to databases, broadcast channels, etc.
+In most cases, a global state is used during whole life time of an application and would not require
+destruction. However, if you have got, for example, a catalog of dynamically created and
+destroyed stores, the states should be destroyed as advised above.
+
+<Story name="Local state" ><br /></Story>
+
+# Creating and using local state
+
+When a state is used by only one component, and maybe it's children,
+it is recommended to use *local* state instead of *global*.
+In this case `useStateLink` behaves similarly to `React.useState`, but the
+returned instance of `StateLink` has got more features,
+which are covered in the following chapters of the documentation.
+
+<PreviewSample example="local-getting-started" />
+
+### Important notes
+
+Local state is automatically created by `useStateLink` when the first argument
+is NOT an instance of `StateLink` (for example, the result of `createStateLink`).
+
+Local (per component) state is created when a component is mounted
+and automatically destroyed when a component is unmounted.
+
+The same as with the global state, `useStateLink` forces a component to rerender when:
+* a segment/part of the state data is updated *AND only if*
+* this segement was **used** by the component during or after the latest rendering.
+
+You can use as many local states within the same component as you need.
