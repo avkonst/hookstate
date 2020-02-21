@@ -183,7 +183,7 @@ ___
 
 ##### ▸ **Downgraded**(): *[Plugin](#interfacespluginmd)*
 
-*Defined in [UseStateLink.d.ts:139](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L139)*
+*Defined in [UseStateLink.d.ts:155](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L155)*
 
 **Returns:** *[Plugin](#interfacespluginmd)*
 
@@ -193,7 +193,7 @@ ___
 
 ##### ▸ **StateFragment**<**S**\>(`props`: object): *ReactElement*
 
-*Defined in [UseStateLink.d.ts:116](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L116)*
+*Defined in [UseStateLink.d.ts:132](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L132)*
 
 **Type parameters:**
 
@@ -212,7 +212,7 @@ Name | Type |
 
 ##### ▸ **StateFragment**<**S**, **E**, **R**\>(`props`: object): *ReactElement*
 
-*Defined in [UseStateLink.d.ts:120](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L120)*
+*Defined in [UseStateLink.d.ts:136](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L136)*
 
 **Type parameters:**
 
@@ -236,7 +236,7 @@ Name | Type |
 
 ##### ▸ **StateFragment**<**R**\>(`props`: object): *ReactElement*
 
-*Defined in [UseStateLink.d.ts:125](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L125)*
+*Defined in [UseStateLink.d.ts:141](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L141)*
 
 **Type parameters:**
 
@@ -255,7 +255,7 @@ Name | Type |
 
 ##### ▸ **StateFragment**<**S**\>(`props`: object): *ReactElement*
 
-*Defined in [UseStateLink.d.ts:129](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L129)*
+*Defined in [UseStateLink.d.ts:145](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L145)*
 
 **Type parameters:**
 
@@ -274,7 +274,7 @@ Name | Type |
 
 ##### ▸ **StateFragment**<**S**, **R**\>(`props`: object): *ReactElement*
 
-*Defined in [UseStateLink.d.ts:133](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L133)*
+*Defined in [UseStateLink.d.ts:149](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L149)*
 
 **Type parameters:**
 
@@ -300,7 +300,7 @@ ___
 
 ##### ▸ **StateMemo**<**S**, **R**\>(`transform`: function, `equals?`: undefined | function): *function*
 
-*Defined in [UseStateLink.d.ts:138](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L138)*
+*Defined in [UseStateLink.d.ts:154](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L154)*
 
 **Type parameters:**
 
@@ -340,23 +340,33 @@ ___
 
 ##### ▸ **createStateLink**<**S**\>(`initial`: [InitialValueAtRoot](#initialvalueatroot)‹S›): *[DestroyableStateLink](#interfacesdestroyablestatelinkmd)‹S›*
 
-*Defined in [UseStateLink.d.ts:97](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L97)*
+*Defined in [UseStateLink.d.ts:113](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L113)*
+
+Creates new state.
+
+**`example`** http://hookstate.js.org/docs/?path=/docs/getting-started--global-state
 
 **Type parameters:**
 
 ▪ **S**
 
+Type of a value of the state
+
 **Parameters:**
 
-Name | Type |
------- | ------ |
-`initial` | [InitialValueAtRoot](#initialvalueatroot)‹S› |
+Name | Type | Description |
+------ | ------ | ------ |
+`initial` | [InitialValueAtRoot](#initialvalueatroot)‹S› | Initial value of the state. It can be a value OR a promise, which asynchronously resolves to a value OR a function returning a value or a promise.  |
 
 **Returns:** *[DestroyableStateLink](#interfacesdestroyablestatelinkmd)‹S›*
 
+State link instance, which can be used directly
+to get and set state value outside of a react component,
+for example, in an event handler or callback.
+
 ##### ▸ **createStateLink**<**S**, **R**\>(`initial`: [InitialValueAtRoot](#initialvalueatroot)‹S›, `transform`: function): *[DestroyableWrappedStateLink](#interfacesdestroyablewrappedstatelinkmd)‹R›*
 
-*Defined in [UseStateLink.d.ts:98](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L98)*
+*Defined in [UseStateLink.d.ts:114](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L114)*
 
 **Type parameters:**
 
@@ -387,7 +397,7 @@ ___
 
 ##### ▸ **useStateLink**<**S**\>(`source`: [StateLink](#interfacesstatelinkmd)‹S›): *[StateLink](#interfacesstatelinkmd)‹S›*
 
-*Defined in [UseStateLink.d.ts:99](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L99)*
+*Defined in [UseStateLink.d.ts:115](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L115)*
 
 **Type parameters:**
 
@@ -403,7 +413,7 @@ Name | Type |
 
 ##### ▸ **useStateLink**<**S**, **R**\>(`source`: [StateLink](#interfacesstatelinkmd)‹S›, `transform`: function): *R*
 
-*Defined in [UseStateLink.d.ts:100](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L100)*
+*Defined in [UseStateLink.d.ts:116](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L116)*
 
 **Type parameters:**
 
@@ -430,7 +440,7 @@ Name | Type |
 
 ##### ▸ **useStateLink**<**R**\>(`source`: [WrappedStateLink](#interfaceswrappedstatelinkmd)‹R›): *R*
 
-*Defined in [UseStateLink.d.ts:101](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L101)*
+*Defined in [UseStateLink.d.ts:117](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L117)*
 
 **Type parameters:**
 
@@ -446,7 +456,7 @@ Name | Type |
 
 ##### ▸ **useStateLink**<**S**\>(`source`: [InitialValueAtRoot](#initialvalueatroot)‹S›): *[StateLink](#interfacesstatelinkmd)‹S›*
 
-*Defined in [UseStateLink.d.ts:102](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L102)*
+*Defined in [UseStateLink.d.ts:118](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L118)*
 
 **Type parameters:**
 
@@ -462,7 +472,7 @@ Name | Type |
 
 ##### ▸ **useStateLink**<**S**, **R**\>(`source`: [InitialValueAtRoot](#initialvalueatroot)‹S›, `transform`: function): *R*
 
-*Defined in [UseStateLink.d.ts:103](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L103)*
+*Defined in [UseStateLink.d.ts:119](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L119)*
 
 **Type parameters:**
 
@@ -493,7 +503,7 @@ ___
 
 ##### ▸ **useStateLinkUnmounted**<**S**\>(`source`: [DestroyableStateLink](#interfacesdestroyablestatelinkmd)‹S›): *[StateLink](#interfacesstatelinkmd)‹S›*
 
-*Defined in [UseStateLink.d.ts:107](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L107)*
+*Defined in [UseStateLink.d.ts:123](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L123)*
 
 **`deprecated`** use source directly instead
 
@@ -511,7 +521,7 @@ Name | Type |
 
 ##### ▸ **useStateLinkUnmounted**<**S**, **R**\>(`source`: [DestroyableStateLink](#interfacesdestroyablestatelinkmd)‹S›, `transform`: function): *R*
 
-*Defined in [UseStateLink.d.ts:111](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L111)*
+*Defined in [UseStateLink.d.ts:127](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L127)*
 
 **`deprecated`** use source.wrap(transform).access() instead
 
@@ -539,7 +549,7 @@ Name | Type |
 
 ##### ▸ **useStateLinkUnmounted**<**R**\>(`source`: [DestroyableWrappedStateLink](#interfacesdestroyablewrappedstatelinkmd)‹R›): *R*
 
-*Defined in [UseStateLink.d.ts:115](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L115)*
+*Defined in [UseStateLink.d.ts:131](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L131)*
 
 **`deprecated`** use source.access() instead
 

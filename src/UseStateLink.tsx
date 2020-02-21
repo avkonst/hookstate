@@ -1192,6 +1192,23 @@ function injectTransform<S, R>(
 ///
 /// EXPORTED IMPLEMENTATIONS
 ///
+
+/**
+ * Creates new state.
+ * 
+ * @example http://hookstate.js.org/docs/?path=/docs/getting-started--global-state
+ *
+ * @param initial Initial value of the state.
+ * It can be a value OR a promise, which asynchronously resolves to a value
+ * OR a function returning a value or a promise.
+ * 
+ * @typeparam S Type of a value of the state
+ * 
+ * @returns State link instance, which can be used directly
+ * to get and set state value outside of a react component,
+ * for example, in an event handler or callback.
+ * 
+ */
 export function createStateLink<S>(
     initial: InitialValueAtRoot<S>
 ): DestroyableStateLink<S>;
