@@ -3,7 +3,7 @@ import { Meta, Story, Preview } from '@storybook/addon-docs/blocks';
 import { PreviewSample } from '../PreviewSample.tsx';
 import LinkTo from '@storybook/addon-links/react';
 
-<Meta title="Demo/Button" id="1" />
+<Meta title="Demo/Button3" id="3" />
 
 # Button
 

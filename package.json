@@ -31,6 +31,7 @@
         "test:watch": "react-scripts test --env=jsdom --watch",
         "check-updates": "ncu",
         "apply-updates": "ncu -u",
+        "build:docs": "typedoc --plugin typedoc-plugin-markdown --hideBreadcrumbs --tsconfig ./tsconfig.typedoc.json --exclude \"dist/**.js\"  --includeDeclarations --excludeExternals --excludeNotExported --categorizeByGroup false --readme none --hideGenerator --mode file && concat-md --decrease-title-levels --dir-name-as-title docs > dist/typedoc.md && rimraf docs && replace '></a>' '/>' dist/typedoc.md && replace '([^/])>' '$1\\>' dist/typedoc.md && replace 'a name=\"readmemd\"' 'Meta title=\"API Reference/Core library\"' dist/typedoc.md && replace '▸' '##### ▸' dist/typedoc.md && cp dist/typedoc.md hookstate.js.org/docs/src/stories/A-apiref-hookstate-core.stories.mdx",
         "prepare": "yarn build"
     },
     "dependencies": {},
@@ -45,12 +46,14 @@
         "@types/react-dom": "16.9.0",
         "babel-core": "6.26.3",
         "babel-runtime": "6.26.0",
+        "concat-md": "^0.3.2",
         "cross-env": "5.2.1",
         "npm-check-updates": "3.1.21",
         "react": "16.9.0",
         "react-dom": "16.9.0",
         "react-scripts": "3.1.1",
         "react-test-renderer": "16.9.0",
+        "replace": "^1.1.5",
         "rimraf": "3.0.0",
         "rollup": "1.20.3",
         "rollup-plugin-babel": "4.3.3",
@@ -62,6 +65,8 @@
         "ts-jest": "24.0.2",
         "tslint": "5.19.0",
         "tslint-react": "4.0.0",
+        "typedoc": "^0.16.10",
+        "typedoc-plugin-markdown": "^2.2.16",
         "typescript": "3.6.2"
     },
     "files": [
