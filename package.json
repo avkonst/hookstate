@@ -22,7 +22,7 @@
     },
     "scripts": {
         "start": "rollup -c -w",
-        "build": "rollup -c",
+        "build": "rollup -c && yarn run build:docs",
         "build:watch": "yarn run start",
         "lint": "tslint --project .",
         "clean": "rimraf dist",
