@@ -53,14 +53,13 @@ export type SetPartialStateAction<S> =
     S extends object | string ? Partial<S> | ((prevValue: S) => Partial<S>) :
     React.SetStateAction<S>;
 
-export type InferredStateLinkDenullType<S> = StateLink<NonNullable<S>> |
-    (S extends null ?
-        S extends undefined ?
-            null | undefined :
-            null :
-        S extends undefined ?
-            undefined :
-            never);
+export type InferredStateLinkDenullType<S> = S extends null ?
+    S extends undefined ?
+        StateLink<NonNullable<S>> | null | undefined :
+        StateLink<NonNullable<S>> | null :
+    S extends undefined ?
+        StateLink<NonNullable<S>> | undefined :
+        StateLink<NonNullable<S>> | never;
 
 export interface BatchOptions {
     ifPromised?: 'postpone' | 'discard' | 'reject' | 'execute',
