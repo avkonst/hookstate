@@ -79,13 +79,11 @@ export interface StateLink<S> {
     wrap<R>(transform: (state: StateLink<S>, prev: R | undefined) => R): WrappedStateLink<R>;
 
     with(plugin: () => Plugin): StateLink<S>;
-    with(pluginId: symbol): [StateLink<S> & StateLinkPlugable<S>, PluginCallbacks];
+    with(pluginId: symbol): [StateLink<S> & ExtendedStateLinkMixin<S>, PluginCallbacks];
 }
 
-export interface DestroyableStateLink<S> extends StateLink<S> {
-    access(): StateLink<S>; // for symetry and compatibility with DestroyableWrappedStateLink
-    wrap<R>(transform: (state: DestroyableStateLink<S>, prev: R | undefined) => R): DestroyableWrappedStateLink<R>;
-    
+export interface ManagedStateLinkMixin<T> {
+    access(): T;
     destroy(): void;
 }
 
@@ -98,15 +96,15 @@ export interface WrappedStateLink<R> {
     wrap<R2>(transform: (state: R, prev: R2 | undefined) => R2): WrappedStateLink<R2>
 }
 
-export interface DestroyableWrappedStateLink<R> extends WrappedStateLink<R> {
-    access(): R;
-    with(plugin: () => Plugin): DestroyableWrappedStateLink<R>;
-    wrap<R2>(transform: (state: R, prev: R2 | undefined) => R2): DestroyableWrappedStateLink<R2>
-    
-    destroy(): void;
-}
+export type DestroyableStateLink<S> =
+    StateLink<S> & ManagedStateLinkMixin<StateLink<S>>;
 
-export interface StateLinkPlugable<S> {
+export type DestroyableWrappedStateLink<R> =
+    WrappedStateLink<R> & ManagedStateLinkMixin<R>;
+
+export type StateLinkPlugable<S> = ExtendedStateLinkMixin<S>;
+    
+export interface ExtendedStateLinkMixin<S> {
     getUntracked(): S;
     setUntracked(newValue: SetStateAction<S>): Path;
     mergeUntracked(mergeValue: SetPartialStateAction<S>): Path | Path[];
@@ -534,26 +532,26 @@ const UnmountedCallback = Symbol('UnmountedCallback');
 const NoActionOnUpdate = () => { /* empty */ };
 NoActionOnUpdate[UnmountedCallback] = true
 
-class WrappedStateLinkImpl<S, R> implements DestroyableWrappedStateLink<R> {
+class WrappedStateLinkImpl<S, R> implements WrappedStateLink<R>, ManagedStateLinkMixin<R> {
     // tslint:disable-next-line: variable-name
     public __synteticTypeInferenceMarkerInf = SynteticID;
     public disabledTracking: boolean | undefined;
 
     constructor(
         public readonly state: StateLinkImpl<S>,
-        public readonly transform: (state: DestroyableStateLink<S>, prev: R | undefined) => R,
+        public readonly transform: (state: StateLink<S>, prev: R | undefined) => R,
     ) { }
 
     access() {
         return this.transform(this.state, undefined)
     }
 
-    with(plugin: () => Plugin): DestroyableWrappedStateLink<R> {
+    with(plugin: () => Plugin): WrappedStateLink<R> {
         this.state.with(plugin);
         return this;
     }
     
-    wrap<R2>(transform: (state: R, prev: R2 | undefined) => R2): DestroyableWrappedStateLink<R2> {
+    wrap<R2>(transform: (state: R, prev: R2 | undefined) => R2) {
         return new WrappedStateLinkImpl<S, R2>(this.state, (s, p) => {
             return transform(this.transform(s, undefined), p)
         })
@@ -594,8 +592,10 @@ class Promised {
     }
 }
 
-class StateLinkImpl<S> implements DestroyableStateLink<S>,
-    StateLinkPlugable<S>, Subscribable, Subscriber {
+class StateLinkImpl<S> implements StateLink<S>,
+    ManagedStateLinkMixin<StateLink<S>>,
+    ExtendedStateLinkMixin<S>,
+    Subscribable, Subscriber {
     public isDowngraded: boolean | undefined;
     private subscribers: Set<Subscriber> | undefined;
 
@@ -800,9 +800,9 @@ class StateLinkImpl<S> implements DestroyableStateLink<S>,
     }
     
     with(plugin: () => Plugin): StateLink<S>;
-    with(pluginId: symbol): [StateLink<S> & StateLinkPlugable<S>, PluginCallbacks];
+    with(pluginId: symbol): [StateLink<S> & ExtendedStateLinkMixin<S>, PluginCallbacks];
     with(plugin: (() => Plugin) | symbol):
-        StateLink<S> | [StateLink<S> & StateLinkPlugable<S>, PluginCallbacks] {
+        StateLink<S> | [StateLink<S> & ExtendedStateLinkMixin<S>, PluginCallbacks] {
         if (typeof plugin === 'function') {
             const pluginMeta = plugin();
             if (pluginMeta.id === DowngradedID) {
@@ -816,11 +816,11 @@ class StateLinkImpl<S> implements DestroyableStateLink<S>,
         }
     }
     
-    access(): DestroyableStateLink<S> {
+    access() {
         return this;
     }
     
-    wrap<R>(transform: (state: DestroyableStateLink<S>, prev: R | undefined) => R): DestroyableWrappedStateLink<R> {
+    wrap<R>(transform: (state: StateLink<S>, prev: R | undefined) => R) {
         return new WrappedStateLinkImpl<S, R>(this, transform)
     }
     
@@ -1156,7 +1156,7 @@ function useSubscribedStateLink<S>(
 
 function injectTransform<S, R>(
     link: StateLinkImpl<S>,
-    transform: (state: DestroyableStateLink<S>, prev: R | undefined) => R
+    transform: (state: StateLink<S>, prev: R | undefined) => R
 ) {
     if (link.onUpdateUsed[UnmountedCallback]) {
         // this is unmounted link
@@ -1211,15 +1211,16 @@ function injectTransform<S, R>(
  */
 export function createStateLink<S>(
     initial: InitialValueAtRoot<S>
-): DestroyableStateLink<S>;
+): StateLink<S> & ManagedStateLinkMixin<StateLink<S>>;
 export function createStateLink<S, R>(
     initial: InitialValueAtRoot<S>,
     transform: (state: StateLink<S>, prev: R | undefined) => R
-): DestroyableWrappedStateLink<R>;
+): WrappedStateLink<R> & ManagedStateLinkMixin<R>;
 export function createStateLink<S, R>(
     initial: InitialValueAtRoot<S>,
     transform?: (state: StateLink<S>, prev: R | undefined) => R
-): DestroyableStateLink<S> | DestroyableWrappedStateLink<R> {
+): (StateLink<S> & ManagedStateLinkMixin<StateLink<S>>) |
+    (WrappedStateLink<R> & ManagedStateLinkMixin<R>) {
     const stateLink = createState(initial).accessUnmounted() as StateLinkImpl<S>
     if (createStateLink[DevTools]) {
         stateLink.with(createStateLink[DevTools])
