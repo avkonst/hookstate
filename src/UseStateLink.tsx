@@ -1,18 +1,48 @@
 import React from 'react';
 
 // TODO add support for Map and Set
-export type NestedInferredLink<S> =
+export type InferredStateLinkNestedType<S> =
     S extends ReadonlyArray<(infer U)> ? ReadonlyArray<StateLink<U>> :
     S extends null ? undefined :
     S extends object ? { readonly [K in keyof Required<S>]: StateLink<S[K]>; } :
     undefined;
 
-export type NestedInferredKeys<S> =
+/**
+ * @hidden
+ * @ignore
+ * @internal
+ * @deprecated declared for backward compatibility
+ */
+export type NestedInferredLink<S> = InferredStateLinkNestedType<S>;
+
+export type InferredStateLinkKeysType<S> =
     S extends ReadonlyArray<infer _> ? ReadonlyArray<number> :
     S extends null ? undefined :
     S extends object ? ReadonlyArray<keyof S> :
     undefined;
+    
+/**
+ * @hidden
+ * @ignore
+ * @internal
+ * @deprecated declared for backward compatibility
+ */
+export type NestedInferredKeys<S> = InferredStateLinkKeysType<S>;
 
+/**
+ * 'JSON path' from root of a state object to a nested property.
+ * 
+ * For example, an object `{ a: [{ b: 1 }, { 1000: 'value' }, '3rd'] }`,
+ * has got the following paths pointing to existing properties:
+ * 
+ * - `[]`
+ * - `['a']`
+ * - `['a', 0]`
+ * - `['a', 0, 'b']`
+ * - `['a', 1]`
+ * - `['a', 1, 1000]`
+ * - `['a', 2]`
+ */
 export type Path = ReadonlyArray<string | number>;
 
 export type SetStateAction<S> = (S | Promise<S>) | ((prevState: S) => (S | Promise<S>));
@@ -23,15 +53,28 @@ export type SetPartialStateAction<S> =
     S extends object | string ? Partial<S> | ((prevValue: S) => Partial<S>) :
     React.SetStateAction<S>;
 
-export type OnlyNullable<S> = 
-    S extends null ?
+export type InferredStateLinkDenullType<S> = StateLink<NonNullable<S>> |
+    (S extends null ?
         S extends undefined ?
             null | undefined :
             null :
         S extends undefined ?
             undefined :
-            never;
-    
+            never);
+
+export interface BatchOptions {
+    ifPromised?: 'postpone' | 'discard' | 'reject' | 'execute',
+    /**
+     * For plugin developers only.
+     * Any custom data for batch operation.
+     * It is forwarded to plugins, which subscribe to batch start/finish events.
+     *
+     * @hidden
+     * @ignore
+     */
+    context?: CustomContext;
+}
+            
 export interface StateLink<S> {
     get(): S;
     set(newValue: SetStateAction<S>): void;
@@ -44,23 +87,16 @@ export interface StateLink<S> {
     // const myvalue: number = statelink.get() ? statelink.get() + 1 : 0; // <-- does not compile
     readonly value: S;
 
-    /** @warning experimental feature */
     readonly promised: boolean;
-    /** @warning experimental feature */
-    readonly error: ErrorValueAtPath | undefined;
+    readonly error: any | undefined; //tslint:disable-line: no-any
 
     readonly path: Path;
-    readonly nested: NestedInferredLink<S>;
-    readonly keys: NestedInferredKeys<S>;
+    readonly nested: InferredStateLinkNestedType<S>;
+    readonly keys: InferredStateLinkKeysType<S>;
 
-    /** @warning experimental feature */
-    denull(): StateLink<NonNullable<S>> | OnlyNullable<S>;
+    denull(): InferredStateLinkDenullType<S>;
 
-    /** @warning experimental feature */
-    batch(action: (s: StateLink<S>) => void, options?: {
-        ifPromised?: 'postpone' | 'discard' | 'reject' | 'execute',
-        context?: CustomContext
-    }): void;
+    batch(action: (s: StateLink<S>) => void, options?: BatchOptions): void;
 
     wrap<R>(transform: (state: StateLink<S>, prev: R | undefined) => R): WrappedStateLink<R>;
 
@@ -75,10 +111,17 @@ export interface StateLink<S> {
      * @ignore
      */
     with(pluginId: symbol): [StateLink<S> & ExtendedStateLinkMixin<S>, PluginCallbacks];
+    
+    /**
+     * @hidden
+     * @ignore
+     * @internal
+     * @deprecated declared for backward compatibility
+     */
+    access(): StateLink<S>;
 }
 
-export interface ManagedStateLinkMixin<T> {
-    access(): T;
+export interface DestroyMixin {
     destroy(): void;
 }
 
@@ -89,11 +132,16 @@ export interface ManagedStateLinkMixin<T> {
  * @deprecated declared for backward compatibility
  */
 export type DestroyableStateLink<S> =
-    StateLink<S> & ManagedStateLinkMixin<StateLink<S>>;
+    StateLink<S> & DestroyMixin;
 
 export interface WrappedStateLink<R> {
-    // placed to make sure type inference does not match empty structure
-    // on useStateLink call
+    /**
+     * Placed to make sure type inference does not match empty structure on useStateLink call
+     * 
+     * @hidden
+     * @ignore
+     * @internal
+     */
     __synteticTypeInferenceMarkerInf: symbol;
 
     access(): R;
@@ -108,7 +156,7 @@ export interface WrappedStateLink<R> {
  * @deprecated declared for backward compatibility
  */
 export type DestroyableWrappedStateLink<R> =
-    WrappedStateLink<R> & ManagedStateLinkMixin<R>;
+    WrappedStateLink<R> & DestroyMixin;
 
 /**
  * @hidden
@@ -165,12 +213,25 @@ export type StateValueAtRoot = any; //tslint:disable-line: no-any
  */
 export type StateValueAtPath = any; //tslint:disable-line: no-any
 
-export type ErrorValueAtPath = any; //tslint:disable-line: no-any
+/**
+ * For plugin developers only.
+ * Type alias for any type of batch context data.
+ *
+ * @hidden
+ * @ignore
+ */
 export type CustomContext = any; //tslint:disable-line: no-any
 
-export type InitialValueAtRoot<S> = S | Promise<S> | (() => S | Promise<S>)
+export type SetInitialStateAction<S> = S | Promise<S> | (() => S | Promise<S>)
 
-/** @warning experimental feature */
+/**
+ * @hidden
+ * @ignore
+ * @internal
+ * @deprecated declared for backward compatibility
+ */
+export type InitialValueAtRoot<S> = SetInitialStateAction<S>;
+
 export const None = Symbol('none') as StateValueAtPath;
 
 /**
@@ -179,8 +240,6 @@ export const None = Symbol('none') as StateValueAtPath;
  *
  * @hidden
  * @ignore
- * 
- * @warning experimental feature
  */
 export const DevTools = Symbol('DevTools');
 
@@ -623,7 +682,7 @@ const UnmountedCallback = Symbol('UnmountedCallback');
 const NoActionOnUpdate = () => { /* empty */ };
 NoActionOnUpdate[UnmountedCallback] = true
 
-class WrappedStateLinkImpl<S, R> implements WrappedStateLink<R>, ManagedStateLinkMixin<R> {
+class WrappedStateLinkImpl<S, R> implements WrappedStateLink<R>, DestroyMixin {
     // tslint:disable-next-line: variable-name
     public __synteticTypeInferenceMarkerInf = SynteticID;
     public disabledTracking: boolean | undefined;
@@ -652,6 +711,8 @@ class WrappedStateLinkImpl<S, R> implements WrappedStateLink<R>, ManagedStateLin
         this.state.destroy()
     }
 }
+
+type ErrorValueAtPath = any; //tslint:disable-line: no-any
 
 class Promised {
     public fullfilled?: true;
@@ -684,7 +745,7 @@ class Promised {
 }
 
 class StateLinkImpl<S> implements StateLink<S>,
-    ManagedStateLinkMixin<StateLink<S>>,
+    DestroyMixin,
     ExtendedStateLinkMixin<S>,
     Subscribable, Subscriber {
     public isDowngraded: boolean | undefined;
@@ -854,10 +915,7 @@ class StateLinkImpl<S> implements StateLink<S>,
         this.state.update(this.mergeUntracked(sourceValue));
     }
 
-    batch(action: (s: StateLink<S>) => void, options?: {
-        ifPromised?: 'postpone' | 'discard' | 'reject' | 'execute',
-        context?: CustomContext
-    }): void {
+    batch(action: (s: StateLink<S>) => void, options?: BatchOptions): void {
         if (this.promised) {
             const ifPromised = options && options.ifPromised || 'reject'
             if (ifPromised === 'postpone') {
@@ -882,12 +940,12 @@ class StateLinkImpl<S> implements StateLink<S>,
         this.state.update(paths)
     }
 
-    denull(): StateLink<NonNullable<S>> | OnlyNullable<S>  {
+    denull(): InferredStateLinkDenullType<S>  {
         const value = this.get()
         if (value === null || value === undefined) {
-            return value as unknown as OnlyNullable<S>;
+            return value as unknown as InferredStateLinkDenullType<S>;
         }
-        return this as unknown as StateLink<NonNullable<S>>;
+        return this as unknown as InferredStateLinkDenullType<S>;
     }
     
     with(plugin: () => Plugin): StateLink<S>;
@@ -967,19 +1025,19 @@ class StateLinkImpl<S> implements StateLink<S>,
         return updated;
     }
 
-    get keys(): NestedInferredKeys<S> {
+    get keys(): InferredStateLinkKeysType<S> {
         const value = this.get()
         if (Array.isArray(value)) {
             return Object.keys(value).map(i => Number(i)).filter(i => Number.isInteger(i)) as
-                unknown as NestedInferredKeys<S>;
+                unknown as InferredStateLinkKeysType<S>;
         }
         if (typeof value === 'object' && value !== null) {
-            return Object.keys(value) as unknown as NestedInferredKeys<S>;
+            return Object.keys(value) as unknown as InferredStateLinkKeysType<S>;
         }
-        return undefined as NestedInferredKeys<S>;
+        return undefined as InferredStateLinkKeysType<S>;
     }
     
-    get nested(): NestedInferredLink<S> {
+    get nested(): InferredStateLinkNestedType<S> {
         const currentValue = this.getUntracked()
         if (this[NestedCache] === undefined) {
             if (Array.isArray(currentValue)) {
@@ -990,10 +1048,10 @@ class StateLinkImpl<S> implements StateLink<S>,
                 this[NestedCache] = undefined;
             }
         }
-        return this[NestedCache] as NestedInferredLink<S>;
+        return this[NestedCache] as InferredStateLinkNestedType<S>;
     }
 
-    private nestedArrayImpl(currentValue: StateValueAtPath[]): NestedInferredLink<S> {
+    private nestedArrayImpl(currentValue: StateValueAtPath[]): InferredStateLinkNestedType<S> {
         this.nestedLinksCache = this.nestedLinksCache || {};
         const proxyGetterCache = this.nestedLinksCache;
 
@@ -1032,7 +1090,7 @@ class StateLinkImpl<S> implements StateLink<S>,
             return r;
         };
         return this.proxyWrap(currentValue, getter) as
-            unknown as NestedInferredLink<S>;
+            unknown as InferredStateLinkNestedType<S>;
     }
 
     private valueArrayImpl(currentValue: StateValueAtPath[]): S {
@@ -1069,7 +1127,7 @@ class StateLinkImpl<S> implements StateLink<S>,
         ) as unknown as S;
     }
 
-    private nestedObjectImpl(currentValue: object): NestedInferredLink<S> {
+    private nestedObjectImpl(currentValue: object): InferredStateLinkNestedType<S> {
         this.nestedLinksCache = this.nestedLinksCache || {};
         const proxyGetterCache = this.nestedLinksCache;
 
@@ -1098,7 +1156,7 @@ class StateLinkImpl<S> implements StateLink<S>,
             return r;
         };
         return this.proxyWrap(currentValue, getter) as
-            unknown as NestedInferredLink<S>;
+            unknown as InferredStateLinkNestedType<S>;
     }
 
     private valueObjectImpl(currentValue: object): S {
@@ -1203,7 +1261,7 @@ class StateLinkImpl<S> implements StateLink<S>,
 
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
 
-function createState<S>(initial: InitialValueAtRoot<S>): State {
+function createState<S>(initial: SetInitialStateAction<S>): State {
     let initialValue: S | Promise<S> = initial as (S | Promise<S>);
     if (typeof initial === 'function') {
         initialValue = (initial as (() => S | Promise<S>))();
@@ -1301,8 +1359,8 @@ function injectTransform<S, R>(
  * 
  */
 export function createStateLink<S>(
-    initial: InitialValueAtRoot<S>
-): StateLink<S> & ManagedStateLinkMixin<StateLink<S>>;
+    initial: SetInitialStateAction<S>
+): StateLink<S> & DestroyMixin;
 /**
  * @hidden
  * @ignore
@@ -1310,14 +1368,14 @@ export function createStateLink<S>(
  * @deprecated declared for backward compatibility
  */
 export function createStateLink<S, R>(
-    initial: InitialValueAtRoot<S>,
+    initial: SetInitialStateAction<S>,
     transform: (state: StateLink<S>, prev: R | undefined) => R
-): WrappedStateLink<R> & ManagedStateLinkMixin<R>;
+): WrappedStateLink<R> & DestroyMixin;
 export function createStateLink<S, R>(
-    initial: InitialValueAtRoot<S>,
+    initial: SetInitialStateAction<S>,
     transform?: (state: StateLink<S>, prev: R | undefined) => R
-): (StateLink<S> & ManagedStateLinkMixin<StateLink<S>>) |
-    (WrappedStateLink<R> & ManagedStateLinkMixin<R>) {
+): (StateLink<S> & DestroyMixin) |
+    (WrappedStateLink<R> & DestroyMixin) {
     const stateLink = createState(initial).accessUnmounted() as StateLinkImpl<S>
     if (createStateLink[DevTools]) {
         stateLink.with(createStateLink[DevTools])
@@ -1345,7 +1403,7 @@ export function useStateLink<R>(
     source: WrappedStateLink<R>
 ): R;
 export function useStateLink<S>(
-    source: InitialValueAtRoot<S>
+    source: SetInitialStateAction<S>
 ): StateLink<S>;
 /**
  * @hidden
@@ -1354,11 +1412,11 @@ export function useStateLink<S>(
  * @deprecated declared for backward compatibility
  */
 export function useStateLink<S, R>(
-    source: InitialValueAtRoot<S>,
+    source: SetInitialStateAction<S>,
     transform: (state: StateLink<S>, prev: R | undefined) => R
 ): R;
 export function useStateLink<S, R>(
-    source: InitialValueAtRoot<S> | StateLink<S> | WrappedStateLink<R>,
+    source: SetInitialStateAction<S> | StateLink<S> | WrappedStateLink<R>,
     transform?: (state: StateLink<S>, prev: R | undefined) => R
 ): StateLink<S> | R {
     const [parentLink, tf] =
@@ -1483,7 +1541,7 @@ export function StateFragment<R>(
 ): React.ReactElement;
 export function StateFragment<S>(
     props: {
-        state: InitialValueAtRoot<S>,
+        state: SetInitialStateAction<S>,
         children: (state: StateLink<S>) => React.ReactElement,
     }
 ): React.ReactElement;
@@ -1495,14 +1553,14 @@ export function StateFragment<S>(
  */
 export function StateFragment<S, R>(
     props: {
-        state: InitialValueAtRoot<S>,
+        state: SetInitialStateAction<S>,
         transform: (state: StateLink<S>, prev: R | undefined) => R,
         children: (state: R) => React.ReactElement,
     }
 ): React.ReactElement;
 export function StateFragment<S, E extends {}, R>(
     props: {
-        state: InitialValueAtRoot<S> | StateLink<S> | WrappedStateLink<R>,
+        state: SetInitialStateAction<S> | StateLink<S> | WrappedStateLink<R>,
         transform?: (state: StateLink<S>, prev: R | undefined) => R,
         children: (state: StateLink<S> | R) => React.ReactElement,
     }
