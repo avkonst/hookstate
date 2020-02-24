@@ -37,7 +37,15 @@ function __extends(d, b) {
 
 /** @warning experimental feature */
 var None = Symbol('none');
-/** @warning experimental feature */
+/**
+ * For plugin developers only.
+ * Reserved plugin ID for developers tools extension.
+ *
+ * @hidden
+ * @ignore
+ *
+ * @warning experimental feature
+ */
 var DevTools = Symbol('DevTools');
 //
 // INTERNAL IMPLEMENTATIONS
@@ -990,6 +998,9 @@ function useStateLink(source, transform) {
     }
 }
 /**
+ * @hidden
+ * @ignore
+ * @internal
  * @deprecated use source directly, source.access() or source.wrap(transform).access() instead
  */
 function useStateLinkUnmounted(source, transform) {

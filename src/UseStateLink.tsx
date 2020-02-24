@@ -65,10 +65,25 @@ export interface StateLink<S> {
     wrap<R>(transform: (state: StateLink<S>, prev: R | undefined) => R): WrappedStateLink<R>;
 
     with(plugin: () => Plugin): StateLink<S>;
+
+    /**
+     * For plugin developers only.
+     * A function to get more exposed capabilities of a StateLink
+     * and an instance of the attached plugin by it's id.
+     *
+     * @hidden
+     * @ignore
+     */
     with(pluginId: symbol): [StateLink<S> & ExtendedStateLinkMixin<S>, PluginCallbacks];
 }
 
 export interface ManagedStateLinkMixin<T> {
+    /**
+     * @hidden
+     * @ignore
+     * @internal
+     * @deprecated left for backward compatibility, use this instance directly
+     */
     access(): T;
     destroy(): void;
 }
@@ -87,6 +102,7 @@ export interface WrappedStateLink<R> {
     // on useStateLink call
     __synteticTypeInferenceMarkerInf: symbol;
 
+    access(): R;
     with(plugin: () => Plugin): WrappedStateLink<R>;
     wrap<R2>(transform: (state: R, prev: R2 | undefined) => R2): WrappedStateLink<R2>
 }
@@ -623,7 +639,7 @@ class WrappedStateLinkImpl<S, R> implements WrappedStateLink<R>, ManagedStateLin
         public readonly transform: (state: StateLink<S>, prev: R | undefined) => R,
     ) { }
 
-    access() {
+    access(): R {
         return this.transform(this.state, undefined)
     }
 
@@ -1431,7 +1447,7 @@ export function useStateLinkUnmounted<R>(
  * @hidden
  * @ignore
  * @internal
- * @deprecated use source directly, source.access() or source.wrap(transform).access() instead
+ * @deprecated use source directly or source.wrap(transform).access() instead
  */
 export function useStateLinkUnmounted<S, R>(
     source: DestroyableStateLink<S> | DestroyableWrappedStateLink<R>,

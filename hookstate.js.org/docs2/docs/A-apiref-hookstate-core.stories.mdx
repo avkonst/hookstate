@@ -1,3 +1,7 @@
+---
+id: mdx2
+title: Powered by MDX
+---
 
 <Meta title="API Reference/Core library"/>
 
@@ -8,6 +12,7 @@
 
 ### Interfaces
 
+* [ExtendedStateLinkMixin](#interfacesextendedstatelinkmixinmd)
 * [ManagedStateLinkMixin](#interfacesmanagedstatelinkmixinmd)
 * [StateLink](#interfacesstatelinkmd)
 * [WrappedStateLink](#interfaceswrappedstatelinkmd)
@@ -42,7 +47,7 @@
 
 Ƭ **CustomContext**: *any*
 
-*Defined in [UseStateLink.d.ts:107](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L107)*
+*Defined in [UseStateLink.d.ts:100](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L100)*
 
 ___
 
@@ -50,7 +55,7 @@ ___
 
 Ƭ **ErrorValueAtPath**: *any*
 
-*Defined in [UseStateLink.d.ts:106](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L106)*
+*Defined in [UseStateLink.d.ts:99](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L99)*
 
 ___
 
@@ -58,7 +63,7 @@ ___
 
 Ƭ **InitialValueAtRoot**: *S | Promise‹S› | function*
 
-*Defined in [UseStateLink.d.ts:108](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L108)*
+*Defined in [UseStateLink.d.ts:101](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L101)*
 
 ___
 
@@ -114,7 +119,7 @@ ___
 
 • **None**: *any*
 
-*Defined in [UseStateLink.d.ts:110](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L110)*
+*Defined in [UseStateLink.d.ts:103](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L103)*
 
 **`warning`** experimental feature
 
@@ -124,7 +129,7 @@ ___
 
 ##### ▸ **Downgraded**(): *Plugin*
 
-*Defined in [UseStateLink.d.ts:278](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L278)*
+*Defined in [UseStateLink.d.ts:271](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L271)*
 
 **Returns:** *Plugin*
 
@@ -134,7 +139,7 @@ ___
 
 ##### ▸ **StateFragment**<**S**\>(`props`: object): *ReactElement*
 
-*Defined in [UseStateLink.d.ts:243](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L243)*
+*Defined in [UseStateLink.d.ts:236](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L236)*
 
 **Type parameters:**
 
@@ -153,7 +158,7 @@ Name | Type |
 
 ##### ▸ **StateFragment**<**R**\>(`props`: object): *ReactElement*
 
-*Defined in [UseStateLink.d.ts:258](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L258)*
+*Defined in [UseStateLink.d.ts:251](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L251)*
 
 **Type parameters:**
 
@@ -172,7 +177,7 @@ Name | Type |
 
 ##### ▸ **StateFragment**<**S**\>(`props`: object): *ReactElement*
 
-*Defined in [UseStateLink.d.ts:262](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L262)*
+*Defined in [UseStateLink.d.ts:255](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L255)*
 
 **Type parameters:**
 
@@ -195,7 +200,7 @@ ___
 
 ##### ▸ **StateMemo**<**S**, **R**\>(`transform`: function, `equals?`: undefined | function): *function*
 
-*Defined in [UseStateLink.d.ts:277](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L277)*
+*Defined in [UseStateLink.d.ts:270](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L270)*
 
 **Type parameters:**
 
@@ -235,7 +240,7 @@ ___
 
 ##### ▸ **createStateLink**<**S**\>(`initial`: [InitialValueAtRoot](#initialvalueatroot)‹S›): *[StateLink](#interfacesstatelinkmd)‹S› & [ManagedStateLinkMixin](#interfacesmanagedstatelinkmixinmd)‹[StateLink](#interfacesstatelinkmd)‹S››*
 
-*Defined in [UseStateLink.d.ts:197](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L197)*
+*Defined in [UseStateLink.d.ts:190](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L190)*
 
 Creates new state.
 
@@ -265,7 +270,7 @@ ___
 
 ##### ▸ **useStateLink**<**S**\>(`source`: [StateLink](#interfacesstatelinkmd)‹S›): *[StateLink](#interfacesstatelinkmd)‹S›*
 
-*Defined in [UseStateLink.d.ts:205](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L205)*
+*Defined in [UseStateLink.d.ts:198](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L198)*
 
 **Type parameters:**
 
@@ -281,7 +286,7 @@ Name | Type |
 
 ##### ▸ **useStateLink**<**R**\>(`source`: [WrappedStateLink](#interfaceswrappedstatelinkmd)‹R›): *R*
 
-*Defined in [UseStateLink.d.ts:213](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L213)*
+*Defined in [UseStateLink.d.ts:206](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L206)*
 
 **Type parameters:**
 
@@ -297,7 +302,7 @@ Name | Type |
 
 ##### ▸ **useStateLink**<**S**\>(`source`: [InitialValueAtRoot](#initialvalueatroot)‹S›): *[StateLink](#interfacesstatelinkmd)‹S›*
 
-*Defined in [UseStateLink.d.ts:214](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L214)*
+*Defined in [UseStateLink.d.ts:207](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L207)*
 
 **Type parameters:**
 
@@ -312,6 +317,87 @@ Name | Type |
 **Returns:** *[StateLink](#interfacesstatelinkmd)‹S›*
 
 # Interfaces
+
+
+<a name="interfacesextendedstatelinkmixinmd"/>
+
+
+## Interface: ExtendedStateLinkMixin <**S**\>
+
+### Type parameters
+
+▪ **S**
+
+### Hierarchy
+
+* **ExtendedStateLinkMixin**
+
+### Index
+
+#### Methods
+
+* [getUntracked](#getuntracked)
+* [mergeUntracked](#mergeuntracked)
+* [setUntracked](#setuntracked)
+* [update](#update)
+
+### Methods
+
+####  getUntracked
+
+##### ▸ **getUntracked**(): *S*
+
+*Defined in [UseStateLink.d.ts:71](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L71)*
+
+**Returns:** *S*
+
+___
+
+####  mergeUntracked
+
+##### ▸ **mergeUntracked**(`mergeValue`: [SetPartialStateAction](#setpartialstateaction)‹S›): *[Path](#path) | [Path](#path)[]*
+
+*Defined in [UseStateLink.d.ts:73](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L73)*
+
+**Parameters:**
+
+Name | Type |
+------ | ------ |
+`mergeValue` | [SetPartialStateAction](#setpartialstateaction)‹S› |
+
+**Returns:** *[Path](#path) | [Path](#path)[]*
+
+___
+
+####  setUntracked
+
+##### ▸ **setUntracked**(`newValue`: [SetStateAction](#setstateaction)‹S›): *[Path](#path)*
+
+*Defined in [UseStateLink.d.ts:72](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L72)*
+
+**Parameters:**
+
+Name | Type |
+------ | ------ |
+`newValue` | [SetStateAction](#setstateaction)‹S› |
+
+**Returns:** *[Path](#path)*
+
+___
+
+####  update
+
+##### ▸ **update**(`paths`: [Path](#path)[]): *void*
+
+*Defined in [UseStateLink.d.ts:74](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L74)*
+
+**Parameters:**
+
+Name | Type |
+------ | ------ |
+`paths` | [Path](#path)[] |
+
+**Returns:** *void*
 
 
 <a name="interfacesmanagedstatelinkmixinmd"/>
@@ -537,7 +623,7 @@ ___
 
 **Returns:** *[StateLink](#interfacesstatelinkmd)‹S›*
 
-##### ▸ **with**(`pluginId`: symbol): *[[StateLink](#interfacesstatelinkmd)‹S› & ExtendedStateLinkMixin‹S›, PluginCallbacks]*
+##### ▸ **with**(`pluginId`: symbol): *[[StateLink](#interfacesstatelinkmd)‹S› & [ExtendedStateLinkMixin](#interfacesextendedstatelinkmixinmd)‹S›, PluginCallbacks]*
 
 *Defined in [UseStateLink.d.ts:31](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L31)*
 
@@ -547,7 +633,7 @@ Name | Type |
 ------ | ------ |
 `pluginId` | symbol |
 
-**Returns:** *[[StateLink](#interfacesstatelinkmd)‹S› & ExtendedStateLinkMixin‹S›, PluginCallbacks]*
+**Returns:** *[[StateLink](#interfacesstatelinkmd)‹S› & [ExtendedStateLinkMixin](#interfacesextendedstatelinkmixinmd)‹S›, PluginCallbacks]*
 
 ___
 
