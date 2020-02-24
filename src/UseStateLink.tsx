@@ -78,12 +78,6 @@ export interface StateLink<S> {
 }
 
 export interface ManagedStateLinkMixin<T> {
-    /**
-     * @hidden
-     * @ignore
-     * @internal
-     * @deprecated left for backward compatibility, use this instance directly
-     */
     access(): T;
     destroy(): void;
 }
