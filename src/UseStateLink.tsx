@@ -1413,7 +1413,6 @@ class StateLinkImpl<S> implements StateLink<S>,
     }
 }
 
-// TODO move to useEffect to improve performance
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
 
 function createState<S>(initial: SetInitialStateAction<S>): State {
