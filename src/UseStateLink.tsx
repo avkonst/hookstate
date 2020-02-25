@@ -1,6 +1,8 @@
 import React from 'react';
 
-// TODO add support for Map and Set
+/**
+ * Return type of [StateLink.nested](#nested).
+ */
 export type InferredStateLinkNestedType<S> =
     S extends ReadonlyArray<(infer U)> ? ReadonlyArray<StateLink<U>> :
     S extends null ? undefined :
@@ -15,6 +17,9 @@ export type InferredStateLinkNestedType<S> =
  */
 export type NestedInferredLink<S> = InferredStateLinkNestedType<S>;
 
+/**
+ * Return type of [StateLink.keys](#keys).
+ */
 export type InferredStateLinkKeysType<S> =
     S extends ReadonlyArray<infer _> ? ReadonlyArray<number> :
     S extends null ? undefined :
@@ -31,6 +36,7 @@ export type NestedInferredKeys<S> = InferredStateLinkKeysType<S>;
 
 /**
  * 'JSON path' from root of a state object to a nested property.
+ * Return type of [StateLink.path](#path).
  * 
  * For example, an object `{ a: [{ b: 1 }, { 1000: 'value' }, '3rd'] }`,
  * has got the following paths pointing to existing properties:
@@ -45,14 +51,23 @@ export type NestedInferredKeys<S> = InferredStateLinkKeysType<S>;
  */
 export type Path = ReadonlyArray<string | number>;
 
+/**
+ * Parameter type of [StateLink.set](#set).
+ */
 export type SetStateAction<S> = (S | Promise<S>) | ((prevState: S) => (S | Promise<S>));
 
+/**
+ * Parameter type of [StateLink.merge](#merge).
+ */
 export type SetPartialStateAction<S> =
     S extends ReadonlyArray<(infer U)> ?
         ReadonlyArray<U> | Record<number, U> | ((prevValue: S) => (ReadonlyArray<U> | Record<number, U>)) :
     S extends object | string ? Partial<S> | ((prevValue: S) => Partial<S>) :
     React.SetStateAction<S>;
 
+/**
+ * Return type of [StateLink.denull](#denull).
+ */
 export type InferredStateLinkDenullType<S> = S extends null ?
     S extends undefined ?
         StateLink<NonNullable<S>> | null | undefined :
