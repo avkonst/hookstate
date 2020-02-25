@@ -68,8 +68,19 @@ export type InferredStateLinkDenullType<S> = S extends null ?
     S extends undefined ?
         StateLink<NonNullable<S>> | undefined :
         StateLink<NonNullable<S>> | never;
-
+/**
+ * Parameter type of [StateLink.batch](#batch).
+ */
 export interface BatchOptions {
+    /**
+     * Setting to tune how a batch should be executed if a state is in [promised state](#promised)
+     * 
+     * - `postpone` - defers execution of a batch until state value is resolved (promise is fullfilled)
+     * - `discard` - does not execute a batch and silently discards one
+     * - `reject` - throws an exception suggesting promised state is not expected
+     * - `execute` - proceeds with executing a batch, which may or may not throw an exception
+     * depending on whether [state's value](#value) is read during execution.
+     */
     ifPromised?: 'postpone' | 'discard' | 'reject' | 'execute',
     /**
      * For plugin developers only.
@@ -81,24 +92,137 @@ export interface BatchOptions {
      */
     context?: CustomContext;
 }
-            
+
+/**
+ * Type of an object holding a reference to a state value.
+ * It is the main and single interface to
+ * manage a state in Hookstate.
+ */
 export interface StateLink<S> {
+    /**
+     * Returns current state value referred by
+     * [path](#path) of this instance of [StateLink](#statelink).
+     * 
+     * It return the same result as as [StateLink.value](#value) property.
+     */
     get(): S;
+    /**
+     * Sets new value for a state.
+     * If `this.path === []`,
+     * it is similar to the `setState` variable returned by `React.useState` hook.
+     * If `this.path !== []`, it sets only the segment of the state value, pointed out by the path.
+     * The function will not accept partial updates.
+     * It can be done by combining [set](#set) with [nested](#nested) or
+     * use [merge](#merge) action.
+     * 
+     * @param newValue new value to set to a state.
+     * It can be a value, a promise resolving to a value
+     * (only if this instance of StateLink points to root of a state, i.e. [path](#path) is `[]`),
+     * or a function returning one of these.
+     * The function receives the current state value as an argument.
+     */
     set(newValue: SetStateAction<S>): void;
+    /**
+     * Similarly to [set](#set) method updates state value.
+     * 
+     * - If current state value is an object, it does partial update for the object.
+     * - If state value is an array and the argument is an array too,
+     * it concatenates the current value with the value of the argument and sets it to the state.
+     * - If state value is an array and the `merge` argument is an object,
+     * it does partial update for the current array value.
+     * - If current state value is a string, it concatenates the current state
+     * value with the argument converted to string and sets the result to the state.
+     */
     merge(newValue: SetPartialStateAction<S>): void;
 
-    // keep value in addition to get() because typescript compiler
-    // does not handle elimination of undefined with get(), like in this example:
-    // const state = useStateLink<number | undefined>(0)
-    // const myvalue: number = statelink.value ? statelink.value + 1 : 0; // <-- compiles
-    // const myvalue: number = statelink.get() ? statelink.get() + 1 : 0; // <-- does not compile
+    /**
+     * Returns current state value referred by
+     * [path](#path) of this instance of [StateLink](#statelink).
+     * 
+     * It return the same result as as [StateLink.get](#get) method.
+     * 
+     * This property is more useful than [get](#get) method for the cases,
+     * when a value may hold null or undefined values.
+     * Typescript compiler does not handle elimination of undefined with get(),
+     * like in the following examples, but value does:
+     * 
+     * ```
+     * const state = useStateLink<number | undefined>(0)
+     * const myvalue: number = statelink.value
+     *      ? statelink.value + 1
+     *      : 0; // <-- compiles
+     * const myvalue: number = statelink.get()
+     *      ? statelink.get() + 1
+     *      : 0; // <-- does not compile
+     * ```
+     */
     readonly value: S;
 
+    /**
+     * Returns true if state value is unresolved promise.
+     */
     readonly promised: boolean;
+    
+    /**
+     * Returns captured error value if a promise was fulfilled but rejected.
+     * Type of an error can be anything. It is the same as what the promise
+     * provided on rejection.
+     */
     readonly error: any | undefined; //tslint:disable-line: no-any
 
+    /**
+     * 'Javascript' object 'path' to an element relative to the root object
+     * in the state. For example:
+     * 
+     * ```tsx
+     * const state = useStateLink([{ name: 'First Task' }])
+     * state.path IS []
+     * state.nested[0].path IS [0]
+     * state.nested[0].nested.name.path IS [0, 'name']
+     * ``` 
+     */
     readonly path: Path;
+    
+    /**
+     * If `this.value` is an object,
+     * it returns an object of nested `StateLink`s.
+     * If `this.value` is an array,
+     * it returns an array of nested `StateLink`s.
+     * Otherwise, returns `undefined`.
+     * 
+     * This allows to *walk* the tree and access/mutate nested
+     * compex data in very convenient way.
+     * 
+     * Typescript intellisence will handle correctly
+     * any complexy of the data structure.
+     * The conditional type definition of [InferredStateLinkNestedType](#inferredstatelinknestedtype) facilitates this.
+     * 
+     * The result of `Object.keys(state.nested)`
+     * is the same as `Object.keys(state.get())`.
+     * However, the returned object will have **ANY** property defined
+     * (although not every will pass Typescript compiler check).
+     * It is very convenient for managing dynamic directories, fro example:
+     * 
+     * ```
+     * const state = useStateLink<Record<string, number>>({});
+     * // initially:
+     * state.value; // will be {}
+     * state.nested['newProperty'].value; // will be undefined
+     * // setting non existing nested property:
+     * state.nested['newProperty'].set('newValue');
+     * // will update the state to:
+     * state.value; // will be { newProperty: 'newValue' }
+     * state.nested['newProperty'].value; // will be 'newValue'
+     * ```
+     */
     readonly nested: InferredStateLinkNestedType<S>;
+    
+    /**
+     * Return the same as [`Object.keys(this.nested)`](#nested) or [`Object.keys(this.value)`](#value)
+     * with one minor difference.
+     * If `this.value` is an array, the returned result will be
+     * an array of numbers, not strings like with `Object.keys`.
+     */
     readonly keys: InferredStateLinkKeysType<S>;
 
     denull(): InferredStateLinkDenullType<S>;
@@ -187,6 +311,9 @@ export type StateValueAtPath = any; //tslint:disable-line: no-any
  */
 export type CustomContext = any; //tslint:disable-line: no-any
 
+/**
+ * @experimental
+ */
 export const None = Symbol('none') as StateValueAtPath;
 
 /**
