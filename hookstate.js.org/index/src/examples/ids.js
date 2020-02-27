@@ -2,6 +2,7 @@ const ExampleIds = {
     GlobalPrimitive: 'global-getting-started',
     GlobalPrimitiveInterface: 'global-getting-started-interface',
     LocalPrimitive: 'local-getting-started',
+    AsyncState: 'local-async-state',
     GlobalComplexFromDocumentation: 'global-complex-from-documentation',
     LocalComplexFromDocumentation: 'local-complex-from-documentation',
     LocalComplexTreeStructure: 'local-complex-tree-structure',
