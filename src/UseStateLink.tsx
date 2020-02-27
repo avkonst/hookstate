@@ -218,19 +218,83 @@ export interface StateLink<S> {
     readonly nested: InferredStateLinkNestedType<S>;
     
     /**
-     * Return the same as [`Object.keys(this.nested)`](#nested) or [`Object.keys(this.value)`](#value)
-     * with one minor difference.
-     * If `this.value` is an array, the returned result will be
+     * Return the same as [`Object.keys(this.nested)`](#nested)
+     * or [`Object.keys(this.value)`](#value)
+     * with one minor difference:
+     * if `this.value` is an array, the returned result will be
      * an array of numbers, not strings like with `Object.keys`.
      */
     readonly keys: InferredStateLinkKeysType<S>;
 
+    /**
+     * For an instance of type `StateLink<T | undefined | null>`, where `T` is not `Nullable`,
+     * it return `this` instance typed as `StateLink<T>`, if `this.value` is defined.
+     * Otherwise, it returns `this.value`, which would be `null` or `undefined`.
+     * 
+     * You can use it like the following:
+     * 
+     * ```
+     * const MyInputField = (props: { state: StateLink<string | null >}) => {
+     *     const state = props.state.denull();
+     *     // state is either null or an instance of StateLink<string>:
+     *     if (!state) {
+     *         // state value was null:
+     *         return <></>;
+     *     }
+     *     // state.value is an instance of string, can not be null here:
+     *     return <input value={state.value} onChange={(v) => state.set(v.target.value)} />
+     * }
+     * ```
+     */
     denull(): InferredStateLinkDenullType<S>;
 
+    /**
+     * Allows to group state updates in a single batch. It helps to
+     * minimise rerendering by React. It also allows plugins (if any used)
+     * to opt-in into atomic transactions for state persistance.
+     * 
+     * @param action a function to be executed in scope of a batch.
+     * The function receives `this` instance as an argument.
+     * 
+     * @param options various batch options to tune batching behaviour.
+     * 
+     * For example:
+     * 
+     * ```
+     * const MyComponent = () => {
+     *     state = useStateLink<{ user?: string, email?: string }>({});
+     *     return <>
+     *         {state.value.user && <p>Hello {state.value.user}!</p>}
+     *         {state.value.email && <p>We will message you to {state.value.email}!</p>}
+     *         <button onClick={() => {
+     *              // this will rerender the current component only once
+     *              // even if the state is changed twice
+     *              state.batch(() => {
+     *                  state.nested.user.set('Peter');
+     *                  state.nested.email.set('peter@example.com');
+     *              })
+     *         }}>Initialize user</button>
+     *     </>
+     * }
+     * ```
+     */
     batch(action: (s: StateLink<S>) => void, options?: BatchOptions): void;
 
+    /**
+     * Wraps the state link instance by a custom defined interface.
+     * It can be used by libraries, which would not like to expose dependency to Hookstate.
+     * 
+     * @param transform a function which receives this instance and previous state value (if available),
+     * and returns a custom object of any type, defined by a client.
+     * 
+     * @returns an instance of wrapped state link, which can be used with [useStateLink](#usestatelink)
+     * within a React component or accessed directly, typically in an event handler or callback.
+     */
     wrap<R>(transform: (state: StateLink<S>, prev: R | undefined) => R): WrappedStateLink<R>;
 
+    /**
+     * Adds new plugin to the state. See more about plugins and extensions in the documentation.
+     */
     with(plugin: () => Plugin): StateLink<S>;
 
     /**
@@ -252,10 +316,21 @@ export interface StateLink<S> {
     access(): StateLink<S>;
 }
 
+/**
+ * Mixin for the [StateLink](#statelink), which can be destroyed by a client.
+ */
 export interface DestroyMixin {
+    /**
+     * Destroys an instance where it is mixed into, so
+     * it can clear the allocated native resources (if any)
+     * and can not be used anymore after it has been destroyed.
+     */
     destroy(): void;
 }
 
+/**
+ * Return type of [StateLink.wrap](#wrap).
+ */
 export interface WrappedStateLink<R> {
     /**
      * Placed to make sure type inference does not match empty structure on useStateLink call
@@ -266,10 +341,35 @@ export interface WrappedStateLink<R> {
      */
     __synteticTypeInferenceMarkerInf: symbol;
 
+    /**
+     * Returns an instance of custom user-defined interface to use, typically outside of
+     * a React component, i.e. in a callback or event handler.
+     */
     access(): R;
+    
+    /**
+     * Adds new plugin to the state. See more about plugins and extensions in the documentation.
+     */
     with(plugin: () => Plugin): WrappedStateLink<R>;
+
+    /**
+     * Similarly to [StateLink.wrap](#wrap), wraps the state link instance by a custom defined interface.
+     * It can be used by libraries, which would want to abstract state management operation.
+     * 
+     * @param transform a function which receives `this.access()` and
+     * previous `this.access()` state value (if available),
+     * and returns a custom object of any type, defined by a client.
+     * 
+     * @returns an instance of wrapped state link, which can be used with [useStateLink](#usestatelink)
+     * within a React component or accessed directly, typically in an event handler or callback.
+     */
     wrap<R2>(transform: (state: R, prev: R2 | undefined) => R2): WrappedStateLink<R2>
 }
+
+/**
+ * @experimental
+ */
+export const None = Symbol('none') as StateValueAtPath;
 
 /**
  * For plugin developers only.
@@ -310,11 +410,6 @@ export type StateValueAtPath = any; //tslint:disable-line: no-any
  * @ignore
  */
 export type CustomContext = any; //tslint:disable-line: no-any
-
-/**
- * @experimental
- */
-export const None = Symbol('none') as StateValueAtPath;
 
 /**
  * For plugin developers only.
@@ -391,20 +486,36 @@ export interface Plugin {
 }
 
 /**
- * Creates new state.
+ * Creates new state and returns an instance of state link
+ * interface to manage the state or to hook in React components.
  * 
- * @example http://hookstate.js.org/docs/?path=/docs/getting-started--global-state
+ * You can create as many global states as you need.
+ *
+ * When you do not need the global state anymore,
+ * it should be destroyed by calling
+ * `destroy()` method of the returned instance.
+ * This is necessary for some plugins,
+ * which allocate native resources,
+ * like subscription to databases, broadcast channels, etc.
+ * In most cases, a global state is used during
+ * whole life time of an application and would not require
+ * destruction. However, if you have got, for example,
+ * a catalog of dynamically created and destroyed global states,
+ * the states should be destroyed as advised above.
  *
  * @param initial Initial value of the state.
- * It can be a value OR a promise, which asynchronously resolves to a value
+ * It can be a value OR a promise,
+ * which asynchronously resolves to a value,
  * OR a function returning a value or a promise.
  * 
  * @typeparam S Type of a value of the state
  * 
- * @returns State link instance, which can be used directly
- * to get and set state value outside of a react component,
- * for example, in an event handler or callback.
- * 
+ * @returns [StateLink](#statelink) instance,
+ * which can be used directly to get and set state value
+ * outside of React components. 
+ * When you need to use the state in a functional `React` component,
+ * pass the created state to `useStateLink` function and
+ * use the returned result in the component's logic.
  */
 export function createStateLink<S>(
     initial: SetInitialStateAction<S>
@@ -434,6 +545,33 @@ export function createStateLink<S, R>(
     return stateLink
 }
 
+/**
+ * Enables a functional React component to use a state,
+ * either created by `[createStateLink](#createstatelink)` (*global* state) or
+ * derived from another call to `useStateLink` (*scoped* state).
+ * 
+ * The `useStateLink` forces a component to rerender everytime, when:
+ * - a segment/part of the state data is updated *AND only if*
+ * - this segement was **used** by the component during or after the latest rendering.
+ * 
+ * For example, if the state value is `{ a: 1, b: 2 }` and
+ * a component uses only `a` property of the state, it will rerender
+ * only when the whole state object is updated or when `a` property is updated.
+ * Setting the state value/property to the same value is also considered as an update.
+ * 
+ * A component can use one or many states,
+ * i.e. you may call `useStateLink` multiple times for multiple states.
+ *
+ * The same state can be used by multiple different components.
+ * 
+ * @param source a reference to the state to hook into
+ * 
+ * The `useStateLink` is a hook and should follow React's rules of hooks.
+ * 
+ * @returns an instance of [StateLink](#statelink) interface,
+ * which **must be** used within the component (during rendering
+ * or in effects) or it's children.
+ */
 export function useStateLink<S>(
     source: StateLink<S>
 ): StateLink<S>;
@@ -447,9 +585,48 @@ export function useStateLink<S, R>(
     source: StateLink<S>,
     transform: (state: StateLink<S>, prev: R | undefined) => R
 ): R;
+/**
+ * The same as [useStateLink](#usestatelink) for [StateLink](#statelink),
+ * but accepts the result of [StateLink.wrap](#wrap) as an argument.
+ * 
+ * @param source a reference to the state to hook into
+ * 
+ * @typeparam return type of the function
+ * 
+ * @returns an instance of custom state access interface,
+ * which **must be** used within the component (during rendering
+ * or in effects) or it's children
+ */
 export function useStateLink<R>(
     source: WrappedStateLink<R>
 ): R;
+/**
+ * This function enables a functional React component to use a state,
+ * created per component by `useStateLink` (*local* state).
+ * In this case `useStateLink` behaves similarly to `React.useState`,
+ * but the returned instance of `[StateLink](#statelink)`
+ * has got more features.
+ *
+ * When a state is used by only one component, and maybe it's children,
+ * it is recommended to use *local* state instead of *global*,
+ * which is created by `[createStateLink](#createstatelink)`.
+ * 
+ * *Local* (per component) state is created when a component is mounted
+ * and automatically destroyed when a component is unmounted.
+ * 
+ * The same as with the usage of a *global* state,
+ * `useStateLink` forces a component to rerender when:
+ * - a segment/part of the state data is updated *AND only if*
+ * - this segement was **used** by the component during or after the latest rendering.
+ * 
+ * You can use as many local states within the same component as you need.
+ * 
+ * @param source a reference to the state to hook into
+ * 
+ * @returns an instance of [StateLink](#statelink) interface,
+ * which **must be** used within the component (during rendering
+ * or in effects) or it's children.
+ */
 export function useStateLink<S>(
     source: SetInitialStateAction<S>
 ): StateLink<S>;
@@ -515,6 +692,37 @@ export function useStateLink<S, R>(
     }
 }
 
+/**
+ * Allows to use a state without defining a functional react component.
+ * It can be also used in class-based React components. It is also
+ * particularly usefull for creating *scoped* states.
+ * 
+ * For example the following 3 code samples are equivivalent:
+ * 
+ * ```
+ * const globalState = createStateLink('');
+ * 
+ * const MyComponent = () => {
+ *     const state = useStateLink(globalState);
+ *     return <input value={state.value}
+ *         onChange={e => state.set(e.target.value)} />;
+ * }
+ * 
+ * const MyComponent = () => <StateFragment state={globalState}>{
+ *     state => <input value={state.value}
+ *         onChange={e => state.set(e.target.value)}>
+ * }</StateFragment>
+ * 
+ * class MyComponent extends React.Component {
+ *     render() {
+ *         return <StateFragment state={globalState}>{
+ *             state => <input value={state.value}
+ *                 onChange={e => state.set(e.target.value)}>
+ *         }</StateFragment>
+ *     }
+ * }
+ * ```
+ */
 export function StateFragment<S>(
     props: {
         state: StateLink<S>,
@@ -534,12 +742,20 @@ export function StateFragment<S, E extends {}, R>(
         children: (state: R) => React.ReactElement,
     }
 ): React.ReactElement;
+/**
+ * Allows to use a state without defining a functional react component.
+ * See more at [StateFragment](#statefragment)
+ */
 export function StateFragment<R>(
     props: {
         state: WrappedStateLink<R>,
         children: (state: R) => React.ReactElement,
     }
 ): React.ReactElement;
+/**
+ * Allows to use a state without defining a functional react component.
+ * See more at [StateFragment](#statefragment)
+ */
 export function StateFragment<S>(
     props: {
         state: SetInitialStateAction<S>,
@@ -572,6 +788,19 @@ export function StateFragment<S, E extends {}, R>(
     return props.children(scoped as AnyArgument);
 }
 
+/**
+ * It is used in combination with [StateLink.wrap](#wrap).
+ * It minimises rerendering for states reduced down to a comparable values.
+ * 
+ * @param transform the original transform function for [StateLink.wrap](#wrap).
+ * The first argument is a state link to wrap. 
+ * The second argument, if available,
+ * is the previous result returned by the function.
+ * 
+ * @param equals a function which compares the next and the previous
+ * wrapped state values and return true, if there is no change. By default,
+ * it is shallow triple-equal comparison, i.e. `===`.
+ */
 export function StateMemo<S, R>(
     transform: (state: StateLink<S>, prev: R | undefined) => R,
     equals?: (next: R, prev: R) => boolean) {
@@ -581,8 +810,22 @@ export function StateMemo<S, R>(
     }
 }
 
-// tslint:disable-next-line: function-name
-export function Downgraded(): Plugin {
+/**
+ * A plugin which allows to opt-out from usage of Javascript proxies for
+ * state usage tracking. It is useful for performance tuning. For example:
+ * 
+ * ```
+ * const globalState = createStateLink(someLargeObject as object)
+ * const MyComponent = () => {
+ *     const state = useStateLink(globalState)
+ *         .with(Downgraded); // the whole state will be used
+ *                            // by this component, so no point
+ *                            // to track usage of individual properties
+ *     return <>JSON.stringify(state.value)</>
+ * }
+ * ```
+ */
+export function Downgraded(): Plugin { // tslint:disable-line: function-name
     return {
         id: DowngradedID,
         create: () => ({})
