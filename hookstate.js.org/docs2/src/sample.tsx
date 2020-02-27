@@ -1,6 +1,6 @@
 import React from 'react';
 
-const MyComponent = () => {
+export const MyComponent = () => {
     const variable: string = 'Hello';
     return <p>{variable}</p>
 }

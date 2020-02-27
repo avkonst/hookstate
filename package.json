@@ -31,7 +31,7 @@
         "test:watch": "react-scripts test --env=jsdom --watch",
         "check-updates": "ncu",
         "apply-updates": "ncu -u",
-        "build:docs": "typedoc --plugin typedoc-plugin-markdown --hideBreadcrumbs --tsconfig ./tsconfig.typedoc.json --exclude \"dist/**.js\" --gitRevision master --includeDeclarations --excludeExternals --excludeNotExported --categorizeByGroup false --readme none --hideGenerator --mode file && concat-md --decrease-title-levels --dir-name-as-title docs > dist/typedoc.md && rimraf docs && replace '></a>' '/>' dist/typedoc.md && replace '([^/])>' '$1\\>' dist/typedoc.md && replace 'a name=\"readmemd\"' 'Meta title=\"API Reference/Core library\"' dist/typedoc.md && replace '▸' '##### ▸' dist/typedoc.md && cp dist/typedoc.md hookstate.js.org/docs/src/stories/A-apiref-hookstate-core.stories.mdx",
+        "build:docs": "typedoc --plugin typedoc-plugin-markdown --hideBreadcrumbs --tsconfig ./tsconfig.typedoc.json --exclude \"dist/**.js\" --gitRevision master --includeDeclarations --excludeExternals --excludeNotExported --categorizeByGroup false --readme none --hideGenerator --mode file && concat-md --decrease-title-levels --dir-name-as-title docs > dist/typedoc.md && rimraf docs && replace '></a>' '/>' dist/typedoc.md && replace 'Ƭ [*][*]([A-Za-z0-9]+)[*][*]: [*](.*)[*]' 'Ƭ **$1**: *`$2`*' dist/typedoc.md && replace '# @hookstate/core' '' dist/typedoc.md && replace '<a name=\"readmemd\"/>' '\n---\nid: typedoc-hookstate-core\ntitle: API @hookstate/core\n---' dist/typedoc.md && replace '\n\n(---)' '$1' dist/typedoc.md && mv dist/typedoc.md hookstate.js.org/docs2/docs/typedoc-hookstate-core.mdx",
         "prepare": "yarn build"
     },
     "dependencies": {},

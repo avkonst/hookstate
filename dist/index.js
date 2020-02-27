@@ -35,7 +35,9 @@ function __extends(d, b) {
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 }
 
-/** @warning experimental feature */
+/**
+ * @experimental
+ */
 var None = Symbol('none');
 /**
  * For plugin developers only.
@@ -43,13 +45,99 @@ var None = Symbol('none');
  *
  * @hidden
  * @ignore
- *
- * @warning experimental feature
  */
 var DevTools = Symbol('DevTools');
-//
-// INTERNAL IMPLEMENTATIONS
-//
+function createStateLink(initial, transform) {
+    var stateLink = createState(initial).accessUnmounted();
+    if (createStateLink[DevTools]) {
+        stateLink.with(createStateLink[DevTools]);
+    }
+    if (transform) {
+        return stateLink.wrap(transform);
+    }
+    return stateLink;
+}
+function useStateLink(source, transform) {
+    var _a = source instanceof StateLinkImpl ?
+        [source, transform] :
+        source instanceof WrappedStateLinkImpl ?
+            [source.state, source.transform] :
+            [undefined, transform], parentLink = _a[0], tf = _a[1];
+    if (parentLink) {
+        if (parentLink.onUpdateUsed === NoActionOnUpdate) {
+            // Global state mount
+            // eslint-disable-next-line react-hooks/rules-of-hooks
+            var _b = React.useState({ state: parentLink.state }), value_1 = _b[0], setValue_1 = _b[1];
+            var link = useSubscribedStateLink(value_1.state, parentLink.path, function () { return setValue_1({ state: value_1.state }); }, value_1.state, undefined);
+            return tf ? injectTransform(link, tf) : link;
+        }
+        else {
+            // Scoped state mount
+            // eslint-disable-next-line react-hooks/rules-of-hooks
+            var _c = React.useState({}), setValue_2 = _c[1];
+            var link = useSubscribedStateLink(parentLink.state, parentLink.path, function () { return setValue_2({}); }, parentLink, parentLink.isDowngraded);
+            return tf ? injectTransform(link, tf) : link;
+        }
+    }
+    else {
+        // Local state mount
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        var _d = React.useState(function () { return ({ state: createState(source) }); }), value_2 = _d[0], setValue_3 = _d[1];
+        var link = useSubscribedStateLink(value_2.state, RootPath, function () { return setValue_3({ state: value_2.state }); }, value_2.state, undefined);
+        React.useEffect(function () { return function () { return value_2.state.destroy(); }; }, []);
+        if (useStateLink[DevTools]) {
+            link.with(useStateLink[DevTools]);
+        }
+        return tf ? injectTransform(link, tf) : link;
+    }
+}
+function StateFragment(props) {
+    var scoped = useStateLink(props.state, props.transform);
+    return props.children(scoped);
+}
+/**
+ * It is used in combination with [StateLink.wrap](#wrap).
+ * It minimises rerendering for states reduced down to a comparable values.
+ *
+ * @param transform the original transform function for [StateLink.wrap](#wrap).
+ * The first argument is a state link to wrap.
+ * The second argument, if available,
+ * is the previous result returned by the function.
+ *
+ * @param equals a function which compares the next and the previous
+ * wrapped state values and return true, if there is no change. By default,
+ * it is shallow triple-equal comparison, i.e. `===`.
+ */
+function StateMemo(transform, equals) {
+    return function (link, prev) {
+        link[StateMemoID] = equals || (function (n, p) { return (n === p); });
+        return transform(link, prev);
+    };
+}
+/**
+ * A plugin which allows to opt-out from usage of Javascript proxies for
+ * state usage tracking. It is useful for performance tuning. For example:
+ *
+ * ```tsx
+ * const globalState = createStateLink(someLargeObject as object)
+ * const MyComponent = () => {
+ *     const state = useStateLink(globalState)
+ *         .with(Downgraded); // the whole state will be used
+ *                            // by this component, so no point
+ *                            // to track usage of individual properties
+ *     return <>JSON.stringify(state.value)</>
+ * }
+ * ```
+ */
+function Downgraded() {
+    return {
+        id: DowngradedID,
+        create: function () { return ({}); }
+    };
+}
+///
+/// INTERNAL SYMBOLS (LIBRARY IMPLEMENTATION)
+///
 var StateLinkInvalidUsageError = /** @class */ (function (_super) {
     __extends(StateLinkInvalidUsageError, _super);
     function StateLinkInvalidUsageError(op, path, hint) {
@@ -953,55 +1041,11 @@ function injectTransform(link, transform) {
     };
     return result;
 }
-function createStateLink(initial, transform) {
-    var stateLink = createState(initial).accessUnmounted();
-    if (createStateLink[DevTools]) {
-        stateLink.with(createStateLink[DevTools]);
-    }
-    if (transform) {
-        return stateLink.wrap(transform);
-    }
-    return stateLink;
-}
-function useStateLink(source, transform) {
-    var _a = source instanceof StateLinkImpl ?
-        [source, transform] :
-        source instanceof WrappedStateLinkImpl ?
-            [source.state, source.transform] :
-            [undefined, transform], parentLink = _a[0], tf = _a[1];
-    if (parentLink) {
-        if (parentLink.onUpdateUsed === NoActionOnUpdate) {
-            // Global state mount
-            // eslint-disable-next-line react-hooks/rules-of-hooks
-            var _b = React.useState({ state: parentLink.state }), value_1 = _b[0], setValue_1 = _b[1];
-            var link = useSubscribedStateLink(value_1.state, parentLink.path, function () { return setValue_1({ state: value_1.state }); }, value_1.state, undefined);
-            return tf ? injectTransform(link, tf) : link;
-        }
-        else {
-            // Scoped state mount
-            // eslint-disable-next-line react-hooks/rules-of-hooks
-            var _c = React.useState({}), setValue_2 = _c[1];
-            var link = useSubscribedStateLink(parentLink.state, parentLink.path, function () { return setValue_2({}); }, parentLink, parentLink.isDowngraded);
-            return tf ? injectTransform(link, tf) : link;
-        }
-    }
-    else {
-        // Local state mount
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        var _d = React.useState(function () { return ({ state: createState(source) }); }), value_2 = _d[0], setValue_3 = _d[1];
-        var link = useSubscribedStateLink(value_2.state, RootPath, function () { return setValue_3({ state: value_2.state }); }, value_2.state, undefined);
-        React.useEffect(function () { return function () { return value_2.state.destroy(); }; }, []);
-        if (useStateLink[DevTools]) {
-            link.with(useStateLink[DevTools]);
-        }
-        return tf ? injectTransform(link, tf) : link;
-    }
-}
 /**
  * @hidden
  * @ignore
  * @internal
- * @deprecated use source directly, source.access() or source.wrap(transform).access() instead
+ * @deprecated use source directly or source.wrap(transform).access() instead
  */
 function useStateLinkUnmounted(source, transform) {
     if (source instanceof WrappedStateLinkImpl) {
@@ -1011,23 +1055,6 @@ function useStateLinkUnmounted(source, transform) {
         return transform(source);
     }
     return source;
-}
-function StateFragment(props) {
-    var scoped = useStateLink(props.state, props.transform);
-    return props.children(scoped);
-}
-function StateMemo(transform, equals) {
-    return function (link, prev) {
-        link[StateMemoID] = equals || (function (n, p) { return (n === p); });
-        return transform(link, prev);
-    };
-}
-// tslint:disable-next-line: function-name
-function Downgraded() {
-    return {
-        id: DowngradedID,
-        create: function () { return ({}); }
-    };
 }
 
 exports.DevTools = DevTools;

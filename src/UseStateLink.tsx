@@ -101,7 +101,7 @@ export interface BatchOptions {
 export interface StateLink<S> {
     /**
      * Returns current state value referred by
-     * [path](#path) of this instance of [StateLink](#statelink).
+     * [path](#path) of this instance of [StateLink](#interfacesstatelinkmd).
      * 
      * It return the same result as as [StateLink.value](#value) property.
      */
@@ -137,7 +137,7 @@ export interface StateLink<S> {
 
     /**
      * Returns current state value referred by
-     * [path](#path) of this instance of [StateLink](#statelink).
+     * [path](#path) of this instance of [StateLink](#interfacesstatelinkmd).
      * 
      * It return the same result as as [StateLink.get](#get) method.
      * 
@@ -146,7 +146,7 @@ export interface StateLink<S> {
      * Typescript compiler does not handle elimination of undefined with get(),
      * like in the following examples, but value does:
      * 
-     * ```
+     * ```tsx
      * const state = useStateLink<number | undefined>(0)
      * const myvalue: number = statelink.value
      *      ? statelink.value + 1
@@ -201,9 +201,9 @@ export interface StateLink<S> {
      * is the same as `Object.keys(state.get())`.
      * However, the returned object will have **ANY** property defined
      * (although not every will pass Typescript compiler check).
-     * It is very convenient for managing dynamic directories, fro example:
+     * It is very convenient for managing dynamic directories, for example:
      * 
-     * ```
+     * ```tsx
      * const state = useStateLink<Record<string, number>>({});
      * // initially:
      * state.value; // will be {}
@@ -218,8 +218,8 @@ export interface StateLink<S> {
     readonly nested: InferredStateLinkNestedType<S>;
     
     /**
-     * Return the same as [`Object.keys(this.nested)`](#nested)
-     * or [`Object.keys(this.value)`](#value)
+     * Return the same as `Object.keys(this.nested)`
+     * or `Object.keys(this.value)`
      * with one minor difference:
      * if `this.value` is an array, the returned result will be
      * an array of numbers, not strings like with `Object.keys`.
@@ -233,7 +233,7 @@ export interface StateLink<S> {
      * 
      * You can use it like the following:
      * 
-     * ```
+     * ```tsx
      * const MyInputField = (props: { state: StateLink<string | null >}) => {
      *     const state = props.state.denull();
      *     // state is either null or an instance of StateLink<string>:
@@ -260,7 +260,7 @@ export interface StateLink<S> {
      * 
      * For example:
      * 
-     * ```
+     * ```tsx
      * const MyComponent = () => {
      *     state = useStateLink<{ user?: string, email?: string }>({});
      *     return <>
@@ -317,7 +317,7 @@ export interface StateLink<S> {
 }
 
 /**
- * Mixin for the [StateLink](#statelink), which can be destroyed by a client.
+ * Mixin for the [StateLink](#interfacesstatelinkmd), which can be destroyed by a client.
  */
 export interface DestroyMixin {
     /**
@@ -510,7 +510,7 @@ export interface Plugin {
  * 
  * @typeparam S Type of a value of the state
  * 
- * @returns [StateLink](#statelink) instance,
+ * @returns [StateLink](#interfacesstatelinkmd) instance,
  * which can be used directly to get and set state value
  * outside of React components. 
  * When you need to use the state in a functional `React` component,
@@ -547,7 +547,7 @@ export function createStateLink<S, R>(
 
 /**
  * Enables a functional React component to use a state,
- * either created by `[createStateLink](#createstatelink)` (*global* state) or
+ * either created by [createStateLink](#createstatelink) (*global* state) or
  * derived from another call to `useStateLink` (*scoped* state).
  * 
  * The `useStateLink` forces a component to rerender everytime, when:
@@ -568,7 +568,7 @@ export function createStateLink<S, R>(
  * 
  * The `useStateLink` is a hook and should follow React's rules of hooks.
  * 
- * @returns an instance of [StateLink](#statelink) interface,
+ * @returns an instance of [StateLink](#interfacesstatelinkmd) interface,
  * which **must be** used within the component (during rendering
  * or in effects) or it's children.
  */
@@ -586,7 +586,7 @@ export function useStateLink<S, R>(
     transform: (state: StateLink<S>, prev: R | undefined) => R
 ): R;
 /**
- * The same as [useStateLink](#usestatelink) for [StateLink](#statelink),
+ * The same as [useStateLink](#usestatelink) for [StateLink](#interfacesstatelinkmd),
  * but accepts the result of [StateLink.wrap](#wrap) as an argument.
  * 
  * @param source a reference to the state to hook into
@@ -604,12 +604,12 @@ export function useStateLink<R>(
  * This function enables a functional React component to use a state,
  * created per component by `useStateLink` (*local* state).
  * In this case `useStateLink` behaves similarly to `React.useState`,
- * but the returned instance of `[StateLink](#statelink)`
+ * but the returned instance of [StateLink](#interfacesstatelinkmd)
  * has got more features.
  *
  * When a state is used by only one component, and maybe it's children,
  * it is recommended to use *local* state instead of *global*,
- * which is created by `[createStateLink](#createstatelink)`.
+ * which is created by [createStateLink](#createstatelink).
  * 
  * *Local* (per component) state is created when a component is mounted
  * and automatically destroyed when a component is unmounted.
@@ -623,7 +623,7 @@ export function useStateLink<R>(
  * 
  * @param source a reference to the state to hook into
  * 
- * @returns an instance of [StateLink](#statelink) interface,
+ * @returns an instance of [StateLink](#interfacesstatelinkmd) interface,
  * which **must be** used within the component (during rendering
  * or in effects) or it's children.
  */
@@ -699,7 +699,7 @@ export function useStateLink<S, R>(
  * 
  * For example the following 3 code samples are equivivalent:
  * 
- * ```
+ * ```tsx
  * const globalState = createStateLink('');
  * 
  * const MyComponent = () => {
@@ -814,7 +814,7 @@ export function StateMemo<S, R>(
  * A plugin which allows to opt-out from usage of Javascript proxies for
  * state usage tracking. It is useful for performance tuning. For example:
  * 
- * ```
+ * ```tsx
  * const globalState = createStateLink(someLargeObject as object)
  * const MyComponent = () => {
  *     const state = useStateLink(globalState)

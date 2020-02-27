@@ -1,0 +1,977 @@
+---
+id: typedoc-hookstate-core
+title: API @hookstate/core
+---
+
+
+
+
+## Index
+
+### Interfaces
+
+* [BatchOptions](#interfacesbatchoptionsmd)
+* [DestroyMixin](#interfacesdestroymixinmd)
+* [StateLink](#interfacesstatelinkmd)
+* [WrappedStateLink](#interfaceswrappedstatelinkmd)
+
+### Type aliases
+
+* [InferredStateLinkDenullType](#inferredstatelinkdenulltype)
+* [InferredStateLinkKeysType](#inferredstatelinkkeystype)
+* [InferredStateLinkNestedType](#inferredstatelinknestedtype)
+* [Path](#path)
+* [SetInitialStateAction](#setinitialstateaction)
+* [SetPartialStateAction](#setpartialstateaction)
+* [SetStateAction](#setstateaction)
+
+### Variables
+
+* [None](#const-none)
+
+### Functions
+
+* [Downgraded](#downgraded)
+* [StateFragment](#statefragment)
+* [StateMemo](#statememo)
+* [createStateLink](#createstatelink)
+* [useStateLink](#usestatelink)
+
+## Type aliases
+
+###  InferredStateLinkDenullType
+
+Ƭ **InferredStateLinkDenullType**: *`S extends null ? S extends undefined ? StateLink<NonNullable<S>> | null | undefined : StateLink<NonNullable<S>> | null : S extends undefined ? StateLink<NonNullable<S>> | undefined : StateLink<NonNullable<S>> | never`*
+
+*Defined in [UseStateLink.d.ts:43](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L43)*
+
+Return type of [StateLink.denull](#denull).
+
+___
+
+###  InferredStateLinkKeysType
+
+Ƭ **InferredStateLinkKeysType**: *`S extends ReadonlyArray<infer _> ? ReadonlyArray<number> : S extends null ? undefined : S extends object ? ReadonlyArray<keyof S> : undefined`*
+
+*Defined in [UseStateLink.d.ts:39](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L39)*
+
+Return type of [StateLink.keys](#keys).
+
+___
+
+###  InferredStateLinkNestedType
+
+Ƭ **InferredStateLinkNestedType**: *`S extends ReadonlyArray<> ? ReadonlyArray<StateLink<U>> : S extends null ? undefined : S extends object ? object : undefined`*
+
+*Defined in [UseStateLink.d.ts:33](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L33)*
+
+Return type of [StateLink.nested](#nested).
+
+___
+
+###  Path
+
+Ƭ **Path**: *`ReadonlyArray‹string | number›`*
+
+*Defined in [UseStateLink.d.ts:17](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L17)*
+
+'JSON path' from root of a state object to a nested property.
+Return type of [StateLink.path](#path).
+
+For example, an object `{ a: [{ b: 1 }, { 1000: 'value' }, '3rd'] }`,
+has got the following paths pointing to existing properties:
+
+- `[]`
+- `['a']`
+- `['a', 0]`
+- `['a', 0, 'b']`
+- `['a', 1]`
+- `['a', 1, 1000]`
+- `['a', 2]`
+
+___
+
+###  SetInitialStateAction
+
+Ƭ **SetInitialStateAction**: *`S | Promise‹S› | function`*
+
+*Defined in [UseStateLink.d.ts:29](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L29)*
+
+Parameter type of [createStateLink](#createstatelink) and [useStateLink](#usestatelink).
+
+___
+
+###  SetPartialStateAction
+
+Ƭ **SetPartialStateAction**: *`S extends ReadonlyArray<> ? ReadonlyArray<U> | Record<number, U> | function : S extends object | string ? Partial<S> | function : React.SetStateAction<S>`*
+
+*Defined in [UseStateLink.d.ts:25](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L25)*
+
+Parameter type of [StateLink.merge](#merge).
+
+___
+
+###  SetStateAction
+
+Ƭ **SetStateAction**: *`S | Promise‹S› | function`*
+
+*Defined in [UseStateLink.d.ts:21](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L21)*
+
+Parameter type of [StateLink.set](#set).
+
+## Variables
+
+### `Const` None
+
+• **None**: *any*
+
+*Defined in [UseStateLink.d.ts:326](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L326)*
+
+**`experimental`** 
+
+## Functions
+
+###  Downgraded
+
+▸ **Downgraded**(): *Plugin*
+
+*Defined in [UseStateLink.d.ts:657](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L657)*
+
+A plugin which allows to opt-out from usage of Javascript proxies for
+state usage tracking. It is useful for performance tuning. For example:
+
+```tsx
+const globalState = createStateLink(someLargeObject as object)
+const MyComponent = () => {
+    const state = useStateLink(globalState)
+        .with(Downgraded); // the whole state will be used
+                           // by this component, so no point
+                           // to track usage of individual properties
+    return <>JSON.stringify(state.value)</>
+}
+```
+
+**Returns:** *Plugin*
+
+___
+
+###  StateFragment
+
+▸ **StateFragment**<**S**>(`props`: object): *ReactElement*
+
+*Defined in [UseStateLink.d.ts:586](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L586)*
+
+Allows to use a state without defining a functional react component.
+It can be also used in class-based React components. It is also
+particularly usefull for creating *scoped* states.
+
+For example the following 3 code samples are equivivalent:
+
+```tsx
+const globalState = createStateLink('');
+
+const MyComponent = () => {
+    const state = useStateLink(globalState);
+    return <input value={state.value}
+        onChange={e => state.set(e.target.value)} />;
+}
+
+const MyComponent = () => <StateFragment state={globalState}>{
+    state => <input value={state.value}
+        onChange={e => state.set(e.target.value)}>
+}</StateFragment>
+
+class MyComponent extends React.Component {
+    render() {
+        return <StateFragment state={globalState}>{
+            state => <input value={state.value}
+                onChange={e => state.set(e.target.value)}>
+        }</StateFragment>
+    }
+}
+```
+
+**Type parameters:**
+
+▪ **S**
+
+**Parameters:**
+
+▪ **props**: *object*
+
+Name | Type |
+------ | ------ |
+`children` | function |
+`state` | [StateLink](#interfacesstatelinkmd)‹S› |
+
+**Returns:** *ReactElement*
+
+▸ **StateFragment**<**R**>(`props`: object): *ReactElement*
+
+*Defined in [UseStateLink.d.ts:605](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L605)*
+
+Allows to use a state without defining a functional react component.
+See more at [StateFragment](#statefragment)
+
+**Type parameters:**
+
+▪ **R**
+
+**Parameters:**
+
+▪ **props**: *object*
+
+Name | Type |
+------ | ------ |
+`children` | function |
+`state` | [WrappedStateLink](#interfaceswrappedstatelinkmd)‹R› |
+
+**Returns:** *ReactElement*
+
+▸ **StateFragment**<**S**>(`props`: object): *ReactElement*
+
+*Defined in [UseStateLink.d.ts:613](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L613)*
+
+Allows to use a state without defining a functional react component.
+See more at [StateFragment](#statefragment)
+
+**Type parameters:**
+
+▪ **S**
+
+**Parameters:**
+
+▪ **props**: *object*
+
+Name | Type |
+------ | ------ |
+`children` | function |
+`state` | [SetInitialStateAction](#setinitialstateaction)‹S› |
+
+**Returns:** *ReactElement*
+
+___
+
+###  StateMemo
+
+▸ **StateMemo**<**S**, **R**>(`transform`: function, `equals?`: undefined | function): *function*
+
+*Defined in [UseStateLink.d.ts:641](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L641)*
+
+It is used in combination with [StateLink.wrap](#wrap).
+It minimises rerendering for states reduced down to a comparable values.
+
+**Type parameters:**
+
+▪ **S**
+
+▪ **R**
+
+**Parameters:**
+
+▪ **transform**: *function*
+
+the original transform function for [StateLink.wrap](#wrap).
+The first argument is a state link to wrap.
+The second argument, if available,
+is the previous result returned by the function.
+
+▸ (`state`: [StateLink](#interfacesstatelinkmd)‹S›, `prev`: R | undefined): *R*
+
+**Parameters:**
+
+Name | Type |
+------ | ------ |
+`state` | [StateLink](#interfacesstatelinkmd)‹S› |
+`prev` | R &#124; undefined |
+
+▪`Optional`  **equals**: *undefined | function*
+
+a function which compares the next and the previous
+wrapped state values and return true, if there is no change. By default,
+it is shallow triple-equal comparison, i.e. `===`.
+
+**Returns:** *function*
+
+▸ (`link`: [StateLink](#interfacesstatelinkmd)‹S›, `prev`: R | undefined): *R*
+
+**Parameters:**
+
+Name | Type |
+------ | ------ |
+`link` | [StateLink](#interfacesstatelinkmd)‹S› |
+`prev` | R &#124; undefined |
+
+___
+
+###  createStateLink
+
+▸ **createStateLink**<**S**>(`initial`: [SetInitialStateAction](#setinitialstateaction)‹S›): *[StateLink](#interfacesstatelinkmd)‹S› & [DestroyMixin](#interfacesdestroymixinmd)*
+
+*Defined in [UseStateLink.d.ts:464](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L464)*
+
+Creates new state and returns an instance of state link
+interface to manage the state or to hook in React components.
+
+You can create as many global states as you need.
+
+When you do not need the global state anymore,
+it should be destroyed by calling
+`destroy()` method of the returned instance.
+This is necessary for some plugins,
+which allocate native resources,
+like subscription to databases, broadcast channels, etc.
+In most cases, a global state is used during
+whole life time of an application and would not require
+destruction. However, if you have got, for example,
+a catalog of dynamically created and destroyed global states,
+the states should be destroyed as advised above.
+
+**Type parameters:**
+
+▪ **S**
+
+Type of a value of the state
+
+**Parameters:**
+
+Name | Type | Description |
+------ | ------ | ------ |
+`initial` | [SetInitialStateAction](#setinitialstateaction)‹S› | Initial value of the state. It can be a value OR a promise, which asynchronously resolves to a value, OR a function returning a value or a promise.  |
+
+**Returns:** *[StateLink](#interfacesstatelinkmd)‹S› & [DestroyMixin](#interfacesdestroymixinmd)*
+
+(#interfacesstatelinkmd) instance,
+which can be used directly to get and set state value
+outside of React components.
+When you need to use the state in a functional `React` component,
+pass the created state to `useStateLink` function and
+use the returned result in the component's logic.
+
+___
+
+###  useStateLink
+
+▸ **useStateLink**<**S**>(`source`: [StateLink](#interfacesstatelinkmd)‹S›): *[StateLink](#interfacesstatelinkmd)‹S›*
+
+*Defined in [UseStateLink.d.ts:499](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L499)*
+
+Enables a functional React component to use a state,
+either created by [createStateLink](#createstatelink) (*global* state) or
+derived from another call to `useStateLink` (*scoped* state).
+
+The `useStateLink` forces a component to rerender everytime, when:
+- a segment/part of the state data is updated *AND only if*
+- this segement was **used** by the component during or after the latest rendering.
+
+For example, if the state value is `{ a: 1, b: 2 }` and
+a component uses only `a` property of the state, it will rerender
+only when the whole state object is updated or when `a` property is updated.
+Setting the state value/property to the same value is also considered as an update.
+
+A component can use one or many states,
+i.e. you may call `useStateLink` multiple times for multiple states.
+
+The same state can be used by multiple different components.
+
+**Type parameters:**
+
+▪ **S**
+
+**Parameters:**
+
+Name | Type | Description |
+------ | ------ | ------ |
+`source` | [StateLink](#interfacesstatelinkmd)‹S› | a reference to the state to hook into  The `useStateLink` is a hook and should follow React's rules of hooks.  |
+
+**Returns:** *[StateLink](#interfacesstatelinkmd)‹S›*
+
+an instance of [StateLink](#interfacesstatelinkmd) interface,
+which **must be** used within the component (during rendering
+or in effects) or it's children.
+
+▸ **useStateLink**<**R**>(`source`: [WrappedStateLink](#interfaceswrappedstatelinkmd)‹R›): *R*
+
+*Defined in [UseStateLink.d.ts:519](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L519)*
+
+The same as [useStateLink](#usestatelink) for [StateLink](#interfacesstatelinkmd),
+but accepts the result of [StateLink.wrap](#wrap) as an argument.
+
+**`typeparam`** type of the function
+
+**Type parameters:**
+
+▪ **R**
+
+**Parameters:**
+
+Name | Type | Description |
+------ | ------ | ------ |
+`source` | [WrappedStateLink](#interfaceswrappedstatelinkmd)‹R› | a reference to the state to hook into  |
+
+**Returns:** *R*
+
+an instance of custom state access interface,
+which **must be** used within the component (during rendering
+or in effects) or it's children
+
+▸ **useStateLink**<**S**>(`source`: [SetInitialStateAction](#setinitialstateaction)‹S›): *[StateLink](#interfacesstatelinkmd)‹S›*
+
+*Defined in [UseStateLink.d.ts:547](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L547)*
+
+This function enables a functional React component to use a state,
+created per component by `useStateLink` (*local* state).
+In this case `useStateLink` behaves similarly to `React.useState`,
+but the returned instance of [StateLink](#interfacesstatelinkmd)
+has got more features.
+
+When a state is used by only one component, and maybe it's children,
+it is recommended to use *local* state instead of *global*,
+which is created by [createStateLink](#createstatelink).
+
+*Local* (per component) state is created when a component is mounted
+and automatically destroyed when a component is unmounted.
+
+The same as with the usage of a *global* state,
+`useStateLink` forces a component to rerender when:
+- a segment/part of the state data is updated *AND only if*
+- this segement was **used** by the component during or after the latest rendering.
+
+You can use as many local states within the same component as you need.
+
+**Type parameters:**
+
+▪ **S**
+
+**Parameters:**
+
+Name | Type | Description |
+------ | ------ | ------ |
+`source` | [SetInitialStateAction](#setinitialstateaction)‹S› | a reference to the state to hook into  |
+
+**Returns:** *[StateLink](#interfacesstatelinkmd)‹S›*
+
+an instance of [StateLink](#interfacesstatelinkmd) interface,
+which **must be** used within the component (during rendering
+or in effects) or it's children.
+
+# Interfaces
+
+
+<a name="interfacesbatchoptionsmd"/>
+
+
+## Interface: BatchOptions
+
+Parameter type of [StateLink.batch](#batch).
+
+### Hierarchy
+
+* **BatchOptions**
+
+### Index
+
+#### Properties
+
+* [ifPromised](#optional-ifpromised)
+
+### Properties
+
+#### `Optional` ifPromised
+
+• **ifPromised**? : *"postpone" | "discard" | "reject" | "execute"*
+
+*Defined in [UseStateLink.d.ts:57](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L57)*
+
+Setting to tune how a batch should be executed if a state is in [promised state](#promised)
+
+- `postpone` - defers execution of a batch until state value is resolved (promise is fullfilled)
+- `discard` - does not execute a batch and silently discards one
+- `reject` - throws an exception suggesting promised state is not expected
+- `execute` - proceeds with executing a batch, which may or may not throw an exception
+depending on whether [state's value](#value) is read during execution.
+
+
+<a name="interfacesdestroymixinmd"/>
+
+
+## Interface: DestroyMixin
+
+Mixin for the [StateLink](#interfacesstatelinkmd), which can be destroyed by a client.
+
+### Hierarchy
+
+* **DestroyMixin**
+
+### Index
+
+#### Methods
+
+* [destroy](#destroy)
+
+### Methods
+
+####  destroy
+
+▸ **destroy**(): *void*
+
+*Defined in [UseStateLink.d.ts:287](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L287)*
+
+Destroys an instance where it is mixed into, so
+it can clear the allocated native resources (if any)
+and can not be used anymore after it has been destroyed.
+
+**Returns:** *void*
+
+
+<a name="interfacesstatelinkmd"/>
+
+
+## Interface: StateLink <**S**>
+
+Type of an object holding a reference to a state value.
+It is the main and single interface to
+manage a state in Hookstate.
+
+### Type parameters
+
+▪ **S**
+
+### Hierarchy
+
+* **StateLink**
+
+### Index
+
+#### Properties
+
+* [error](#error)
+* [keys](#keys)
+* [nested](#nested)
+* [path](#path)
+* [promised](#promised)
+* [value](#value)
+
+#### Methods
+
+* [batch](#batch)
+* [denull](#denull)
+* [get](#get)
+* [merge](#merge)
+* [set](#set)
+* [with](#with)
+* [wrap](#wrap)
+
+### Properties
+
+####  error
+
+• **error**: *any | undefined*
+
+*Defined in [UseStateLink.d.ts:140](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L140)*
+
+Returns captured error value if a promise was fulfilled but rejected.
+Type of an error can be anything. It is the same as what the promise
+provided on rejection.
+
+___
+
+####  keys
+
+• **keys**: *[InferredStateLinkKeysType](#inferredstatelinkkeystype)‹S›*
+
+*Defined in [UseStateLink.d.ts:193](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L193)*
+
+Return the same as `Object.keys(this.nested)`
+or `Object.keys(this.value)`
+with one minor difference:
+if `this.value` is an array, the returned result will be
+an array of numbers, not strings like with `Object.keys`.
+
+___
+
+####  nested
+
+• **nested**: *[InferredStateLinkNestedType](#inferredstatelinknestedtype)‹S›*
+
+*Defined in [UseStateLink.d.ts:185](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L185)*
+
+If `this.value` is an object,
+it returns an object of nested `StateLink`s.
+If `this.value` is an array,
+it returns an array of nested `StateLink`s.
+Otherwise, returns `undefined`.
+
+This allows to *walk* the tree and access/mutate nested
+compex data in very convenient way.
+
+Typescript intellisence will handle correctly
+any complexy of the data structure.
+The conditional type definition of [InferredStateLinkNestedType](#inferredstatelinknestedtype) facilitates this.
+
+The result of `Object.keys(state.nested)`
+is the same as `Object.keys(state.get())`.
+However, the returned object will have **ANY** property defined
+(although not every will pass Typescript compiler check).
+It is very convenient for managing dynamic directories, for example:
+
+```tsx
+const state = useStateLink<Record<string, number>>({});
+// initially:
+state.value; // will be {}
+state.nested['newProperty'].value; // will be undefined
+// setting non existing nested property:
+state.nested['newProperty'].set('newValue');
+// will update the state to:
+state.value; // will be { newProperty: 'newValue' }
+state.nested['newProperty'].value; // will be 'newValue'
+```
+
+___
+
+####  path
+
+• **path**: *[Path](#path)*
+
+*Defined in [UseStateLink.d.ts:152](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L152)*
+
+'Javascript' object 'path' to an element relative to the root object
+in the state. For example:
+
+```tsx
+const state = useStateLink([{ name: 'First Task' }])
+state.path IS []
+state.nested[0].path IS [0]
+state.nested[0].nested.name.path IS [0, 'name']
+```
+
+___
+
+####  promised
+
+• **promised**: *boolean*
+
+*Defined in [UseStateLink.d.ts:134](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L134)*
+
+Returns true if state value is unresolved promise.
+
+___
+
+####  value
+
+• **value**: *S*
+
+*Defined in [UseStateLink.d.ts:130](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L130)*
+
+Returns current state value referred by
+[path](#path) of this instance of [StateLink](#interfacesstatelinkmd).
+
+It return the same result as as [StateLink.get](#get) method.
+
+This property is more useful than [get](#get) method for the cases,
+when a value may hold null or undefined values.
+Typescript compiler does not handle elimination of undefined with get(),
+like in the following examples, but value does:
+
+```tsx
+const state = useStateLink<number | undefined>(0)
+const myvalue: number = statelink.value
+     ? statelink.value + 1
+     : 0; // <-- compiles
+const myvalue: number = statelink.get()
+     ? statelink.get() + 1
+     : 0; // <-- does not compile
+```
+
+### Methods
+
+####  batch
+
+▸ **batch**(`action`: function, `options?`: [BatchOptions](#interfacesbatchoptionsmd)): *void*
+
+*Defined in [UseStateLink.d.ts:245](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L245)*
+
+Allows to group state updates in a single batch. It helps to
+minimise rerendering by React. It also allows plugins (if any used)
+to opt-in into atomic transactions for state persistance.
+
+**Parameters:**
+
+▪ **action**: *function*
+
+a function to be executed in scope of a batch.
+The function receives `this` instance as an argument.
+
+▸ (`s`: [StateLink](#interfacesstatelinkmd)‹S›): *void*
+
+**Parameters:**
+
+Name | Type |
+------ | ------ |
+`s` | [StateLink](#interfacesstatelinkmd)‹S› |
+
+▪`Optional`  **options**: *[BatchOptions](#interfacesbatchoptionsmd)*
+
+various batch options to tune batching behaviour.
+
+For example:
+
+```tsx
+const MyComponent = () => {
+    state = useStateLink<{ user?: string, email?: string }>({});
+    return <>
+        {state.value.user && <p>Hello {state.value.user}!</p>}
+        {state.value.email && <p>We will message you to {state.value.email}!</p>}
+        <button onClick={() => {
+             // this will rerender the current component only once
+             // even if the state is changed twice
+             state.batch(() => {
+                 state.nested.user.set('Peter');
+                 state.nested.email.set('peter@example.com');
+             })
+        }}>Initialize user</button>
+    </>
+}
+```
+
+**Returns:** *void*
+
+___
+
+####  denull
+
+▸ **denull**(): *[InferredStateLinkDenullType](#inferredstatelinkdenulltype)‹S›*
+
+*Defined in [UseStateLink.d.ts:214](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L214)*
+
+For an instance of type `StateLink<T | undefined | null>`, where `T` is not `Nullable`,
+it return `this` instance typed as `StateLink<T>`, if `this.value` is defined.
+Otherwise, it returns `this.value`, which would be `null` or `undefined`.
+
+You can use it like the following:
+
+```tsx
+const MyInputField = (props: { state: StateLink<string | null >}) => {
+    const state = props.state.denull();
+    // state is either null or an instance of StateLink<string>:
+    if (!state) {
+        // state value was null:
+        return <></>;
+    }
+    // state.value is an instance of string, can not be null here:
+    return <input value={state.value} onChange={(v) => state.set(v.target.value)} />
+}
+```
+
+**Returns:** *[InferredStateLinkDenullType](#inferredstatelinkdenulltype)‹S›*
+
+___
+
+####  get
+
+▸ **get**(): *S*
+
+*Defined in [UseStateLink.d.ts:80](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L80)*
+
+Returns current state value referred by
+[path](#path) of this instance of [StateLink](#interfacesstatelinkmd).
+
+It return the same result as as [StateLink.value](#value) property.
+
+**Returns:** *S*
+
+___
+
+####  merge
+
+▸ **merge**(`newValue`: [SetPartialStateAction](#setpartialstateaction)‹S›): *void*
+
+*Defined in [UseStateLink.d.ts:108](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L108)*
+
+Similarly to [set](#set) method updates state value.
+
+- If current state value is an object, it does partial update for the object.
+- If state value is an array and the argument is an array too,
+it concatenates the current value with the value of the argument and sets it to the state.
+- If state value is an array and the `merge` argument is an object,
+it does partial update for the current array value.
+- If current state value is a string, it concatenates the current state
+value with the argument converted to string and sets the result to the state.
+
+**Parameters:**
+
+Name | Type |
+------ | ------ |
+`newValue` | [SetPartialStateAction](#setpartialstateaction)‹S› |
+
+**Returns:** *void*
+
+___
+
+####  set
+
+▸ **set**(`newValue`: [SetStateAction](#setstateaction)‹S›): *void*
+
+*Defined in [UseStateLink.d.ts:96](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L96)*
+
+Sets new value for a state.
+If `this.path === []`,
+it is similar to the `setState` variable returned by `React.useState` hook.
+If `this.path !== []`, it sets only the segment of the state value, pointed out by the path.
+The function will not accept partial updates.
+It can be done by combining [set](#set) with [nested](#nested) or
+use [merge](#merge) action.
+
+**Parameters:**
+
+Name | Type | Description |
+------ | ------ | ------ |
+`newValue` | [SetStateAction](#setstateaction)‹S› | new value to set to a state. It can be a value, a promise resolving to a value (only if this instance of StateLink points to root of a state, i.e. [path](#path) is `[]`), or a function returning one of these. The function receives the current state value as an argument.  |
+
+**Returns:** *void*
+
+___
+
+####  with
+
+▸ **with**(`plugin`: function): *[StateLink](#interfacesstatelinkmd)‹S›*
+
+*Defined in [UseStateLink.d.ts:260](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L260)*
+
+Adds new plugin to the state. See more about plugins and extensions in the documentation.
+
+**Parameters:**
+
+▪ **plugin**: *function*
+
+▸ (): *Plugin*
+
+**Returns:** *[StateLink](#interfacesstatelinkmd)‹S›*
+
+___
+
+####  wrap
+
+▸ **wrap**<**R**>(`transform`: function): *[WrappedStateLink](#interfaceswrappedstatelinkmd)‹R›*
+
+*Defined in [UseStateLink.d.ts:256](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L256)*
+
+Wraps the state link instance by a custom defined interface.
+It can be used by libraries, which would not like to expose dependency to Hookstate.
+
+**Type parameters:**
+
+▪ **R**
+
+**Parameters:**
+
+▪ **transform**: *function*
+
+a function which receives this instance and previous state value (if available),
+and returns a custom object of any type, defined by a client.
+
+▸ (`state`: [StateLink](#interfacesstatelinkmd)‹S›, `prev`: R | undefined): *R*
+
+**Parameters:**
+
+Name | Type |
+------ | ------ |
+`state` | [StateLink](#interfacesstatelinkmd)‹S› |
+`prev` | R &#124; undefined |
+
+**Returns:** *[WrappedStateLink](#interfaceswrappedstatelinkmd)‹R›*
+
+an instance of wrapped state link, which can be used with [useStateLink](#usestatelink)
+within a React component or accessed directly, typically in an event handler or callback.
+
+
+<a name="interfaceswrappedstatelinkmd"/>
+
+
+## Interface: WrappedStateLink <**R**>
+
+Return type of [StateLink.wrap](#wrap).
+
+### Type parameters
+
+▪ **R**
+
+### Hierarchy
+
+* **WrappedStateLink**
+
+### Index
+
+#### Methods
+
+* [access](#access)
+* [with](#with)
+* [wrap](#wrap)
+
+### Methods
+
+####  access
+
+▸ **access**(): *R*
+
+*Defined in [UseStateLink.d.ts:305](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L305)*
+
+Returns an instance of custom user-defined interface to use, typically outside of
+a React component, i.e. in a callback or event handler.
+
+**Returns:** *R*
+
+___
+
+####  with
+
+▸ **with**(`plugin`: function): *[WrappedStateLink](#interfaceswrappedstatelinkmd)‹R›*
+
+*Defined in [UseStateLink.d.ts:309](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L309)*
+
+Adds new plugin to the state. See more about plugins and extensions in the documentation.
+
+**Parameters:**
+
+▪ **plugin**: *function*
+
+▸ (): *Plugin*
+
+**Returns:** *[WrappedStateLink](#interfaceswrappedstatelinkmd)‹R›*
+
+___
+
+####  wrap
+
+▸ **wrap**<**R2**>(`transform`: function): *[WrappedStateLink](#interfaceswrappedstatelinkmd)‹R2›*
+
+*Defined in [UseStateLink.d.ts:321](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L321)*
+
+Similarly to [StateLink.wrap](#wrap), wraps the state link instance by a custom defined interface.
+It can be used by libraries, which would want to abstract state management operation.
+
+**Type parameters:**
+
+▪ **R2**
+
+**Parameters:**
+
+▪ **transform**: *function*
+
+a function which receives `this.access()` and
+previous `this.access()` state value (if available),
+and returns a custom object of any type, defined by a client.
+
+▸ (`state`: R, `prev`: R2 | undefined): *R2*
+
+**Parameters:**
+
+Name | Type |
+------ | ------ |
+`state` | R |
+`prev` | R2 &#124; undefined |
+
+**Returns:** *[WrappedStateLink](#interfaceswrappedstatelinkmd)‹R2›*
+
+an instance of wrapped state link, which can be used with [useStateLink](#usestatelink)
+within a React component or accessed directly, typically in an event handler or callback.

@@ -3,15 +3,15 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "docusaurus start",
+    "start": "docusaurus start --host 0.0.0.0",
     "build": "docusaurus build",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
     "apply-updates": "ncu -u"
   },
   "dependencies": {
-    "@docusaurus/core": "^2.0.0-alpha.44",
-    "@docusaurus/preset-classic": "^2.0.0-alpha.44",
+    "@docusaurus/core": "^2.0.0-alpha.43",
+    "@docusaurus/preset-classic": "^2.0.0-alpha.43",
     "classnames": "^2.2.6",
     "react": "^16.12.0",
     "react-dom": "^16.12.0"
@@ -29,6 +29,7 @@
     ]
   },
   "devDependencies": {
+    "@babel/preset-typescript": "^7.8.3",
     "npm-check-updates": "^4.0.1"
   }
 }
