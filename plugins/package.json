@@ -15,8 +15,8 @@
     },
     "devDependencies": {
         "lerna": "3.20.2",
-        "npm-check-updates": "4.0.1",
-        "rimraf": "3.0.1",
+        "npm-check-updates": "4.0.3",
+        "rimraf": "3.0.2",
         "yarn": "1.22.0"
     }
 }
