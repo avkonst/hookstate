@@ -11,6 +11,6 @@
         "isolatedModules": false
     },
     "exclude": [
-        "src/*.test.tsx"
+        "src/__tests__"
     ]
 }
