@@ -41,22 +41,30 @@ var None = Symbol('none');
  * @ignore
  */
 var DevTools = Symbol('DevTools');
-function createStateLink(initial, transform) {
+function createStateLink(initial, transformOrPlugins) {
     var stateLink = createState(initial).accessUnmounted();
+    if (transformOrPlugins && typeof transformOrPlugins !== 'function') {
+        for (var _i = 0, transformOrPlugins_1 = transformOrPlugins; _i < transformOrPlugins_1.length; _i++) {
+            var p = transformOrPlugins_1[_i];
+            stateLink.with(p);
+        }
+    }
     if (createStateLink[DevTools]) {
         stateLink.with(createStateLink[DevTools]);
     }
-    if (transform) {
-        return stateLink.wrap(transform);
+    if (transformOrPlugins && typeof transformOrPlugins === 'function') {
+        return stateLink.wrap(transformOrPlugins);
     }
     return stateLink;
 }
-function useStateLink(source, transform) {
+function useStateLink(source, transformOrPlugins) {
     var _a = source instanceof StateLinkImpl ?
-        [source, transform] :
+        [source,
+            typeof transformOrPlugins === 'function' ? transformOrPlugins : undefined] :
         source instanceof WrappedStateLinkImpl ?
             [source.state, source.transform] :
-            [undefined, transform], parentLink = _a[0], tf = _a[1];
+            [undefined,
+                typeof transformOrPlugins === 'function' ? transformOrPlugins : undefined], parentLink = _a[0], tf = _a[1];
     if (parentLink) {
         if (parentLink.onUpdateUsed === NoActionOnUpdate) {
             // Global state mount
@@ -78,6 +86,12 @@ function useStateLink(source, transform) {
         // eslint-disable-next-line react-hooks/rules-of-hooks
         var _d = React.useState(function () { return ({ state: createState(source) }); }), value_2 = _d[0], setValue_3 = _d[1];
         var link = useSubscribedStateLink(value_2.state, RootPath, function () { return setValue_3({ state: value_2.state }); }, value_2.state, undefined);
+        if (typeof transformOrPlugins === 'object') {
+            for (var _i = 0, transformOrPlugins_2 = transformOrPlugins; _i < transformOrPlugins_2.length; _i++) {
+                var p = transformOrPlugins_2[_i];
+                link.with(p);
+            }
+        }
         React.useEffect(function () { return function () { return value_2.state.destroy(); }; }, []);
         if (useStateLink[DevTools]) {
             link.with(useStateLink[DevTools]);
@@ -119,7 +133,7 @@ function StateMemo(transform, equals) {
  *         .with(Downgraded); // the whole state will be used
  *                            // by this component, so no point
  *                            // to track usage of individual properties
- *     return <>JSON.stringify(state.value)</>
+ *     return <>{JSON.stringify(state.value)}</>
  * }
  * ```
  */
@@ -128,6 +142,28 @@ function Downgraded() {
         id: DowngradedID,
         create: function () { return ({}); }
     };
+}
+function Labelled(labelOrLink) {
+    if (typeof labelOrLink === 'string') {
+        var label_1 = labelOrLink;
+        return function () { return ({
+            id: LabelledID,
+            create: function () { return ({
+                label: label_1
+            }); }
+        }); };
+    }
+    try {
+        var _a = labelOrLink.with(LabelledID), plugin = _a[1];
+        return plugin.label;
+    }
+    catch (err) {
+        // TODO need tryWith non throwing alternative
+        if (err instanceof PluginUnknownError) {
+            return undefined;
+        }
+        throw err;
+    }
 }
 ///
 /// INTERNAL SYMBOLS (LIBRARY IMPLEMENTATION)
@@ -158,6 +194,7 @@ var PluginUnknownError = /** @class */ (function (_super) {
     return PluginUnknownError;
 }(Error));
 var DowngradedID = Symbol('Downgraded');
+var LabelledID = Symbol('Labelled');
 var StateMemoID = Symbol('StateMemo');
 var ProxyMarkerID = Symbol('ProxyMarker');
 var RootPath = [];
@@ -1051,5 +1088,5 @@ function useStateLinkUnmounted(source, transform) {
     return source;
 }
 
-export { DevTools, Downgraded, None, StateFragment, StateMemo, createStateLink, useStateLink, useStateLinkUnmounted };
+export { DevTools, Downgraded, Labelled, None, StateFragment, StateMemo, createStateLink, useStateLink, useStateLinkUnmounted };
 //# sourceMappingURL=index.es.js.map

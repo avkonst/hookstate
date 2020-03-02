@@ -452,6 +452,8 @@ export interface Plugin {
  * which asynchronously resolves to a value,
  * OR a function returning a value or a promise.
  *
+ * @param plugins An array of plugins to attach to the created state.
+ *
  * @typeparam S Type of a value of the state
  *
  * @returns [StateLink](#interfacesstatelinkmd) instance,
@@ -461,7 +463,7 @@ export interface Plugin {
  * pass the created state to `useStateLink` function and
  * use the returned result in the component's logic.
  */
-export declare function createStateLink<S>(initial: SetInitialStateAction<S>): StateLink<S> & DestroyMixin;
+export declare function createStateLink<S>(initial: SetInitialStateAction<S>, plugins?: (() => Plugin)[]): StateLink<S> & DestroyMixin;
 /**
  * @hidden
  * @ignore
@@ -538,13 +540,15 @@ export declare function useStateLink<R>(source: WrappedStateLink<R>): R;
  *
  * You can use as many local states within the same component as you need.
  *
- * @param source a reference to the state to hook into
+ * @param source A reference to the state to hook into.
+ *
+ * @param plugins An array of plugins to attach to the created state.
  *
  * @returns an instance of [StateLink](#interfacesstatelinkmd) interface,
  * which **must be** used within the component (during rendering
  * or in effects) or it's children.
  */
-export declare function useStateLink<S>(source: SetInitialStateAction<S>): StateLink<S>;
+export declare function useStateLink<S>(source: SetInitialStateAction<S>, plugins?: (() => Plugin)[]): StateLink<S>;
 /**
  * @hidden
  * @ignore
@@ -650,11 +654,45 @@ export declare function StateMemo<S, R>(transform: (state: StateLink<S>, prev: R
  *         .with(Downgraded); // the whole state will be used
  *                            // by this component, so no point
  *                            // to track usage of individual properties
- *     return <>JSON.stringify(state.value)</>
+ *     return <>{JSON.stringify(state.value)}</>
  * }
  * ```
  */
 export declare function Downgraded(): Plugin;
+/**
+ * A plugin which allows to assign a label to a state.
+ * It can be used by other extensions, like development tools or
+ * plugins persisting a state.
+ *
+ * For example:
+ *
+ * ```tsx
+ * const globalState = createStateLink(someLargeObject as object,
+ *     [Labelled('my-state-label')]) // label the state very early
+ * const MyComponent = () => {
+ *     const state = useStateLink(globalState)
+ *     console.log('state label', Labelled(state))
+ *     return <>{JSON.stringify(state.value)}</>
+ * }
+ * ```
+ */
+export declare function Labelled(label: string): () => Plugin;
+/**
+ * A plugin which allows to assign a label to a state.
+ * It can be used by other extensions, like development tools or
+ * plugins persisting a state.
+ *
+ * For example:
+ *
+ * ```tsx
+ * const MyComponent = () => {
+ *     const state = useStateLink(globalState, [Labelled('my-state-label')])
+ *     console.log('state label', Labelled(state))
+ *     return <>{JSON.stringify(state.value)}</>
+ * }
+ * ```
+ */
+export declare function Labelled(link: StateLink<StateValueAtPath>): string | undefined;
 /**
  * @hidden
  * @ignore
