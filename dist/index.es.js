@@ -146,10 +146,17 @@ function Downgraded() {
 function Labelled(labelOrLink) {
     if (typeof labelOrLink === 'string') {
         var label_1 = labelOrLink;
+        var unique_1 = true;
+        if (AssignedLabels.has(label_1)) {
+            console.warn("Label " + label_1 + " is not unique. There is another state with the same label.");
+            unique_1 = false;
+        }
+        AssignedLabels.add(label_1);
         return function () { return ({
             id: LabelledID,
             create: function () { return ({
-                label: label_1
+                label: label_1,
+                onDestroy: (unique_1) && (function () { return AssignedLabels.delete(label_1); })
             }); }
         }); };
     }
@@ -168,6 +175,7 @@ function Labelled(labelOrLink) {
 ///
 /// INTERNAL SYMBOLS (LIBRARY IMPLEMENTATION)
 ///
+var AssignedLabels = new Set();
 var StateLinkInvalidUsageError = /** @class */ (function (_super) {
     __extends(StateLinkInvalidUsageError, _super);
     function StateLinkInvalidUsageError(op, path, hint) {

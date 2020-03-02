@@ -308,7 +308,7 @@ test('plugin: common flow callbacks global state devtools', async () => {
         const stateRef = createStateLink([{
             f1: 0,
             f2: 'str'
-        }], [Labelled('LABELLED')])
+        }], [Labelled('LABELLED2')])
 
         let renderTimes = 0
         const { result, unmount } = renderHook(() => {
@@ -317,10 +317,10 @@ test('plugin: common flow callbacks global state devtools', async () => {
         });
         expect(renderTimes).toStrictEqual(1);
         expect(messages).toEqual(
-            ['LABELLED onInit called, initial: [{\"f1\":0,\"f2\":\"str\"}]'])
+            ['LABELLED2 onInit called, initial: [{\"f1\":0,\"f2\":\"str\"}]'])
         expect(result.current.nested[0].get().f1).toStrictEqual(0);
         expect(messages).toEqual(
-            ['LABELLED onInit called, initial: [{\"f1\":0,\"f2\":\"str\"}]'])
+            ['LABELLED2 onInit called, initial: [{\"f1\":0,\"f2\":\"str\"}]'])
 
         act(() => {
             result.current.nested[0].nested.f1.set(p => p + 1);

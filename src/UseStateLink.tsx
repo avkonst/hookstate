@@ -887,10 +887,17 @@ export function Labelled(link: StateLink<StateValueAtPath>): string | undefined;
 export function Labelled(labelOrLink: string | StateLink<StateValueAtPath>): (() => Plugin) | string | undefined {
     if (typeof labelOrLink === 'string') {
         const label = labelOrLink;
+        let unique = true;
+        if (AssignedLabels.has(label)) {
+            console.warn(`Label ${label} is not unique. There is another state with the same label.`)
+            unique = false;
+        }
+        AssignedLabels.add(label)
         return () => ({
             id: LabelledID,
             create: () => ({
-                label: label
+                label: label,
+                onDestroy: (unique) && (() => AssignedLabels.delete(label))
             } as PluginCallbacks)
         })
     }
@@ -909,6 +916,8 @@ export function Labelled(labelOrLink: string | StateLink<StateValueAtPath>): (()
 ///
 /// INTERNAL SYMBOLS (LIBRARY IMPLEMENTATION)
 ///
+
+const AssignedLabels = new Set<string>();
 
 class StateLinkInvalidUsageError extends Error {
     constructor(op: string, path: Path, hint?: string) {
