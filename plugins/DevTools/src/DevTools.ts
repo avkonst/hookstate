@@ -1,5 +1,6 @@
-import { useStateLink, DevTools, Plugin, createStateLink, StateValueAtRoot, None } from '@hookstate/core'
+import { useStateLink, DevTools, Plugin, createStateLink, StateValueAtRoot, None, Labelled } from '@hookstate/core'
 
+// we use redux as a client to send notifications to Redux development tools
 import { createStore } from 'redux';
 import { devToolsEnhancer } from 'redux-devtools-extension';
 
@@ -17,7 +18,9 @@ export function InitDevTools() {
     const tracker = (isLocal: boolean) => () => ({
         id: PluginId,
         create: (lnk) => {
-            const assignedId = isLocal ? 'local-' + (lastLocal += 1) : 'global-' + (lastGlobal += 1);
+            const label = Labelled(lnk);
+            const assignedId = label ? label :
+                isLocal ? 'local-' + (lastLocal += 1) : 'global-' + (lastGlobal += 1);
 
             let fromRemote = false;
             let fromLocal = false;
