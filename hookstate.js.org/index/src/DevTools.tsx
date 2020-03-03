@@ -7,7 +7,7 @@ const IsDevelopment = !process.env.NODE_ENV || process.env.NODE_ENV === 'develop
 const PluginId = Symbol('DevTools')
 const PluginIdForMonitored = Symbol('DevToolsMonitored')
 
-let MonitoredStatesLogger = (str: string) => { /* */ }; 
+let MonitoredStatesLogger = (str: string) => { /* */ };
 const MonitoredStatesLabel = '[HOOKSTATE/DEVTOOLS] MONITORED STATES';
 const MonitoredStates = createStateLink(() => {
         const p = localStorage.getItem(MonitoredStatesLabel)
@@ -38,20 +38,35 @@ export interface DevToolsExtensions {
 }
 
 let lastUnlabelledId = 0;
-
-export function DevTools(labelled?: string): () => Plugin;
-export function DevTools(state: StateLink<StateValueAtPath>): DevToolsExtensions;
-export function DevTools(labelledOrState?: string | StateLink<StateValueAtPath>): (() => Plugin) | DevToolsExtensions {
-    if (labelledOrState && typeof labelledOrState !== 'string') {
-        return labelledOrState.with(PluginId)[1] as DevToolsExtensions;
+function getLabel() {
+    const obj: { stack?: string } = {}
+    const oldLimit = Error.stackTraceLimit
+    Error.stackTraceLimit = 2;
+    Error.captureStackTrace(obj, MonitoredStates.with)
+    Error.stackTraceLimit = oldLimit;
+    const s = obj.stack;
+    if (!s) {
+        return 'unlabelled-' + (lastUnlabelledId += 1)
     }
+    const parts = s.split('\n', 3);
+    if (parts.length < 3) {
+        return 'unlabelled-' + (lastUnlabelledId += 1)
+    }
+    return parts[2]
+        .replace(/\s*[(].*/, '')
+        .replace(/\s*at\s*/, '')
+}
 
-    const labelled = labelledOrState;
-    return () => ({
+export function DevTools(state: StateLink<StateValueAtPath>): DevToolsExtensions {
+    return state.with(PluginId)[1] as DevToolsExtensions;
+}
+
+function DevToolsInternal(): Plugin {
+    return ({
         id: PluginId,
         create: (lnk) => {
             const label = Labelled(lnk)
-            const assignedId = labelled ? labelled : label ? label : 'unlabelled-' + (lastUnlabelledId += 1);
+            const assignedId = label ? label : getLabel();
 
             const monitored = MonitoredStates.value.includes(assignedId) || (IsDevelopment && label)
             if (!monitored) {
@@ -63,7 +78,7 @@ export function DevTools(labelledOrState?: string | StateLink<StateValueAtPath>)
                     }
                 }
             }
-            
+
             let fromRemote = false;
             let fromLocal = false;
             const reduxStore = createStore(
@@ -136,7 +151,7 @@ export function DevTools(labelledOrState?: string | StateLink<StateValueAtPath>)
                     }
                 })
             )
-            
+
             // tslint:disable-next-line: no-any
             const dispatch = (action: any, alt?: () => void) => {
                 if (!fromRemote) {
@@ -150,7 +165,7 @@ export function DevTools(labelledOrState?: string | StateLink<StateValueAtPath>)
                     alt()
                 }
             }
-            
+
             MonitoredStatesLogger(`CREATE [${assignedId}] (monitored)`)
             dispatch({ type: `CREATE` })
             return {
@@ -172,7 +187,7 @@ export function DevTools(labelledOrState?: string | StateLink<StateValueAtPath>)
     } as Plugin)
 }
 
-MonitoredStates.with(DevTools())
+MonitoredStates.with(DevToolsInternal)
 MonitoredStatesLogger = (str) => DevTools(MonitoredStates).log(str)
 
 let initialized = false;
@@ -182,8 +197,8 @@ export function InitDevTools() {
         return;
     }
     initialized = true;
-    useStateLink[DevToolsID] = DevTools()
-    createStateLink[DevToolsID] = DevTools()
+    useStateLink[DevToolsID] = DevToolsInternal
+    createStateLink[DevToolsID] = DevToolsInternal
 }
 
 InitDevTools() // attach on load
