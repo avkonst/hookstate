@@ -769,12 +769,15 @@ var reduxDevtoolsExtension_2 = reduxDevtoolsExtension.devToolsEnhancer;
 var IsDevelopment = !process.env.NODE_ENV || process.env.NODE_ENV === 'development';
 var PluginId = Symbol('DevTools');
 var PluginIdForMonitored = Symbol('DevToolsMonitored');
-var MonitoredStatesLogger = function (str) { };
-var MonitoredStatesLabel = '[HOOKSTATE/DEVTOOLS] MONITORED STATES';
+var MonitoredStatesLogger = function (_) { };
+var MonitoredStatesLabel = '@hookstate/devtools: settings';
 var MonitoredStates = createStateLink(function () {
     var p = localStorage.getItem(MonitoredStatesLabel);
     if (!p) {
-        return [MonitoredStatesLabel];
+        return {
+            monitored: [MonitoredStatesLabel],
+            callstacksDepth: IsDevelopment ? 30 : 0
+        };
     }
     return JSON.parse(p);
 })
@@ -784,13 +787,19 @@ var MonitoredStates = createStateLink(function () {
     create: function () { return ({
         onSet: function (p) {
             var v = p.state;
-            if (!v || !Array.isArray(v)) {
-                v = [MonitoredStatesLabel];
+            if (!v || !v.monitored || !Array.isArray(v.monitored)) {
+                v = v || {};
+                v.monitored = [MonitoredStatesLabel];
             }
-            else if (!v.includes(MonitoredStatesLabel)) {
-                v.push(MonitoredStatesLabel);
+            else if (!v.monitored.includes(MonitoredStatesLabel)) {
+                v.monitored.push(MonitoredStatesLabel);
             }
+            var depth = Number(v.callstacksDepth);
+            v.callstacksDepth = Number.isInteger(depth) && depth >= 0 ? depth : IsDevelopment ? 30 : 0;
             localStorage.setItem(MonitoredStatesLabel, JSON.stringify(v));
+            if (v !== p.state) {
+                MonitoredStates.set(v);
+            }
         }
     }); }
 }); });
@@ -826,7 +835,7 @@ function DevToolsInternal() {
         create: function (lnk) {
             var label = Labelled(lnk);
             var assignedId = label ? label : getLabel();
-            var monitored = MonitoredStates.value.includes(assignedId) || (IsDevelopment && label);
+            var monitored = MonitoredStates.value.monitored.includes(assignedId) || (IsDevelopment && label);
             if (!monitored) {
                 MonitoredStatesLogger("CREATE [" + assignedId + "] (unmonitored)");
                 return {
@@ -894,8 +903,8 @@ function DevToolsInternal() {
                 return lnk.value;
             }, reduxDevtoolsExtension_2({
                 name: window.location.hostname + ": " + assignedId,
-                trace: IsDevelopment,
-                traceLimit: 30,
+                trace: MonitoredStates.value.callstacksDepth !== 0,
+                traceLimit: MonitoredStates.value.callstacksDepth,
                 autoPause: true,
                 shouldHotReload: false,
                 features: {
