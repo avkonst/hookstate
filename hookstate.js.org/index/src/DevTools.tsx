@@ -1,4 +1,15 @@
-import { useStateLink, DevTools as DevToolsID, Plugin, createStateLink, StateValueAtRoot, None, Labelled, StateValueAtPath, StateLink, Path } from '@hookstate/core'
+import {
+    createStateLink,
+    useStateLink,
+    StateValueAtRoot,
+    StateValueAtPath,
+    StateLink,
+    Path,
+    DevTools as DevToolsID,
+    Plugin,
+    None,
+    Labelled,
+} from '@hookstate/core'
 
 import { createStore } from 'redux';
 import { devToolsEnhancer } from 'redux-devtools-extension';
@@ -190,13 +201,7 @@ function DevToolsInternal(): Plugin {
 MonitoredStates.with(DevToolsInternal)
 MonitoredStatesLogger = (str) => DevTools(MonitoredStates).log(str)
 
-let initialized = false;
-
 export function InitDevTools() {
-    if (initialized) {
-        return;
-    }
-    initialized = true;
     useStateLink[DevToolsID] = DevToolsInternal
     createStateLink[DevToolsID] = DevToolsInternal
 }
