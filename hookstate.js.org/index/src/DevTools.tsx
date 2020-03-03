@@ -48,13 +48,23 @@ export interface DevToolsExtensions {
     log(str: string, data?: any): void;
 }
 
+export const DevTools = (state: StateLink<StateValueAtPath>) => {
+    return state.with(PluginId)[1] as DevToolsExtensions;
+}
+DevTools.Init = () => {
+    useStateLink[DevToolsID] = DevToolsInternal
+    createStateLink[DevToolsID] = DevToolsInternal
+};
+
 let lastUnlabelledId = 0;
 function getLabel() {
     const obj: { stack?: string } = {}
     const oldLimit = Error.stackTraceLimit
     Error.stackTraceLimit = 2;
     Error.captureStackTrace(obj, MonitoredStates.with)
+    console.log(obj.stack)
     Error.stackTraceLimit = oldLimit;
+    console.log(new Error().stack)
     const s = obj.stack;
     if (!s) {
         return 'unlabelled-' + (lastUnlabelledId += 1)
@@ -66,10 +76,6 @@ function getLabel() {
     return parts[2]
         .replace(/\s*[(].*/, '')
         .replace(/\s*at\s*/, '')
-}
-
-export function DevTools(state: StateLink<StateValueAtPath>): DevToolsExtensions {
-    return state.with(PluginId)[1] as DevToolsExtensions;
 }
 
 function DevToolsInternal(): Plugin {
@@ -201,9 +207,4 @@ function DevToolsInternal(): Plugin {
 MonitoredStates.with(DevToolsInternal)
 MonitoredStatesLogger = (str) => DevTools(MonitoredStates).log(str)
 
-export function InitDevTools() {
-    useStateLink[DevToolsID] = DevToolsInternal
-    createStateLink[DevToolsID] = DevToolsInternal
-}
-
-InitDevTools() // attach on load
+DevTools.Init() // attach on load
