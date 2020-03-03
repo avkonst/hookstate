@@ -168,8 +168,8 @@ test('object: should rerender used via nested batch promised', async () => {
     executed = false;
     act(() => {
         result.current.batch(() => {
-            executed = true
             act(() => {
+                executed = true
                 expect(renderTimes).toStrictEqual(3);
                 result.current.set(p => p + 100)
                 expect(renderTimes).toStrictEqual(3);
@@ -182,9 +182,16 @@ test('object: should rerender used via nested batch promised', async () => {
     })
     expect(executed).toBeFalsy()
 
+    expect(result.current.promised).toStrictEqual(true);
     await act(async () => {
         await promise;
+        expect(executed).toBeFalsy()
+        expect(renderTimes).toStrictEqual(3);
+        expect(result.current.promised).toStrictEqual(false);
+        expect(result.current.error).toEqual(undefined);
+        expect(result.current.value).toEqual(100);
     })
+
     expect(executed).toBeTruthy()
     expect(renderTimes).toStrictEqual(4);
     expect(result.current.promised).toStrictEqual(false);
