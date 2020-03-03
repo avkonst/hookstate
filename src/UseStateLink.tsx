@@ -1855,8 +1855,6 @@ class StateLinkImpl<S> implements StateLink<S>,
     }
 }
 
-const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
-
 function createState<S>(initial: SetInitialStateAction<S>): State {
     let initialValue: S | Promise<S> = initial as (S | Promise<S>);
     if (typeof initial === 'function') {
@@ -1889,7 +1887,7 @@ function useSubscribedStateLink<S>(
     if (disabledTracking) {
         link.with(Downgraded)
     }
-    useIsomorphicLayoutEffect(() => {
+    React.useEffect(() => {
         subscribeTarget.subscribe(link);
         return () => {
             link.onUpdateUsed[UnmountedCallback] = true

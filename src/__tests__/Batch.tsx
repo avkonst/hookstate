@@ -119,51 +119,56 @@ test('object: should rerender used via nested batch promised', async () => {
     act(() => {
         expect(() => result.current.batch(() => {
             executed = true;
-            expect(renderTimes).toStrictEqual(3);
+            expect(renderTimes).toStrictEqual(2);
             result.current.set(10000)
-            expect(renderTimes).toStrictEqual(3);
+            expect(renderTimes).toStrictEqual(2);
         })).toThrow(`StateLink is used incorrectly. Attempted 'read promised state' at '/'`)
     })
     expect(executed).toBeFalsy()
-    
+
     act(() => {
         expect(() => result.current.batch(() => {
             executed = true;
-            expect(renderTimes).toStrictEqual(3);
+            expect(renderTimes).toStrictEqual(2);
             result.current.set(10000)
-            expect(renderTimes).toStrictEqual(3);
+            expect(renderTimes).toStrictEqual(2);
         }, {
             ifPromised: 'reject'
         })).toThrow(`StateLink is used incorrectly. Attempted 'read promised state' at '/'`)
     })
     expect(executed).toBeFalsy()
-    
+
     executed = false;
     act(() => {
         expect(() => result.current.batch(() => {
             executed = true;
+            expect(renderTimes).toStrictEqual(2);
             result.current.set(10000)
-            expect(renderTimes).toStrictEqual(3);
         }, {
             ifPromised: 'execute'
         })).toThrow(`StateLink is used incorrectly. Attempted 'write promised state' at '/'`)
     })
     expect(executed).toBeTruthy()
 
+    executed = false;
     act(() => {
         result.current.batch(() => {
-            expect(renderTimes).toStrictEqual(3);
+            executed = true;
+            expect(renderTimes).toStrictEqual(2);
             result.current.set(p => p + 100)
-            expect(renderTimes).toStrictEqual(3);
+            expect(renderTimes).toStrictEqual(2);
             result.current.set(p => p + 100)
-            expect(renderTimes).toStrictEqual(3);
+            expect(renderTimes).toStrictEqual(2);
         }, {
             ifPromised: 'discard'
         });
     })
+    expect(executed).toBeFalsy()
 
+    executed = false;
     act(() => {
         result.current.batch(() => {
+            executed = true
             expect(renderTimes).toStrictEqual(3);
             result.current.set(p => p + 100)
             expect(renderTimes).toStrictEqual(3);
@@ -173,11 +178,13 @@ test('object: should rerender used via nested batch promised', async () => {
             ifPromised: 'postpone'
         });
     })
+    expect(executed).toBeFalsy()
 
     await act(async () => {
         await promise;
     })
-    expect(renderTimes).toStrictEqual(3);
+    expect(executed).toBeTruthy()
+    expect(renderTimes).toStrictEqual(4);
     expect(result.current.promised).toStrictEqual(false);
     expect(result.current.error).toEqual(undefined);
     expect(result.current.value).toEqual(300);
