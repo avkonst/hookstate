@@ -169,11 +169,13 @@ test('object: should rerender used via nested batch promised', async () => {
     act(() => {
         result.current.batch(() => {
             executed = true
-            expect(renderTimes).toStrictEqual(3);
-            result.current.set(p => p + 100)
-            expect(renderTimes).toStrictEqual(3);
-            result.current.set(p => p + 100)
-            expect(renderTimes).toStrictEqual(3);
+            act(() => {
+                expect(renderTimes).toStrictEqual(3);
+                result.current.set(p => p + 100)
+                expect(renderTimes).toStrictEqual(3);
+                result.current.set(p => p + 100)
+                expect(renderTimes).toStrictEqual(3);
+            })
         }, {
             ifPromised: 'postpone'
         });
