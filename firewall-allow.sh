@@ -1,2 +1,2 @@
 #!/bin/bash
-sudo ufw allow from $(echo $SSH_CLIENT | awk '{print $1}') to any port 3000
+sudo ufw allow from $(echo $SSH_CLIENT | awk '{print $1}') to any

@@ -305,7 +305,7 @@ export interface StateLink<S> {
      * @hidden
      * @ignore
      */
-    with(pluginId: symbol): [StateLink<S> & ExtendedStateLinkMixin<S>, PluginCallbacks];
+    with<R = never>(pluginId: symbol, alt?: () => R): [StateLink<S> & ExtendedStateLinkMixin<S>, PluginCallbacks] | R;
 
     /**
      * @hidden
@@ -887,37 +887,22 @@ export function Labelled(link: StateLink<StateValueAtPath>): string | undefined;
 export function Labelled(labelOrLink: string | StateLink<StateValueAtPath>): (() => Plugin) | string | undefined {
     if (typeof labelOrLink === 'string') {
         const label = labelOrLink;
-        let unique = true;
-        if (AssignedLabels.has(label)) {
-            console.warn(`Label ${label} is not unique. There is another state with the same label.`)
-            unique = false;
-        }
-        AssignedLabels.add(label)
         return () => ({
             id: LabelledID,
-            create: () => ({
-                label: label,
-                onDestroy: (unique) && (() => AssignedLabels.delete(label))
-            } as PluginCallbacks)
+            create: () => {
+                return ({
+                    label: label
+                } as PluginCallbacks);
+            }
         })
     }
-    try {
-        const [, plugin] = labelOrLink.with(LabelledID);
-        return (plugin as { label: string }).label;
-    } catch (err) {
-        // TODO need tryWith non throwing alternative
-        if (err instanceof PluginUnknownError) {
-            return undefined;
-        }
-        throw err;
-    }
+    const plugin = labelOrLink.with(LabelledID, () => undefined);
+    return plugin && (plugin[1] as { label: string }).label;
 }
 
 ///
 /// INTERNAL SYMBOLS (LIBRARY IMPLEMENTATION)
 ///
-
-const AssignedLabels = new Set<string>();
 
 class StateLinkInvalidUsageError extends Error {
     constructor(op: string, path: Path, hint?: string) {
@@ -1222,11 +1207,7 @@ class State implements Subscribable {
     }
 
     getPlugin(pluginId: symbol) {
-        const existingInstance = this._plugins.get(pluginId)
-        if (existingInstance) {
-            return existingInstance;
-        }
-        throw new PluginUnknownError(pluginId)
+        return this._plugins.get(pluginId)
     }
 
     register(plugin: Plugin) {
@@ -1557,9 +1538,9 @@ class StateLinkImpl<S> implements StateLink<S>,
     }
 
     with(plugin: () => Plugin): StateLink<S>;
-    with(pluginId: symbol): [StateLink<S> & ExtendedStateLinkMixin<S>, PluginCallbacks];
-    with(plugin: (() => Plugin) | symbol):
-        StateLink<S> | [StateLink<S> & ExtendedStateLinkMixin<S>, PluginCallbacks] {
+    with<R = never>(pluginId: symbol, alt?: () => R): [StateLink<S> & ExtendedStateLinkMixin<S>, PluginCallbacks] | R;
+    with<R = never>(plugin: (() => Plugin) | symbol, alt?: () => R):
+        StateLink<S> | [StateLink<S> & ExtendedStateLinkMixin<S>, PluginCallbacks] | R {
         if (typeof plugin === 'function') {
             const pluginMeta = plugin();
             if (pluginMeta.id === DowngradedID) {
@@ -1569,7 +1550,14 @@ class StateLinkImpl<S> implements StateLink<S>,
             this.state.register(pluginMeta);
             return this;
         } else {
-            return [this, this.state.getPlugin(plugin)];
+            const instance = this.state.getPlugin(plugin);
+            if (instance) {
+                return [this, instance];
+            }
+            if (alt) {
+                return alt();
+            }
+            throw new PluginUnknownError(plugin)
         }
     }
 
