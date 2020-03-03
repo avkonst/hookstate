@@ -1,4 +1,4 @@
-import { useStateLink, DevTools, Labelled, None, createStateLink } from '@hookstate/core';
+import { createStateLink, Labelled, useStateLink, DevTools as DevTools$1, None } from '@hookstate/core';
 
 /*! *****************************************************************************
 Copyright (c) Microsoft Corporation. All rights reserved.
@@ -766,38 +766,126 @@ unwrapExports(reduxDevtoolsExtension);
 var reduxDevtoolsExtension_1 = reduxDevtoolsExtension.composeWithDevTools;
 var reduxDevtoolsExtension_2 = reduxDevtoolsExtension.devToolsEnhancer;
 
-var PluginId = Symbol('ReduxDevToolsClient');
-var initialized = false;
-function InitDevTools() {
-    if (initialized) {
-        return;
+var IsDevelopment = !process.env.NODE_ENV || process.env.NODE_ENV === 'development';
+var PluginId = Symbol('DevTools');
+var PluginIdForMonitored = Symbol('DevToolsMonitored');
+var MonitoredStatesLogger = function (str) { };
+var MonitoredStatesLabel = '[HOOKSTATE/DEVTOOLS] MONITORED STATES';
+var MonitoredStates = createStateLink(function () {
+    var p = localStorage.getItem(MonitoredStatesLabel);
+    if (!p) {
+        return [MonitoredStatesLabel];
     }
-    initialized = true;
-    var lastLocal = 0;
-    var lastGlobal = 0;
-    var tracker = function (isLocal) { return function () { return ({
+    return JSON.parse(p);
+})
+    .with(Labelled(MonitoredStatesLabel))
+    .with(function () { return ({
+    id: PluginIdForMonitored,
+    create: function () { return ({
+        onSet: function (p) {
+            var v = p.state;
+            if (!v || !Array.isArray(v)) {
+                v = [MonitoredStatesLabel];
+            }
+            else if (!v.includes(MonitoredStatesLabel)) {
+                v.push(MonitoredStatesLabel);
+            }
+            localStorage.setItem(MonitoredStatesLabel, JSON.stringify(v));
+        }
+    }); }
+}); });
+var DevTools = function (state) {
+    return state.with(PluginId)[1];
+};
+DevTools.Init = function () {
+    useStateLink[DevTools$1] = DevToolsInternal;
+    createStateLink[DevTools$1] = DevToolsInternal;
+};
+var lastUnlabelledId = 0;
+function getLabel() {
+    var obj = {};
+    var oldLimit = Error.stackTraceLimit;
+    Error.stackTraceLimit = 2;
+    Error.captureStackTrace(obj, MonitoredStates.with);
+    Error.stackTraceLimit = oldLimit;
+    var s = obj.stack;
+    if (!s) {
+        return 'unlabelled-' + (lastUnlabelledId += 1);
+    }
+    var parts = s.split('\n', 3);
+    if (parts.length < 3) {
+        return 'unlabelled-' + (lastUnlabelledId += 1);
+    }
+    return parts[2]
+        .replace(/\s*[(].*/, '')
+        .replace(/\s*at\s*/, '');
+}
+function DevToolsInternal() {
+    return {
         id: PluginId,
         create: function (lnk) {
             var label = Labelled(lnk);
-            var assignedId = label ? label :
-                isLocal ? 'local-' + (lastLocal += 1) : 'global-' + (lastGlobal += 1);
+            var assignedId = label ? label : getLabel();
+            var monitored = MonitoredStates.value.includes(assignedId) || (IsDevelopment && label);
+            if (!monitored) {
+                MonitoredStatesLogger("CREATE [" + assignedId + "] (unmonitored)");
+                return {
+                    log: function () { },
+                    onDestroy: function () {
+                        MonitoredStatesLogger("DESTROY [" + assignedId + "] (unmonitored)");
+                    }
+                };
+            }
             var fromRemote = false;
             var fromLocal = false;
             var reduxStore = createStore(function (state, action) {
-                if ((action.type.startsWith('SET [') || action.type === 'RESET') && !fromLocal) {
-                    // replay from development tools
-                    // TODO: improve this code: set by path instead of the whole state (for SET case only)
-                    try {
-                        fromRemote = true;
-                        if ('state' in action) {
-                            lnk.set(action.state);
+                if (!fromLocal) {
+                    var isValidPath = function (p) { return Array.isArray(p) &&
+                        p.findIndex(function (l) { return typeof l !== 'string' && typeof l !== 'number'; }) === -1; };
+                    if (action.type.startsWith('SET')) {
+                        var setState = function (l) {
+                            try {
+                                fromRemote = true;
+                                if ('value' in action) {
+                                    l.set(action.value);
+                                }
+                                else {
+                                    l.set(None);
+                                }
+                            }
+                            finally {
+                                fromRemote = false;
+                            }
+                        };
+                        // replay from development tools
+                        if (action.path) {
+                            if (isValidPath(action.path)) {
+                                if (action.path.length === 0) {
+                                    setState(lnk);
+                                }
+                                var l = lnk;
+                                var valid = true;
+                                for (var _i = 0, _a = action.path; _i < _a.length; _i++) {
+                                    var p = _a[_i];
+                                    if (l.nested) {
+                                        l = l.nested[p];
+                                    }
+                                    else {
+                                        valid = false;
+                                    }
+                                }
+                                if (valid) {
+                                    setState(l);
+                                }
+                            }
                         }
                         else {
-                            lnk.set(None);
+                            setState(lnk);
                         }
                     }
-                    finally {
-                        fromRemote = false;
+                    else if (action.type === 'RERENDER' && action.path && isValidPath(action.path)) {
+                        // rerender request from development tools
+                        lnk.with(PluginId)[0].update([action.path]);
                     }
                 }
                 if (lnk.promised) {
@@ -806,7 +894,22 @@ function InitDevTools() {
                 return lnk.value;
             }, reduxDevtoolsExtension_2({
                 name: window.location.hostname + ": " + assignedId,
-                trace: true
+                trace: IsDevelopment,
+                traceLimit: 30,
+                autoPause: true,
+                shouldHotReload: false,
+                features: {
+                    persist: true,
+                    pause: true,
+                    lock: false,
+                    export: 'custom',
+                    import: 'custom',
+                    jump: false,
+                    skip: false,
+                    reorder: false,
+                    dispatch: true,
+                    test: false
+                }
             }));
             // tslint:disable-next-line: no-any
             var dispatch = function (action, alt) {
@@ -823,23 +926,29 @@ function InitDevTools() {
                     alt();
                 }
             };
+            MonitoredStatesLogger("CREATE [" + assignedId + "] (monitored)");
             dispatch({ type: "CREATE" });
             return {
+                // tslint:disable-next-line: no-any
+                log: function (str, data) {
+                    dispatch({ type: ":: " + str, data: data });
+                },
                 onSet: function (p) {
                     dispatch(__assign(__assign({}, p), { type: "SET [" + p.path.join('/') + "]" }));
                 },
                 onDestroy: function () {
+                    MonitoredStatesLogger("DESTROY [" + assignedId + "] (monitored)");
                     dispatch({ type: "DESTROY" }, function () {
                         setTimeout(function () { return dispatch({ type: "RESET -> DESTROY" }); });
                     });
                 }
             };
         }
-    }); }; };
-    useStateLink[DevTools] = tracker(true);
-    createStateLink[DevTools] = tracker(false);
+    };
 }
-InitDevTools(); // attach on load
+MonitoredStates.with(DevToolsInternal);
+MonitoredStatesLogger = function (str) { return DevTools(MonitoredStates).log(str); };
+DevTools.Init(); // attach on load
 
-export { InitDevTools };
+export { DevTools };
 //# sourceMappingURL=index.es.js.map

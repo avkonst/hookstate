@@ -1707,10 +1707,10 @@
   dependencies:
     "@hapi/hoek" "8.x.x"
 
-"@hookstate/core@^1.6.0":
-  version "1.6.0"
-  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-1.6.0.tgz#5114d3fdea3223fe60559a36c7d90818cbe59873"
-  integrity sha512-epmeKb87LC6TjZ7pzSktm/Qk6GsivEUSiXLA6RTtaGrq/LerYvl5pg81kLspUZYowC8Zyn1L7UiOPZGcKDdKYQ==
+"@hookstate/core@^1.6.2":
+  version "1.6.2"
+  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-1.6.2.tgz#6e14646a525a76739ba6b8b6411a4992ce9760e8"
+  integrity sha512-9I8ZjqYjYX+I9ASiTsgf3N/k3XXAiiQG60kqk4LWDfsR9oNfaLPIIxkFfag4ZAWKfYOO2tFtr4G5XQnbJxcJHw==
 
 "@jest/console@^24.7.1":
   version "24.7.1"
