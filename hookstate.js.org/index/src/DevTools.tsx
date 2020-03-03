@@ -37,6 +37,7 @@ const MonitoredStates = createStateLink<{ monitored: string[], callstacksDepth: 
             onSet: p => {
                 let v = p.state;
                 if (!v || !v.monitored || !Array.isArray(v.monitored)) {
+                    v = v || {}
                     v.monitored = [MonitoredStatesLabel]
                 } else if (!v.monitored.includes(MonitoredStatesLabel)) {
                     v.monitored.push(MonitoredStatesLabel)
@@ -44,6 +45,9 @@ const MonitoredStates = createStateLink<{ monitored: string[], callstacksDepth: 
                 const depth = Number(v.callstacksDepth);
                 v.callstacksDepth = Number.isInteger(depth) && depth >= 0 ? depth : IsDevelopment ? 30 : 0;
                 localStorage.setItem(MonitoredStatesLabel, JSON.stringify(v))
+                if (v !== p.state) {
+                    MonitoredStates.set(v)
+                }
             }
         })
     }))
