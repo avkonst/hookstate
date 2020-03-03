@@ -18,12 +18,15 @@ const IsDevelopment = !process.env.NODE_ENV || process.env.NODE_ENV === 'develop
 const PluginId = Symbol('DevTools')
 const PluginIdForMonitored = Symbol('DevToolsMonitored')
 
-let MonitoredStatesLogger = (str: string) => { /* */ };
-const MonitoredStatesLabel = '[HOOKSTATE/DEVTOOLS] MONITORED STATES';
-const MonitoredStates = createStateLink(() => {
+let MonitoredStatesLogger = (_: string) => { /* */ };
+const MonitoredStatesLabel = '@hookstate/devtools: settings';
+const MonitoredStates = createStateLink<{ monitored: string[], callstacksDepth: number }>(() => {
         const p = localStorage.getItem(MonitoredStatesLabel)
         if (!p) {
-            return [MonitoredStatesLabel]
+            return {
+                monitored: [MonitoredStatesLabel],
+                callstacksDepth: IsDevelopment ? 30 : 0
+            }
         }
         return JSON.parse(p)
     })
@@ -33,11 +36,13 @@ const MonitoredStates = createStateLink(() => {
         create: () => ({
             onSet: p => {
                 let v = p.state;
-                if (!v || !Array.isArray(v)) {
-                    v = [MonitoredStatesLabel]
-                } else if (!v.includes(MonitoredStatesLabel)) {
-                    v.push(MonitoredStatesLabel)
+                if (!v || !v.monitored || !Array.isArray(v.monitored)) {
+                    v.monitored = [MonitoredStatesLabel]
+                } else if (!v.monitored.includes(MonitoredStatesLabel)) {
+                    v.monitored.push(MonitoredStatesLabel)
                 }
+                const depth = Number(v.callstacksDepth);
+                v.callstacksDepth = Number.isInteger(depth) && depth >= 0 ? depth : IsDevelopment ? 30 : 0;
                 localStorage.setItem(MonitoredStatesLabel, JSON.stringify(v))
             }
         })
@@ -83,7 +88,7 @@ function DevToolsInternal(): Plugin {
             const label = Labelled(lnk)
             const assignedId = label ? label : getLabel();
 
-            const monitored = MonitoredStates.value.includes(assignedId) || (IsDevelopment && label)
+            const monitored = MonitoredStates.value.monitored.includes(assignedId) || (IsDevelopment && label)
             if (!monitored) {
                 MonitoredStatesLogger(`CREATE [${assignedId}] (unmonitored)`)
                 return {
@@ -148,8 +153,8 @@ function DevToolsInternal(): Plugin {
                 },
                 devToolsEnhancer({
                     name: `${window.location.hostname}: ${assignedId}`,
-                    trace: IsDevelopment,
-                    traceLimit: 30,
+                    trace: MonitoredStates.value.callstacksDepth !== 0,
+                    traceLimit: MonitoredStates.value.callstacksDepth,
                     autoPause: true,
                     shouldHotReload: false,
                     features: {
