@@ -9,10 +9,8 @@ import * as serviceWorker from './serviceWorker';
 
 import ReactGA from 'react-ga';
 
-import { DevTools } from './DevTools';
+import './DevTools';
 import App from './App';
-
-DevTools.Init()
 
 const trackingId = 'UA-146415947-1';
 ReactGA.initialize(trackingId);

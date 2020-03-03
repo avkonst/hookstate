@@ -9,6 +9,7 @@ import {
     Plugin,
     None,
     Labelled,
+    PluginCallbacks,
 } from '@hookstate/core'
 
 import { createStore } from 'redux';
@@ -60,10 +61,6 @@ export interface DevToolsExtensions {
 export const DevTools = (state: StateLink<StateValueAtPath>) => {
     return state.with(PluginId)[1] as DevToolsExtensions;
 }
-DevTools.Init = () => {
-    useStateLink[DevToolsID] = DevToolsInternal
-    createStateLink[DevToolsID] = DevToolsInternal
-};
 
 let lastUnlabelledId = 0;
 function getLabel() {
@@ -85,6 +82,96 @@ function getLabel() {
         .replace(/\s*at\s*/, '')
 }
 
+function createReduxDevToolsLogger(lnk: StateLink<StateValueAtRoot>, assignedId: string) {
+    let fromRemote = false;
+    let fromLocal = false;
+    const reduxStore = createStore(
+        (_, action: { type: string, value: StateValueAtRoot, path?: Path }) => {
+            if (!fromLocal) {
+                const isValidPath = (p: Path) => Array.isArray(p) &&
+                    p.findIndex(l => typeof l !== 'string' && typeof l !== 'number') === -1;
+                if (action.type.startsWith('SET')) {
+                    const setState = (l: StateLink<StateValueAtPath>) => {
+                        try {
+                            fromRemote = true;
+                            if ('value' in action) {
+                                l.set(action.value)
+                            } else {
+                                l.set(None)
+                            }
+                        } finally {
+                            fromRemote = false;
+                        }
+                    }
+                    // replay from development tools
+                    if (action.path) {
+                        if (isValidPath(action.path)) {
+                            if (action.path.length === 0) {
+                                setState(lnk)
+                            }
+                            let l = lnk;
+                            let valid = true;
+                            for (let p of action.path) {
+                                if (l.nested) {
+                                    l = l.nested[p];
+                                } else {
+                                    valid = false;
+                                }
+                            }
+                            if (valid) {
+                                setState(l)
+                            }
+                        }
+                    } else {
+                        setState(lnk)
+                    }
+                } else if (action.type === 'RERENDER' && action.path && isValidPath(action.path)) {
+                    // rerender request from development tools
+                    lnk.with(PluginId)[0].update([action.path!])
+                }
+            }
+            if (lnk.promised) {
+                return None;
+            }
+            return lnk.value;
+        },
+        devToolsEnhancer({
+            name: `${window.location.hostname}: ${assignedId}`,
+            trace: MonitoredStates.value.callstacksDepth !== 0,
+            traceLimit: MonitoredStates.value.callstacksDepth,
+            autoPause: true,
+            shouldHotReload: false,
+            features: {
+                persist: true,
+                pause: true,
+                lock: false,
+                export: 'custom',
+                import: 'custom',
+                jump: false,
+                skip: false,
+                reorder: false,
+                dispatch: true,
+                test: false
+            }
+        })
+    )
+
+    // tslint:disable-next-line: no-any
+    const dispatch = (action: any, alt?: () => void) => {
+        if (!fromRemote) {
+            try {
+                fromLocal = true;
+                reduxStore.dispatch(action)
+            } finally {
+                fromLocal = false;
+            }
+        } else if (alt) {
+            alt()
+        }
+    }
+    return dispatch;
+}
+
 function DevToolsInternal(): Plugin {
     return ({
         id: PluginId,
@@ -100,95 +187,10 @@ function DevToolsInternal(): Plugin {
                     onDestroy() {
                         MonitoredStatesLogger(`DESTROY [${assignedId}] (unmonitored)`)
                     }
-                }
+                } as PluginCallbacks & DevToolsExtensions
             }
 
-            let fromRemote = false;
-            let fromLocal = false;
-            const reduxStore = createStore(
-                (state, action: { type: string, value: StateValueAtRoot, path?: Path }) => {
-                    if (!fromLocal) {
-                        const isValidPath = (p: Path) => Array.isArray(p) &&
-                            p.findIndex(l => typeof l !== 'string' && typeof l !== 'number') === -1;
-                        if (action.type.startsWith('SET')) {
-                            const setState = (l: StateLink<StateValueAtPath>) => {
-                                try {
-                                    fromRemote = true;
-                                    if ('value' in action) {
-                                        l.set(action.value)
-                                    } else {
-                                        l.set(None)
-                                    }
-                                } finally {
-                                    fromRemote = false;
-                                }
-                            }
-                            // replay from development tools
-                            if (action.path) {
-                                if (isValidPath(action.path)) {
-                                    if (action.path.length === 0) {
-                                        setState(lnk)
-                                    }
-                                    let l = lnk;
-                                    let valid = true;
-                                    for (let p of action.path) {
-                                        if (l.nested) {
-                                            l = l.nested[p];
-                                        } else {
-                                            valid = false;
-                                        }
-                                    }
-                                    if (valid) {
-                                        setState(l)
-                                    }
-                                }
-                            } else {
-                                setState(lnk)
-                            }
-                        } else if (action.type === 'RERENDER' && action.path && isValidPath(action.path)) {
-                            // rerender request from development tools
-                            lnk.with(PluginId)[0].update([action.path!])
-                        }
-                    }
-                    if (lnk.promised) {
-                        return None;
-                    }
-                    return lnk.value;
-                },
-                devToolsEnhancer({
-                    name: `${window.location.hostname}: ${assignedId}`,
-                    trace: MonitoredStates.value.callstacksDepth !== 0,
-                    traceLimit: MonitoredStates.value.callstacksDepth,
-                    autoPause: true,
-                    shouldHotReload: false,
-                    features: {
-                        persist: true,
-                        pause: true,
-                        lock: false,
-                        export: 'custom',
-                        import: 'custom',
-                        jump: false,
-                        skip: false,
-                        reorder: false,
-                        dispatch: true,
-                        test: false
-                    }
-                })
-            )
-
-            // tslint:disable-next-line: no-any
-            const dispatch = (action: any, alt?: () => void) => {
-                if (!fromRemote) {
-                    try {
-                        fromLocal = true;
-                        reduxStore.dispatch(action)
-                    } finally {
-                        fromLocal = false;
-                    }
-                } else if (alt) {
-                    alt()
-                }
-            }
+            const dispatch = createReduxDevToolsLogger(lnk, assignedId);
 
             MonitoredStatesLogger(`CREATE [${assignedId}] (monitored)`)
             dispatch({ type: `CREATE` })
@@ -206,7 +208,7 @@ function DevToolsInternal(): Plugin {
                         setTimeout(() => dispatch({ type: `RESET -> DESTROY` }))
                     })
                 }
-            }
+            } as PluginCallbacks & DevToolsExtensions;
         }
     } as Plugin)
 }
@@ -214,4 +216,8 @@ function DevToolsInternal(): Plugin {
 MonitoredStates.with(DevToolsInternal)
 MonitoredStatesLogger = (str) => DevTools(MonitoredStates).log(str)
 
-DevTools.Init() // attach on load
+function DevToolsInit() {
+    useStateLink[DevToolsID] = DevToolsInternal
+    createStateLink[DevToolsID] = DevToolsInternal
+};
+DevToolsInit() // attach on load
