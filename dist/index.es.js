@@ -146,36 +146,21 @@ function Downgraded() {
 function Labelled(labelOrLink) {
     if (typeof labelOrLink === 'string') {
         var label_1 = labelOrLink;
-        var unique_1 = true;
-        if (AssignedLabels.has(label_1)) {
-            console.warn("Label " + label_1 + " is not unique. There is another state with the same label.");
-            unique_1 = false;
-        }
-        AssignedLabels.add(label_1);
         return function () { return ({
             id: LabelledID,
-            create: function () { return ({
-                label: label_1,
-                onDestroy: (unique_1) && (function () { return AssignedLabels.delete(label_1); })
-            }); }
+            create: function () {
+                return {
+                    label: label_1
+                };
+            }
         }); };
     }
-    try {
-        var _a = labelOrLink.with(LabelledID), plugin = _a[1];
-        return plugin.label;
-    }
-    catch (err) {
-        // TODO need tryWith non throwing alternative
-        if (err instanceof PluginUnknownError) {
-            return undefined;
-        }
-        throw err;
-    }
+    var plugin = labelOrLink.with(LabelledID, function () { return undefined; });
+    return plugin && plugin[1].label;
 }
 ///
 /// INTERNAL SYMBOLS (LIBRARY IMPLEMENTATION)
 ///
-var AssignedLabels = new Set();
 var StateLinkInvalidUsageError = /** @class */ (function (_super) {
     __extends(StateLinkInvalidUsageError, _super);
     function StateLinkInvalidUsageError(op, path, hint) {
@@ -435,11 +420,7 @@ var State = /** @class */ (function () {
         this._batchesPendingActions.push(action);
     };
     State.prototype.getPlugin = function (pluginId) {
-        var existingInstance = this._plugins.get(pluginId);
-        if (existingInstance) {
-            return existingInstance;
-        }
-        throw new PluginUnknownError(pluginId);
+        return this._plugins.get(pluginId);
     };
     State.prototype.register = function (plugin) {
         var existingInstance = this._plugins.get(plugin.id);
@@ -739,7 +720,7 @@ var StateLinkImpl = /** @class */ (function () {
         }
         return this;
     };
-    StateLinkImpl.prototype.with = function (plugin) {
+    StateLinkImpl.prototype.with = function (plugin, alt) {
         if (typeof plugin === 'function') {
             var pluginMeta = plugin();
             if (pluginMeta.id === DowngradedID) {
@@ -750,7 +731,14 @@ var StateLinkImpl = /** @class */ (function () {
             return this;
         }
         else {
-            return [this, this.state.getPlugin(plugin)];
+            var instance = this.state.getPlugin(plugin);
+            if (instance) {
+                return [this, instance];
+            }
+            if (alt) {
+                return alt();
+            }
+            throw new PluginUnknownError(plugin);
         }
     };
     StateLinkImpl.prototype.access = function () {

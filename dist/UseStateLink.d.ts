@@ -266,7 +266,7 @@ export interface StateLink<S> {
      * @hidden
      * @ignore
      */
-    with(pluginId: symbol): [StateLink<S> & ExtendedStateLinkMixin<S>, PluginCallbacks];
+    with<R = never>(pluginId: symbol, alt?: () => R): [StateLink<S> & ExtendedStateLinkMixin<S>, PluginCallbacks] | R;
     /**
      * @hidden
      * @ignore
