@@ -177,7 +177,6 @@ MonitoredStatesLogger = (str) => DevTools(MonitoredStates).log(str)
 
 let initialized = false;
 
-
 export function InitDevTools() {
     if (initialized) {
         return;
