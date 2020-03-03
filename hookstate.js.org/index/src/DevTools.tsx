@@ -62,9 +62,7 @@ function getLabel() {
     const oldLimit = Error.stackTraceLimit
     Error.stackTraceLimit = 2;
     Error.captureStackTrace(obj, MonitoredStates.with)
-    console.log(obj.stack)
     Error.stackTraceLimit = oldLimit;
-    console.log(new Error().stack)
     const s = obj.stack;
     if (!s) {
         return 'unlabelled-' + (lastUnlabelledId += 1)
