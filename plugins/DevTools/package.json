@@ -1,6 +1,6 @@
 {
     "name": "@hookstate/devtools",
-    "version": "1.6.0",
+    "version": "1.6.1",
     "description": "Development tools plugin for @hookstate/core.",
     "license": "MIT",
     "author": {
