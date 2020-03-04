@@ -828,7 +828,7 @@ function getLabel(isGlobal) {
         .replace(/\s*[(].*/, '')
         .replace(/\s*at\s*/, '');
 }
-function createReduxDevToolsLogger(lnk, assignedId) {
+function createReduxDevToolsLogger(lnk, assignedId, onBreakpoint) {
     var fromRemote = false;
     var fromLocal = false;
     var reduxStore = createStore(function (_, action) {
@@ -880,6 +880,9 @@ function createReduxDevToolsLogger(lnk, assignedId) {
                 // rerender request from development tools
                 lnk.with(core.DevToolsID)[0].update([action.path]);
             }
+            else if (action.type === 'BREAKPOINT') {
+                onBreakpoint();
+            }
         }
         if (lnk.promised) {
             return core.None;
@@ -930,8 +933,11 @@ function DevToolsInternal(isGlobal) {
         create: function (lnk) {
             var assignedName = getLabel(isGlobal);
             var submitToMonitor;
+            var breakpoint = false;
             if (isMonitored(assignedName, isGlobal)) {
-                submitToMonitor = createReduxDevToolsLogger(lnk, assignedName);
+                submitToMonitor = createReduxDevToolsLogger(lnk, assignedName, function () {
+                    breakpoint = !breakpoint;
+                });
                 MonitoredStatesLogger("CREATE '" + assignedName + "' (monitored)");
             }
             else {
@@ -951,13 +957,19 @@ function DevToolsInternal(isGlobal) {
                     }
                     if (isMonitored(name, true)) {
                         MonitoredStatesLogger("RENAME '" + assignedName + "' => '" + name + "' (unmonitored => monitored)");
-                        submitToMonitor = createReduxDevToolsLogger(lnk, name);
+                        submitToMonitor = createReduxDevToolsLogger(lnk, name, function () {
+                            breakpoint = !breakpoint;
+                        });
                         // inject on set listener
                         lnk.with(function () { return ({
                             id: PluginIdMonitored,
                             create: function () { return ({
                                 onSet: function (p) {
                                     submitToMonitor(__assign(__assign({}, p), { type: "SET [" + p.path.join('/') + "]" }));
+                                    if (breakpoint) {
+                                        // tslint:disable-next-line: no-debugger
+                                        debugger;
+                                    }
                                 }
                             }); }
                         }); });
@@ -969,6 +981,10 @@ function DevToolsInternal(isGlobal) {
                 },
                 onSet: submitToMonitor && (function (p) {
                     submitToMonitor(__assign(__assign({}, p), { type: "SET [" + p.path.join('/') + "]" }));
+                    if (breakpoint) {
+                        // tslint:disable-next-line: no-debugger
+                        debugger;
+                    }
                 }),
                 onDestroy: function () {
                     if (submitToMonitor) {
