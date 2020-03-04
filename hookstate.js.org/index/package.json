@@ -4,7 +4,7 @@
     "private": true,
     "dependencies": {
         "@hookstate/core": "1.7.0",
-        "@hookstate/devtools": "1.7.2",
+        "@hookstate/devtools": "1.7.4",
         "@hookstate/initial": "1.6.1",
         "@hookstate/logger": "1.5.2",
         "@hookstate/mutate": "1.2.3",

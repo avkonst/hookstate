@@ -1,3 +1,13 @@
+# 1.7.0
+
+### Support for development tools
+
+# 1.6.0
+
+### Typedoc written
+
+### A bunch of types renamed. Old names are deprecated and type aliased.
+
 # 1.5.0
 
 ### `StateInf<S>` is deprecated
