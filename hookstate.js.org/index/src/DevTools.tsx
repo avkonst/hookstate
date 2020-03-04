@@ -8,8 +8,8 @@ import {
     DevTools as DevToolsID,
     Plugin,
     None,
-    Labelled,
     PluginCallbacks,
+    PluginCallbacksOnSetArgument,
 } from '@hookstate/core'
 
 import { createStore } from 'redux';
@@ -17,7 +17,8 @@ import { devToolsEnhancer } from 'redux-devtools-extension';
 
 const IsDevelopment = !process.env.NODE_ENV || process.env.NODE_ENV === 'development';
 const PluginId = Symbol('DevTools')
-const PluginIdForMonitored = Symbol('DevToolsMonitored')
+const PluginIdMonitored = Symbol('DevToolsMonitored')
+const PluginIdPersistedSettings = Symbol('PersistedSettings')
 
 let MonitoredStatesLogger = (_: string) => { /* */ };
 const MonitoredStatesLabel = '@hookstate/devtools: settings';
@@ -31,9 +32,8 @@ const MonitoredStates = createStateLink<{ monitored: string[], callstacksDepth: 
         }
         return JSON.parse(p)
     })
-    .with(Labelled(MonitoredStatesLabel))
     .with(() => ({
-        id: PluginIdForMonitored,
+        id: PluginIdPersistedSettings,
         create: () => ({
             onSet: p => {
                 let v = p.state;
@@ -54,6 +54,7 @@ const MonitoredStates = createStateLink<{ monitored: string[], callstacksDepth: 
     }))
 
 export interface DevToolsExtensions {
+    label(name: string): void;
     // tslint:disable-next-line: no-any
     log(str: string, data?: any): void;
 }
@@ -63,7 +64,11 @@ export const DevTools = (state: StateLink<StateValueAtPath>) => {
 }
 
 let lastUnlabelledId = 0;
-function getLabel() {
+function getLabel(isGlobal?: boolean) {
+    if (!IsDevelopment) {
+        return `${isGlobal ? 'global' : 'local'}-state-${lastUnlabelledId += 1}`
+    }
+    
     const obj: { stack?: string } = {}
     const oldLimit = Error.stackTraceLimit
     Error.stackTraceLimit = 2;
@@ -71,11 +76,11 @@ function getLabel() {
     Error.stackTraceLimit = oldLimit;
     const s = obj.stack;
     if (!s) {
-        return 'unlabelled-' + (lastUnlabelledId += 1)
+        return `${isGlobal ? 'global' : 'local'}-state-${lastUnlabelledId += 1}`
     }
     const parts = s.split('\n', 3);
     if (parts.length < 3) {
-        return 'unlabelled-' + (lastUnlabelledId += 1)
+        return `${isGlobal ? 'global' : 'local'}-state-${lastUnlabelledId += 1}`
     }
     return parts[2]
         .replace(/\s*[(].*/, '')
@@ -172,41 +177,64 @@ function createReduxDevToolsLogger(lnk: StateLink<StateValueAtRoot>, assignedId:
     return dispatch;
 }
 
-function DevToolsInternal(): Plugin {
+function isMonitored(assignedId: string, globalOrLabeled?: boolean) {
+    return MonitoredStates.value.monitored.includes(assignedId) || (IsDevelopment && globalOrLabeled)
+}
+
+function DevToolsInternal(isGlobal?: boolean): Plugin {
     return ({
         id: PluginId,
         create: (lnk) => {
-            const label = Labelled(lnk)
-            const assignedId = label ? label : getLabel();
-
-            const monitored = MonitoredStates.value.monitored.includes(assignedId) || (IsDevelopment && label)
-            if (!monitored) {
-                MonitoredStatesLogger(`CREATE [${assignedId}] (unmonitored)`)
-                return {
-                    log() { /* unmonitored */ },
-                    onDestroy() {
-                        MonitoredStatesLogger(`DESTROY [${assignedId}] (unmonitored)`)
-                    }
-                } as PluginCallbacks & DevToolsExtensions
+            let assignedName = getLabel(isGlobal);
+            let submitToMonitor: ReturnType<typeof createReduxDevToolsLogger> | undefined;
+            if (isMonitored(assignedName, isGlobal)) {
+                submitToMonitor = createReduxDevToolsLogger(lnk, assignedName);
+                MonitoredStatesLogger(`CREATE '${assignedName}' (monitored)`)
+            } else {
+                MonitoredStatesLogger(`CREATE '${assignedName}' (unmonitored)`)
             }
 
-            const dispatch = createReduxDevToolsLogger(lnk, assignedId);
-
-            MonitoredStatesLogger(`CREATE [${assignedId}] (monitored)`)
-            dispatch({ type: `CREATE` })
             return {
                 // tslint:disable-next-line: no-any
-                log: (str: string, data?: any) => {
-                    dispatch({ type: `:: ${str}`, data: data })
+                log(str: string, data?: any) {
+                    if (submitToMonitor) {
+                        submitToMonitor({ type: `:: ${str}`, data: data })
+                    }
                 },
-                onSet: (p) => {
-                    dispatch({ ...p, type: `SET [${p.path.join('/')}]` })
+                label(name: string) {
+                    if (submitToMonitor) {
+                        // already monitored under the initial name
+                        return;
+                    }
+                    if (isMonitored(name, true)) {
+                        MonitoredStatesLogger(`RENAME '${assignedName}' => '${name}' (unmonitored => monitored)`)
+                        submitToMonitor = createReduxDevToolsLogger(lnk, name);
+                        // inject on set listener
+                        lnk.with(() => ({
+                            id: PluginIdMonitored,
+                            create: () => ({
+                                onSet: (p: PluginCallbacksOnSetArgument) => {
+                                    submitToMonitor!({ ...p, type: `SET [${p.path.join('/')}]` })
+                                }
+                            })
+                        }))
+                    } else {
+                        MonitoredStatesLogger(`RENAME '${assignedName}' => '${name}' (unmonitored => unmonitored)`)
+                    }
+                    assignedName = name;
                 },
-                onDestroy: () => {
-                    MonitoredStatesLogger(`DESTROY [${assignedId}] (monitored)`)
-                    dispatch({ type: `DESTROY` }, () => {
-                        setTimeout(() => dispatch({ type: `RESET -> DESTROY` }))
-                    })
+                onSet: submitToMonitor && ((p: PluginCallbacksOnSetArgument) => {
+                    submitToMonitor!({ ...p, type: `SET [${p.path.join('/')}]` })
+                }),
+                onDestroy() {
+                    if (submitToMonitor) {
+                        MonitoredStatesLogger(`DESTROY '${assignedName}' (monitored)`)
+                        submitToMonitor({ type: `DESTROY` }, () => {
+                            setTimeout(() => submitToMonitor!({ type: `RESET -> DESTROY` }))
+                        })
+                    } else {
+                        MonitoredStatesLogger(`DESTROY '${assignedName}' (unmonitored)`)
+                    }
                 }
             } as PluginCallbacks & DevToolsExtensions;
         }
@@ -214,10 +242,11 @@ function DevToolsInternal(): Plugin {
 }
 
 MonitoredStates.with(DevToolsInternal)
+DevTools(MonitoredStates).label(MonitoredStatesLabel)
 MonitoredStatesLogger = (str) => DevTools(MonitoredStates).log(str)
 
 function DevToolsInit() {
     useStateLink[DevToolsID] = DevToolsInternal
-    createStateLink[DevToolsID] = DevToolsInternal
+    createStateLink[DevToolsID] = () => DevToolsInternal(true)
 };
 DevToolsInit() // attach on load
