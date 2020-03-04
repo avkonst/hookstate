@@ -1707,10 +1707,10 @@
   dependencies:
     "@hapi/hoek" "8.x.x"
 
-"@hookstate/core@^1.6.2":
-  version "1.6.2"
-  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-1.6.2.tgz#6e14646a525a76739ba6b8b6411a4992ce9760e8"
-  integrity sha512-9I8ZjqYjYX+I9ASiTsgf3N/k3XXAiiQG60kqk4LWDfsR9oNfaLPIIxkFfag4ZAWKfYOO2tFtr4G5XQnbJxcJHw==
+"@hookstate/core@^1.7.0":
+  version "1.7.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-1.7.0.tgz#35fecf01f2960046d43d9ca736f56ad536d6a67d"
+  integrity sha512-kvezQ+JWTwf0SLGyvFPdNGTphrJVE0R237hiuX7sjg40eHHnBCE1gk9Ff8Hjk3pId50+z0CHHoqMUac/Sx6gLg==
 
 "@jest/console@^24.7.1":
   version "24.7.1"
@@ -4306,10 +4306,10 @@ create-hmac@^1.1.0, create-hmac@^1.1.2, create-hmac@^1.1.4:
     safe-buffer "^5.0.1"
     sha.js "^2.4.8"
 
-cross-env@7.0.0:
-  version "7.0.0"
-  resolved "https://registry.yarnpkg.com/cross-env/-/cross-env-7.0.0.tgz#5a3b2ddce51ec713ea58f2fb79ce22e65b4f5479"
-  integrity sha512-rV6M9ldNgmwP7bx5u6rZsTbYidzwvrwIYZnT08hSGLcQCcggofgFW+sNe7IhA1SRauPS0QuLbbX+wdNtpqE5CQ==
+cross-env@7.0.1:
+  version "7.0.1"
+  resolved "https://registry.yarnpkg.com/cross-env/-/cross-env-7.0.1.tgz#c8e03412ea0e1370fe3f0066929a70b8e1e90c39"
+  integrity sha512-1+DmLosu38kC4s1H4HzNkcolwdANifu9+5bE6uKQCV4L6jvVdV9qdRAk8vV3GoWRe0x4z+K2fFhgoDMqwNsPqQ==
   dependencies:
     cross-spawn "^7.0.1"
 

@@ -4,19 +4,22 @@ import {
     StateValueAtRoot,
     StateValueAtPath,
     StateLink,
-    Path,
-    DevTools as DevToolsID,
-    Plugin,
     None,
-    Labelled,
+    Path,
+    Plugin,
+    PluginCallbacks,
+    PluginCallbacksOnSetArgument,
+    DevTools,
+    DevToolsID,
+    DevToolsExtensions,
 } from '@hookstate/core'
 
 import { createStore } from 'redux';
 import { devToolsEnhancer } from 'redux-devtools-extension';
 
 const IsDevelopment = !process.env.NODE_ENV || process.env.NODE_ENV === 'development';
-const PluginId = Symbol('DevTools')
-const PluginIdForMonitored = Symbol('DevToolsMonitored')
+const PluginIdMonitored = Symbol('DevToolsMonitored')
+const PluginIdPersistedSettings = Symbol('PersistedSettings')
 
 let MonitoredStatesLogger = (_: string) => { /* */ };
 const MonitoredStatesLabel = '@hookstate/devtools: settings';
@@ -30,9 +33,8 @@ const MonitoredStates = createStateLink<{ monitored: string[], callstacksDepth: 
         }
         return JSON.parse(p)
     })
-    .with(Labelled(MonitoredStatesLabel))
     .with(() => ({
-        id: PluginIdForMonitored,
+        id: PluginIdPersistedSettings,
         create: () => ({
             onSet: p => {
                 let v = p.state;
@@ -52,21 +54,12 @@ const MonitoredStates = createStateLink<{ monitored: string[], callstacksDepth: 
         })
     }))
 
-export interface DevToolsExtensions {
-    // tslint:disable-next-line: no-any
-    log(str: string, data?: any): void;
-}
-
-export const DevTools = (state: StateLink<StateValueAtPath>) => {
-    return state.with(PluginId)[1] as DevToolsExtensions;
-}
-DevTools.Init = () => {
-    useStateLink[DevToolsID] = DevToolsInternal
-    createStateLink[DevToolsID] = DevToolsInternal
-};
-
 let lastUnlabelledId = 0;
-function getLabel() {
+function getLabel(isGlobal?: boolean) {
+    if (!IsDevelopment) {
+        return `${isGlobal ? 'global' : 'local'}-state-${lastUnlabelledId += 1}`
+    }
+    
     const obj: { stack?: string } = {}
     const oldLimit = Error.stackTraceLimit
     Error.stackTraceLimit = 2;
@@ -74,144 +67,177 @@ function getLabel() {
     Error.stackTraceLimit = oldLimit;
     const s = obj.stack;
     if (!s) {
-        return 'unlabelled-' + (lastUnlabelledId += 1)
+        return `${isGlobal ? 'global' : 'local'}-state-${lastUnlabelledId += 1}`
     }
     const parts = s.split('\n', 3);
     if (parts.length < 3) {
-        return 'unlabelled-' + (lastUnlabelledId += 1)
+        return `${isGlobal ? 'global' : 'local'}-state-${lastUnlabelledId += 1}`
     }
     return parts[2]
         .replace(/\s*[(].*/, '')
         .replace(/\s*at\s*/, '')
 }
 
-function DevToolsInternal(): Plugin {
-    return ({
-        id: PluginId,
-        create: (lnk) => {
-            const label = Labelled(lnk)
-            const assignedId = label ? label : getLabel();
-
-            const monitored = MonitoredStates.value.monitored.includes(assignedId) || (IsDevelopment && label)
-            if (!monitored) {
-                MonitoredStatesLogger(`CREATE [${assignedId}] (unmonitored)`)
-                return {
-                    log() { /* unmonitored */ },
-                    onDestroy() {
-                        MonitoredStatesLogger(`DESTROY [${assignedId}] (unmonitored)`)
-                    }
-                }
-            }
-
-            let fromRemote = false;
-            let fromLocal = false;
-            const reduxStore = createStore(
-                (state, action: { type: string, value: StateValueAtRoot, path?: Path }) => {
-                    if (!fromLocal) {
-                        const isValidPath = (p: Path) => Array.isArray(p) &&
-                            p.findIndex(l => typeof l !== 'string' && typeof l !== 'number') === -1;
-                        if (action.type.startsWith('SET')) {
-                            const setState = (l: StateLink<StateValueAtPath>) => {
-                                try {
-                                    fromRemote = true;
-                                    if ('value' in action) {
-                                        l.set(action.value)
-                                    } else {
-                                        l.set(None)
-                                    }
-                                } finally {
-                                    fromRemote = false;
-                                }
-                            }
-                            // replay from development tools
-                            if (action.path) {
-                                if (isValidPath(action.path)) {
-                                    if (action.path.length === 0) {
-                                        setState(lnk)
-                                    }
-                                    let l = lnk;
-                                    let valid = true;
-                                    for (let p of action.path) {
-                                        if (l.nested) {
-                                            l = l.nested[p];
-                                        } else {
-                                            valid = false;
-                                        }
-                                    }
-                                    if (valid) {
-                                        setState(l)
-                                    }
-                                }
+function createReduxDevToolsLogger(lnk: StateLink<StateValueAtRoot>, assignedId: string) {
+    let fromRemote = false;
+    let fromLocal = false;
+    const reduxStore = createStore(
+        (_, action: { type: string, value: StateValueAtRoot, path?: Path }) => {
+            if (!fromLocal) {
+                const isValidPath = (p: Path) => Array.isArray(p) &&
+                    p.findIndex(l => typeof l !== 'string' && typeof l !== 'number') === -1;
+                if (action.type.startsWith('SET')) {
+                    const setState = (l: StateLink<StateValueAtPath>) => {
+                        try {
+                            fromRemote = true;
+                            if ('value' in action) {
+                                l.set(action.value)
                             } else {
-                                setState(lnk)
+                                l.set(None)
                             }
-                        } else if (action.type === 'RERENDER' && action.path && isValidPath(action.path)) {
-                            // rerender request from development tools
-                            lnk.with(PluginId)[0].update([action.path!])
+                        } finally {
+                            fromRemote = false;
                         }
                     }
-                    if (lnk.promised) {
-                        return None;
+                    // replay from development tools
+                    if (action.path) {
+                        if (isValidPath(action.path)) {
+                            if (action.path.length === 0) {
+                                setState(lnk)
+                            }
+                            let l = lnk;
+                            let valid = true;
+                            for (let p of action.path) {
+                                if (l.nested) {
+                                    l = l.nested[p];
+                                } else {
+                                    valid = false;
+                                }
+                            }
+                            if (valid) {
+                                setState(l)
+                            }
+                        }
+                    } else {
+                        setState(lnk)
                     }
-                    return lnk.value;
-                },
-                devToolsEnhancer({
-                    name: `${window.location.hostname}: ${assignedId}`,
-                    trace: MonitoredStates.value.callstacksDepth !== 0,
-                    traceLimit: MonitoredStates.value.callstacksDepth,
-                    autoPause: true,
-                    shouldHotReload: false,
-                    features: {
-                        persist: true,
-                        pause: true,
-                        lock: false,
-                        export: 'custom',
-                        import: 'custom',
-                        jump: false,
-                        skip: false,
-                        reorder: false,
-                        dispatch: true,
-                        test: false
-                    }
-                })
-            )
-
-            // tslint:disable-next-line: no-any
-            const dispatch = (action: any, alt?: () => void) => {
-                if (!fromRemote) {
-                    try {
-                        fromLocal = true;
-                        reduxStore.dispatch(action)
-                    } finally {
-                        fromLocal = false;
-                    }
-                } else if (alt) {
-                    alt()
+                } else if (action.type === 'RERENDER' && action.path && isValidPath(action.path)) {
+                    // rerender request from development tools
+                    lnk.with(DevToolsID)[0].update([action.path!])
                 }
             }
+            if (lnk.promised) {
+                return None;
+            }
+            return lnk.value;
+        },
+        devToolsEnhancer({
+            name: `${window.location.hostname}: ${assignedId}`,
+            trace: MonitoredStates.value.callstacksDepth !== 0,
+            traceLimit: MonitoredStates.value.callstacksDepth,
+            autoPause: true,
+            shouldHotReload: false,
+            features: {
+                persist: true,
+                pause: true,
+                lock: false,
+                export: 'custom',
+                import: 'custom',
+                jump: false,
+                skip: false,
+                reorder: false,
+                dispatch: true,
+                test: false
+            }
+        })
+    )
 
-            MonitoredStatesLogger(`CREATE [${assignedId}] (monitored)`)
-            dispatch({ type: `CREATE` })
+    // tslint:disable-next-line: no-any
+    const dispatch = (action: any, alt?: () => void) => {
+        if (!fromRemote) {
+            try {
+                fromLocal = true;
+                reduxStore.dispatch(action)
+            } finally {
+                fromLocal = false;
+            }
+        } else if (alt) {
+            alt()
+        }
+    }
+    return dispatch;
+}
+
+function isMonitored(assignedId: string, globalOrLabeled?: boolean) {
+    return MonitoredStates.value.monitored.includes(assignedId) || (IsDevelopment && globalOrLabeled)
+}
+
+function DevToolsInternal(isGlobal?: boolean): Plugin {
+    return ({
+        id: DevToolsID,
+        create: (lnk) => {
+            let assignedName = getLabel(isGlobal);
+            let submitToMonitor: ReturnType<typeof createReduxDevToolsLogger> | undefined;
+            if (isMonitored(assignedName, isGlobal)) {
+                submitToMonitor = createReduxDevToolsLogger(lnk, assignedName);
+                MonitoredStatesLogger(`CREATE '${assignedName}' (monitored)`)
+            } else {
+                MonitoredStatesLogger(`CREATE '${assignedName}' (unmonitored)`)
+            }
+
             return {
                 // tslint:disable-next-line: no-any
-                log: (str: string, data?: any) => {
-                    dispatch({ type: `:: ${str}`, data: data })
+                log(str: string, data?: any) {
+                    if (submitToMonitor) {
+                        submitToMonitor({ type: `:: ${str}`, data: data })
+                    }
                 },
-                onSet: (p) => {
-                    dispatch({ ...p, type: `SET [${p.path.join('/')}]` })
+                label(name: string) {
+                    if (submitToMonitor) {
+                        // already monitored under the initial name
+                        return;
+                    }
+                    if (isMonitored(name, true)) {
+                        MonitoredStatesLogger(`RENAME '${assignedName}' => '${name}' (unmonitored => monitored)`)
+                        submitToMonitor = createReduxDevToolsLogger(lnk, name);
+                        // inject on set listener
+                        lnk.with(() => ({
+                            id: PluginIdMonitored,
+                            create: () => ({
+                                onSet: (p: PluginCallbacksOnSetArgument) => {
+                                    submitToMonitor!({ ...p, type: `SET [${p.path.join('/')}]` })
+                                }
+                            })
+                        }))
+                    } else {
+                        MonitoredStatesLogger(`RENAME '${assignedName}' => '${name}' (unmonitored => unmonitored)`)
+                    }
+                    assignedName = name;
                 },
-                onDestroy: () => {
-                    MonitoredStatesLogger(`DESTROY [${assignedId}] (monitored)`)
-                    dispatch({ type: `DESTROY` }, () => {
-                        setTimeout(() => dispatch({ type: `RESET -> DESTROY` }))
-                    })
+                onSet: submitToMonitor && ((p: PluginCallbacksOnSetArgument) => {
+                    submitToMonitor!({ ...p, type: `SET [${p.path.join('/')}]` })
+                }),
+                onDestroy() {
+                    if (submitToMonitor) {
+                        MonitoredStatesLogger(`DESTROY '${assignedName}' (monitored)`)
+                        submitToMonitor({ type: `DESTROY` }, () => {
+                            setTimeout(() => submitToMonitor!({ type: `RESET -> DESTROY` }))
+                        })
+                    } else {
+                        MonitoredStatesLogger(`DESTROY '${assignedName}' (unmonitored)`)
+                    }
                 }
-            }
+            } as PluginCallbacks & DevToolsExtensions;
         }
     } as Plugin)
 }
 
 MonitoredStates.with(DevToolsInternal)
+DevTools(MonitoredStates).label(MonitoredStatesLabel)
 MonitoredStatesLogger = (str) => DevTools(MonitoredStates).log(str)
 
-DevTools.Init() // attach on load
+function DevToolsInit() {
+    useStateLink[DevToolsID] = DevToolsInternal
+    createStateLink[DevToolsID] = () => DevToolsInternal(true)
+};
+DevToolsInit() // attach on load
