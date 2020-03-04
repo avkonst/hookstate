@@ -1,0 +1,75 @@
+{
+    "name": "@hookstate/initial",
+    "version": "1.5.2",
+    "description": "Plugin for @hookstate/core to enable access to initial state value and to modified status.",
+    "license": "MIT",
+    "author": {
+        "name": "Andrey Konstantinov"
+    },
+    "repository": {
+        "url": "https://github.com/avkonst/hookstate"
+    },
+    "bugs": {
+        "url": "https://github.com/avkonst/hookstate/issues"
+    },
+    "homepage": "https://github.com/avkonst/hookstate",
+    "main": "dist/index.js",
+    "module": "dist/index.es.js",
+    "jsnext:main": "dist/index.es.js",
+    "engines": {
+        "node": ">=8",
+        "npm": ">=5"
+    },
+    "scripts": {
+        "start": "rollup -c -w",
+        "build": "rollup -c",
+        "build:watch": "yarn run start",
+        "lint": "tslint --project .",
+        "clean": "rimraf dist",
+        "clean-deps": "rimraf node_modules",
+        "test": "cross-env CI=1 react-scripts test --env=jsdom",
+        "test:watch": "react-scripts test --env=jsdom",
+        "check-updates": "ncu",
+        "apply-updates": "ncu -u",
+        "prepare": "yarn build"
+    },
+    "peerDependencies": {
+        "@hookstate/core": "^1.6.2",
+        "lodash.clonedeep": "^4.5.0",
+        "lodash.isequal": "^4.5.0"
+    },
+    "devDependencies": {
+        "@hookstate/core": "^1.6.2",
+        "@testing-library/react": "9.4.1",
+        "@testing-library/react-hooks": "3.2.1",
+        "@types/jest": "25.1.3",
+        "@types/lodash.clonedeep": "4.5.6",
+        "@types/lodash.isequal": "4.5.5",
+        "@types/react": "16.9.23",
+        "@types/react-dom": "16.9.5",
+        "babel-core": "6.26.3",
+        "babel-runtime": "6.26.0",
+        "cross-env": "7.0.1",
+        "lodash.clonedeep": "^4.5.0",
+        "lodash.isequal": "^4.5.0",
+        "npm-check-updates": "4.0.3",
+        "react": "16.13.0",
+        "react-dom": "16.13.0",
+        "react-scripts": "3.4.0",
+        "react-test-renderer": "16.13.0",
+        "rimraf": "3.0.2",
+        "rollup": "1.32.0",
+        "rollup-plugin-babel": "4.3.3",
+        "rollup-plugin-commonjs": "10.1.0",
+        "rollup-plugin-node-resolve": "5.2.0",
+        "rollup-plugin-peer-deps-external": "2.2.2",
+        "rollup-plugin-typescript2": "0.26.0",
+        "rollup-plugin-url": "3.0.1",
+        "tslint": "6.0.0",
+        "tslint-react": "4.2.0",
+        "typescript": "3.8.3"
+    },
+    "files": [
+        "dist"
+    ]
+}
