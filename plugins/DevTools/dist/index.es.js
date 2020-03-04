@@ -766,241 +766,252 @@ unwrapExports(reduxDevtoolsExtension);
 var reduxDevtoolsExtension_1 = reduxDevtoolsExtension.composeWithDevTools;
 var reduxDevtoolsExtension_2 = reduxDevtoolsExtension.devToolsEnhancer;
 
-var IsDevelopment = !process.env.NODE_ENV || process.env.NODE_ENV === 'development';
-var PluginIdMonitored = Symbol('DevToolsMonitored');
-var PluginIdPersistedSettings = Symbol('PersistedSettings');
-var MonitoredStatesLogger = function (_) { };
-var MonitoredStatesLabel = '@hookstate/devtools: settings';
-var MonitoredStates = createStateLink(function () {
-    var p = localStorage.getItem(MonitoredStatesLabel);
-    if (!p) {
-        return {
-            monitored: [MonitoredStatesLabel],
-            callstacksDepth: IsDevelopment ? 30 : 0
-        };
+var MonitoredStates;
+function DevToolsInit() {
+    if ( // already initialized
+    MonitoredStates ||
+        // server-side rendering
+        !window ||
+        // development tools monitor is not open
+        !('__REDUX_DEVTOOLS_EXTENSION__' in window)) {
+        return;
     }
-    return JSON.parse(p);
-})
-    .with(function () { return ({
-    id: PluginIdPersistedSettings,
-    create: function () { return ({
-        onSet: function (p) {
-            var v = p.state;
-            if (!v || !v.monitored || !Array.isArray(v.monitored)) {
-                v = v || {};
-                v.monitored = [MonitoredStatesLabel];
-            }
-            else if (!v.monitored.includes(MonitoredStatesLabel)) {
-                v.monitored.push(MonitoredStatesLabel);
-            }
-            var depth = Number(v.callstacksDepth);
-            v.callstacksDepth = Number.isInteger(depth) && depth >= 0 ? depth : IsDevelopment ? 30 : 0;
-            localStorage.setItem(MonitoredStatesLabel, JSON.stringify(v));
-            if (v !== p.state) {
-                MonitoredStates.set(v);
-            }
-        }
-    }); }
-}); });
-var lastUnlabelledId = 0;
-function getLabel(isGlobal) {
-    if (!IsDevelopment) {
-        return (isGlobal ? 'global' : 'local') + "-state-" + (lastUnlabelledId += 1);
-    }
-    var obj = {};
-    var oldLimit = Error.stackTraceLimit;
-    Error.stackTraceLimit = 2;
-    Error.captureStackTrace(obj, MonitoredStates.with);
-    Error.stackTraceLimit = oldLimit;
-    var s = obj.stack;
-    if (!s) {
-        return (isGlobal ? 'global' : 'local') + "-state-" + (lastUnlabelledId += 1);
-    }
-    var parts = s.split('\n', 3);
-    if (parts.length < 3) {
-        return (isGlobal ? 'global' : 'local') + "-state-" + (lastUnlabelledId += 1);
-    }
-    return parts[2]
-        .replace(/\s*[(].*/, '')
-        .replace(/\s*at\s*/, '');
-}
-function createReduxDevToolsLogger(lnk, assignedId, onBreakpoint) {
-    var fromRemote = false;
-    var fromLocal = false;
-    var reduxStore = createStore(function (_, action) {
-        if (!fromLocal) {
-            var isValidPath = function (p) { return Array.isArray(p) &&
-                p.findIndex(function (l) { return typeof l !== 'string' && typeof l !== 'number'; }) === -1; };
-            if (action.type.startsWith('SET')) {
-                var setState = function (l) {
-                    try {
-                        fromRemote = true;
-                        if ('value' in action) {
-                            l.set(action.value);
-                        }
-                        else {
-                            l.set(None);
-                        }
-                    }
-                    finally {
-                        fromRemote = false;
-                    }
-                };
-                // replay from development tools
-                if (action.path) {
-                    if (isValidPath(action.path)) {
-                        if (action.path.length === 0) {
-                            setState(lnk);
-                        }
-                        var l = lnk;
-                        var valid = true;
-                        for (var _i = 0, _a = action.path; _i < _a.length; _i++) {
-                            var p = _a[_i];
-                            if (l.nested) {
-                                l = l.nested[p];
-                            }
-                            else {
-                                valid = false;
-                            }
-                        }
-                        if (valid) {
-                            setState(l);
-                        }
-                    }
-                }
-                else {
-                    setState(lnk);
-                }
-            }
-            else if (action.type === 'RERENDER' && action.path && isValidPath(action.path)) {
-                // rerender request from development tools
-                lnk.with(DevToolsID)[0].update([action.path]);
-            }
-            else if (action.type === 'BREAKPOINT') {
-                onBreakpoint();
-            }
-        }
-        if (lnk.promised) {
-            return None;
-        }
-        return lnk.value;
-    }, reduxDevtoolsExtension_2({
-        name: window.location.hostname + ": " + assignedId,
-        trace: MonitoredStates.value.callstacksDepth !== 0,
-        traceLimit: MonitoredStates.value.callstacksDepth,
-        autoPause: true,
-        shouldHotReload: false,
-        features: {
-            persist: true,
-            pause: true,
-            lock: false,
-            export: 'custom',
-            import: 'custom',
-            jump: false,
-            skip: false,
-            reorder: false,
-            dispatch: true,
-            test: false
-        }
-    }));
-    // tslint:disable-next-line: no-any
-    var dispatch = function (action, alt) {
-        if (!fromRemote) {
-            try {
-                fromLocal = true;
-                reduxStore.dispatch(action);
-            }
-            finally {
-                fromLocal = false;
-            }
-        }
-        else if (alt) {
-            alt();
-        }
-    };
-    return dispatch;
-}
-function isMonitored(assignedId, globalOrLabeled) {
-    return MonitoredStates.value.monitored.includes(assignedId) || (IsDevelopment && globalOrLabeled);
-}
-function DevToolsInternal(isGlobal) {
-    return {
-        id: DevToolsID,
-        create: function (lnk) {
-            var assignedName = getLabel(isGlobal);
-            var submitToMonitor;
-            var breakpoint = false;
-            if (isMonitored(assignedName, isGlobal)) {
-                submitToMonitor = createReduxDevToolsLogger(lnk, assignedName, function () {
-                    breakpoint = !breakpoint;
-                });
-                MonitoredStatesLogger("CREATE '" + assignedName + "' (monitored)");
-            }
-            else {
-                MonitoredStatesLogger("CREATE '" + assignedName + "' (unmonitored)");
-            }
+    var IsDevelopment = !process.env.NODE_ENV || process.env.NODE_ENV === 'development';
+    var PluginIdMonitored = Symbol('DevToolsMonitored');
+    var PluginIdPersistedSettings = Symbol('PersistedSettings');
+    var MonitoredStatesLogger = function (_) { };
+    var MonitoredStatesLabel = '@hookstate/devtools: settings';
+    MonitoredStates = createStateLink(function () {
+        var p = localStorage.getItem(MonitoredStatesLabel);
+        if (!p) {
             return {
-                // tslint:disable-next-line: no-any
-                log: function (str, data) {
-                    if (submitToMonitor) {
-                        submitToMonitor({ type: ":: " + str, data: data });
-                    }
-                },
-                label: function (name) {
-                    if (submitToMonitor) {
-                        // already monitored under the initial name
-                        return;
-                    }
-                    if (isMonitored(name, true)) {
-                        MonitoredStatesLogger("RENAME '" + assignedName + "' => '" + name + "' (unmonitored => monitored)");
-                        submitToMonitor = createReduxDevToolsLogger(lnk, name, function () {
-                            breakpoint = !breakpoint;
-                        });
-                        // inject on set listener
-                        lnk.with(function () { return ({
-                            id: PluginIdMonitored,
-                            create: function () { return ({
-                                onSet: function (p) {
-                                    submitToMonitor(__assign(__assign({}, p), { type: "SET [" + p.path.join('/') + "]" }));
-                                    if (breakpoint) {
-                                        // tslint:disable-next-line: no-debugger
-                                        debugger;
-                                    }
-                                }
-                            }); }
-                        }); });
-                    }
-                    else {
-                        MonitoredStatesLogger("RENAME '" + assignedName + "' => '" + name + "' (unmonitored => unmonitored)");
-                    }
-                    assignedName = name;
-                },
-                onSet: submitToMonitor && (function (p) {
-                    submitToMonitor(__assign(__assign({}, p), { type: "SET [" + p.path.join('/') + "]" }));
-                    if (breakpoint) {
-                        // tslint:disable-next-line: no-debugger
-                        debugger;
-                    }
-                }),
-                onDestroy: function () {
-                    if (submitToMonitor) {
-                        MonitoredStatesLogger("DESTROY '" + assignedName + "' (monitored)");
-                        submitToMonitor({ type: "DESTROY" }, function () {
-                            setTimeout(function () { return submitToMonitor({ type: "RESET -> DESTROY" }); });
-                        });
-                    }
-                    else {
-                        MonitoredStatesLogger("DESTROY '" + assignedName + "' (unmonitored)");
-                    }
-                }
+                monitored: [MonitoredStatesLabel],
+                callstacksDepth: IsDevelopment ? 30 : 0
             };
         }
-    };
-}
-MonitoredStates.with(DevToolsInternal);
-DevTools(MonitoredStates).label(MonitoredStatesLabel);
-MonitoredStatesLogger = function (str) { return DevTools(MonitoredStates).log(str); };
-function DevToolsInit() {
+        return JSON.parse(p);
+    })
+        .with(function () { return ({
+        id: PluginIdPersistedSettings,
+        create: function () { return ({
+            onSet: function (p) {
+                var v = p.state;
+                if (!v || !v.monitored || !Array.isArray(v.monitored)) {
+                    v = v || {};
+                    v.monitored = [MonitoredStatesLabel];
+                }
+                else if (!v.monitored.includes(MonitoredStatesLabel)) {
+                    v.monitored.push(MonitoredStatesLabel);
+                }
+                var depth = Number(v.callstacksDepth);
+                v.callstacksDepth = Number.isInteger(depth) && depth >= 0 ? depth : IsDevelopment ? 30 : 0;
+                localStorage.setItem(MonitoredStatesLabel, JSON.stringify(v));
+                if (v !== p.state) {
+                    MonitoredStates.set(v);
+                }
+            }
+        }); }
+    }); });
+    var lastUnlabelledId = 0;
+    function getLabel(isGlobal) {
+        if (!IsDevelopment) {
+            return (isGlobal ? 'global' : 'local') + "-state-" + (lastUnlabelledId += 1);
+        }
+        var dummyError = {};
+        if ('stackTraceLimit' in Error && 'captureStackTrace' in Error) {
+            var oldLimit = Error.stackTraceLimit;
+            Error.stackTraceLimit = 2;
+            Error.captureStackTrace(dummyError, MonitoredStates.with);
+            Error.stackTraceLimit = oldLimit;
+        }
+        var s = dummyError.stack;
+        if (!s) {
+            return (isGlobal ? 'global' : 'local') + "-state-" + (lastUnlabelledId += 1);
+        }
+        var parts = s.split('\n', 3);
+        if (parts.length < 3) {
+            return (isGlobal ? 'global' : 'local') + "-state-" + (lastUnlabelledId += 1);
+        }
+        return parts[2]
+            .replace(/\s*[(].*/, '')
+            .replace(/\s*at\s*/, '');
+    }
+    function createReduxDevToolsLogger(lnk, assignedId, onBreakpoint) {
+        var fromRemote = false;
+        var fromLocal = false;
+        var reduxStore = createStore(function (_, action) {
+            if (!fromLocal) {
+                var isValidPath = function (p) { return Array.isArray(p) &&
+                    p.findIndex(function (l) { return typeof l !== 'string' && typeof l !== 'number'; }) === -1; };
+                if (action.type.startsWith('SET')) {
+                    var setState = function (l) {
+                        try {
+                            fromRemote = true;
+                            if ('value' in action) {
+                                l.set(action.value);
+                            }
+                            else {
+                                l.set(None);
+                            }
+                        }
+                        finally {
+                            fromRemote = false;
+                        }
+                    };
+                    // replay from development tools
+                    if (action.path) {
+                        if (isValidPath(action.path)) {
+                            if (action.path.length === 0) {
+                                setState(lnk);
+                            }
+                            var l = lnk;
+                            var valid = true;
+                            for (var _i = 0, _a = action.path; _i < _a.length; _i++) {
+                                var p = _a[_i];
+                                if (l.nested) {
+                                    l = l.nested[p];
+                                }
+                                else {
+                                    valid = false;
+                                }
+                            }
+                            if (valid) {
+                                setState(l);
+                            }
+                        }
+                    }
+                    else {
+                        setState(lnk);
+                    }
+                }
+                else if (action.type === 'RERENDER' && action.path && isValidPath(action.path)) {
+                    // rerender request from development tools
+                    lnk.with(DevToolsID)[0].update([action.path]);
+                }
+                else if (action.type === 'BREAKPOINT') {
+                    onBreakpoint();
+                }
+            }
+            if (lnk.promised) {
+                return None;
+            }
+            return lnk.value;
+        }, reduxDevtoolsExtension_2({
+            name: window.location.hostname + ": " + assignedId,
+            trace: MonitoredStates.value.callstacksDepth !== 0,
+            traceLimit: MonitoredStates.value.callstacksDepth,
+            autoPause: true,
+            shouldHotReload: false,
+            features: {
+                persist: true,
+                pause: true,
+                lock: false,
+                export: 'custom',
+                import: 'custom',
+                jump: false,
+                skip: false,
+                reorder: false,
+                dispatch: true,
+                test: false
+            }
+        }));
+        // tslint:disable-next-line: no-any
+        var dispatch = function (action, alt) {
+            if (!fromRemote) {
+                try {
+                    fromLocal = true;
+                    reduxStore.dispatch(action);
+                }
+                finally {
+                    fromLocal = false;
+                }
+            }
+            else if (alt) {
+                alt();
+            }
+        };
+        return dispatch;
+    }
+    function isMonitored(assignedId, globalOrLabeled) {
+        return MonitoredStates.value.monitored.includes(assignedId) || (IsDevelopment && globalOrLabeled);
+    }
+    function DevToolsInternal(isGlobal) {
+        return {
+            id: DevToolsID,
+            create: function (lnk) {
+                var assignedName = getLabel(isGlobal);
+                var submitToMonitor;
+                var breakpoint = false;
+                if (isMonitored(assignedName, isGlobal)) {
+                    submitToMonitor = createReduxDevToolsLogger(lnk, assignedName, function () {
+                        breakpoint = !breakpoint;
+                    });
+                    MonitoredStatesLogger("CREATE '" + assignedName + "' (monitored)");
+                }
+                else {
+                    MonitoredStatesLogger("CREATE '" + assignedName + "' (unmonitored)");
+                }
+                return {
+                    // tslint:disable-next-line: no-any
+                    log: function (str, data) {
+                        if (submitToMonitor) {
+                            submitToMonitor({ type: ":: " + str, data: data });
+                        }
+                    },
+                    label: function (name) {
+                        if (submitToMonitor) {
+                            // already monitored under the initial name
+                            return;
+                        }
+                        if (isMonitored(name, true)) {
+                            MonitoredStatesLogger("RENAME '" + assignedName + "' => '" + name + "' (unmonitored => monitored)");
+                            submitToMonitor = createReduxDevToolsLogger(lnk, name, function () {
+                                breakpoint = !breakpoint;
+                            });
+                            // inject on set listener
+                            lnk.with(function () { return ({
+                                id: PluginIdMonitored,
+                                create: function () { return ({
+                                    onSet: function (p) {
+                                        submitToMonitor(__assign(__assign({}, p), { type: "SET [" + p.path.join('/') + "]" }));
+                                        if (breakpoint) {
+                                            // tslint:disable-next-line: no-debugger
+                                            debugger;
+                                        }
+                                    }
+                                }); }
+                            }); });
+                        }
+                        else {
+                            MonitoredStatesLogger("RENAME '" + assignedName + "' => '" + name + "' (unmonitored => unmonitored)");
+                        }
+                        assignedName = name;
+                    },
+                    onSet: submitToMonitor && (function (p) {
+                        submitToMonitor(__assign(__assign({}, p), { type: "SET [" + p.path.join('/') + "]" }));
+                        if (breakpoint) {
+                            // tslint:disable-next-line: no-debugger
+                            debugger;
+                        }
+                    }),
+                    onDestroy: function () {
+                        if (submitToMonitor) {
+                            MonitoredStatesLogger("DESTROY '" + assignedName + "' (monitored)");
+                            submitToMonitor({ type: "DESTROY" }, function () {
+                                setTimeout(function () { return submitToMonitor({ type: "RESET -> DESTROY" }); });
+                            });
+                        }
+                        else {
+                            MonitoredStatesLogger("DESTROY '" + assignedName + "' (unmonitored)");
+                        }
+                    }
+                };
+            }
+        };
+    }
+    MonitoredStates.with(DevToolsInternal);
+    DevTools(MonitoredStates).label(MonitoredStatesLabel);
+    MonitoredStatesLogger = function (str) { return DevTools(MonitoredStates).log(str); };
     useStateLink[DevToolsID] = DevToolsInternal;
     createStateLink[DevToolsID] = function () { return DevToolsInternal(true); };
 }
