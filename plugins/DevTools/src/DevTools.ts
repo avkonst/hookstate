@@ -78,7 +78,8 @@ function getLabel(isGlobal?: boolean) {
         .replace(/\s*at\s*/, '')
 }
 
-function createReduxDevToolsLogger(lnk: StateLink<StateValueAtRoot>, assignedId: string) {
+function createReduxDevToolsLogger(
+    lnk: StateLink<StateValueAtRoot>, assignedId: string, onBreakpoint: () => void) {
     let fromRemote = false;
     let fromLocal = false;
     const reduxStore = createStore(
@@ -124,6 +125,8 @@ function createReduxDevToolsLogger(lnk: StateLink<StateValueAtRoot>, assignedId:
                 } else if (action.type === 'RERENDER' && action.path && isValidPath(action.path)) {
                     // rerender request from development tools
                     lnk.with(DevToolsID)[0].update([action.path!])
+                } else (action.type === 'BREAKPOINT') {
+                    onBreakpoint()
                 }
             }
             if (lnk.promised) {
@@ -178,8 +181,11 @@ function DevToolsInternal(isGlobal?: boolean): Plugin {
         create: (lnk) => {
             let assignedName = getLabel(isGlobal);
             let submitToMonitor: ReturnType<typeof createReduxDevToolsLogger> | undefined;
+            let breakpoint = false;
             if (isMonitored(assignedName, isGlobal)) {
-                submitToMonitor = createReduxDevToolsLogger(lnk, assignedName);
+                submitToMonitor = createReduxDevToolsLogger(lnk, assignedName, () => {
+                    breakpoint = true;
+                });
                 MonitoredStatesLogger(`CREATE '${assignedName}' (monitored)`)
             } else {
                 MonitoredStatesLogger(`CREATE '${assignedName}' (unmonitored)`)
@@ -199,13 +205,19 @@ function DevToolsInternal(isGlobal?: boolean): Plugin {
                     }
                     if (isMonitored(name, true)) {
                         MonitoredStatesLogger(`RENAME '${assignedName}' => '${name}' (unmonitored => monitored)`)
-                        submitToMonitor = createReduxDevToolsLogger(lnk, name);
+                        submitToMonitor = createReduxDevToolsLogger(lnk, name, () => {
+                            breakpoint = true;
+                        });
                         // inject on set listener
                         lnk.with(() => ({
                             id: PluginIdMonitored,
                             create: () => ({
                                 onSet: (p: PluginCallbacksOnSetArgument) => {
                                     submitToMonitor!({ ...p, type: `SET [${p.path.join('/')}]` })
+                                    if (breakpoint) {
+                                        // tslint:disable-next-line: no-debugger
+                                        debugger;
+                                    }
                                 }
                             })
                         }))
@@ -216,6 +228,10 @@ function DevToolsInternal(isGlobal?: boolean): Plugin {
                 },
                 onSet: submitToMonitor && ((p: PluginCallbacksOnSetArgument) => {
                     submitToMonitor!({ ...p, type: `SET [${p.path.join('/')}]` })
+                    if (breakpoint) {
+                        // tslint:disable-next-line: no-debugger
+                        debugger;
+                    }
                 }),
                 onDestroy() {
                     if (submitToMonitor) {
