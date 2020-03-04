@@ -236,7 +236,7 @@ MonitoredStates.with(DevToolsInternal)
 DevTools(MonitoredStates).label(MonitoredStatesLabel)
 MonitoredStatesLogger = (str) => DevTools(MonitoredStates).log(str)
 
-function DevToolsInit() {
+export function DevToolsInit() {
     useStateLink[DevToolsID] = DevToolsInternal
     createStateLink[DevToolsID] = () => DevToolsInternal(true)
 };
