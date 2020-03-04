@@ -4,19 +4,20 @@ import {
     StateValueAtRoot,
     StateValueAtPath,
     StateLink,
-    Path,
-    DevTools as DevToolsID,
-    Plugin,
     None,
+    Path,
+    Plugin,
     PluginCallbacks,
     PluginCallbacksOnSetArgument,
+    DevTools,
+    DevToolsID,
+    DevToolsExtensions,
 } from '@hookstate/core'
 
 import { createStore } from 'redux';
 import { devToolsEnhancer } from 'redux-devtools-extension';
 
 const IsDevelopment = !process.env.NODE_ENV || process.env.NODE_ENV === 'development';
-const PluginId = Symbol('DevTools')
 const PluginIdMonitored = Symbol('DevToolsMonitored')
 const PluginIdPersistedSettings = Symbol('PersistedSettings')
 
@@ -52,16 +53,6 @@ const MonitoredStates = createStateLink<{ monitored: string[], callstacksDepth: 
             }
         })
     }))
-
-export interface DevToolsExtensions {
-    label(name: string): void;
-    // tslint:disable-next-line: no-any
-    log(str: string, data?: any): void;
-}
-
-export const DevTools = (state: StateLink<StateValueAtPath>) => {
-    return state.with(PluginId)[1] as DevToolsExtensions;
-}
 
 let lastUnlabelledId = 0;
 function getLabel(isGlobal?: boolean) {
@@ -132,7 +123,7 @@ function createReduxDevToolsLogger(lnk: StateLink<StateValueAtRoot>, assignedId:
                     }
                 } else if (action.type === 'RERENDER' && action.path && isValidPath(action.path)) {
                     // rerender request from development tools
-                    lnk.with(PluginId)[0].update([action.path!])
+                    lnk.with(DevToolsID)[0].update([action.path!])
                 }
             }
             if (lnk.promised) {
@@ -183,7 +174,7 @@ function isMonitored(assignedId: string, globalOrLabeled?: boolean) {
 
 function DevToolsInternal(isGlobal?: boolean): Plugin {
     return ({
-        id: PluginId,
+        id: DevToolsID,
         create: (lnk) => {
             let assignedName = getLabel(isGlobal);
             let submitToMonitor: ReturnType<typeof createReduxDevToolsLogger> | undefined;

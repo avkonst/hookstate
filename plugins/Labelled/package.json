@@ -1,7 +1,7 @@
 {
-    "name": "@hookstate/initial",
+    "name": "@hookstate/labelled",
     "version": "1.6.0",
-    "description": "Plugin for @hookstate/core to enable access to initial state value and to modified status.",
+    "description": "Plugin for @hookstate/core, which allows to assign a label / name / alias for a state.",
     "license": "MIT",
     "author": {
         "name": "Andrey Konstantinov"

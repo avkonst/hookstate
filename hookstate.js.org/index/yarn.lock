@@ -1644,15 +1644,15 @@
   dependencies:
     "@hapi/hoek" "8.x.x"
 
-"@hookstate/core@1.6.2":
-  version "1.6.2"
-  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-1.6.2.tgz#6e14646a525a76739ba6b8b6411a4992ce9760e8"
-  integrity sha512-9I8ZjqYjYX+I9ASiTsgf3N/k3XXAiiQG60kqk4LWDfsR9oNfaLPIIxkFfag4ZAWKfYOO2tFtr4G5XQnbJxcJHw==
+"@hookstate/core@1.7.0":
+  version "1.7.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-1.7.0.tgz#35fecf01f2960046d43d9ca736f56ad536d6a67d"
+  integrity sha512-kvezQ+JWTwf0SLGyvFPdNGTphrJVE0R237hiuX7sjg40eHHnBCE1gk9Ff8Hjk3pId50+z0CHHoqMUac/Sx6gLg==
 
-"@hookstate/initial@1.5.2":
-  version "1.5.2"
-  resolved "https://registry.yarnpkg.com/@hookstate/initial/-/initial-1.5.2.tgz#109e6c88ecdcd1460a581d00106ff01a1093c205"
-  integrity sha512-KE/UGf4Y4jRAWb5POsRffMvMMDxDp/4N/SmpPzP5sojDxTKoANEHY+GvQhQT/+vVvCoaw8w8lh6hFVyY5iMl7A==
+"@hookstate/initial@1.6.1":
+  version "1.6.1"
+  resolved "https://registry.yarnpkg.com/@hookstate/initial/-/initial-1.6.1.tgz#67db12aff4c98c51ee3c120beca8ab93f759e6b6"
+  integrity sha512-iZrkqxUx8xPAdM/TY5nbaMkc522pDR61foFrSl5VQmN4cttHK7w/ZUzmcXBAwliUbHPgRXofWyz8paVrEDDyWQ==
 
 "@hookstate/logger@1.5.2":
   version "1.5.2"
@@ -10695,10 +10695,10 @@ react-transition-group@^4.3.0:
     loose-envify "^1.4.0"
     prop-types "^15.6.2"
 
-react-use@13.26.5:
-  version "13.26.5"
-  resolved "https://registry.yarnpkg.com/react-use/-/react-use-13.26.5.tgz#01484569cdc1fd2fc071020a268babf1d9366166"
-  integrity sha512-qF5ygO0BQZJYj8sr8W9MfObyyaP0Q7lo5rZZj4cpJEM+dDeMACTRBzAkyoljikSq/wRLkmc3FMhGaJfj9fPGTQ==
+react-use@13.27.0:
+  version "13.27.0"
+  resolved "https://registry.yarnpkg.com/react-use/-/react-use-13.27.0.tgz#53a619dc9213e2cbe65d6262e8b0e76641ade4aa"
+  integrity sha512-2lyTyqJWyvnaP/woVtDcFS4B5pUYz0FQWI9pVHk/6TBWom2x3/ziJthkEn/LbCA9Twv39xSQU7Dn0zdIWfsNTQ==
   dependencies:
     "@types/js-cookie" "2.2.5"
     "@xobotyi/scrollbar-width" "1.9.4"

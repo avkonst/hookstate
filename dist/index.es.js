@@ -33,38 +33,22 @@ function __extends(d, b) {
  * @experimental
  */
 var None = Symbol('none');
-/**
- * For plugin developers only.
- * Reserved plugin ID for developers tools extension.
- *
- * @hidden
- * @ignore
- */
-var DevTools = Symbol('DevTools');
-function createStateLink(initial, transformOrPlugins) {
+function createStateLink(initial, transform) {
     var stateLink = createState(initial).accessUnmounted();
-    if (transformOrPlugins && typeof transformOrPlugins !== 'function') {
-        for (var _i = 0, transformOrPlugins_1 = transformOrPlugins; _i < transformOrPlugins_1.length; _i++) {
-            var p = transformOrPlugins_1[_i];
-            stateLink.with(p);
-        }
+    if (createStateLink[DevToolsID]) {
+        stateLink.with(createStateLink[DevToolsID]);
     }
-    if (createStateLink[DevTools]) {
-        stateLink.with(createStateLink[DevTools]);
-    }
-    if (transformOrPlugins && typeof transformOrPlugins === 'function') {
-        return stateLink.wrap(transformOrPlugins);
+    if (transform) {
+        return stateLink.wrap(transform);
     }
     return stateLink;
 }
-function useStateLink(source, transformOrPlugins) {
+function useStateLink(source, transform) {
     var _a = source instanceof StateLinkImpl ?
-        [source,
-            typeof transformOrPlugins === 'function' ? transformOrPlugins : undefined] :
+        [source, transform] :
         source instanceof WrappedStateLinkImpl ?
             [source.state, source.transform] :
-            [undefined,
-                typeof transformOrPlugins === 'function' ? transformOrPlugins : undefined], parentLink = _a[0], tf = _a[1];
+            [undefined, transform], parentLink = _a[0], tf = _a[1];
     if (parentLink) {
         if (parentLink.onUpdateUsed === NoActionOnUpdate) {
             // Global state mount
@@ -86,15 +70,9 @@ function useStateLink(source, transformOrPlugins) {
         // eslint-disable-next-line react-hooks/rules-of-hooks
         var _d = React.useState(function () { return ({ state: createState(source) }); }), value_2 = _d[0], setValue_3 = _d[1];
         var link = useSubscribedStateLink(value_2.state, RootPath, function () { return setValue_3({ state: value_2.state }); }, value_2.state, undefined);
-        if (typeof transformOrPlugins === 'object') {
-            for (var _i = 0, transformOrPlugins_2 = transformOrPlugins; _i < transformOrPlugins_2.length; _i++) {
-                var p = transformOrPlugins_2[_i];
-                link.with(p);
-            }
-        }
         React.useEffect(function () { return function () { return value_2.state.destroy(); }; }, []);
-        if (useStateLink[DevTools]) {
-            link.with(useStateLink[DevTools]);
+        if (useStateLink[DevToolsID]) {
+            link.with(useStateLink[DevToolsID]);
         }
         return tf ? injectTransform(link, tf) : link;
     }
@@ -143,24 +121,39 @@ function Downgraded() {
         create: function () { return ({}); }
     };
 }
-function Labelled(labelOrLink) {
-    if (typeof labelOrLink === 'string') {
-        var label_1 = labelOrLink;
-        return function () { return ({
-            id: LabelledID,
-            create: function () {
-                return {
-                    label: label_1
-                };
-            }
-        }); };
+/**
+ * For plugin developers only.
+ * Reserved plugin ID for developers tools extension.
+ *
+ * @hidden
+ * @ignore
+ */
+var DevToolsID = Symbol('DevTools');
+/**
+ * Returns access to the development tools for a given state.
+ * Development tools are delivered as optional plugins.
+ * You can activate development tools from `@hookstate/devtools`package,
+ * for example. If no development tools are activated,
+ * it returns an instance of dummy tools, which do nothing, when called.
+ *
+ * @param state A state to relate to the extension.
+ *
+ * @returns Interface to interact with the development tools for a given state.
+ */
+function DevTools(state) {
+    var plugin = state.with(DevToolsID, function () { return undefined; });
+    if (plugin) {
+        return plugin[1];
     }
-    var plugin = labelOrLink.with(LabelledID, function () { return undefined; });
-    return plugin && plugin[1].label;
+    return EmptyDevToolsExtensions;
 }
 ///
 /// INTERNAL SYMBOLS (LIBRARY IMPLEMENTATION)
 ///
+var EmptyDevToolsExtensions = {
+    label: function () { },
+    log: function () { }
+};
 var StateLinkInvalidUsageError = /** @class */ (function (_super) {
     __extends(StateLinkInvalidUsageError, _super);
     function StateLinkInvalidUsageError(op, path, hint) {
@@ -187,7 +180,6 @@ var PluginUnknownError = /** @class */ (function (_super) {
     return PluginUnknownError;
 }(Error));
 var DowngradedID = Symbol('Downgraded');
-var LabelledID = Symbol('Labelled');
 var StateMemoID = Symbol('StateMemo');
 var ProxyMarkerID = Symbol('ProxyMarker');
 var RootPath = [];
@@ -1013,7 +1005,6 @@ var StateLinkImpl = /** @class */ (function () {
     };
     return StateLinkImpl;
 }());
-var useIsomorphicLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
 function createState(initial) {
     var initialValue = initial;
     if (typeof initial === 'function') {
@@ -1030,7 +1021,7 @@ function useSubscribedStateLink(state, path, update, subscribeTarget, disabledTr
     if (disabledTracking) {
         link.with(Downgraded);
     }
-    useIsomorphicLayoutEffect(function () {
+    React.useEffect(function () {
         subscribeTarget.subscribe(link);
         return function () {
             link.onUpdateUsed[UnmountedCallback] = true;
@@ -1084,5 +1075,5 @@ function useStateLinkUnmounted(source, transform) {
     return source;
 }
 
-export { DevTools, Downgraded, Labelled, None, StateFragment, StateMemo, createStateLink, useStateLink, useStateLinkUnmounted };
+export { DevTools, DevToolsID, Downgraded, None, StateFragment, StateMemo, createStateLink, useStateLink, useStateLinkUnmounted };
 //# sourceMappingURL=index.es.js.map
