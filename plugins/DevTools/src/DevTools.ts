@@ -184,7 +184,7 @@ function DevToolsInternal(isGlobal?: boolean): Plugin {
             let breakpoint = false;
             if (isMonitored(assignedName, isGlobal)) {
                 submitToMonitor = createReduxDevToolsLogger(lnk, assignedName, () => {
-                    breakpoint = true;
+                    breakpoint = !breakpoint;
                 });
                 MonitoredStatesLogger(`CREATE '${assignedName}' (monitored)`)
             } else {
@@ -206,7 +206,7 @@ function DevToolsInternal(isGlobal?: boolean): Plugin {
                     if (isMonitored(name, true)) {
                         MonitoredStatesLogger(`RENAME '${assignedName}' => '${name}' (unmonitored => monitored)`)
                         submitToMonitor = createReduxDevToolsLogger(lnk, name, () => {
-                            breakpoint = true;
+                            breakpoint = !breakpoint;
                         });
                         // inject on set listener
                         lnk.with(() => ({
