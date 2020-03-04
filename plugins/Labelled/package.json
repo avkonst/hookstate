@@ -1,6 +1,6 @@
 {
     "name": "@hookstate/initial",
-    "version": "1.5.2",
+    "version": "1.6.0",
     "description": "Plugin for @hookstate/core to enable access to initial state value and to modified status.",
     "license": "MIT",
     "author": {
@@ -34,9 +34,7 @@
         "prepare": "yarn build"
     },
     "peerDependencies": {
-        "@hookstate/core": "^1.6.2",
-        "lodash.clonedeep": "^4.5.0",
-        "lodash.isequal": "^4.5.0"
+        "@hookstate/core": "^1.6.2"
     },
     "devDependencies": {
         "@hookstate/core": "^1.6.2",
