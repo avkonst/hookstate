@@ -9,7 +9,7 @@ import * as serviceWorker from './serviceWorker';
 
 import ReactGA from 'react-ga';
 
-import './DevTools';
+import '@hookstate/devtools';
 import App from './App';
 
 const trackingId = 'UA-146415947-1';

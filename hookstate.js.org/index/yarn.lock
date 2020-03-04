@@ -1649,6 +1649,14 @@
   resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-1.7.0.tgz#35fecf01f2960046d43d9ca736f56ad536d6a67d"
   integrity sha512-kvezQ+JWTwf0SLGyvFPdNGTphrJVE0R237hiuX7sjg40eHHnBCE1gk9Ff8Hjk3pId50+z0CHHoqMUac/Sx6gLg==
 
+"@hookstate/devtools@^1.7.2":
+  version "1.7.2"
+  resolved "https://registry.yarnpkg.com/@hookstate/devtools/-/devtools-1.7.2.tgz#886ebee09df67d7edc779a12e257273d5d84f608"
+  integrity sha512-Zv31ZUNARY0Jg1FAYj9eYPzZgKaHNUwfEwGpvmB9dF6wNJZYzPZ63LkGXSrfl+t3oTWtyIbAmuX341EbZo7IRQ==
+  dependencies:
+    redux "4.0.5"
+    redux-devtools-extension "2.13.8"
+
 "@hookstate/initial@1.6.1":
   version "1.6.1"
   resolved "https://registry.yarnpkg.com/@hookstate/initial/-/initial-1.6.1.tgz#67db12aff4c98c51ee3c120beca8ab93f759e6b6"
