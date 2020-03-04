@@ -125,7 +125,7 @@ function createReduxDevToolsLogger(
                 } else if (action.type === 'RERENDER' && action.path && isValidPath(action.path)) {
                     // rerender request from development tools
                     lnk.with(DevToolsID)[0].update([action.path!])
-                } else (action.type === 'BREAKPOINT') {
+                } else if (action.type === 'BREAKPOINT') {
                     onBreakpoint()
                 }
             }
