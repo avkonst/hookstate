@@ -2,7 +2,7 @@ import { useStateLink, createStateLink, Plugin } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import React from 'react';
-import { DevTools, Labelled } from '../UseStateLink';
+import { DevToolsID, DevTools, DevToolsExtensions, PluginCallbacks } from '../UseStateLink';
 
 const TestPlugin = Symbol('TestPlugin')
 const TestPluginUnknown = Symbol('TestPluginUnknown')
@@ -40,7 +40,8 @@ test('plugin: common flow callbacks', async () => {
         }))
     });
 
-    expect(Labelled(result.current)).toBeUndefined();
+    expect(DevTools(result.current).label('should not be labelled')).toBeUndefined();
+    expect(DevTools(result.current).log('should not be logged')).toBeUndefined();
 
     expect(renderTimes).toStrictEqual(1);
     expect(messages).toEqual(['onInit called'])
@@ -140,7 +141,8 @@ test('plugin: common flow callbacks global state', async () => {
         return useStateLink(stateInf)
     });
 
-    expect(Labelled(result.current)).toBeUndefined();
+    expect(DevTools(result.current).label('should not be labelled')).toBeUndefined();
+    expect(DevTools(result.current).log('should not be logged')).toBeUndefined();
 
     expect(renderTimes).toStrictEqual(1);
     expect(messages).toEqual(
@@ -203,22 +205,25 @@ test('plugin: common flow callbacks global state', async () => {
 
 test('plugin: common flow callbacks devtools', async () => {
     const messages: string[] = []
-    useStateLink[DevTools] = () => ({
-        id: TestPlugin,
+    useStateLink[DevToolsID] = () => ({
+        id: DevToolsID,
         create: (l) => {
-            const label = Labelled(l)
+            let label: string | undefined = undefined;
             messages.push(`${label} onInit called`)
             return {
+                label: (name) => {
+                    label = name
+                },
+                log: (str, data) => {
+                    messages.push(`${label} ${str}`)
+                },
                 onSet: (p) => {
                     messages.push(`${label} onSet called, [${p.path}]: ${JSON.stringify(p.state)}, ${JSON.stringify(p.previous)} => ${JSON.stringify(p.value)}, ${JSON.stringify(p.merged)}`)
                 },
                 onDestroy: (p) => {
                     messages.push(`${label} onDestroy called, ${JSON.stringify(p.state)}`)
-                },
-                onExtension() {
-                    messages.push(`${label} onExtension called`)
                 }
-            }
+            } as (PluginCallbacks & DevToolsExtensions);
         }
     } as Plugin)
 
@@ -229,13 +234,15 @@ test('plugin: common flow callbacks devtools', async () => {
             return useStateLink([{
                 f1: 0,
                 f2: 'str'
-            }], [Labelled('LABELLED')])
+            }])
         });
+        DevTools(result.current).label('LABELLED')
+        
         expect(renderTimes).toStrictEqual(1);
-        expect(messages).toEqual(['LABELLED onInit called'])
+        expect(messages).toEqual(['undefined onInit called'])
         expect(result.current.nested[0].get().f1).toStrictEqual(0);
-        expect(messages).toEqual(['LABELLED onInit called'])
-
+        expect(messages).toEqual(['undefined onInit called'])
+        
         act(() => {
             result.current.nested[0].nested.f1.set(p => p + 1);
         });
@@ -258,7 +265,7 @@ test('plugin: common flow callbacks devtools', async () => {
         expect(Object.keys(result.current.get()[0])).toEqual(['f1', 'f2']);
         expect(messages.slice(3)).toEqual([]);
 
-        (result.current.with(TestPlugin)[1] as { onExtension(): void; }).onExtension();
+        DevTools(result.current).log('onExtension called');
         expect(messages.slice(3)).toEqual(['LABELLED onExtension called']);
 
         expect(() => result.current.with(TestPluginUnknown))
@@ -279,28 +286,31 @@ test('plugin: common flow callbacks devtools', async () => {
         expect(messages.slice(5)).toEqual([])
 
     } finally {
-        delete useStateLink[DevTools];
+        delete useStateLink[DevToolsID];
     }
 });
 
 test('plugin: common flow callbacks global state devtools', async () => {
     const messages: string[] = []
-    createStateLink[DevTools] = () => ({
-        id: TestPlugin,
+    createStateLink[DevToolsID] = () => ({
+        id: DevToolsID,
         create: (state) => {
-            const label = Labelled(state)
+            let label: string | undefined = undefined;
             messages.push(`${label} onInit called, initial: ${JSON.stringify(state.value)}`)
             return {
+                log: (m, d) => {
+                    messages.push(`${label} ${m}`)
+                },
+                label: (l) => {
+                    label = l;
+                },
                 onSet: (p) => {
                     messages.push(`onSet called, [${p.path}]: ${JSON.stringify(p.state)}, ${JSON.stringify(p.previous)} => ${JSON.stringify(p.value)}, ${JSON.stringify(p.merged)}`)
                 },
                 onDestroy: (p) => {
                     messages.push(`onDestroy called, ${JSON.stringify(p.state)}`)
-                },
-                onExtension() {
-                    messages.push('onExtension called')
                 }
-            }
+            } as PluginCallbacks & DevToolsExtensions;
         }
     } as Plugin)
 
@@ -308,7 +318,7 @@ test('plugin: common flow callbacks global state devtools', async () => {
         const stateRef = createStateLink([{
             f1: 0,
             f2: 'str'
-        }], [Labelled('LABELLED2')])
+        }])
 
         let renderTimes = 0
         const { result, unmount } = renderHook(() => {
@@ -317,10 +327,10 @@ test('plugin: common flow callbacks global state devtools', async () => {
         });
         expect(renderTimes).toStrictEqual(1);
         expect(messages).toEqual(
-            ['LABELLED2 onInit called, initial: [{\"f1\":0,\"f2\":\"str\"}]'])
+            ['undefined onInit called, initial: [{\"f1\":0,\"f2\":\"str\"}]'])
         expect(result.current.nested[0].get().f1).toStrictEqual(0);
         expect(messages).toEqual(
-            ['LABELLED2 onInit called, initial: [{\"f1\":0,\"f2\":\"str\"}]'])
+            ['undefined onInit called, initial: [{\"f1\":0,\"f2\":\"str\"}]'])
 
         act(() => {
             result.current.nested[0].nested.f1.set(p => p + 1);
@@ -344,26 +354,30 @@ test('plugin: common flow callbacks global state devtools', async () => {
         expect(Object.keys(result.current.get()[0])).toEqual(['f1', 'f2']);
         expect(messages.slice(3)).toEqual([]);
 
-        (result.current.with(TestPlugin)[1] as { onExtension(): void; }).onExtension();
-        expect(messages.slice(3)).toEqual(['onExtension called']);
+        DevTools(result.current).log('onExtension called');
+        expect(messages.slice(3)).toEqual(['undefined onExtension called']);
+
+        DevTools(result.current).label('LABELLED2')
+        DevTools(result.current).log('onExtension called');
+        expect(messages.slice(4)).toEqual(['LABELLED2 onExtension called']);
 
         expect(() => result.current.with(TestPluginUnknown))
         .toThrow('Plugin \'TestPluginUnknown\' has not been attached to the StateInf or StateLink. Hint: you might need to register the required plugin using \'with\' method. See https://github.com/avkonst/hookstate#plugins for more details')
 
         unmount()
-        expect(messages.slice(4)).toEqual([])
+        expect(messages.slice(5)).toEqual([])
 
         expect(result.current.get()[0].f1).toStrictEqual(2);
-        expect(messages.slice(4)).toEqual([])
+        expect(messages.slice(5)).toEqual([])
 
         act(() => {
             result.current.nested[0].nested.f1.set(p => p + 1)
         });
         expect(renderTimes).toStrictEqual(3);
-        expect(messages.slice(4)).toEqual(['onSet called, [0,f1]: [{\"f1\":3,\"f2\":\"str\"}], 2 => 3, undefined'])
+        expect(messages.slice(5)).toEqual(['onSet called, [0,f1]: [{\"f1\":3,\"f2\":\"str\"}], 2 => 3, undefined'])
 
         stateRef.destroy()
-        expect(messages.slice(5)).toEqual(['onDestroy called, [{\"f1\":3,\"f2\":\"str\"}]'])
+        expect(messages.slice(6)).toEqual(['onDestroy called, [{\"f1\":3,\"f2\":\"str\"}]'])
 
         act(() => {
             expect(() => result.current.nested[0].nested.f1.set(p => p + 1)).toThrow(
@@ -371,8 +385,8 @@ test('plugin: common flow callbacks global state devtools', async () => {
             );
         });
         expect(renderTimes).toStrictEqual(3);
-        expect(messages.slice(6)).toEqual([])
+        expect(messages.slice(7)).toEqual([])
     } finally {
-        delete createStateLink[DevTools]
+        delete createStateLink[DevToolsID]
     }
 });

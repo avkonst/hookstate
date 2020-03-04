@@ -413,15 +413,6 @@ export type CustomContext = any; //tslint:disable-line: no-any
 
 /**
  * For plugin developers only.
- * Reserved plugin ID for developers tools extension.
- *
- * @hidden
- * @ignore
- */
-export const DevTools = Symbol('DevTools');
-
-/**
- * For plugin developers only.
  * PluginCallbacks.onSet argument type.
  *
  * @hidden
@@ -508,8 +499,6 @@ export interface Plugin {
  * which asynchronously resolves to a value,
  * OR a function returning a value or a promise.
  *
- * @param plugins An array of plugins to attach to the created state.
- *
  * @typeparam S Type of a value of the state
  *
  * @returns [StateLink](#interfacesstatelinkmd) instance,
@@ -520,8 +509,7 @@ export interface Plugin {
  * use the returned result in the component's logic.
  */
 export function createStateLink<S>(
-    initial: SetInitialStateAction<S>,
-    plugins?: (() => Plugin)[]
+    initial: SetInitialStateAction<S>
 ): StateLink<S> & DestroyMixin;
 /**
  * @hidden
@@ -535,20 +523,15 @@ export function createStateLink<S, R>(
 ): WrappedStateLink<R> & DestroyMixin;
 export function createStateLink<S, R>(
     initial: SetInitialStateAction<S>,
-    transformOrPlugins?: ((state: StateLink<S>, prev: R | undefined) => R) | (() => Plugin)[]
+    transform?: ((state: StateLink<S>, prev: R | undefined) => R)
 ): (StateLink<S> & DestroyMixin) |
     (WrappedStateLink<R> & DestroyMixin) {
     const stateLink = createState(initial).accessUnmounted() as StateLinkImpl<S>
-    if (transformOrPlugins && typeof transformOrPlugins !== 'function') {
-        for (let p of transformOrPlugins) {
-            stateLink.with(p)
-        }
+    if (createStateLink[DevToolsID]) {
+        stateLink.with(createStateLink[DevToolsID])
     }
-    if (createStateLink[DevTools]) {
-        stateLink.with(createStateLink[DevTools])
-    }
-    if (transformOrPlugins && typeof transformOrPlugins === 'function') {
-        return stateLink.wrap(transformOrPlugins)
+    if (transform) {
+        return stateLink.wrap(transform)
     }
     return stateLink
 }
@@ -631,15 +614,12 @@ export function useStateLink<R>(
  *
  * @param source A reference to the state to hook into.
  *
- * @param plugins An array of plugins to attach to the created state.
- *
  * @returns an instance of [StateLink](#interfacesstatelinkmd) interface,
  * which **must be** used within the component (during rendering
  * or in effects) or it's children.
  */
 export function useStateLink<S>(
-    source: SetInitialStateAction<S>,
-    plugins?: (() => Plugin)[]
+    source: SetInitialStateAction<S>
 ): StateLink<S>;
 /**
  * @hidden
@@ -653,16 +633,14 @@ export function useStateLink<S, R>(
 ): R;
 export function useStateLink<S, R>(
     source: SetInitialStateAction<S> | StateLink<S> | WrappedStateLink<R>,
-    transformOrPlugins?: ((state: StateLink<S>, prev: R | undefined) => R) | (() => Plugin)[]
+    transform?: (state: StateLink<S>, prev: R | undefined) => R
 ): StateLink<S> | R {
     const [parentLink, tf] =
         source instanceof StateLinkImpl ?
-            [source as StateLinkImpl<S>,
-                typeof transformOrPlugins === 'function' ? transformOrPlugins : undefined] :
+            [source as StateLinkImpl<S>, transform] :
             source instanceof WrappedStateLinkImpl ?
                 [source.state as StateLinkImpl<S>, source.transform] :
-                [undefined,
-                    typeof transformOrPlugins === 'function' ? transformOrPlugins : undefined];
+                [undefined, transform];
     if (parentLink) {
         if (parentLink.onUpdateUsed === NoActionOnUpdate) {
             // Global state mount
@@ -697,14 +675,9 @@ export function useStateLink<S, R>(
             () => setValue({ state: value.state }),
             value.state,
             undefined);
-        if (typeof transformOrPlugins === 'object') {
-            for (let p of transformOrPlugins) {
-                link.with(p)
-            }
-        }
         React.useEffect(() => () => value.state.destroy(), []);
-        if (useStateLink[DevTools]) {
-            link.with(useStateLink[DevTools])
+        if (useStateLink[DevToolsID]) {
+            link.with(useStateLink[DevToolsID])
         }
         return tf ? injectTransform(link, tf) : link;
     }
@@ -900,9 +873,51 @@ export function Labelled(labelOrLink: string | StateLink<StateValueAtPath>): (()
     return plugin && (plugin[1] as { label: string }).label;
 }
 
+/**
+ * For plugin developers only.
+ * Reserved plugin ID for developers tools extension.
+ *
+ * @hidden
+ * @ignore
+ */
+export const DevToolsID = Symbol('DevTools');
+
+/**
+ * Return type of [DevTools](#devtools).
+ */
+export interface DevToolsExtensions {
+    label(name: string): void;
+    // tslint:disable-next-line: no-any
+    log(str: string, data?: any): void;
+}
+
+/**
+ * Returns access to the development tools for a given state.
+ * Development tools are delivered as optional plugins.
+ * You can activate development tools from `@hookstate/devtools`package,
+ * for example. If no development tools are activated,
+ * it returns an instance of dummy tools, which do nothing, when called.
+ * 
+ * @param state A state to relate to the extension.
+ * 
+ * @returns Interface to interact with the development tools for a given state.
+ */
+export function DevTools(state: StateLink<StateValueAtPath>): DevToolsExtensions {
+    const plugin = state.with(DevToolsID, () => undefined);
+    if (plugin) {
+        return plugin[1] as DevToolsExtensions;
+    }
+    return EmptyDevToolsExtensions;
+}
+
 ///
 /// INTERNAL SYMBOLS (LIBRARY IMPLEMENTATION)
 ///
+
+const EmptyDevToolsExtensions: DevToolsExtensions = {
+    label() { /* */ },
+    log() { /* */ }
+}
 
 class StateLinkInvalidUsageError extends Error {
     constructor(op: string, path: Path, hint?: string) {
