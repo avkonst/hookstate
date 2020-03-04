@@ -8,5 +8,6 @@ Development tools for @hookstate/core.
 
 ## How to use:
 
-Import ``DevTools` and call `DevTools.Init()` in the root of your React app, i.e. before importing modules, which create or use states. Install Chrome Redux development tools browser's extension and reload your app.
-Once loaded and your states are created, you will see it in the development tools browser's extension.
+- Insert the line `import '@hookstate/devtools` in the root of your React app, for example in `index.ts` or `index.js` file. The tools should be imported before importing other modules, which create or use states. 
+- Install Chrome Redux development tools browser's extension and reload your app.
+- Once loaded and your states are created, you will see it in the development tools browser's extension.
