@@ -28,6 +28,7 @@
     "classnames": "^2.2.6",
     "lodash.clonedeep": "^4.5.0",
     "lodash.isequal": "^4.5.0",
+    "prism-react-renderer": "^1.0.2",
     "react": "^16.13.0",
     "react-dom": "^16.13.0"
   },

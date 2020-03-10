@@ -9,7 +9,7 @@ module.exports = {
   someSidebar: {
     Introduction: ['getting-started'],
     Extensions: ['extensions'],
-    'Development Tools': ['devtool'],
+    'Development Tools': ['devtools'],
     'API Reference': ['typedoc-hookstate-core'],
   },
 };
