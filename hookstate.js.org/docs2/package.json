@@ -3,18 +3,33 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "docusaurus start --host 0.0.0.0",
+    "start": "forever ./node_modules/.bin/docusaurus start --host 0.0.0.0",
     "build": "docusaurus build",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
     "apply-updates": "ncu -u"
   },
   "dependencies": {
-    "@docusaurus/core": "^2.0.0-alpha.43",
-    "@docusaurus/preset-classic": "^2.0.0-alpha.43",
+    "@docusaurus/core": "^2.0.0-alpha.48",
+    "@docusaurus/preset-classic": "^2.0.0-alpha.48",
+    "@hookstate/core": "^1.7.0",
+    "@hookstate/initial": "^1.6.1",
+    "@hookstate/logger": "^1.5.2",
+    "@hookstate/mutate": "^1.2.3",
+    "@hookstate/persistence": "^1.5.2",
+    "@hookstate/touched": "^1.5.2",
+    "@hookstate/untracked": "^1.5.3",
+    "@hookstate/validation": "^1.5.2",
+    "@material-ui/core": "^4.9.5",
+    "@material-ui/icons": "^4.9.1",
+    "@storybook/addon-docs": "^5.3.14",
+    "@types/lodash.clonedeep": "^4.5.6",
+    "@types/lodash.isequal": "^4.5.5",
     "classnames": "^2.2.6",
-    "react": "^16.12.0",
-    "react-dom": "^16.12.0"
+    "lodash.clonedeep": "^4.5.0",
+    "lodash.isequal": "^4.5.0",
+    "react": "^16.13.0",
+    "react-dom": "^16.13.0"
   },
   "browserslist": {
     "production": [
@@ -30,6 +45,7 @@
   },
   "devDependencies": {
     "@babel/preset-typescript": "^7.8.3",
-    "npm-check-updates": "^4.0.1"
+    "forever": "^2.0.0",
+    "npm-check-updates": "^4.0.4"
   }
 }

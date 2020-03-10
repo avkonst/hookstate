@@ -6,48 +6,85 @@ import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import useBaseUrl from '@docusaurus/useBaseUrl';
 import styles from './styles.module.css';
 
+import ThumbUpIcon from '@material-ui/icons/ThumbUp';
+import ExtensionIcon from '@material-ui/icons/Extension';
+import SpeedIcon from '@material-ui/icons/Speed';
+import BuildIcon from '@material-ui/icons/Build';
+
 const features = [
   {
     title: <>Easy to Use</>,
-    imageUrl: 'img/undraw_docusaurus_mountain.svg',
+    imageUrl: <ThumbUpIcon style={{ width: 100, height: 100 }} />,
     description: (
       <>
-        Docusaurus was designed from the ground up to be easily installed and
-        used to get your website up and running quickly.
+        Concise, pragmatic but flexible API. Very easy to learn.
+        See <Link to={'docs/getting-started'}>Getting Started</Link> and other code samples to learn it in minutes.
       </>
     ),
   },
   {
-    title: <>Focus on What Matters</>,
-    imageUrl: 'img/undraw_docusaurus_tree.svg',
+    title: <>Incredibly Fast</>,
+    imageUrl: <SpeedIcon style={{ width: 100, height: 100 }} />,
     description: (
       <>
-        Docusaurus lets you focus on your docs, and we&apos;ll do the chores. Go
-        ahead and move your docs into the <code>docs</code> directory.
+        Incredible performance based on unique method for tracking of used/rendered and updated state segments.
+        See the performance demos with <Link to={'docs/getting-started'}>huge table state</Link> and
+        with <Link to={'docs/getting-started'}>huge form state</Link>.
       </>
     ),
   },
   {
-    title: <>Powered by React</>,
-    imageUrl: 'img/undraw_docusaurus_react.svg',
+    title: <>Feature Rich</>,
+    imageUrl: <code style={{ height: 100, fontSize: 70, color: '#606876' }}>f()</code>,
     description: (
       <>
-        Extend or customize your website layout by reusing React. Docusaurus can
-        be extended while reusing the same header and footer.
+        Small core library packed with features: global states, local states,
+        asynchronously loaded states, partial state updates, deeply nested state updates,
+        and <Link to={'docs/getting-started'}>a lot more...</Link>
+      </>
+    ),
+  },
+  {
+    title: <>First-class Typescript</>,
+    imageUrl: <code style={{ height: 100, fontSize: 70, color: '#606876' }}>TS</code>,
+    description: (
+      <>
+        Complete type inferrence for any complexity
+        of structures of managed state data. Full intellisense support tested in VS Code.
+      </>
+    ),
+  },
+  {
+    title: <>Plugins System</>,
+    imageUrl: <ExtensionIcon style={{ width: 100, height: 100 }} />,
+    description: (
+      <>
+        Extend or customize your state hooks. There are several standard plugins available:
+        initial state value, touched fields tracking, modified fields tracking,
+        state validation, persistence, and <Link to={'docs/getting-started'}>a lot more...</Link>
+      </>
+    ),
+  },
+  {
+    title: <>Development Tools</>,
+    imageUrl: <BuildIcon style={{ width: 100, height: 100 }} />,
+    description: (
+      <>
+        Develop like a pro. Browser's extension
+        to trace and set state values,
+        to set breakpoints on state changes,
+        to identify components using a segment of a state,
+        and <Link to={'docs/getting-started'}>a lot more...</Link>
       </>
     ),
   },
 ];
 
 function Feature({imageUrl, title, description}) {
-  const imgUrl = useBaseUrl(imageUrl);
+  // const imgUrl = useBaseUrl(imageUrl);
   return (
     <div className={classnames('col col--4', styles.feature)}>
-      {imgUrl && (
-        <div className="text--center">
-          <img className={styles.featureImage} src={imgUrl} alt={title} />
-        </div>
-      )}
+      <div style={{ textAlign: 'left', width: '100%', color: '#606876' }}>{imageUrl}</div>
       <h3>{title}</h3>
       <p>{description}</p>
     </div>
@@ -71,7 +108,7 @@ function Home() {
                 'button button--outline button--secondary button--lg',
                 styles.getStarted,
               )}
-              to={useBaseUrl('docs/doc1')}>
+              to={useBaseUrl('docs/getting-started')}>
               Get Started
             </Link>
           </div>

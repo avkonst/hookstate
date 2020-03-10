@@ -7,7 +7,9 @@
 
 module.exports = {
   someSidebar: {
-    Docusaurus: ['doc1', 'doc2', 'doc3'],
-    Features: ['mdx', 'typedoc-hookstate-core'],
+    Introduction: ['getting-started'],
+    Extensions: ['extensions'],
+    'Development Tools': ['devtool'],
+    'API Reference': ['typedoc-hookstate-core'],
   },
 };

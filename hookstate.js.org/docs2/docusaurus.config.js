@@ -1,23 +1,24 @@
 module.exports = {
-  title: 'My Site',
-  tagline: 'The tagline of my site',
-  url: 'https://your-docusaurus-test-site.com',
+  title: 'Hookstate',
+  tagline: 'The simple but incredibly fast and flexible state management that is based on React state hook',
+  url: 'https://hookstate.js.org',
   baseUrl: '/',
-  favicon: 'img/favicon.ico',
-  organizationName: 'facebook', // Usually your GitHub org/user name.
-  projectName: 'docusaurus', // Usually your repo name.
+  favicon: 'img/favicon-32.png',
+  // organizationName: 'facebook', // Usually your GitHub org/user name.
+  projectName: 'avkonst/hookstate', // Usually your repo name.
   themeConfig: {
+    disableDarkMode: true,
     navbar: {
-      title: 'My Site',
+      title: 'Hookstate',
       logo: {
-        alt: 'My Site Logo',
-        src: 'img/logo.svg',
+        alt: 'Hookstate',
+        src: 'img/favicon-196.png',
       },
       links: [
-        {to: 'docs/doc1', label: 'Docs', position: 'left'},
+        {to: 'docs/getting-started', label: 'Docs', position: 'left'},
         {to: 'blog', label: 'Blog', position: 'left'},
         {
-          href: 'https://github.com/facebook/docusaurus',
+          href: 'https://github.com/avkonst/hookstate',
           label: 'GitHub',
           position: 'right',
         },
@@ -30,25 +31,25 @@ module.exports = {
           title: 'Docs',
           items: [
             {
-              label: 'Style Guide',
-              to: 'docs/doc1',
+              label: 'Getting started',
+              to: 'docs/getting-started',
             },
             {
-              label: 'Second Doc',
-              to: 'docs/doc2',
+              label: 'API reference',
+              to: 'docs/typedoc-hookstate-core',
             },
           ],
         },
         {
-          title: 'Community',
+          title: 'Extensions',
           items: [
             {
-              label: 'Stack Overflow',
-              href: 'https://stackoverflow.com/questions/tagged/docusaurus',
+              label: 'Standard plugins',
+              href: 'docs/extensions',
             },
             {
-              label: 'Discord',
-              href: 'https://discordapp.com/invite/docusaurus',
+              label: 'Development tools',
+              href: 'docs/devtool',
             },
           ],
         },
@@ -57,20 +58,20 @@ module.exports = {
           items: [
             {
               label: 'Blog',
-              to: 'blog',
+              href: 'https://hookstate.js.org/blog',
             },
             {
               label: 'GitHub',
-              href: 'https://github.com/facebook/docusaurus',
+              href: 'https://github.com/avkonst/hookstate',
             },
             {
-              label: 'Twitter',
-              href: 'https://twitter.com/docusaurus',
+              label: 'Discussions',
+              href: 'https://github.com/avkonst/hookstate/issues?q=is%3Aissue+is%3Aopen+label%3Aquestion',
             },
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`,
+      copyright: `Copyright © ${new Date().getFullYear()} Hookstate.`,
     },
   },
   presets: [
