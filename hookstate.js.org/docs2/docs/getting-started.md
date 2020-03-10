@@ -1,7 +1,7 @@
 ---
 id: getting-started
-title: Style Guide
-sidebar_label: Style Guide
+title: Getting started
+sidebar_label: Getting started
 ---
 
 import { PreviewSample } from '../src/PreviewSample'

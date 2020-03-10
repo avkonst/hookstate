@@ -30,7 +30,7 @@ export interface ExampleMeta {
 
 const baseUrl = 'https://raw.githubusercontent.com/avkonst/hookstate/master/hookstate.js.org/index/src/examples/'
 
-export const ExampleCodeUrl = (id: string) => `${baseUrl}${id}`;
+export const ExampleCodeUrl = (id: string) => `${baseUrl}${id}.tsx`;
 
 const ExampleLink = (props: {id: string, title?: string}) =>
     <a href={props.id}>{props.title ? props.title : ExamplesRepo.get(props.id)!.name}</a>
