@@ -1,24 +1,24 @@
 import React from 'react';
 
-import { ExampleComponent as ExampleGlobalPrimitive } from './global-getting-started.tsx';
-import { ExampleComponent as ExampleGlobalPrimitiveInterface } from './global-getting-started-interface.tsx';
-import { ExampleComponent as ExampleLocalPrimitive } from './local-getting-started.tsx';
-import { ExampleComponent as ExampleGlobalComplexFromDocumentation } from './global-complex-from-documentation.tsx';
-import { ExampleComponent as ExampleLocalComplexFromDocumentation } from './local-complex-from-documentation.tsx';
-import { ExampleComponent as ExampleLocalComplexTreeStructure } from './local-complex-tree-structure.tsx';
-import { ExampleComponent as ExamplePerformanceLargeTable } from './performance-demo-large-table.tsx';
-import { ExampleComponent as ExamplePerformanceLargeForm } from './performance-demo-large-form.tsx';
-import { ExampleComponent as ExampleGlobalMultiConsumers } from './global-multiple-consumers.tsx';
-import { ExampleComponent as ExampleGlobalMultiConsumersFromRoot } from './global-multiple-consumers-from-root.tsx';
-import { ExampleComponent as ExampleGlobalMultiConsumersStateFragment } from './global-multiple-consumers-statefragment.tsx';
+import { ExampleComponent as ExampleGlobalPrimitive } from './global-getting-started';
+import { ExampleComponent as ExampleGlobalPrimitiveInterface } from './global-getting-started-interface';
+import { ExampleComponent as ExampleLocalPrimitive } from './local-getting-started';
+import { ExampleComponent as ExampleGlobalComplexFromDocumentation } from './global-complex-from-documentation';
+import { ExampleComponent as ExampleLocalComplexFromDocumentation } from './local-complex-from-documentation';
+import { ExampleComponent as ExampleLocalComplexTreeStructure } from './local-complex-tree-structure';
+import { ExampleComponent as ExamplePerformanceLargeTable } from './performance-demo-large-table';
+import { ExampleComponent as ExamplePerformanceLargeForm } from './performance-demo-large-form';
+import { ExampleComponent as ExampleGlobalMultiConsumers } from './global-multiple-consumers';
+import { ExampleComponent as ExampleGlobalMultiConsumersFromRoot } from './global-multiple-consumers-from-root';
+import { ExampleComponent as ExampleGlobalMultiConsumersStateFragment } from './global-multiple-consumers-statefragment';
 
-import { ExampleComponent as ExamplePluginInitial } from './plugin-initial.tsx';
-import { ExampleComponent as ExamplePluginInitialStateFragment } from './plugin-initial-statefragment.tsx';
-import { ExampleComponent as ExamplePluginTouched } from './plugin-touched.tsx';
-import { ExampleComponent as ExamplePluginLogger } from './plugin-logger.tsx';
-import { ExampleComponent as ExamplePluginPersistence } from './plugin-persistence.tsx';
-import { ExampleComponent as ExamplePluginValidation } from './plugin-validation.tsx';
-import { ExampleComponent as ExamplePluginUntracked } from './plugin-untracked.tsx';
+import { ExampleComponent as ExamplePluginInitial } from './plugin-initial';
+import { ExampleComponent as ExamplePluginInitialStateFragment } from './plugin-initial-statefragment';
+import { ExampleComponent as ExamplePluginTouched } from './plugin-touched';
+import { ExampleComponent as ExamplePluginLogger } from './plugin-logger';
+import { ExampleComponent as ExamplePluginPersistence } from './plugin-persistence';
+import { ExampleComponent as ExamplePluginValidation } from './plugin-validation';
+import { ExampleComponent as ExamplePluginUntracked } from './plugin-untracked';
 
 import ExampleIds from './ids';
 
@@ -30,7 +30,7 @@ export interface ExampleMeta {
 
 const baseUrl = 'https://raw.githubusercontent.com/avkonst/hookstate/master/hookstate.js.org/index/src/examples/'
 
-export const ExampleCodeUrl = (id: string) => `${baseUrl}${id}.tsx`;
+export const ExampleCodeUrl = (id: string) => `${baseUrl}${id}`;
 
 const ExampleLink = (props: {id: string, title?: string}) =>
     <a href={props.id}>{props.title ? props.title : ExamplesRepo.get(props.id)!.name}</a>
