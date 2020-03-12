@@ -3,11 +3,7 @@ id: doc3
 title: This is Document Number 3
 ---
 
----
-id: getting-started
-title: Style Guide
-sidebar_label: Style Guide
----
+This is a link to [another document.](doc3.md) This is a link to an [external page.](http://www.example.com)
 
 You can write content using [GitHub-flavored Markdown syntax](https://github.github.com/gfm/).
 

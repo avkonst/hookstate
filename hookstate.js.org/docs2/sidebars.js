@@ -7,7 +7,7 @@
 
 module.exports = {
   someSidebar: {
-    Introduction: ['getting-started'],
+    Introduction: ['getting-started', 'global-state', 'local-state'],
     Extensions: ['extensions'],
     'Development Tools': ['devtools'],
     'API Reference': ['typedoc-hookstate-core'],

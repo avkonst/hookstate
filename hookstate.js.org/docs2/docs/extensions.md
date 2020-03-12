@@ -1,5 +1,5 @@
 ---
 id: extensions
-title: Style Guide
-sidebar_label: Style Guide
+title: Placeholder
+sidebar_label: Placeholder
 ---

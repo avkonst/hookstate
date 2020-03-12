@@ -12,6 +12,7 @@ title: API @hookstate/core
 
 * [BatchOptions](#interfacesbatchoptionsmd)
 * [DestroyMixin](#interfacesdestroymixinmd)
+* [DevToolsExtensions](#interfacesdevtoolsextensionsmd)
 * [StateLink](#interfacesstatelinkmd)
 * [WrappedStateLink](#interfaceswrappedstatelinkmd)
 
@@ -31,6 +32,7 @@ title: API @hookstate/core
 
 ### Functions
 
+* [DevTools](#devtools)
 * [Downgraded](#downgraded)
 * [StateFragment](#statefragment)
 * [StateMemo](#statememo)
@@ -131,11 +133,35 @@ Parameter type of [StateLink.set](#set).
 
 ## Functions
 
+###  DevTools
+
+▸ **DevTools**(`state`: [StateLink](#interfacesstatelinkmd)‹StateValueAtPath›): *[DevToolsExtensions](#interfacesdevtoolsextensionsmd)*
+
+*Defined in [UseStateLink.d.ts:676](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L676)*
+
+Returns access to the development tools for a given state.
+Development tools are delivered as optional plugins.
+You can activate development tools from `@hookstate/devtools`package,
+for example. If no development tools are activated,
+it returns an instance of dummy tools, which do nothing, when called.
+
+**Parameters:**
+
+Name | Type | Description |
+------ | ------ | ------ |
+`state` | [StateLink](#interfacesstatelinkmd)‹StateValueAtPath› | A state to relate to the extension.  |
+
+**Returns:** *[DevToolsExtensions](#interfacesdevtoolsextensionsmd)*
+
+Interface to interact with the development tools for a given state.
+
+___
+
 ###  Downgraded
 
 ▸ **Downgraded**(): *Plugin*
 
-*Defined in [UseStateLink.d.ts:657](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L657)*
+*Defined in [UseStateLink.d.ts:649](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L649)*
 
 A plugin which allows to opt-out from usage of Javascript proxies for
 state usage tracking. It is useful for performance tuning. For example:
@@ -147,7 +173,7 @@ const MyComponent = () => {
         .with(Downgraded); // the whole state will be used
                            // by this component, so no point
                            // to track usage of individual properties
-    return <>JSON.stringify(state.value)</>
+    return <>{JSON.stringify(state.value)}</>
 }
 ```
 
@@ -159,7 +185,7 @@ ___
 
 ▸ **StateFragment**<**S**>(`props`: object): *ReactElement*
 
-*Defined in [UseStateLink.d.ts:586](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L586)*
+*Defined in [UseStateLink.d.ts:578](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L578)*
 
 Allows to use a state without defining a functional react component.
 It can be also used in class-based React components. It is also
@@ -208,7 +234,7 @@ Name | Type |
 
 ▸ **StateFragment**<**R**>(`props`: object): *ReactElement*
 
-*Defined in [UseStateLink.d.ts:605](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L605)*
+*Defined in [UseStateLink.d.ts:597](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L597)*
 
 Allows to use a state without defining a functional react component.
 See more at [StateFragment](#statefragment)
@@ -230,7 +256,7 @@ Name | Type |
 
 ▸ **StateFragment**<**S**>(`props`: object): *ReactElement*
 
-*Defined in [UseStateLink.d.ts:613](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L613)*
+*Defined in [UseStateLink.d.ts:605](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L605)*
 
 Allows to use a state without defining a functional react component.
 See more at [StateFragment](#statefragment)
@@ -256,7 +282,7 @@ ___
 
 ▸ **StateMemo**<**S**, **R**>(`transform`: function, `equals?`: undefined | function): *function*
 
-*Defined in [UseStateLink.d.ts:641](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L641)*
+*Defined in [UseStateLink.d.ts:633](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L633)*
 
 It is used in combination with [StateLink.wrap](#wrap).
 It minimises rerendering for states reduced down to a comparable values.
@@ -308,7 +334,7 @@ ___
 
 ▸ **createStateLink**<**S**>(`initial`: [SetInitialStateAction](#setinitialstateaction)‹S›): *[StateLink](#interfacesstatelinkmd)‹S› & [DestroyMixin](#interfacesdestroymixinmd)*
 
-*Defined in [UseStateLink.d.ts:464](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L464)*
+*Defined in [UseStateLink.d.ts:456](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L456)*
 
 Creates new state and returns an instance of state link
 interface to manage the state or to hook in React components.
@@ -354,7 +380,7 @@ ___
 
 ▸ **useStateLink**<**S**>(`source`: [StateLink](#interfacesstatelinkmd)‹S›): *[StateLink](#interfacesstatelinkmd)‹S›*
 
-*Defined in [UseStateLink.d.ts:499](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L499)*
+*Defined in [UseStateLink.d.ts:491](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L491)*
 
 Enables a functional React component to use a state,
 either created by [createStateLink](#createstatelink) (*global* state) or
@@ -392,7 +418,7 @@ or in effects) or it's children.
 
 ▸ **useStateLink**<**R**>(`source`: [WrappedStateLink](#interfaceswrappedstatelinkmd)‹R›): *R*
 
-*Defined in [UseStateLink.d.ts:519](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L519)*
+*Defined in [UseStateLink.d.ts:511](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L511)*
 
 The same as [useStateLink](#usestatelink) for [StateLink](#interfacesstatelinkmd),
 but accepts the result of [StateLink.wrap](#wrap) as an argument.
@@ -417,7 +443,7 @@ or in effects) or it's children
 
 ▸ **useStateLink**<**S**>(`source`: [SetInitialStateAction](#setinitialstateaction)‹S›): *[StateLink](#interfacesstatelinkmd)‹S›*
 
-*Defined in [UseStateLink.d.ts:547](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L547)*
+*Defined in [UseStateLink.d.ts:539](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L539)*
 
 This function enables a functional React component to use a state,
 created per component by `useStateLink` (*local* state).
@@ -447,7 +473,7 @@ You can use as many local states within the same component as you need.
 
 Name | Type | Description |
 ------ | ------ | ------ |
-`source` | [SetInitialStateAction](#setinitialstateaction)‹S› | a reference to the state to hook into  |
+`source` | [SetInitialStateAction](#setinitialstateaction)‹S› | A reference to the state to hook into.  |
 
 **Returns:** *[StateLink](#interfacesstatelinkmd)‹S›*
 
@@ -520,6 +546,58 @@ Mixin for the [StateLink](#interfacesstatelinkmd), which can be destroyed by a c
 Destroys an instance where it is mixed into, so
 it can clear the allocated native resources (if any)
 and can not be used anymore after it has been destroyed.
+
+**Returns:** *void*
+
+
+<a name="interfacesdevtoolsextensionsmd"/>
+
+
+## Interface: DevToolsExtensions
+
+Return type of [DevTools](#devtools).
+
+### Hierarchy
+
+* **DevToolsExtensions**
+
+### Index
+
+#### Methods
+
+* [label](#label)
+* [log](#log)
+
+### Methods
+
+####  label
+
+▸ **label**(`name`: string): *void*
+
+*Defined in [UseStateLink.d.ts:662](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L662)*
+
+**Parameters:**
+
+Name | Type |
+------ | ------ |
+`name` | string |
+
+**Returns:** *void*
+
+___
+
+####  log
+
+▸ **log**(`str`: string, `data?`: any): *void*
+
+*Defined in [UseStateLink.d.ts:663](https://github.com/avkonst/hookstate/blob/master/dist/UseStateLink.d.ts#L663)*
+
+**Parameters:**
+
+Name | Type |
+------ | ------ |
+`str` | string |
+`data?` | any |
 
 **Returns:** *void*
 
