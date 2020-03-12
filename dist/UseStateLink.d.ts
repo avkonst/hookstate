@@ -257,7 +257,7 @@ export interface StateLink<S> {
     /**
      * Adds new plugin to the state. See more about plugins and extensions in the documentation.
      */
-    with(plugin: () => Plugin): StateLink<S>;
+    with(plugin: () => Plugin): this;
     /**
      * For plugin developers only.
      * A function to get more exposed capabilities of a StateLink
@@ -306,7 +306,7 @@ export interface WrappedStateLink<R> {
     /**
      * Adds new plugin to the state. See more about plugins and extensions in the documentation.
      */
-    with(plugin: () => Plugin): WrappedStateLink<R>;
+    with(plugin: () => Plugin): this;
     /**
      * Similarly to [StateLink.wrap](#wrap), wraps the state link instance by a custom defined interface.
      * It can be used by libraries, which would want to abstract state management operation.

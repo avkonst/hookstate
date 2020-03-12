@@ -946,10 +946,10 @@
   dependencies:
     "@hapi/hoek" "^8.3.0"
 
-"@hookstate/core@^1.7.0":
-  version "1.7.0"
-  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-1.7.0.tgz#35fecf01f2960046d43d9ca736f56ad536d6a67d"
-  integrity sha512-kvezQ+JWTwf0SLGyvFPdNGTphrJVE0R237hiuX7sjg40eHHnBCE1gk9Ff8Hjk3pId50+z0CHHoqMUac/Sx6gLg==
+"@hookstate/core@^1.7.1":
+  version "1.7.1"
+  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-1.7.1.tgz#e1a0792b75787713a0ab2b0b130cd18051bd4e2b"
+  integrity sha512-4y2qPMQcbeAoIDjIrTx926y8drIdwdyuG0BNA54CCT3TRSl4kR8HIYwYmj5JnZ+s35qVg/JWEM104+toX25fbA==
 
 "@hookstate/persistence@^1.5.2":
   version "1.5.2"

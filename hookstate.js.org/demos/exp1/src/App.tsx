@@ -1,12 +1,16 @@
 import React from 'react';
 import './App.css';
 
-import { useStateLink } from '@hookstate/core';
+import { useStateLink, createStateLink, StateRef } from '@hookstate/core';
+import { Persistence } from '@hookstate/persistence';
 
 interface Friend {
   name: string;
 }
-const state = useStateLink({ friends: [] as Friend[] })
+const state = createStateLink({ friends: [] as Friend[] })
+
+export const achivementsState: StateRef<Friend[]> =
+    createStateLink<Friend[]>([]).with(Persistence('achievements-state-dev'));
 
 function App() {
   const s = useStateLink(state);
