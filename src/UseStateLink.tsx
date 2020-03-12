@@ -295,7 +295,7 @@ export interface StateLink<S> {
     /**
      * Adds new plugin to the state. See more about plugins and extensions in the documentation.
      */
-    with(plugin: () => Plugin): StateLink<S>;
+    with(plugin: () => Plugin): this;
 
     /**
      * For plugin developers only.
@@ -350,7 +350,7 @@ export interface WrappedStateLink<R> {
     /**
      * Adds new plugin to the state. See more about plugins and extensions in the documentation.
      */
-    with(plugin: () => Plugin): WrappedStateLink<R>;
+    with(plugin: () => Plugin): this;
 
     /**
      * Similarly to [StateLink.wrap](#wrap), wraps the state link instance by a custom defined interface.
@@ -1249,7 +1249,7 @@ class WrappedStateLinkImpl<S, R> implements WrappedStateLink<R>, DestroyMixin {
         return this.transform(this.state, undefined)
     }
 
-    with(plugin: () => Plugin): WrappedStateLink<R> {
+    with(plugin: () => Plugin): this {
         this.state.with(plugin);
         return this;
     }
@@ -1501,10 +1501,10 @@ class StateLinkImpl<S> implements StateLink<S>,
         return this as unknown as InferredStateLinkDenullType<S>;
     }
 
-    with(plugin: () => Plugin): StateLink<S>;
+    with(plugin: () => Plugin): this;
     with<R = never>(pluginId: symbol, alt?: () => R): [StateLink<S> & ExtendedStateLinkMixin<S>, PluginCallbacks] | R;
     with<R = never>(plugin: (() => Plugin) | symbol, alt?: () => R):
-        StateLink<S> | [StateLink<S> & ExtendedStateLinkMixin<S>, PluginCallbacks] | R {
+        this | [StateLink<S> & ExtendedStateLinkMixin<S>, PluginCallbacks] | R {
         if (typeof plugin === 'function') {
             const pluginMeta = plugin();
             if (pluginMeta.id === DowngradedID) {
