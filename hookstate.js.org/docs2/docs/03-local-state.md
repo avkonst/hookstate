@@ -6,7 +6,7 @@ sidebar_label: Local state
 
 import { PreviewSample } from '../src/PreviewSample'
 
-# Creating and using local state
+## Creating and using local state
 
 When a state is used by only one component, and maybe it's children,
 it is recommended to use *local* state instead of [*global* state](global-state).

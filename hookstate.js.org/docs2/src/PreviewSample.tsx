@@ -33,7 +33,7 @@ const PreviewWithAsyncSource = (props: React.PropsWithChildren<{ url: string }>)
     } else {
         codeString = code.value.toString()
     }
-    
+
     return <>
         <Highlight {...defaultProps} code={codeString} language="jsx" theme={theme as PrismTheme}>
             {({ className, style, tokens, getLineProps, getTokenProps }) => (
@@ -45,7 +45,7 @@ const PreviewWithAsyncSource = (props: React.PropsWithChildren<{ url: string }>)
                     ))}
                 </div>
                 ))}
-                
+
                 <div style={{ paddingBottom: 0, textAlign: 'right' }}>
                     <button
                         style={{ background: 'none', border: 'none', color: 'inherit', fontFamily: 'inherit' }}

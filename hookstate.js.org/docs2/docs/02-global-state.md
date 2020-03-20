@@ -6,7 +6,7 @@ sidebar_label: Global state
 
 import { PreviewSample } from '../src/PreviewSample'
 
-# Creating and using global state
+## Creating and using global state
 
 Create the state and use it within and outside of a React component. Few lines of code. No bolierplate!
 

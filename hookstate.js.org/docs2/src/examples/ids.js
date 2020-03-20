@@ -4,6 +4,7 @@ const ExampleIds = {
     LocalPrimitive: 'local-getting-started',
     GlobalComplexFromDocumentation: 'global-complex-from-documentation',
     LocalComplexFromDocumentation: 'local-complex-from-documentation',
+    AsyncState: 'local-async-state',
     LocalComplexTreeStructure: 'local-complex-tree-structure',
     PerformanceLargeTable: 'performance-demo-large-table',
     PerformanceLargeForm: 'performance-demo-large-form',
