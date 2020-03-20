@@ -4,7 +4,8 @@ function Untracked(self) {
         var link_1 = self.with(PluginID)[0];
         return {
             get: function () { return link_1.getUntracked(); },
-            set: function (v) { return link_1.setUntracked(v); }
+            set: function (v) { return link_1.setUntracked(v); },
+            merge: function (v) { return link_1.mergeUntracked(v); }
         };
     }
     return {

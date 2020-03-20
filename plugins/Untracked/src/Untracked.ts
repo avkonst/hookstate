@@ -1,9 +1,10 @@
 
-import { Plugin, StateLink } from '@hookstate/core';
+import { Plugin, StateLink, SetPartialStateAction } from '@hookstate/core';
 
 export interface UntrackedExtensions<S> {
     get(): S;
     set(newValue: React.SetStateAction<S>): void;
+    merge(mergeValue: SetPartialStateAction<S>): void;
 }
 
 const PluginID = Symbol('Untracked');
@@ -14,7 +15,8 @@ export function Untracked<S>(self?: StateLink<S>): Plugin | UntrackedExtensions<
         const link = self.with(PluginID)[0];
         return {
             get: () => link.getUntracked(),
-            set: (v) => link.setUntracked(v)
+            set: (v) => link.setUntracked(v),
+            merge: (v) => link.mergeUntracked(v)
         }
     }
     return {
