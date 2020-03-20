@@ -1,7 +1,7 @@
 ---
 id: extensions-validation
 title: State validation
-sidebar_label: Validating state
+sidebar_label: Validated state
 ---
 
 import { PreviewSample } from '../src/PreviewSample'

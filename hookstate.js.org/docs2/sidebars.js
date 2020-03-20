@@ -6,14 +6,41 @@
  */
 
 module.exports = {
-  someSidebar: {
-    Introduction: ['getting-started', 'global-state', 'local-state',
-        'nested-state', 'scalable-state', 'asynchronous-state',
-        'recursive-state', 'exporting-state', 'using-without-statehook'],
-    Performance: ['performance-intro', 'performance-large-state', 'performance-frequent-updates'],
-    Extensions: ['extensions-overview', 'extensions-initial', 'extensions-touched',
-        'extensions-validation', 'extensions-persistence'],
-    'Development Tools': ['devtools'],
-    'API Reference': ['typedoc-hookstate-core'],
-  },
+    someSidebar: {
+        Introduction: [
+            'getting-started',
+            'global-state',
+            'local-state',
+            'nested-state',
+            'mapped-state',
+            'asynchronous-state',
+            'recursive-state',
+            'exporting-state',
+            'dynamic-states-store',
+            'using-without-statehook',
+            'moving-from-redux-mobx',
+            'organising-application'
+        ],
+        Performance: [
+            'performance-intro',
+            'performance-large-state',
+            'performance-frequent-updates',
+            'performance-batched-updates',
+            'performance-managed-rendering',
+            'performance-preact',
+        ],
+        Extensions: [
+            'extensions-overview', 'extensions-initial', 'extensions-touched',
+            'extensions-validation', 'extensions-persistence',
+            'extensions-labelled',
+            'extensions-broadcasted',
+            'extensions-offline',
+            'writing-plugin'
+        ],
+        'Development Tools': ['devtools'],
+        'API Reference': [
+            'typedoc-hookstate-core',
+            'exceptions'
+        ],
+    },
 };

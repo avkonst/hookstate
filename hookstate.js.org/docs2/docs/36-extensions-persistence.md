@@ -1,7 +1,7 @@
 ---
 id: extensions-persistence
 title: Persisted state
-sidebar_label: Persisting state
+sidebar_label: Persisted state
 ---
 
 import { PreviewSample } from '../src/PreviewSample'

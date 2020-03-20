@@ -8,3 +8,4 @@ import { PreviewSample } from '../src/PreviewSample'
 
 <PreviewSample example="local-complex-tree-structure" />
 
+TODO document limitation about cyclic deps

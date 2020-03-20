@@ -19,6 +19,14 @@ As you can see, all the power and flexibility is really behind one `nested` func
 allows to *walk* complex states and target individual deep nested property for update.
 Read more about [StateLink.nested](typedoc-hookstate-core#nested), [StateLink.get](typedoc-hookstate-core#get) and [StateLink.set](typedoc-hookstate-core#set) in the [API reference](typedoc-hookstate-core).
 
+## Scalable nested state / Scoped state
+
+<PreviewSample example="local-complex-from-documentation" />
+
+## Dealing with nullable state
+
+denull
+
 ## Advanced mutations for an array state 
 
 ### Updating existing element
@@ -34,6 +42,8 @@ Read more about [StateLink.nested](typedoc-hookstate-core#nested), [StateLink.ge
 ### Partial updates and deletions
 
 ## Advanced mutations for an object state 
+
+TODO document LinkState.keys
 
 ### Updating existing property
 
