@@ -69,6 +69,9 @@ export const PreviewSample = (props: { example?: string }) => {
         ? props.example : ExampleIds.GlobalPrimitive;
     const exampleMeta = ExamplesRepo.get(exampleId)!;
 
+    if (typeof window === 'undefined') {
+        return <>SSR</>;
+    }
     return <>
         <PreviewWithAsyncSource url={ExampleCodeUrl(exampleId)}>
             {exampleMeta.demo}

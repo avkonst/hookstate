@@ -5,6 +5,7 @@
   "scripts": {
     "start": "docusaurus start --no-open --host 0.0.0.0",
     "build": "docusaurus build",
+    "build-site": "docusaurus build && cp -r build ../../index/build/docs",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
     "apply-updates": "ncu -u"
