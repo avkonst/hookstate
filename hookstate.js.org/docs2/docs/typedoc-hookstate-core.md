@@ -826,21 +826,6 @@ For an instance of type `StateLink<T | undefined | null>`, where `T` is not `Nul
 it return `this` instance typed as `StateLink<T>`, if `this.value` is defined.
 Otherwise, it returns `this.value`, which would be `null` or `undefined`.
 
-You can use it like the following:
-
-```tsx
-const MyInputField = (props: { state: StateLink<string | null >}) => {
-    const state = props.state.denull();
-    // state is either null or an instance of StateLink<string>:
-    if (!state) {
-        // state value was null:
-        return <></>;
-    }
-    // state.value is an instance of string, can not be null here:
-    return <input value={state.value} onChange={(v) => state.set(v.target.value)} />
-}
-```
-
 **Returns:** *[InferredStateLinkDenullType](#inferredstatelinkdenulltype)‹S›*
 
 ___

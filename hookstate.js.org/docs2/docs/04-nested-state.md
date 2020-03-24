@@ -71,9 +71,90 @@ We consider this is the solid reason why the scopped state approach is far bette
 
 ## Dealing with nullable state
 
-denull
+If a state can be missing (eg. nested property is undefined) or null, checking for null state value is essential before diving into the nested states.
+
+Typescript will fail a compilation if you attempt to work with nested states of a state, which might have null or underfined state value. For example:
+
+```tsx
+interface Task { name: string, priority?: number }
+
+const MyComponent = () => {
+    const state = useStateLink<Task | null>(null)
+    
+    // JS - runtime error, TS - compilation error
+    state.nested.name
+    // JS - runtime error, TS - compilation error
+    state.value.name
+}
+```
+
+Here is the simplest way to check for null before unfolding nested states:
+
+```tsx
+if (state.nested) {
+    // no compilation and runtime errors
+    state.nested.name
+
+    // no runtime error, but compilation error
+    // since state.value can be null
+    state.value.name
+}
+```
+
+Here is the other way:
+
+```tsx
+if (state.value) {
+    // no runtime error, but compilation error
+    // since state.value can be null
+    state.nested.name
+
+    // no compilation and runtime errors
+    state.value.name
+}
+```
+
+The complete check to please the compiler would be:
+```tsx
+if (state.value && state.nested) {
+    // no compilation and runtime errors
+    state.nested.name
+
+    // no compilation and runtime errors
+    state.value.name
+}
+```
+
+However, there is one more way using [StateLink.denull](typedoc-hookstate-core.md#denull) function.
+```tsx
+const stateOrNull = state.denull()
+if (stateOrNull) {
+    // no compilation and runtime errors
+    stateOrNull.nested.name
+
+    // no compilation and runtime errors
+    stateOrNull.value.name
+}
+```
+
+[StateLink.denull](typedoc-hookstate-core.md#denull) function is a very confient method to deal with nullable states. Here is the example of a component, which receives a state, those state value might be null.
+
+```tsx
+const MyInputField = (props: { state: StateLink<string | null | undefined>}) => {
+    const state = props.state.denull();
+    // state is either null or an instance of StateLink<string>:
+    if (!state) {
+        // state value was null, do not render form field
+        return <></>;
+    }
+    // state.value is an instance of string, can not be null here:
+    return <input value={state.value} onChange={(v) => state.set(v.target.value)} />
+}
+```
 
 ## Advanced mutations for an array state 
+
+### Getting indexes of existing elements
 
 ### Updating existing element
 
@@ -90,6 +171,54 @@ denull
 ## Advanced mutations for an object state 
 
 TODO document LinkState.keys
+
+### Getting names of existing properties
+
+For a give `state` variable of `StateLink` type, the result of `Object.keys(state.nested)` is the same as `Object.keys(state.value)` and the same as `state.keys()`.
+However, the `state.nested` object will have **ANY** property defined
+(although not every property might pass Typescript compiler check).
+It gives a lot of flexibility to manage states of potentially non-existing / undefined properties.
+
+Let's say an object might have an undefined or missing property (`priority` in the example below):
+
+```tsx
+interface Task { name: string, priority?: number }
+```
+
+And we have got a component managing it's state.
+
+```tsx
+const MyComponent = () => {
+    const state = useStateLink<Task>({ name: 'A task' })
+    // state.nested.property will be defined and
+    // will be an object of type StateLink<number | undefined>
+    return <MyPriorityEditor state={state.nested.property} />
+}
+
+const MyPriorityEditor = (props: { state: StateLink<number | undefined> }) => {
+    return <select onChange={e => Number(e.target.value)}>
+        <option value="0" selected={!props.state.value}>None</option>
+        <option value="1" selected={props.state.value === 1}>Low</option>
+        <option value="2" selected={props.state.value === 2}>High</option>
+    </select>
+}
+```
+
+Notice that on the first selection event, the `priority` property will be set to a value by the child component and added to the `Task` state object created by the parent component. Child component does know if it deals with a nested state or root state (although it could use [LinkState.path](typedoc-hookstate-core.md#path) to detect this), it just manages state value pointed out by the provided state link.
+
+This feature of the [StateLink.nested](typedoc-hookstate-core.md#nested) is also very convenient for managing dynamic dictionaries, for example:
+
+```tsx
+const state = useStateLink<Record<string, number>>({});
+// initially:
+state.value; // will be {}
+state.nested['newProperty'].value; // will be undefined
+// setting non existing nested property:
+state.nested['newProperty'].set('newValue');
+// will update the state to:
+state.value; // will be { newProperty: 'newValue' }
+state.nested['newProperty'].value; // will be 'newValue'
+```
 
 ### Updating existing property
 

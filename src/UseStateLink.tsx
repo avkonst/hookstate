@@ -196,24 +196,6 @@ export interface StateLink<S> {
      * Typescript intellisence will handle correctly
      * any complexy of the data structure.
      * The conditional type definition of [InferredStateLinkNestedType](#inferredstatelinknestedtype) facilitates this.
-     *
-     * The result of `Object.keys(state.nested)`
-     * is the same as `Object.keys(state.get())`.
-     * However, the returned object will have **ANY** property defined
-     * (although not every will pass Typescript compiler check).
-     * It is very convenient for managing dynamic directories, for example:
-     *
-     * ```tsx
-     * const state = useStateLink<Record<string, number>>({});
-     * // initially:
-     * state.value; // will be {}
-     * state.nested['newProperty'].value; // will be undefined
-     * // setting non existing nested property:
-     * state.nested['newProperty'].set('newValue');
-     * // will update the state to:
-     * state.value; // will be { newProperty: 'newValue' }
-     * state.nested['newProperty'].value; // will be 'newValue'
-     * ```
      */
     readonly nested: InferredStateLinkNestedType<S>;
 
@@ -230,21 +212,6 @@ export interface StateLink<S> {
      * For an instance of type `StateLink<T | undefined | null>`, where `T` is not `Nullable`,
      * it return `this` instance typed as `StateLink<T>`, if `this.value` is defined.
      * Otherwise, it returns `this.value`, which would be `null` or `undefined`.
-     *
-     * You can use it like the following:
-     *
-     * ```tsx
-     * const MyInputField = (props: { state: StateLink<string | null >}) => {
-     *     const state = props.state.denull();
-     *     // state is either null or an instance of StateLink<string>:
-     *     if (!state) {
-     *         // state value was null:
-     *         return <></>;
-     *     }
-     *     // state.value is an instance of string, can not be null here:
-     *     return <input value={state.value} onChange={(v) => state.set(v.target.value)} />
-     * }
-     * ```
      */
     denull(): InferredStateLinkDenullType<S>;
 
