@@ -21,7 +21,7 @@ export const VersionInfo = () => {
     return <div style={{ paddingLeft: 20 }}>{labels}</div>;
 }
 
-const PreviewWithAsyncSource = (props: React.PropsWithChildren<{ url: string }>) => {
+const PreviewWithAsyncSource = (props: React.PropsWithChildren<{ url: string, sampleFirst?: boolean }>) => {
     const [sampleVisible, toogleVisible] = React.useState(true);
     const code = useStateLink(() => fetch(props.url).then(r => r.text()))
 
@@ -34,10 +34,28 @@ const PreviewWithAsyncSource = (props: React.PropsWithChildren<{ url: string }>)
         codeString = code.value.toString()
     }
 
+    const sample = <>
+        <div style={{ paddingBottom: 0, textAlign: 'right' }}>
+            <button
+                style={{ background: 'none', border: 'none', color: 'inherit', fontFamily: 'inherit' }}
+                onClick={() => toogleVisible(p => !p)}
+            >{sampleVisible ? '// hide live example' : '// show live example'}
+            </button>
+        </div>
+        {sampleVisible &&
+            <div style={{ backgroundColor: 'white', color: 'black', padding: 10 }}>
+                {props.children}
+            </div>
+        }
+        {props.sampleFirst && <br />}
+    </>
+    
     return <>
         <Highlight {...defaultProps} code={codeString} language="jsx" theme={theme as PrismTheme}>
             {({ className, style, tokens, getLineProps, getTokenProps }) => (
             <pre className={className} style={style}>
+                {props.sampleFirst && sample}
+                
                 {tokens.map((line, i) => (
                 <div key={i} {...getLineProps({ line, key: i })}>
                     {line.map((token, key) => (
@@ -46,25 +64,14 @@ const PreviewWithAsyncSource = (props: React.PropsWithChildren<{ url: string }>)
                 </div>
                 ))}
 
-                <div style={{ paddingBottom: 0, textAlign: 'right' }}>
-                    <button
-                        style={{ background: 'none', border: 'none', color: 'inherit', fontFamily: 'inherit' }}
-                        onClick={() => toogleVisible(p => !p)}
-                    >{sampleVisible ? '// hide live example' : '// show live example'}
-                    </button>
-                </div>
-                {sampleVisible &&
-                <div style={{ backgroundColor: 'white', color: 'black', padding: 10 }}>
-                    {props.children}
-                </div>
-                }
+                {!props.sampleFirst && sample}
             </pre>
             )}
         </Highlight>
     </>
 };
 
-export const PreviewSample = (props: { example?: string }) => {
+export const PreviewSample = (props: { example?: string, sampleFirst?: boolean }) => {
     const exampleId = props.example && ExamplesRepo.has(props.example)
         ? props.example : ExampleIds.GlobalPrimitive;
     const exampleMeta = ExamplesRepo.get(exampleId)!;
@@ -73,7 +80,7 @@ export const PreviewSample = (props: { example?: string }) => {
         return <>SSR</>;
     }
     return <>
-        <PreviewWithAsyncSource url={ExampleCodeUrl(exampleId)}>
+        <PreviewWithAsyncSource url={ExampleCodeUrl(exampleId)} sampleFirst={props.sampleFirst}>
             {exampleMeta.demo}
         </PreviewWithAsyncSource>
     </>

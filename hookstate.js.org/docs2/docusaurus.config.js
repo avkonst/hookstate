@@ -81,7 +81,7 @@ module.exports = {
         docs: {
           sidebarPath: require.resolve('./sidebars.js'),
           editUrl:
-            'https://github.com/avkonst/hookstate/edit/master/hookstate.js.org',
+            'https://github.com/avkonst/hookstate/edit/master/hookstate.js.org/docs2',
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
