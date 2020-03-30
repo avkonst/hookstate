@@ -58,7 +58,7 @@ Scopped state is unique feature of Hookstate. There is no other state management
 3. to use a state hook on the global state within `TaskEditor` component
 4. to apply a selector function for a hook using the passed field index (to make sure every individual child component does not use more than what it needs for rendering)
 
-All of these points (1-4) have got disadvantages but still do not provide with the same performance gain as the scopped state does:
+All these points (1-4) have got disadvantages but still do not provide with the same performance gain as the scopped state does:
 
 1. exposure of a local state outside of a component is not ideal
 2. indexes of fields? ok, maybe this is not much complex, because this is only one level of nesting. This would quickly become non scalable approach, if fields were deeply nested or indexes had dynamic structure, like for the [recursive state](./recursive-state).
@@ -152,29 +152,13 @@ const MyInputField = (props: { state: StateLink<string | null | undefined>}) => 
 }
 ```
 
-## Advanced mutations for an array state 
-
-### Getting indexes of existing elements
-
-### Updating existing element
-
-### Appending new element
-
-### Deleting existing element
-
-### Concatenating with another array
-
-### Swapping two elements
-
-### Partial updates and deletions
-
 ## Advanced mutations for an object state 
 
 TODO document LinkState.keys
 
 ### Getting names of existing properties
 
-For a give `state` variable of `StateLink` type, the result of `Object.keys(state.nested)` is the same as `Object.keys(state.value)` and the same as `state.keys()`.
+For a given `state` variable of `StateLink` type, the result of `Object.keys(state.nested)` is the same as `Object.keys(state.value)` and the same as `state.keys()`.
 However, the `state.nested` object will have **ANY** property defined
 (although not every property might pass Typescript compiler check).
 It gives a lot of flexibility to manage states of potentially non-existing / undefined properties.
@@ -227,6 +211,25 @@ state.nested['newProperty'].value; // will be 'newValue'
 ### Deleting existing property
 
 ### Swapping two properties
+
+### Partial updates and deletions
+
+## Advanced mutations for an array state
+
+Setting an array is possible with the same [StateLink.set](typedoc-hookstate-core.md#set) method as any other primitive value.
+
+
+### Getting indexes of existing elements
+
+### Updating existing element
+
+### Appending new element
+
+### Deleting existing element
+
+### Concatenating with another array
+
+### Swapping two elements
 
 ### Partial updates and deletions
 
