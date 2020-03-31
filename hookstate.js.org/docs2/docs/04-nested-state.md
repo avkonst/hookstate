@@ -137,11 +137,11 @@ if (stateOrNull) {
 }
 ```
 
-[StateLink.denull](typedoc-hookstate-core.md#denull) function is a very confient method to deal with nullable states. Here is the example of a component, which receives a state, those state value might be null.
+[StateLink.denull](typedoc-hookstate-core.md#denull) function is a very convenient method to deal with nullable and undefined value states. Here is the example of a component, which receives a state, those state value might be null.
 
 ```tsx
-const MyInputField = (props: { state: StateLink<string | null | undefined>}) => {
-    const state = props.state.denull();
+const MyInputField = (props: { state: StateLink<string | null>}) => {
+    const state: StateLink<string> | null = props.state.denull();
     // state is either null or an instance of StateLink<string>:
     if (!state) {
         // state value was null, do not render form field
@@ -154,87 +154,345 @@ const MyInputField = (props: { state: StateLink<string | null | undefined>}) => 
 
 ## Advanced mutations for an object state 
 
-TODO document LinkState.keys
-
 ### Getting names of existing properties
 
-For a given `state` variable of `StateLink` type, the result of `Object.keys(state.nested)` is the same as `Object.keys(state.value)` and the same as `state.keys()`.
-However, the `state.nested` object will have **ANY** property defined
-(although not every property might pass Typescript compiler check).
-It gives a lot of flexibility to manage states of potentially non-existing / undefined properties.
-
-Let's say an object might have an undefined or missing property (`priority` in the example below):
+Let's consider we have got the following state:
 
 ```tsx
-interface Task { name: string, priority?: number }
+const state = useStateLink({ a: 1, b: 2 })
 ```
 
-And we have got a component managing it's state.
+`state.keys()` returns an array of names of existing properties. It is equivalent to `Object.keys(state.value)` or `Object.keys(state.nested)`.
 
 ```tsx
-const MyComponent = () => {
-    const state = useStateLink<Task>({ name: 'A task' })
-    // state.nested.property will be defined and
-    // will be an object of type StateLink<number | undefined>
-    return <MyPriorityEditor state={state.nested.property} />
-}
-
-const MyPriorityEditor = (props: { state: StateLink<number | undefined> }) => {
-    return <select onChange={e => Number(e.target.value)}>
-        <option value="0" selected={!props.state.value}>None</option>
-        <option value="1" selected={props.state.value === 1}>Low</option>
-        <option value="2" selected={props.state.value === 2}>High</option>
-    </select>
-}
+const keys = state.keys() // will be ['a', 'b'] for the above example
 ```
 
-Notice that on the first selection event, the `priority` property will be set to a value by the child component and added to the `Task` state object created by the parent component. Child component does know if it deals with a nested state or root state (although it could use [LinkState.path](typedoc-hookstate-core.md#path) to detect this), it just manages state value pointed out by the provided state link.
-
-This feature of the [StateLink.nested](typedoc-hookstate-core.md#nested) is also very convenient for managing dynamic dictionaries, for example:
-
-```tsx
-const state = useStateLink<Record<string, number>>({});
-// initially:
-state.value; // will be {}
-state.nested['newProperty'].value; // will be undefined
-// setting non existing nested property:
-state.nested['newProperty'].set('newValue');
-// will update the state to:
-state.value; // will be { newProperty: 'newValue' }
-state.nested['newProperty'].value; // will be 'newValue'
-```
+Learn more about [StateLink.keys](typedoc-hookstate-core.md#keys) in the API reference.
 
 ### Updating existing property
+
+For a given state:
+
+```tsx
+const state = useStateLink({ a: 1, b: 2 })
+```
+
+The most efficient and recommended methods to update nested property are the following: 
+```tsx
+state.nested.a.set(p => p + 1) // increments value of property a
+// or
+state.nested['a']set(p => p + 1)
+// or
+state.merge(p => ({ a: p.a + 1 }))
+```
+It sets only property `a`, so it will rerender every component where property `a` is used.
+
+#### Avoid the following:
+
+There are alternative less efficient methods, but resulting in the same mutation and data state. The following sets the entire object state to the new value (although, only `a` property is changed), so it will rerender every component where **any** property of the state is used.
+
+```tsx
+state.set(p => ({ ...p, a: p.a + 1 }))
+```
+
+The following sets only property `a` but uses the current property value via the [StateLink.value](typedoc-hookstate-core.md#value), which marks the property `a` as used by a component even if it was not used during the last rendering. In other words using nested property state in rendering or in action dispatch
+has got the same effect: a component is rerendered on property update.
+```tsx
+state.nested['a'].set(state.value.a + 1) // increments value of property a
+```
+
+Learn more about [StateLink.set](typedoc-hookstate-core.md#set) and [StateLink.merge](typedoc-hookstate-core.md#merge) in the API reference.
 
 ### Adding new property
 
+For a given state:
+
+```tsx
+const state = useStateLink<{ a: number, b?: number }>({ a: 1 }) // notice b property is optional
+```
+
+The recommended methods to add new nested property are the following: 
+```tsx
+state.nested.b.set(2)
+// or 
+state.nested['b'].set(2)
+// or
+state.merge({ b: 2 })
+```
+
+Notice the `state.nested` object has got **any** property defined
+(although not every property might pass Typescript compiler check).
+It allows to add new properties to the state using the same method as for updating of a property.
+
+#### Avoid the following
+
+as it can be potentially less efficient than the above recommended methods:
+
+```tsx
+state.set(p => ({ ...p, b: 2 }))
+```
+
+Learn more about [StateLink.set](typedoc-hookstate-core.md#set) and [StateLink.merge](typedoc-hookstate-core.md#merge) in the API reference.
+
 ### Deleting existing property
+
+For a given state:
+
+```tsx
+const state = useStateLink<{ a: number, b?: number }>({ a: 1, b: 2 }) // notice b property is optional
+```
+
+The recommended methods to delete a property are the following: 
+```tsx
+import { None } from '@hookstate/core'
+
+state.nested.b.set(None)
+// or
+state.nested['b'].set(None)
+// or
+state.merge({ b: None })
+```
+
+#### Avoid the following
+
+as it can be potentially less efficient than the above recommended methods:
+
+```tsx
+state.set(p => {
+    delete p.b
+    return p
+})
+```
+
+Learn more about [StateLink.set](typedoc-hookstate-core.md#set) and [StateLink.merge](typedoc-hookstate-core.md#merge) in the API reference.
 
 ### Swapping two properties
 
+For a given state:
+
+```tsx
+const state = useStateLink<Record<string, number>>({ a: 1, b: 2 })
+```
+
+The recommended method to swap properties is the following: 
+```tsx
+state.merge(p => ({ b: p.a, a: p.b }))
+```
+
+#### Avoid the following
+
+as it can be potentially less efficient than the above recommended method:
+
+```tsx
+state.set(p => {
+    const tmp = p.a;
+    p.a = p.b;
+    p.b = tmp;
+    return p
+})
+```
+
+Learn more about [StateLink.set](typedoc-hookstate-core.md#set) and [StateLink.merge](typedoc-hookstate-core.md#merge) in the API reference.
+
 ### Partial updates and deletions
+
+You may noticed the usage of [StateLink.merge](typedoc-hookstate-core.md#merge) above. This does partial update to the state and can insert, update and delete properties all in one call:
+
+```tsx
+const state = useStateLink<Record<string, number>>({
+    propertyToUpdate: 1,
+    propertyToDelete: 2
+})
+state.merge({
+    propertyToUpdate: 2,
+    propertyToDelete: None,
+    propertyToAdd: 1
+}) // state value will be: { propertyToUpdate: 2, propertyToAdd: 1 }
+```
+
+Learn more about [StateLink.set](typedoc-hookstate-core.md#set) and [StateLink.merge](typedoc-hookstate-core.md#merge) in the API reference.
 
 ## Advanced mutations for an array state
 
-Setting an array is possible with the same [StateLink.set](typedoc-hookstate-core.md#set) method as any other primitive value.
-
-
 ### Getting indexes of existing elements
+
+Let's consider we have got the following state:
+
+```tsx
+const state = useStateLink([1, 2])
+```
+
+`state.keys()` returns an array of numbers of existing indexes. It is equivalent to `Object.keys(state.value)` or `Object.keys(state.nested)` but includes only indexes as numbers (not as strings, like for an object state).
+
+```tsx
+const keys = state.keys() // will be [0, 1] for the above example
+```
+
+Learn more about [StateLink.keys](typedoc-hookstate-core.md#keys) in the API reference.
 
 ### Updating existing element
 
+For a given state:
+
+```tsx
+const state = useStateLink([1, 2])
+```
+
+The most efficient and recommended methods to update nested element are the following: 
+```tsx
+state.nested[0].set(p => p + 1) // increments value of an element at 0 position
+// or
+state.merge(p => ({ 0: p[0] + 1 }))
+```
+It sets only element at `0`, so it will rerender every component where this element is is used.
+
+#### Avoid the following:
+
+There are alternative less efficient methods, but resulting in the same mutation and data state. The following sets the entire array state to the new value (although, only `0` index is changed), so it will rerender every component where **any** property of the state is used.
+
+```tsx
+state.set(p => ([p[0] + 1].concat(p.slice(1))))
+```
+
+The following sets only property `0` but uses the current property value via the [StateLink.value](typedoc-hookstate-core.md#value), which marks the property `0` as used by a component even if it was not used during the last rendering. In other words using nested property state in rendering or in action dispatch
+has got the same effect: a component is rerendered on property update.
+
+```tsx
+state.nested[0].set(state.value[0] + 1) // increments value of an element at 0
+```
+
+Learn more about [StateLink.set](typedoc-hookstate-core.md#set) and [StateLink.merge](typedoc-hookstate-core.md#merge) in the API reference.
+
 ### Appending new element
+
+For a given state:
+
+```tsx
+const state = useStateLink([1000])
+```
+
+The recommended methods to add new element are the following: 
+```tsx
+state.nested[state.value.length].set(2000)
+// or 
+state.merge([2000])
+```
+
+Notice the `state.nested` object has got **any** index defined.
+It allows to extend array state using the same method as for updating of an existing element.
+
+#### Avoid the following
+
+as it can be potentially less efficient than the above recommended methods:
+
+```tsx
+state.set(p => p.concat([2000]))
+```
+
+Learn more about [StateLink.set](typedoc-hookstate-core.md#set) and [StateLink.merge](typedoc-hookstate-core.md#merge) in the API reference.
 
 ### Deleting existing element
 
+For a given state:
+
+```tsx
+const state = useStateLink([1000, 2000, 3000])
+```
+
+The recommended methods to delete an element are the following: 
+```tsx
+import { None } from '@hookstate/core'
+
+state.nested[1].set(None)
+// or
+state.merge({ 1: None })
+```
+
+#### Avoid the following
+
+as it can be potentially less efficient than the above recommended methods:
+
+```tsx
+state.set(p => {
+    delete p[1]
+    return p
+})
+```
+
+Learn more about [StateLink.set](typedoc-hookstate-core.md#set) and [StateLink.merge](typedoc-hookstate-core.md#merge) in the API reference.
+
 ### Concatenating with another array
+
+For a given state:
+
+```tsx
+const state = useStateLink([1000, 2000])
+```
+
+The recommended method to append another array is the following: 
+```tsx
+state.merge([3000, 4000])
+```
+
+Learn more about [StateLink.set](typedoc-hookstate-core.md#set) and [StateLink.merge](typedoc-hookstate-core.md#merge) in the API reference.
 
 ### Swapping two elements
 
+For a given state:
+
+```tsx
+const state = useStateLink([1000, 2000])
+```
+
+The recommended method to swap elements is the following: 
+```tsx
+state.merge(p => ({ 1: p[0], 0: p[1] }))
+```
+
+#### Avoid the following
+
+as it can be potentially less efficient than the above recommended method:
+
+```tsx
+state.set(p => {
+    const tmp = p[0];
+    p[0] = p[1];
+    p[1] = tmp;
+    return p
+})
+```
+
+Learn more about [StateLink.set](typedoc-hookstate-core.md#set) and [StateLink.merge](typedoc-hookstate-core.md#merge) in the API reference.
+
 ### Partial updates and deletions
+
+You may noticed the usage of [StateLink.merge](typedoc-hookstate-core.md#merge) above. This does partial update to the state and can insert, update and delete array elements all in one call:
+
+```tsx
+const state = useStateLink([1000, 2000, 3000])
+state.merge({
+    0: 2,
+    1: None,
+    3: 4000
+}) // state value will be: [2, 3000, 4000]
+```
+
+Learn more about [StateLink.set](typedoc-hookstate-core.md#set) and [StateLink.merge](typedoc-hookstate-core.md#merge) in the API reference.
 
 ## Advanced mutations for a string state 
 
-### Updating existing property
-
 ### Concatenating with another string
+
+For a given state:
+
+```tsx
+const state = useStateLink("Hello ")
+```
+
+The recommended method to append another string is the following: 
+```tsx
+state.merge(" World") // state.value will be "Hello World"
+```
+
+Learn more about [StateLink.set](typedoc-hookstate-core.md#set) and [StateLink.merge](typedoc-hookstate-core.md#merge) in the API reference.

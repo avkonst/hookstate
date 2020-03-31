@@ -4,19 +4,14 @@ title: Getting started
 sidebar_label: Getting started
 ---
 
-## Overview
+## Preface
 
-### Code samples
+We know you will learn Hookstate library API very quickly without reading much (if any) of the documentation. The following will help you to get started in minutes:
 
-Thanks to concise and intuitive API, we do not need many words to explain it. Examples do the best job telling the story. <u>Examples in each section are self-contained and complete.</u> So, you do not need to read the documentation page by page. Feel free to jump to the page, which is relevant for your current problem.
-
-### Intellisense
-
-Using the library in Typescript project makes it even simpler as type inference of the API functions supports any complexity of data structures of your states. Of course, you can also use it from a plain javascript.
-
-### Demo application
-
-There is a *Todo-list-like* complete [demo application](https://github.com/avkonst/hookstate/tree/master/hookstate.js.org/demos/todolist) built with Hookstate. It uses and demonstrates most of the core features of Hookstate. It gives an example how to organise your project. You may follow the example or use any other module-composition structure. Here it is running in `iframe`:
+* **Intuitive API**. Most of the things will be self-explanatory. More in depth description will be always there.
+* **Code samples** in each section are self-contained, complete and interactive. So, jump to the relevant section, copy-paste a sample to your app and extend it as needed.
+* **Intellisense by IDE.** If your project is in Typescript, you will benefit a lot as type inference of the API functions supports any complexity of data structures of your states. Of course, you can also use it from a plain javascript.
+* **Complete demo application**. There is a *Todo-list-like* complete [demo application](https://github.com/avkonst/hookstate/tree/master/hookstate.js.org/demos/todolist) built with Hookstate. It uses and demonstrates most of the core features of Hookstate. It gives an example how to organise your project. You may follow the example or use any other module-composition structure. Here it is running in `iframe`:
 
 <iframe src="https://hookstate.js.org/demo-todolist" width="100%" height="700px"></iframe>
 
