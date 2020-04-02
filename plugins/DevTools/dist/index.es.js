@@ -771,7 +771,7 @@ function DevToolsInit() {
     if ( // already initialized
     MonitoredStates ||
         // server-side rendering
-        !window ||
+        typeof window === 'undefined' ||
         // development tools monitor is not open
         !('__REDUX_DEVTOOLS_EXTENSION__' in window)) {
         return;
