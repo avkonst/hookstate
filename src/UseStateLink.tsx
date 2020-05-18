@@ -165,7 +165,7 @@ export interface StateLink<S> {
      * Type of an error can be anything. It is the same as what the promise
      * provided on rejection.
      */
-    readonly error: any | undefined; //tslint:disable-line: no-any
+    readonly error: StateErrorAtPath | undefined; //tslint:disable-line: no-any
 
     /**
      * 'Javascript' object 'path' to an element relative to the root object
@@ -365,6 +365,14 @@ export type StateValueAtRoot = any; //tslint:disable-line: no-any
  * @ignore
  */
 export type StateValueAtPath = any; //tslint:disable-line: no-any
+/**
+ * For plugin developers only.
+ * Type alias to highlight the places where we are dealing with state error.
+ *
+ * @hidden
+ * @ignore
+ */
+export type StateErrorAtPath = any; //tslint:disable-line: no-any
 
 /**
  * For plugin developers only.
@@ -1818,6 +1826,11 @@ class StateLinkImpl<S> implements StateLink<S>,
                     }
                     case $promised:
                         return this.promised;
+                    case $error:
+                        return this.error;
+                    case $batch:
+                        return (action: (s: State<S>) => void, options?: BatchOptions) =>
+                            this.batch(s => action((s as StateLinkImpl<S>).asExperimentalState), options)
                     case $attach:
                         return (p: () => Plugin) => this.with(p).asExperimentalState;
                     case $destroy:
@@ -1827,6 +1840,10 @@ class StateLinkImpl<S> implements StateLink<S>,
                     }
                 }
             } else {
+                if (key === 'toJSON') {
+                    throw new StateLinkInvalidUsageError('toJSON()', this.path,
+                        'did you mean to use JSON.stringify(state.get()) instead of JSON.stringify(state)?');
+                }
                 const currentValue = getValueSourceTracked();
                 if (typeof currentValue !== 'object' || currentValue === null) {
                     throw new StateLinkInvalidUsageError('set', this.path,
@@ -2209,6 +2226,20 @@ export const $promised = Symbol()
  * @internal
  * @experimental
  */
+export const $error = Symbol()
+/**
+ * @hidden
+ * @ignore
+ * @internal
+ * @experimental
+ */
+export const $batch = Symbol()
+/**
+ * @hidden
+ * @ignore
+ * @internal
+ * @experimental
+ */
 export const $attach = Symbol()
 
 /**
@@ -2246,6 +2277,8 @@ export interface StateMixin<S> {
     [$keys]: InferredStateKeysType<S>;
     [$denull]: InferredStateDenullType<S>;
     [$promised]: boolean;
+    [$error]: StateErrorAtPath | undefined;
+    [$batch](action: (s: State<S>) => void, options?: BatchOptions): void
     [$attach](plugin: () => Plugin): this
 }
 
