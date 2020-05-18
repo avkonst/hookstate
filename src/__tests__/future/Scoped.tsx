@@ -1,14 +1,15 @@
-import { useStateLink, Downgraded } from '../../';
+import { useState, Downgraded, $get, $set } from '../../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import React from 'react';
+import { $attach } from '../../UseStateLink';
 
 test('object: should rerender used via scoped updates by child', async () => {
     let parentRenderTimes = 0
     let childRenderTimes = 0
     const parent = renderHook(() => {
         parentRenderTimes += 1;
-        return useStateLink({
+        return useState({
             fieldUsedByParent: 0,
             fieldUsedByChild: 100,
             fieldUsedByBoth: 200
@@ -16,42 +17,42 @@ test('object: should rerender used via scoped updates by child', async () => {
     });
     const child = renderHook(() => {
         childRenderTimes += 1;
-        return useStateLink(parent.result.current)
+        return useState(parent.result.current)
     });
-    expect(parent.result.current.nested.fieldUsedByParent.get()).toStrictEqual(0);
-    expect(parent.result.current.nested.fieldUsedByBoth.get()).toStrictEqual(200);
-    expect(child.result.current.nested.fieldUsedByChild.get()).toStrictEqual(100);
-    expect(child.result.current.nested.fieldUsedByBoth.get()).toStrictEqual(200);
+    expect(parent.result.current.fieldUsedByParent[$get]).toStrictEqual(0);
+    expect(parent.result.current.fieldUsedByBoth[$get]).toStrictEqual(200);
+    expect(child.result.current.fieldUsedByChild[$get]).toStrictEqual(100);
+    expect(child.result.current.fieldUsedByBoth[$get]).toStrictEqual(200);
     expect(parentRenderTimes).toStrictEqual(1);
     expect(childRenderTimes).toStrictEqual(1);
 
     act(() => {
-        child.result.current.nested.fieldUsedByChild.set(p => p + 1);
+        child.result.current.fieldUsedByChild[$set](p => p + 1);
     });
-    expect(parent.result.current.nested.fieldUsedByParent.get()).toStrictEqual(0);
-    expect(parent.result.current.nested.fieldUsedByBoth.get()).toStrictEqual(200);
-    expect(child.result.current.nested.fieldUsedByChild.get()).toStrictEqual(101);
-    expect(child.result.current.nested.fieldUsedByBoth.get()).toStrictEqual(200);
+    expect(parent.result.current.fieldUsedByParent[$get]).toStrictEqual(0);
+    expect(parent.result.current.fieldUsedByBoth[$get]).toStrictEqual(200);
+    expect(child.result.current.fieldUsedByChild[$get]).toStrictEqual(101);
+    expect(child.result.current.fieldUsedByBoth[$get]).toStrictEqual(200);
     expect(parentRenderTimes).toStrictEqual(1);
     expect(childRenderTimes).toStrictEqual(2);
 
     act(() => {
-        child.result.current.nested.fieldUsedByParent.set(p => p + 1);
+        child.result.current.fieldUsedByParent[$set](p => p + 1);
     });
-    expect(parent.result.current.nested.fieldUsedByParent.get()).toStrictEqual(1);
-    expect(parent.result.current.nested.fieldUsedByBoth.get()).toStrictEqual(200);
-    expect(child.result.current.nested.fieldUsedByChild.get()).toStrictEqual(101);
-    expect(child.result.current.nested.fieldUsedByBoth.get()).toStrictEqual(200);
+    expect(parent.result.current.fieldUsedByParent[$get]).toStrictEqual(1);
+    expect(parent.result.current.fieldUsedByBoth[$get]).toStrictEqual(200);
+    expect(child.result.current.fieldUsedByChild[$get]).toStrictEqual(101);
+    expect(child.result.current.fieldUsedByBoth[$get]).toStrictEqual(200);
     expect(parentRenderTimes).toStrictEqual(2);
     expect(childRenderTimes).toStrictEqual(2);
 
     act(() => {
-        child.result.current.nested.fieldUsedByBoth.set(p => p + 1);
+        child.result.current.fieldUsedByBoth[$set](p => p + 1);
     });
-    expect(parent.result.current.nested.fieldUsedByParent.get()).toStrictEqual(1);
-    expect(parent.result.current.nested.fieldUsedByBoth.get()).toStrictEqual(201);
-    expect(child.result.current.nested.fieldUsedByChild.get()).toStrictEqual(101);
-    expect(child.result.current.nested.fieldUsedByBoth.get()).toStrictEqual(201);
+    expect(parent.result.current.fieldUsedByParent[$get]).toStrictEqual(1);
+    expect(parent.result.current.fieldUsedByBoth[$get]).toStrictEqual(201);
+    expect(child.result.current.fieldUsedByChild[$get]).toStrictEqual(101);
+    expect(child.result.current.fieldUsedByBoth[$get]).toStrictEqual(201);
     // correct if parent is rerendered, child should not
     // as it is rerendered as a child of parent:
     expect(parentRenderTimes).toStrictEqual(3);
@@ -63,7 +64,7 @@ test('object: should rerender used via scoped updates by parent', async () => {
     let childRenderTimes = 0
     const parent = renderHook(() => {
         parentRenderTimes += 1;
-        return useStateLink({
+        return useState({
             fieldUsedByParent: 0,
             fieldUsedByChild: 100,
             fieldUsedByBoth: 200
@@ -71,42 +72,42 @@ test('object: should rerender used via scoped updates by parent', async () => {
     });
     const child = renderHook(() => {
         childRenderTimes += 1;
-        return useStateLink(parent.result.current)
+        return useState(parent.result.current)
     });
-    expect(parent.result.current.nested.fieldUsedByParent.get()).toStrictEqual(0);
-    expect(parent.result.current.nested.fieldUsedByBoth.get()).toStrictEqual(200);
-    expect(child.result.current.nested.fieldUsedByChild.get()).toStrictEqual(100);
-    expect(child.result.current.nested.fieldUsedByBoth.get()).toStrictEqual(200);
+    expect(parent.result.current.fieldUsedByParent[$get]).toStrictEqual(0);
+    expect(parent.result.current.fieldUsedByBoth[$get]).toStrictEqual(200);
+    expect(child.result.current.fieldUsedByChild[$get]).toStrictEqual(100);
+    expect(child.result.current.fieldUsedByBoth[$get]).toStrictEqual(200);
     expect(parentRenderTimes).toStrictEqual(1);
     expect(childRenderTimes).toStrictEqual(1);
 
     act(() => {
-        parent.result.current.nested.fieldUsedByChild.set(p => p + 1);
+        parent.result.current.fieldUsedByChild[$set](p => p + 1);
     });
-    expect(parent.result.current.nested.fieldUsedByParent.get()).toStrictEqual(0);
-    expect(parent.result.current.nested.fieldUsedByBoth.get()).toStrictEqual(200);
-    expect(child.result.current.nested.fieldUsedByChild.get()).toStrictEqual(101);
-    expect(child.result.current.nested.fieldUsedByBoth.get()).toStrictEqual(200);
+    expect(parent.result.current.fieldUsedByParent[$get]).toStrictEqual(0);
+    expect(parent.result.current.fieldUsedByBoth[$get]).toStrictEqual(200);
+    expect(child.result.current.fieldUsedByChild[$get]).toStrictEqual(101);
+    expect(child.result.current.fieldUsedByBoth[$get]).toStrictEqual(200);
     expect(parentRenderTimes).toStrictEqual(1);
     expect(childRenderTimes).toStrictEqual(2);
 
     act(() => {
-        parent.result.current.nested.fieldUsedByParent.set(p => p + 1);
+        parent.result.current.fieldUsedByParent[$set](p => p + 1);
     });
-    expect(parent.result.current.nested.fieldUsedByParent.get()).toStrictEqual(1);
-    expect(parent.result.current.nested.fieldUsedByBoth.get()).toStrictEqual(200);
-    expect(child.result.current.nested.fieldUsedByChild.get()).toStrictEqual(101);
-    expect(child.result.current.nested.fieldUsedByBoth.get()).toStrictEqual(200);
+    expect(parent.result.current.fieldUsedByParent[$get]).toStrictEqual(1);
+    expect(parent.result.current.fieldUsedByBoth[$get]).toStrictEqual(200);
+    expect(child.result.current.fieldUsedByChild[$get]).toStrictEqual(101);
+    expect(child.result.current.fieldUsedByBoth[$get]).toStrictEqual(200);
     expect(parentRenderTimes).toStrictEqual(2);
     expect(childRenderTimes).toStrictEqual(2);
 
     act(() => {
-        parent.result.current.nested.fieldUsedByBoth.set(p => p + 1);
+        parent.result.current.fieldUsedByBoth[$set](p => p + 1);
     });
-    expect(parent.result.current.nested.fieldUsedByParent.get()).toStrictEqual(1);
-    expect(parent.result.current.nested.fieldUsedByBoth.get()).toStrictEqual(201);
-    expect(child.result.current.nested.fieldUsedByChild.get()).toStrictEqual(101);
-    expect(child.result.current.nested.fieldUsedByBoth.get()).toStrictEqual(201);
+    expect(parent.result.current.fieldUsedByParent[$get]).toStrictEqual(1);
+    expect(parent.result.current.fieldUsedByBoth[$get]).toStrictEqual(201);
+    expect(child.result.current.fieldUsedByChild[$get]).toStrictEqual(101);
+    expect(child.result.current.fieldUsedByBoth[$get]).toStrictEqual(201);
     expect(parentRenderTimes).toStrictEqual(3);
     // correct if parent is rerendered, child should not
     // as it is rerendered as a child of parent:
@@ -118,50 +119,50 @@ test('object: should rerender used via scoped updates by parent (disabled tracki
     let childRenderTimes = 0
     const parent = renderHook(() => {
         parentRenderTimes += 1;
-        return useStateLink({
+        return useState({
             fieldUsedByParent: 0,
             fieldUsedByChild: 100,
             fieldUsedByBoth: 200
-        }).with(Downgraded)
+        })[$attach](Downgraded)
     });
     const child = renderHook(() => {
         childRenderTimes += 1;
-        return useStateLink(parent.result.current)
+        return useState(parent.result.current)
     });
-    expect(parent.result.current.nested.fieldUsedByParent.get()).toStrictEqual(0);
-    expect(parent.result.current.nested.fieldUsedByBoth.get()).toStrictEqual(200);
-    expect(child.result.current.nested.fieldUsedByChild.get()).toStrictEqual(100);
-    expect(child.result.current.nested.fieldUsedByBoth.get()).toStrictEqual(200);
+    expect(parent.result.current.fieldUsedByParent[$get]).toStrictEqual(0);
+    expect(parent.result.current.fieldUsedByBoth[$get]).toStrictEqual(200);
+    expect(child.result.current.fieldUsedByChild[$get]).toStrictEqual(100);
+    expect(child.result.current.fieldUsedByBoth[$get]).toStrictEqual(200);
     expect(parentRenderTimes).toStrictEqual(1);
     expect(childRenderTimes).toStrictEqual(1);
 
     act(() => {
-        parent.result.current.nested.fieldUsedByChild.set(p => p + 1);
+        parent.result.current.fieldUsedByChild[$set](p => p + 1);
     });
-    expect(parent.result.current.nested.fieldUsedByParent.get()).toStrictEqual(0);
-    expect(parent.result.current.nested.fieldUsedByBoth.get()).toStrictEqual(200);
-    expect(child.result.current.nested.fieldUsedByChild.get()).toStrictEqual(101);
-    expect(child.result.current.nested.fieldUsedByBoth.get()).toStrictEqual(200);
+    expect(parent.result.current.fieldUsedByParent[$get]).toStrictEqual(0);
+    expect(parent.result.current.fieldUsedByBoth[$get]).toStrictEqual(200);
+    expect(child.result.current.fieldUsedByChild[$get]).toStrictEqual(101);
+    expect(child.result.current.fieldUsedByBoth[$get]).toStrictEqual(200);
     expect(parentRenderTimes).toStrictEqual(2);
     expect(childRenderTimes).toStrictEqual(1);
 
     act(() => {
-        parent.result.current.nested.fieldUsedByParent.set(p => p + 1);
+        parent.result.current.fieldUsedByParent[$set](p => p + 1);
     });
-    expect(parent.result.current.nested.fieldUsedByParent.get()).toStrictEqual(1);
-    expect(parent.result.current.nested.fieldUsedByBoth.get()).toStrictEqual(200);
-    expect(child.result.current.nested.fieldUsedByChild.get()).toStrictEqual(101);
-    expect(child.result.current.nested.fieldUsedByBoth.get()).toStrictEqual(200);
+    expect(parent.result.current.fieldUsedByParent[$get]).toStrictEqual(1);
+    expect(parent.result.current.fieldUsedByBoth[$get]).toStrictEqual(200);
+    expect(child.result.current.fieldUsedByChild[$get]).toStrictEqual(101);
+    expect(child.result.current.fieldUsedByBoth[$get]).toStrictEqual(200);
     expect(parentRenderTimes).toStrictEqual(3);
     expect(childRenderTimes).toStrictEqual(1);
 
     act(() => {
-        parent.result.current.nested.fieldUsedByBoth.set(p => p + 1);
+        parent.result.current.fieldUsedByBoth[$set](p => p + 1);
     });
-    expect(parent.result.current.nested.fieldUsedByParent.get()).toStrictEqual(1);
-    expect(parent.result.current.nested.fieldUsedByBoth.get()).toStrictEqual(201);
-    expect(child.result.current.nested.fieldUsedByChild.get()).toStrictEqual(101);
-    expect(child.result.current.nested.fieldUsedByBoth.get()).toStrictEqual(201);
+    expect(parent.result.current.fieldUsedByParent[$get]).toStrictEqual(1);
+    expect(parent.result.current.fieldUsedByBoth[$get]).toStrictEqual(201);
+    expect(child.result.current.fieldUsedByChild[$get]).toStrictEqual(101);
+    expect(child.result.current.fieldUsedByBoth[$get]).toStrictEqual(201);
     expect(parentRenderTimes).toStrictEqual(4);
     // correct if parent is rerendered, child should not
     // as it is rerendered as a child of parent:

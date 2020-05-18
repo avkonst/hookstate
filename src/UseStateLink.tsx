@@ -1818,6 +1818,8 @@ class StateLinkImpl<S> implements StateLink<S>,
                     }
                     case $promised:
                         return this.promised;
+                    case $attach:
+                        return (p: () => Plugin) => this.with(p).asExperimentalState;
                     case $destroy:
                         return () => this.destroy()
                     default: {
@@ -2201,6 +2203,13 @@ export const $denull = Symbol()
  * @experimental
  */
 export const $promised = Symbol()
+/**
+ * @hidden
+ * @ignore
+ * @internal
+ * @experimental
+ */
+export const $attach = Symbol()
 
 /**
  * @hidden
@@ -2237,6 +2246,7 @@ export interface StateMixin<S> {
     [$keys]: InferredStateKeysType<S>;
     [$denull]: InferredStateDenullType<S>;
     [$promised]: boolean;
+    [$attach](plugin: () => Plugin): this
 }
 
 /**

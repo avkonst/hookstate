@@ -80,7 +80,8 @@ test('object: should rerender used after merge insert', async () => {
     });
     expect(renderTimes).toStrictEqual(2);
     expect(result.current.field1[$get]).toStrictEqual(1);
-    expect(Object.keys(result.current)).toEqual(['field1', 'field2', 'field3', 'field4', 'field5', 'field6', 'newField']);
+    expect(Object.keys(result.current)).toEqual(
+        ['field1', 'field2', 'field3', 'field4', 'field5', 'field6', 'newField']);
 });
 
 test('object: should rerender used after merge delete', async () => {
