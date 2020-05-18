@@ -67,7 +67,7 @@
         "tslint-react": "4.2.0",
         "typedoc": "^0.16.11",
         "typedoc-plugin-markdown": "^2.2.17",
-        "typescript": "3.8.3"
+        "typescript": "3.9.2"
     },
     "files": [
         "dist"

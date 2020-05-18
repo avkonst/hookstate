@@ -61,13 +61,10 @@ export type InferredStateLinkKeysType<S> =
 /**
  * Return type of [StateLink.denull](#denull).
  */
-export type InferredStateLinkDenullType<S> = S extends null ?
-    S extends undefined ?
-        StateLink<NonNullable<S>> | null | undefined :
-        StateLink<NonNullable<S>> | null :
-    S extends undefined ?
-        StateLink<NonNullable<S>> | undefined :
-        StateLink<NonNullable<S>> | never;
+export type InferredStateLinkDenullType<S> =
+    S extends undefined ? undefined :
+    S extends null ? null : StateLink<S>;
+
 /**
  * Parameter type of [StateLink.batch](#batch).
  */
@@ -493,7 +490,7 @@ export function createStateLink<S, R>(
     transform?: ((state: StateLink<S>, prev: R | undefined) => R)
 ): (StateLink<S> & DestroyMixin) |
     (WrappedStateLink<R> & DestroyMixin) {
-    const stateLink = createState(initial).accessUnmounted() as StateLinkImpl<S>
+    const stateLink = createStore(initial).accessUnmounted() as StateLinkImpl<S>
     if (createStateLink[DevToolsID]) {
         stateLink.with(createStateLink[DevToolsID])
     }
@@ -635,7 +632,7 @@ export function useStateLink<S, R>(
     } else {
         // Local state mount
         // eslint-disable-next-line react-hooks/rules-of-hooks
-        const [value, setValue] = React.useState(() => ({ state: createState(source) }));
+        const [value, setValue] = React.useState(() => ({ state: createStore(source) }));
         const link = useSubscribedStateLink<S>(
             value.state,
             RootPath,
@@ -872,13 +869,14 @@ interface Subscribable {
 const DowngradedID = Symbol('Downgraded');
 const StateMemoID = Symbol('StateMemo');
 const ProxyMarkerID = Symbol('ProxyMarker');
+const StateMarkerID = Symbol('State');
 
 const RootPath: Path = [];
 const DestroyedEdition = -1
 
 type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 
-class State implements Subscribable {
+class Store implements Subscribable {
     private _edition: number = 0;
 
     private _subscribers: Set<Subscriber> = new Set();
@@ -1274,7 +1272,7 @@ class StateLinkImpl<S> implements StateLink<S>,
     private nestedLinksCache: Record<string | number, StateLinkImpl<S[keyof S]>> | undefined;
 
     constructor(
-        public readonly state: State,
+        public readonly state: Store,
         public readonly path: Path,
         public onUpdateUsed: (() => void),
         public valueSource: S,
@@ -1370,7 +1368,7 @@ class StateLinkImpl<S> implements StateLink<S>,
         return this.state.set(this.path, newValue, mergeValue);
     }
 
-    set(newValue: React.SetStateAction<S>) {
+    set(newValue: SetStateAction<S>) {
         this.state.update([this.setUntracked(newValue)]);
     }
 
@@ -1784,9 +1782,156 @@ class StateLinkImpl<S> implements StateLink<S>,
             }
         });
     }
+    
+    get asExperimentalState(): State<S> {
+        const getValueSourceTracked = () => {
+            this.get() // mark used
+            return this.valueSource
+        }
+        return proxyWrap(this.path, getValueSourceTracked,
+        (_, key) => {
+            if (key === StateMarkerID) {
+                // should be tested before target is obtained
+                // to keep it clean from usage marker
+                return this;
+            }
+            if (typeof key === 'symbol') {
+                switch (key) {
+                    case $get:
+                        return this.get()
+                    case $set:
+                        return (v: SetStateAction<S>) => this.set(v)
+                    case $merge:
+                        return (v: SetPartialStateAction<S>) => this.merge(v)
+                    case $keys:
+                        return this.keys
+                    case $denull: {
+                        const currentValue = getValueSourceTracked();
+                        if (currentValue === null || currentValue === undefined) {
+                            return currentValue;
+                        }
+                        return this.asExperimentalState;
+                    }
+                    case $promised:
+                        return this.promised;
+                    case $destroy:
+                        return () => this.destroy()
+                    default: {
+                        return undefined;
+                    }
+                }
+            } else {
+                const currentValue = getValueSourceTracked();
+                if (typeof currentValue !== 'object') {
+                    throw new StateLinkInvalidUsageError('set', this.path,
+                        `target value is not an object to contain properties`)
+                }
+                return (this.nested)![key].asExperimentalState;
+            }
+        },
+        (_, key, value) => {
+            throw new StateLinkInvalidUsageError('set', this.path,
+                `did you mean to use 'state.${String(key)}[$set](value)' instead of 'state.${String(key)} = value'?`)
+        }) as unknown as State<S>;
+    }
 }
 
-function createState<S>(initial: SetInitialStateAction<S>): State {
+// tslint:disable-next-line: no-any
+function proxyWrap(path: Path, targetGetter: () => any,
+    // tslint:disable-next-line: no-any
+    propertyGetter: (unused: any, key: PropertyKey) => any,
+    // tslint:disable-next-line: no-any
+    propertySetter: (unused: any, p: PropertyKey, value: any, receiver: any) => boolean
+) {
+    const onInvalidUsage = (op: string) => {
+        throw new StateLinkInvalidUsageError(op, path)
+    }
+    return new Proxy({}, {
+        getPrototypeOf: (target) => {
+            // should satisfy the invariants:
+            // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy/handler/getPrototypeOf#Invariants
+            const targetReal = targetGetter()
+            if (targetReal === undefined || targetReal === null) {
+                return null;
+            }
+            return Object.getPrototypeOf(targetReal);
+        },
+        setPrototypeOf: (target, v) => {
+            return onInvalidUsage('setPrototypeOf')
+        },
+        isExtensible: (target) => {
+            // should satisfy the invariants:
+            // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy/handler/isExtensible#Invariants
+            return true; // required to satisfy the invariants of the getPrototypeOf
+            // return Object.isExtensible(target);
+        },
+        preventExtensions: (target) => {
+            return onInvalidUsage('preventExtensions')
+        },
+        getOwnPropertyDescriptor: (target, p) => {
+            const targetReal = targetGetter()
+            if (targetReal === undefined || targetReal === null) {
+                return undefined;
+            }
+            const origin = Object.getOwnPropertyDescriptor(targetReal, p);
+            if (origin && Array.isArray(targetReal) && p in Array.prototype) {
+                return origin;
+            }
+            return origin && {
+                configurable: true, // JSON.stringify() does not work for an object without it
+                enumerable: origin.enumerable,
+                get: () => propertyGetter(undefined, p),
+                set: undefined
+            };
+        },
+        has: (target, p) => {
+            if (typeof p === 'symbol') {
+                return false;
+            }
+            const targetReal = targetGetter()
+            if (typeof targetReal === 'object') {
+                return p in targetReal;
+            }
+            return false;
+        },
+        get: propertyGetter,
+        set: propertySetter,
+        deleteProperty: (target, p) => {
+            return onInvalidUsage('deleteProperty')
+        },
+        defineProperty: (target, p, attributes) => {
+            return onInvalidUsage('defineProperty')
+        },
+        enumerate: (target) => {
+            const targetReal = targetGetter()
+            if (Array.isArray(targetReal)) {
+                return Object.keys(targetReal).concat('length');
+            }
+            if (targetReal === undefined || targetReal === null) {
+                return [];
+            }
+            return Object.keys(targetReal);
+        },
+        ownKeys: (target) => {
+            const targetReal = targetGetter()
+            if (Array.isArray(targetReal)) {
+                return Object.keys(targetReal).concat('length');
+            }
+            if (targetReal === undefined || targetReal === null) {
+                return [];
+            }
+            return Object.keys(targetReal);
+        },
+        apply: (target, thisArg, argArray?) => {
+            return onInvalidUsage('apply')
+        },
+        construct: (target, argArray, newTarget?) => {
+            return onInvalidUsage('construct')
+        }
+    });
+}
+
+function createStore<S>(initial: SetInitialStateAction<S>): Store {
     let initialValue: S | Promise<S> = initial as (S | Promise<S>);
     if (typeof initial === 'function') {
         initialValue = (initial as (() => S | Promise<S>))();
@@ -1798,11 +1943,11 @@ function createState<S>(initial: SetInitialStateAction<S>): State {
             'did you mean to use create/useStateLink(state) OR ' +
             'create/useStateLink(lodash.cloneDeep(state.get())) instead of create/useStateLink(state.get())?')
     }
-    return new State(initialValue);
+    return new Store(initialValue);
 }
 
 function useSubscribedStateLink<S>(
-    state: State,
+    state: Store,
     path: Path,
     update: () => void,
     subscribeTarget: Subscribable,
@@ -1982,3 +2127,167 @@ export type StateLinkPlugable<S> = ExtendedStateLinkMixin<S>;
  * @deprecated declared for backward compatibility
  */
 export type InitialValueAtRoot<S> = SetInitialStateAction<S>;
+
+///
+/// EXTERNAL EXPERIMENTAL SYMBOLS (left for active experiments, will be made primary in version 2)
+///
+
+/**
+ * @hidden
+ * @ignore
+ * @internal
+ * @experimental
+ */
+export const $get = Symbol()
+/**
+ * @hidden
+ * @ignore
+ * @internal
+ * @experimental
+ */
+export const $set = Symbol()
+/**
+ * @hidden
+ * @ignore
+ * @internal
+ * @experimental
+ */
+export const $merge = Symbol()
+/**
+ * @hidden
+ * @ignore
+ * @internal
+ * @experimental
+ */
+export const $destroy = Symbol()
+/**
+ * @hidden
+ * @ignore
+ * @internal
+ * @experimental
+ */
+export const $keys = Symbol()
+/**
+ * @hidden
+ * @ignore
+ * @internal
+ * @experimental
+ */
+export const $denull = Symbol()
+/**
+ * @hidden
+ * @ignore
+ * @internal
+ * @experimental
+ */
+export const $promised = Symbol()
+
+/**
+ * @hidden
+ * @ignore
+ * @internal
+ * @experimental
+ */
+export type InferredStateKeysType<S> =
+    S extends ReadonlyArray<infer _> ? ReadonlyArray<number> :
+    S extends null ? undefined :
+    S extends object ? ReadonlyArray<keyof S> :
+    undefined;
+
+/**
+ * @hidden
+ * @ignore
+ * @internal
+ * @experimental
+ */
+export type InferredStateDenullType<S> =
+    S extends undefined ? undefined :
+    S extends null ? null : State<S>;
+
+/**
+ * @hidden
+ * @ignore
+ * @internal
+ * @experimental
+ */
+export interface StateMixin<S> {
+    [$get]: S;
+    [$set](value: SetStateAction<S>): void;
+    [$merge](value: SetPartialStateAction<S>): void;
+    [$keys]: InferredStateKeysType<S>;
+    [$denull]: InferredStateDenullType<S>;
+    [$promised]: boolean;
+}
+
+/**
+ * @hidden
+ * @ignore
+ * @internal
+ * @experimental
+ */
+export interface StateDestroyMixin {
+    [$destroy](): void;
+}
+
+/**
+ * @hidden
+ * @ignore
+ * @internal
+ * @experimental
+ */
+export type State<S> = StateMixin<S> & (
+    S extends ReadonlyArray<(infer U)> ? ReadonlyArray<State<U>> :
+    S extends object ?  { readonly [K in keyof Required<S>]: State<S[K]>; } :
+    {}
+);
+
+/**
+ * @hidden
+ * @ignore
+ * @internal
+ * @experimental
+ */
+export function createState<S>(
+    initial: SetInitialStateAction<S>
+): State<S> & StateDestroyMixin {
+    const stateLink = createStateLink(initial) as StateLinkImpl<S>;
+    return stateLink.asExperimentalState as State<S> & StateDestroyMixin;
+}
+
+/**
+ * @hidden
+ * @ignore
+ * @internal
+ * @experimental
+ */
+export function useState<S>(
+    source: State<S>
+): State<S>;
+/**
+ * @hidden
+ * @ignore
+ * @internal
+ * @experimental
+ */
+export function useState<S>(
+    source: SetInitialStateAction<S>
+): State<S>;
+/**
+ * @hidden
+ * @ignore
+ * @internal
+ * @experimental
+ */
+export function useState<S>(
+    source: SetInitialStateAction<S> | State<S>
+): State<S> {
+    if (typeof source === 'object') {
+        const sl = source[StateMarkerID];
+        if (sl) {
+            // it is already state object
+            source = sl; // get underlying StateLink
+        }
+    }
+    const statelink = useStateLink(source) as StateLinkImpl<S>;
+    return statelink.asExperimentalState;
+}
