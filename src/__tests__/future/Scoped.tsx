@@ -1,8 +1,7 @@
-import { useState, Downgraded, $get, $set } from '../../';
+import { useState, Downgraded, $get, $set, $attach } from '../../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import React from 'react';
-import { $attach } from '../../UseStateLink';
 
 test('object: should rerender used via scoped updates by child', async () => {
     let parentRenderTimes = 0
