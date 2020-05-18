@@ -1788,7 +1788,11 @@ class StateLinkImpl<S> implements StateLink<S>,
             this.get() // mark used
             return this.valueSource
         }
-        return proxyWrap(this.path, getValueSourceTracked,
+        let bootstrapValueSource = this.valueSource; // no need to use this.getUntracked() to refresh
+        if (typeof bootstrapValueSource !== 'object' || bootstrapValueSource === null) {
+            bootstrapValueSource = {} as S;
+        }
+        return proxyWrap(this.path, bootstrapValueSource, getValueSourceTracked,
         (_, key) => {
             if (key === StateMarkerID) {
                 // should be tested before target is obtained
@@ -1822,9 +1826,21 @@ class StateLinkImpl<S> implements StateLink<S>,
                 }
             } else {
                 const currentValue = getValueSourceTracked();
-                if (typeof currentValue !== 'object') {
+                if (typeof currentValue !== 'object' || currentValue === null) {
                     throw new StateLinkInvalidUsageError('set', this.path,
                         `target value is not an object to contain properties`)
+                }
+                if (Array.isArray(currentValue)) {
+                    if (key === 'length') {
+                        return currentValue.length;
+                    }
+                    if (key in Array.prototype) {
+                        return Array.prototype[key];
+                    }
+                    const index = Number(key);
+                    if (!Number.isInteger(index)) {
+                        return undefined;
+                    }              
                 }
                 return (this.nested)![key].asExperimentalState;
             }
@@ -1836,8 +1852,12 @@ class StateLinkImpl<S> implements StateLink<S>,
     }
 }
 
-// tslint:disable-next-line: no-any
-function proxyWrap(path: Path, targetGetter: () => any,
+function proxyWrap(
+    path: Path,
+    // tslint:disable-next-line: no-any
+    targetBootstrap: any,
+    // tslint:disable-next-line: no-any
+    targetGetter: () => any,
     // tslint:disable-next-line: no-any
     propertyGetter: (unused: any, key: PropertyKey) => any,
     // tslint:disable-next-line: no-any
@@ -1846,7 +1866,7 @@ function proxyWrap(path: Path, targetGetter: () => any,
     const onInvalidUsage = (op: string) => {
         throw new StateLinkInvalidUsageError(op, path)
     }
-    return new Proxy({}, {
+    return new Proxy(targetBootstrap, {
         getPrototypeOf: (target) => {
             // should satisfy the invariants:
             // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy/handler/getPrototypeOf#Invariants
@@ -1889,7 +1909,7 @@ function proxyWrap(path: Path, targetGetter: () => any,
                 return false;
             }
             const targetReal = targetGetter()
-            if (typeof targetReal === 'object') {
+            if (typeof targetReal === 'object' && targetReal !== null) {
                 return p in targetReal;
             }
             return false;
@@ -1936,7 +1956,7 @@ function createStore<S>(initial: SetInitialStateAction<S>): Store {
     if (typeof initial === 'function') {
         initialValue = (initial as (() => S | Promise<S>))();
     }
-    if (typeof initialValue === 'object' && initialValue[ProxyMarkerID]) {
+    if (typeof initialValue === 'object' && initialValue !== null && initialValue[ProxyMarkerID]) {
         throw new StateLinkInvalidUsageError(
             `create/useStateLink(state.get() at '/${initialValue[ProxyMarkerID].path.join('/')}')`,
             RootPath,
@@ -2281,7 +2301,7 @@ export function useState<S>(
 export function useState<S>(
     source: SetInitialStateAction<S> | State<S>
 ): State<S> {
-    if (typeof source === 'object') {
+    if (typeof source === 'object' && source !== null) {
         const sl = source[StateMarkerID];
         if (sl) {
             // it is already state object
