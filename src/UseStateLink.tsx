@@ -824,12 +824,20 @@ export interface DevToolsExtensions {
  * 
  * @returns Interface to interact with the development tools for a given state.
  */
-export function DevTools(state: StateLink<StateValueAtPath>): DevToolsExtensions {
-    const plugin = state.with(DevToolsID, () => undefined);
-    if (plugin) {
-        return plugin[1] as DevToolsExtensions;
+export function DevTools(state: StateLink<StateValueAtPath> | State<StateValueAtPath>): DevToolsExtensions {
+    if (state[StateMarkerID]) {
+        const plugin = (state as State<StateValueAtPath>)[$attach](DevToolsID);
+        if (plugin) {
+            return plugin[0] as DevToolsExtensions;
+        }
+        return EmptyDevToolsExtensions;
+    } else {
+        const plugin = (state as StateLink<StateValueAtPath>).with(DevToolsID, () => undefined);
+        if (plugin) {
+            return plugin[1] as DevToolsExtensions;
+        }
+        return EmptyDevToolsExtensions;
     }
-    return EmptyDevToolsExtensions;
 }
 
 ///
@@ -1426,7 +1434,7 @@ class StateLinkImpl<S> implements StateLink<S>,
             })
             updatedPath = this.setUntracked(currentValue, sourceValue)
         } else if (typeof currentValue === 'string') {
-            return [this.setUntracked((currentValue + String(sourceValue)) as unknown as S)]
+            return [this.setUntracked((currentValue + String(sourceValue)) as unknown as S, sourceValue)]
         } else {
             return [this.setUntracked(sourceValue as S)]
         }
@@ -1832,7 +1840,41 @@ class StateLinkImpl<S> implements StateLink<S>,
                         return (action: (s: State<S>) => void, options?: BatchOptions) =>
                             this.batch(s => action((s as StateLinkImpl<S>).asExperimentalState), options)
                     case $attach:
-                        return (p: () => Plugin) => this.with(p).asExperimentalState;
+                        return (p: symbol | (() => PluginV2)) => {
+                            if (typeof p === 'symbol') {
+                                const plugin = this.with(p, () => undefined);
+                                if (plugin) {
+                                    const self = this;
+                                    const result: [PluginCallbacks, PluginStateControl<S>] | undefined =  [
+                                        plugin[1],
+                                        {
+                                            get() {
+                                                return self.getUntracked()
+                                            },
+                                            set(v): Path[] {
+                                                return [self.setUntracked(v)]
+                                            },
+                                            merge(v): Path[] {
+                                                return self.mergeUntracked(v)
+                                            },
+                                            rerender(paths) {
+                                                return self.update(paths);
+                                            }
+                                        }
+                                    ]
+                                    return result;
+                                }
+                                return undefined;
+                            }
+                            return this.with(() => {
+                                const plugin = p()
+                                return ({
+                                    id: plugin.id,
+                                    create: s => plugin.create(
+                                        (s as StateLinkImpl<StateValueAtRoot>).asExperimentalState)
+                                })
+                            }).asExperimentalState;
+                        }
                     case $destroy:
                         return () => this.destroy()
                     default: {
@@ -2270,6 +2312,29 @@ export type InferredStateDenullType<S> =
  * @internal
  * @experimental
  */
+export interface PluginStateControl<S> {
+    get(): S;
+    set(newValue: SetStateAction<S>): Path[];
+    merge(mergeValue: SetPartialStateAction<S>): Path[];
+    rerender(paths: Path[]): void;
+}
+/**
+ * @hidden
+ * @ignore
+ * @internal
+ * @experimental
+ */
+export interface PluginV2 {
+    readonly id: symbol;
+    readonly create: (state: State<StateValueAtRoot>) => PluginCallbacks;
+}
+
+/**
+ * @hidden
+ * @ignore
+ * @internal
+ * @experimental
+ */
 export interface StateMixin<S> {
     [$get]: S;
     [$set](value: SetStateAction<S>): void;
@@ -2279,7 +2344,8 @@ export interface StateMixin<S> {
     [$promised]: boolean;
     [$error]: StateErrorAtPath | undefined;
     [$batch](action: (s: State<S>) => void, options?: BatchOptions): void
-    [$attach](plugin: () => Plugin): this
+    [$attach](plugin: () => PluginV2): this
+    [$attach](pluginId: symbol): [PluginCallbacks, PluginStateControl<S>] | undefined
 }
 
 /**
@@ -2314,7 +2380,11 @@ export function createState<S>(
     initial: SetInitialStateAction<S>
 ): State<S> & StateDestroyMixin {
     const stateLink = createStateLink(initial) as StateLinkImpl<S>;
-    return stateLink.asExperimentalState as State<S> & StateDestroyMixin;
+    const result = stateLink.asExperimentalState as State<S> & StateDestroyMixin;
+    if (createState[DevToolsID]) {
+        result[$attach](createState[DevToolsID])
+    }
+    return result;
 }
 
 /**
@@ -2352,5 +2422,9 @@ export function useState<S>(
         }
     }
     const statelink = useStateLink(source) as StateLinkImpl<S>;
-    return statelink.asExperimentalState;
+    const result = statelink.asExperimentalState;
+    if (useState[DevToolsID]) {
+        result[$attach](useState[DevToolsID])
+    }
+    return result;
 }
