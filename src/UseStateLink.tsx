@@ -41,7 +41,10 @@ export type SetPartialStateAction<S> =
 export type SetInitialStateAction<S> = S | Promise<S> | (() => S | Promise<S>)
 
 /**
- * Return type of [StateLink.nested](#nested).
+ * @hidden
+ * @ignore
+ * @internal
+ * @deprecated declared for backward compatibility
  */
 export type InferredStateLinkNestedType<S> =
     S extends ReadonlyArray<(infer U)> ? ReadonlyArray<StateLink<U>> :
@@ -50,87 +53,131 @@ export type InferredStateLinkNestedType<S> =
     undefined;
 
 /**
- * Return type of [StateLink.keys](#keys).
+ * @hidden
+ * @ignore
+ * @internal
+ * @deprecated declared for backward compatibility
  */
-export type InferredStateLinkKeysType<S> =
-    S extends ReadonlyArray<infer _> ? ReadonlyArray<number> :
-    S extends null ? undefined :
-    S extends object ? ReadonlyArray<keyof S> :
-    undefined;
+export type InferredStateLinkKeysType<S> = InferredStateKeysType<S>;
 
 /**
- * Return type of [StateLink.denull](#denull).
+ * @hidden
+ * @ignore
+ * @internal
+ * @deprecated declared for backward compatibility
  */
 export type InferredStateLinkDenullType<S> =
     S extends undefined ? undefined :
     S extends null ? null : StateLink<S>;
 
 /**
- * Parameter type of [StateLink.batch](#batch).
+ * @hidden
+ * @ignore
+ * @internal
+ * @deprecated declared for backward compatibility
  */
 export interface BatchOptions {
-    /**
-     * Setting to tune how a batch should be executed if a state is in [promised state](#promised)
-     *
-     * - `postpone` - defers execution of a batch until state value is resolved (promise is fullfilled)
-     * - `discard` - does not execute a batch and silently discards one
-     * - `reject` - throws an exception suggesting promised state is not expected
-     * - `execute` - proceeds with executing a batch, which may or may not throw an exception
-     * depending on whether [state's value](#value) is read during execution.
-     */
     ifPromised?: 'postpone' | 'discard' | 'reject' | 'execute',
-    /**
-     * For plugin developers only.
-     * Any custom data for batch operation.
-     * It is forwarded to plugins, which subscribe to batch start/finish events.
-     *
-     * @hidden
-     * @ignore
-     */
     context?: CustomContext;
 }
 
 /**
- * Type of an object holding a reference to a state value.
- * It is the main and single interface to
- * manage a state in Hookstate.
+ * Special symbol which is used as a property to switch
+ * between [StateLink](#interfacestatelinkmd) and the corresponding [State](#interfacesstatemd)
  */
-export interface StateLink<S> {
+export const self = Symbol('self')
+
+/**
+ * Special symbol which might be returned by onPromised callback of [StateLink.map](#map) function.
+ */
+export const postpone = Symbol('postpone')
+
+/**
+ * Special symbol which might be used to delete properties
+ * from an object on [StateLink.set](#set) or [StateLink.merge](#merge)
+ */
+export const none = Symbol('none') as StateValueAtPath;
+
+/**
+ * @hidden
+ * @ignore
+ * @internal
+ * @deprecated declared for backward compatibility
+ */
+export const None = none;
+
+/**
+ * Return type of [StateLink.keys](#keys).
+ */
+export type InferredStateKeysType<S> =
+    S extends ReadonlyArray<infer _> ? ReadonlyArray<number> :
+    S extends null ? undefined :
+    S extends object ? ReadonlyArray<keyof S> :
+    undefined;
+
+/**
+ * Return type of [StateLink.map()](#map).
+ */
+export type InferredStateDenullType<S> =
+    S extends undefined ? undefined :
+    S extends null ? null : State<S>;
+
+/**
+ * For plugin developers only.
+ * An instance to manipulate the state without triggering rerendering.
+ *
+ * @hidden
+ * @ignore
+ */
+export interface PluginStateControl<S> {
     /**
-     * Returns current state value referred by
-     * [path](#path) of this instance of [StateLink](#interfacesstatelinkmd).
-     *
-     * It return the same result as as [StateLink.value](#value) property.
+     * Get state value, but do not trace it as used
      */
     get(): S;
     /**
-     * Sets new value for a state.
-     * If `this.path === []`,
-     * it is similar to the `setState` variable returned by `React.useState` hook.
-     * If `this.path !== []`, it sets only the segment of the state value, pointed out by the path.
-     * The function will not accept partial updates.
-     * It can be done by combining [set](#set) with [nested](#nested) or
-     * use [merge](#merge) action.
-     *
-     * @param newValue new value to set to a state.
-     * It can be a value, a promise resolving to a value
-     * (only if this instance of StateLink points to root of a state, i.e. [path](#path) is `[]`),
-     * or a function returning one of these.
-     * The function receives the current state value as an argument.
+     * Set new state value, but do not trigger rerender
      */
-    set(newValue: SetStateAction<S>): void;
+    set(newValue: SetStateAction<S>): Path[];
     /**
-     * Similarly to [set](#set) method updates state value.
-     *
-     * - If current state value is an object, it does partial update for the object.
-     * - If state value is an array and the argument is an array too,
-     * it concatenates the current value with the value of the argument and sets it to the state.
-     * - If state value is an array and the `merge` argument is an object,
-     * it does partial update for the current array value.
-     * - If current state value is a string, it concatenates the current state
-     * value with the argument converted to string and sets the result to the state.
+     * Merge new state value, but do not trigger rerender
      */
-    merge(newValue: SetPartialStateAction<S>): void;
+    merge(mergeValue: SetPartialStateAction<S>): Path[];
+    /**
+     * Trigger rerender for hooked states, where values at the specified paths are used
+     */
+    rerender(paths: Path[]): void;
+}
+
+/**
+ * An interface to manage a state in Hookstate
+ */
+export interface StateMethods<S> {
+    /**
+     * Returns the state instance managed by these methods
+     */
+    [self]: State<S>;
+
+    /**
+     * 'Javascript' object 'path' to an element relative to the root object
+     * in the state. For example:
+     *
+     * ```tsx
+     * const state = useStateLink([{ name: 'First Task' }])
+     * state.path IS []
+     * state.nested[0].path IS [0]
+     * state.nested[0].nested.name.path IS [0, 'name']
+     * ```
+     */
+    readonly path: Path;
+
+    /**
+     * Return the same as `Object.keys(this.nested)`
+     * or `Object.keys(this.value)`
+     * with one minor difference:
+     * if `this.value` is an array, the returned result will be
+     * an array of numbers, not strings like with `Object.keys`.
+     */
+    readonly keys: InferredStateLinkKeysType<S>;
 
     /**
      * Returns current state value referred by
@@ -156,127 +203,79 @@ export interface StateLink<S> {
     readonly value: S;
 
     /**
-     * Returns true if state value is unresolved promise.
+     * Returns current state value referred by
+     * [path](#path) of this instance of [StateLink](#interfacesstatelinkmd).
+     *
+     * It return the same result as as [StateLink.value](#value) property.
      */
+    get(): S;
+    
+    /**
+     * Sets new value for a state.
+     * If `this.path === []`,
+     * it is similar to the `setState` variable returned by `React.useState` hook.
+     * If `this.path !== []`, it sets only the segment of the state value, pointed out by the path.
+     * The function will not accept partial updates.
+     * It can be done by combining [set](#set) with [nested](#nested) or
+     * use [merge](#merge) action.
+     *
+     * @param newValue new value to set to a state.
+     * It can be a value, a promise resolving to a value
+     * (only if this instance of StateLink points to root of a state, i.e. [path](#path) is `[]`),
+     * or a function returning one of these.
+     * The function receives the current state value as an argument.
+     */
+    set(newValue: SetStateAction<S>): void;
+    
+    /**
+     * Similarly to [set](#set) method updates state value.
+     *
+     * - If current state value is an object, it does partial update for the object.
+     * - If state value is an array and the argument is an array too,
+     * it concatenates the current value with the value of the argument and sets it to the state.
+     * - If state value is an array and the `merge` argument is an object,
+     * it does partial update for the current array value.
+     * - If current state value is a string, it concatenates the current state
+     * value with the argument converted to string and sets the result to the state.
+     */
+    merge(newValue: SetPartialStateAction<S>): void;
+    
+    map<R, RL, RE, C>(
+        action: (s: State<S>) => R,
+        onPromised: (s: State<S>) => RL,
+        onError: (e: StateErrorAtPath, s: State<S>) => RE,
+        context?: Exclude<C, Function>
+    ): R | RL | RE;
+    map<R, RL, C>(
+        action: (s: State<S>) => R,
+        onPromised: (s: State<S>) => RL,
+        context?: Exclude<C, Function>
+    ): R | RL;
+    map<R, C>(
+        action: (s: State<S>) => R,
+        context?: Exclude<C, Function>
+    ): R;
+    map(): InferredStateDenullType<S>;
+
+    attach(plugin: () => Plugin): State<S>
+    attach(pluginId: symbol): [PluginCallbacks, PluginStateControl<S>] | undefined
+}
+
+/**
+ * @hidden
+ * @ignore
+ * @internal
+ * @deprecated declared for backward compatibility
+ */
+export interface StateLink<S> extends StateMethods<S> {
     readonly promised: boolean;
-
-    /**
-     * Returns captured error value if a promise was fulfilled but rejected.
-     * Type of an error can be anything. It is the same as what the promise
-     * provided on rejection.
-     */
     readonly error: StateErrorAtPath | undefined; //tslint:disable-line: no-any
-
-    /**
-     * 'Javascript' object 'path' to an element relative to the root object
-     * in the state. For example:
-     *
-     * ```tsx
-     * const state = useStateLink([{ name: 'First Task' }])
-     * state.path IS []
-     * state.nested[0].path IS [0]
-     * state.nested[0].nested.name.path IS [0, 'name']
-     * ```
-     */
-    readonly path: Path;
-
-    /**
-     * If `this.value` is an object,
-     * it returns an object of nested `StateLink`s.
-     * If `this.value` is an array,
-     * it returns an array of nested `StateLink`s.
-     * Otherwise, returns `undefined`.
-     *
-     * This allows to *walk* the tree and access/mutate nested
-     * compex data in very convenient way.
-     *
-     * Typescript intellisence will handle correctly
-     * any complexy of the data structure.
-     * The conditional type definition of [InferredStateLinkNestedType](#inferredstatelinknestedtype) facilitates this.
-     */
     readonly nested: InferredStateLinkNestedType<S>;
-
-    /**
-     * Return the same as `Object.keys(this.nested)`
-     * or `Object.keys(this.value)`
-     * with one minor difference:
-     * if `this.value` is an array, the returned result will be
-     * an array of numbers, not strings like with `Object.keys`.
-     */
-    readonly keys: InferredStateLinkKeysType<S>;
-
-    /**
-     * For an instance of type `StateLink<T | undefined | null>`, where `T` is not `Nullable`,
-     * it return `this` instance typed as `StateLink<T>`, if `this.value` is defined.
-     * Otherwise, it returns `this.value`, which would be `null` or `undefined`.
-     */
     denull(): InferredStateLinkDenullType<S>;
-
-    /**
-     * Allows to group state updates in a single batch. It helps to
-     * minimise rerendering by React. It also allows plugins (if any used)
-     * to opt-in into atomic transactions for state persistance.
-     *
-     * @param action a function to be executed in scope of a batch.
-     * The function receives `this` instance as an argument.
-     *
-     * @param options various batch options to tune batching behaviour.
-     *
-     * For example:
-     *
-     * ```tsx
-     * const MyComponent = () => {
-     *     state = useStateLink<{ user?: string, email?: string }>({});
-     *     return <>
-     *         {state.value.user && <p>Hello {state.value.user}!</p>}
-     *         {state.value.email && <p>We will message you to {state.value.email}!</p>}
-     *         <button onClick={() => {
-     *              // this will rerender the current component only once
-     *              // even if the state is changed twice
-     *              state.batch(() => {
-     *                  state.nested.user.set('Peter');
-     *                  state.nested.email.set('peter@example.com');
-     *              })
-     *         }}>Initialize user</button>
-     *     </>
-     * }
-     * ```
-     */
     batch(action: (s: StateLink<S>) => void, options?: BatchOptions): void;
-
-    /**
-     * Wraps the state link instance by a custom defined interface.
-     * It can be used by libraries, which would not like to expose dependency to Hookstate.
-     *
-     * @param transform a function which receives this instance and previous state value (if available),
-     * and returns a custom object of any type, defined by a client.
-     *
-     * @returns an instance of wrapped state link, which can be used with [useStateLink](#usestatelink)
-     * within a React component or accessed directly, typically in an event handler or callback.
-     */
     wrap<R>(transform: (state: StateLink<S>, prev: R | undefined) => R): WrappedStateLink<R>;
-
-    /**
-     * Adds new plugin to the state. See more about plugins and extensions in the documentation.
-     */
     with(plugin: () => Plugin): this;
-
-    /**
-     * For plugin developers only.
-     * A function to get more exposed capabilities of a StateLink
-     * and an instance of the attached plugin by it's id.
-     *
-     * @hidden
-     * @ignore
-     */
     with<R = never>(pluginId: symbol, alt?: () => R): [StateLink<S> & ExtendedStateLinkMixin<S>, PluginCallbacks] | R;
-
-    /**
-     * @hidden
-     * @ignore
-     * @internal
-     * @deprecated declared for backward compatibility
-     */
     access(): StateLink<S>;
 }
 
@@ -293,54 +292,23 @@ export interface DestroyMixin {
 }
 
 /**
- * Return type of [StateLink.wrap](#wrap).
+ * @hidden
+ * @ignore
+ * @internal
+ * @deprecated declared for backward compatibility
  */
 export interface WrappedStateLink<R> {
-    /**
-     * Placed to make sure type inference does not match empty structure on useStateLink call
-     *
-     * @hidden
-     * @ignore
-     * @internal
-     */
     __synteticTypeInferenceMarkerInf: symbol;
-
-    /**
-     * Returns an instance of custom user-defined interface to use, typically outside of
-     * a React component, i.e. in a callback or event handler.
-     */
     access(): R;
-
-    /**
-     * Adds new plugin to the state. See more about plugins and extensions in the documentation.
-     */
     with(plugin: () => Plugin): this;
-
-    /**
-     * Similarly to [StateLink.wrap](#wrap), wraps the state link instance by a custom defined interface.
-     * It can be used by libraries, which would want to abstract state management operation.
-     *
-     * @param transform a function which receives `this.access()` and
-     * previous `this.access()` state value (if available),
-     * and returns a custom object of any type, defined by a client.
-     *
-     * @returns an instance of wrapped state link, which can be used with [useStateLink](#usestatelink)
-     * within a React component or accessed directly, typically in an event handler or callback.
-     */
     wrap<R2>(transform: (state: R, prev: R2 | undefined) => R2): WrappedStateLink<R2>
 }
 
 /**
- * @experimental
- */
-export const None = Symbol('none') as StateValueAtPath;
-
-/**
- * For plugin developers only.
- * More exposed capabilities of a StateLink.
- *
  * @hidden
  * @ignore
+ * @internal
+ * @deprecated declared for backward compatibility
  */
 export interface ExtendedStateLinkMixin<S> {
     getUntracked(): S;
@@ -375,11 +343,10 @@ export type StateValueAtPath = any; //tslint:disable-line: no-any
 export type StateErrorAtPath = any; //tslint:disable-line: no-any
 
 /**
- * For plugin developers only.
- * Type alias for any type of batch context data.
- *
  * @hidden
  * @ignore
+ * @internal
+ * @deprecated declared for backward compatibility
  */
 export type CustomContext = any; //tslint:disable-line: no-any
 
@@ -445,40 +412,22 @@ export interface PluginCallbacks {
  */
 export interface Plugin {
     readonly id: symbol;
-    readonly create: (state: StateLink<StateValueAtRoot>) => PluginCallbacks;
+    /**
+     * @hidden
+     * @ignore
+     * @internal
+     * @deprecated declared for backward compatibility
+     */
+    readonly create?: (state: StateLink<StateValueAtRoot>) => PluginCallbacks;
+    // version 2 api
+    readonly init?: (state: State<StateValueAtRoot>) => PluginCallbacks;
 }
 
 /**
- * Creates new state and returns an instance of state link
- * interface to manage the state or to hook in React components.
- *
- * You can create as many global states as you need.
- *
- * When you do not need the global state anymore,
- * it should be destroyed by calling
- * `destroy()` method of the returned instance.
- * This is necessary for some plugins,
- * which allocate native resources,
- * like subscription to databases, broadcast channels, etc.
- * In most cases, a global state is used during
- * whole life time of an application and would not require
- * destruction. However, if you have got, for example,
- * a catalog of dynamically created and destroyed global states,
- * the states should be destroyed as advised above.
- *
- * @param initial Initial value of the state.
- * It can be a value OR a promise,
- * which asynchronously resolves to a value,
- * OR a function returning a value or a promise.
- *
- * @typeparam S Type of a value of the state
- *
- * @returns [StateLink](#interfacesstatelinkmd) instance,
- * which can be used directly to get and set state value
- * outside of React components.
- * When you need to use the state in a functional `React` component,
- * pass the created state to `useStateLink` function and
- * use the returned result in the component's logic.
+ * @hidden
+ * @ignore
+ * @internal
+ * @deprecated declared for backward compatibility
  */
 export function createStateLink<S>(
     initial: SetInitialStateAction<S>
@@ -509,31 +458,10 @@ export function createStateLink<S, R>(
 }
 
 /**
- * Enables a functional React component to use a state,
- * either created by [createStateLink](#createstatelink) (*global* state) or
- * derived from another call to `useStateLink` (*scoped* state).
- *
- * The `useStateLink` forces a component to rerender everytime, when:
- * - a segment/part of the state data is updated *AND only if*
- * - this segement was **used** by the component during or after the latest rendering.
- *
- * For example, if the state value is `{ a: 1, b: 2 }` and
- * a component uses only `a` property of the state, it will rerender
- * only when the whole state object is updated or when `a` property is updated.
- * Setting the state value/property to the same value is also considered as an update.
- *
- * A component can use one or many states,
- * i.e. you may call `useStateLink` multiple times for multiple states.
- *
- * The same state can be used by multiple different components.
- *
- * @param source a reference to the state to hook into
- *
- * The `useStateLink` is a hook and should follow React's rules of hooks.
- *
- * @returns an instance of [StateLink](#interfacesstatelinkmd) interface,
- * which **must be** used within the component (during rendering
- * or in effects) or it's children.
+ * @hidden
+ * @ignore
+ * @internal
+ * @deprecated declared for backward compatibility
  */
 export function useStateLink<S>(
     source: StateLink<S>
@@ -549,46 +477,19 @@ export function useStateLink<S, R>(
     transform: (state: StateLink<S>, prev: R | undefined) => R
 ): R;
 /**
- * The same as [useStateLink](#usestatelink) for [StateLink](#interfacesstatelinkmd),
- * but accepts the result of [StateLink.wrap](#wrap) as an argument.
- *
- * @param source a reference to the state to hook into
- *
- * @typeparam return type of the function
- *
- * @returns an instance of custom state access interface,
- * which **must be** used within the component (during rendering
- * or in effects) or it's children
+ * @hidden
+ * @ignore
+ * @internal
+ * @deprecated declared for backward compatibility
  */
 export function useStateLink<R>(
     source: WrappedStateLink<R>
 ): R;
 /**
- * This function enables a functional React component to use a state,
- * created per component by `useStateLink` (*local* state).
- * In this case `useStateLink` behaves similarly to `React.useState`,
- * but the returned instance of [StateLink](#interfacesstatelinkmd)
- * has got more features.
- *
- * When a state is used by only one component, and maybe it's children,
- * it is recommended to use *local* state instead of *global*,
- * which is created by [createStateLink](#createstatelink).
- *
- * *Local* (per component) state is created when a component is mounted
- * and automatically destroyed when a component is unmounted.
- *
- * The same as with the usage of a *global* state,
- * `useStateLink` forces a component to rerender when:
- * - a segment/part of the state data is updated *AND only if*
- * - this segement was **used** by the component during or after the latest rendering.
- *
- * You can use as many local states within the same component as you need.
- *
- * @param source A reference to the state to hook into.
- *
- * @returns an instance of [StateLink](#interfacesstatelinkmd) interface,
- * which **must be** used within the component (during rendering
- * or in effects) or it's children.
+ * @hidden
+ * @ignore
+ * @internal
+ * @deprecated declared for backward compatibility
  */
 export function useStateLink<S>(
     source: SetInitialStateAction<S>
@@ -656,35 +557,10 @@ export function useStateLink<S, R>(
 }
 
 /**
- * Allows to use a state without defining a functional react component.
- * It can be also used in class-based React components. It is also
- * particularly usefull for creating *scoped* states.
- *
- * For example the following 3 code samples are equivivalent:
- *
- * ```tsx
- * const globalState = createStateLink('');
- *
- * const MyComponent = () => {
- *     const state = useStateLink(globalState);
- *     return <input value={state.value}
- *         onChange={e => state.set(e.target.value)} />;
- * }
- *
- * const MyComponent = () => <StateFragment state={globalState}>{
- *     state => <input value={state.value}
- *         onChange={e => state.set(e.target.value)}>
- * }</StateFragment>
- *
- * class MyComponent extends React.Component {
- *     render() {
- *         return <StateFragment state={globalState}>{
- *             state => <input value={state.value}
- *                 onChange={e => state.set(e.target.value)}>
- *         }</StateFragment>
- *     }
- * }
- * ```
+ * @hidden
+ * @ignore
+ * @internal
+ * @deprecated declared for backward compatibility
  */
 export function StateFragment<S>(
     props: {
@@ -706,8 +582,10 @@ export function StateFragment<S, E extends {}, R>(
     }
 ): React.ReactElement;
 /**
- * Allows to use a state without defining a functional react component.
- * See more at [StateFragment](#statefragment)
+ * @hidden
+ * @ignore
+ * @internal
+ * @deprecated declared for backward compatibility
  */
 export function StateFragment<R>(
     props: {
@@ -716,8 +594,10 @@ export function StateFragment<R>(
     }
 ): React.ReactElement;
 /**
- * Allows to use a state without defining a functional react component.
- * See more at [StateFragment](#statefragment)
+ * @hidden
+ * @ignore
+ * @internal
+ * @deprecated declared for backward compatibility
  */
 export function StateFragment<S>(
     props: {
@@ -738,6 +618,12 @@ export function StateFragment<S, R>(
         children: (state: R) => React.ReactElement,
     }
 ): React.ReactElement;
+/**
+ * @hidden
+ * @ignore
+ * @internal
+ * @deprecated declared for backward compatibility
+ */
 export function StateFragment<S, E extends {}, R>(
     props: {
         state: SetInitialStateAction<S> | StateLink<S> | WrappedStateLink<R>,
@@ -752,17 +638,10 @@ export function StateFragment<S, E extends {}, R>(
 }
 
 /**
- * It is used in combination with [StateLink.wrap](#wrap).
- * It minimises rerendering for states reduced down to a comparable values.
- *
- * @param transform the original transform function for [StateLink.wrap](#wrap).
- * The first argument is a state link to wrap.
- * The second argument, if available,
- * is the previous result returned by the function.
- *
- * @param equals a function which compares the next and the previous
- * wrapped state values and return true, if there is no change. By default,
- * it is shallow triple-equal comparison, i.e. `===`.
+ * @hidden
+ * @ignore
+ * @internal
+ * @deprecated declared for backward compatibility
  */
 export function StateMemo<S, R>(
     transform: (state: StateLink<S>, prev: R | undefined) => R,
@@ -826,7 +705,7 @@ export interface DevToolsExtensions {
  */
 export function DevTools(state: StateLink<StateValueAtPath> | State<StateValueAtPath>): DevToolsExtensions {
     if (state[StateMarkerID]) {
-        const plugin = (state as State<StateValueAtPath>)[$attach](DevToolsID);
+        const plugin = (state as State<StateValueAtPath>)[self].attach(DevToolsID);
         if (plugin) {
             return plugin[0] as DevToolsExtensions;
         }
@@ -1161,7 +1040,8 @@ class Store implements Subscribable {
             return;
         }
 
-        const pluginCallbacks = plugin.create(this.accessUnmounted());
+        const pluginCallbacks = plugin.create ? plugin.create(this.accessUnmounted()) :
+            plugin.init ? plugin.init(this.accessUnmounted()[self]) : {};
         this._plugins.set(plugin.id, pluginCallbacks);
         if (pluginCallbacks.onSet) {
             this._setSubscribers.add((p) => pluginCallbacks.onSet!(p))
@@ -1799,7 +1679,7 @@ class StateLinkImpl<S> implements StateLink<S>,
         });
     }
     
-    get asExperimentalState(): State<S> {
+    get [self](): State<S> {
         const getValueSourceTracked = () => {
             this.get() // mark used
             return this.valueSource
@@ -1816,70 +1696,10 @@ class StateLinkImpl<S> implements StateLink<S>,
                 return this;
             }
             if (typeof key === 'symbol') {
-                switch (key) {
-                    case $get:
-                        return this.get()
-                    case $set:
-                        return (v: SetStateAction<S>) => this.set(v)
-                    case $merge:
-                        return (v: SetPartialStateAction<S>) => this.merge(v)
-                    case $keys:
-                        return this.keys
-                    case $denull: {
-                        const currentValue = getValueSourceTracked();
-                        if (currentValue === null || currentValue === undefined) {
-                            return currentValue;
-                        }
-                        return this.asExperimentalState;
-                    }
-                    case $promised:
-                        return this.promised;
-                    case $error:
-                        return this.error;
-                    case $batch:
-                        return (action: (s: State<S>) => void, options?: BatchOptions) =>
-                            this.batch(s => action((s as StateLinkImpl<S>).asExperimentalState), options)
-                    case $attach:
-                        return (p: symbol | (() => PluginV2)) => {
-                            if (typeof p === 'symbol') {
-                                const plugin = this.with(p, () => undefined);
-                                if (plugin) {
-                                    const self = this;
-                                    const result: [PluginCallbacks, PluginStateControl<S>] | undefined =  [
-                                        plugin[1],
-                                        {
-                                            get() {
-                                                return self.getUntracked()
-                                            },
-                                            set(v): Path[] {
-                                                return [self.setUntracked(v)]
-                                            },
-                                            merge(v): Path[] {
-                                                return self.mergeUntracked(v)
-                                            },
-                                            rerender(paths) {
-                                                return self.update(paths);
-                                            }
-                                        }
-                                    ]
-                                    return result;
-                                }
-                                return undefined;
-                            }
-                            return this.with(() => {
-                                const plugin = p()
-                                return ({
-                                    id: plugin.id,
-                                    create: s => plugin.create(
-                                        (s as StateLinkImpl<StateValueAtRoot>).asExperimentalState)
-                                })
-                            }).asExperimentalState;
-                        }
-                    case $destroy:
-                        return () => this.destroy()
-                    default: {
-                        return undefined;
-                    }
+                if (key === self) {
+                    return this
+                } else {
+                    return undefined
                 }
             } else {
                 if (key === 'toJSON') {
@@ -1888,7 +1708,7 @@ class StateLinkImpl<S> implements StateLink<S>,
                 }
                 const currentValue = getValueSourceTracked();
                 if (typeof currentValue !== 'object' || currentValue === null) {
-                    throw new StateLinkInvalidUsageError('set', this.path,
+                    throw new StateLinkInvalidUsageError('get', this.path,
                         `target value is not an object to contain properties`)
                 }
                 if (Array.isArray(currentValue)) {
@@ -1903,13 +1723,113 @@ class StateLinkImpl<S> implements StateLink<S>,
                         return undefined;
                     }              
                 }
-                return (this.nested)![key].asExperimentalState;
+                return (this.nested)![key][self];
             }
         },
         (_, key, value) => {
             throw new StateLinkInvalidUsageError('set', this.path,
-                `did you mean to use 'state.${String(key)}[$set](value)' instead of 'state.${String(key)} = value'?`)
+                `did you mean to use 'state.${String(key)}[self].set(value)' instead of 'state.${String(key)} = value'?`)
         }) as unknown as State<S>;
+    }
+    
+    map<R, RL, RE, C>(
+        action: (s: State<S>) => R,
+        onPromised: (s: State<S>) => RL,
+        onError: (e: StateErrorAtPath, s: State<S>) => RE,
+        context?: Exclude<C, Function>
+    ): R | RL | RE;
+    map<R, RL, C>(
+        action: (s: State<S>) => R,
+        onPromised: (s: State<S>) => RL,
+        context?: Exclude<C, Function>
+    ): R | RL;
+    map<R, C>(
+        action: (s: State<S>) => R,
+        context?: Exclude<C, Function>
+    ): R;
+    map(): InferredStateDenullType<S>;
+    map<R, RL, RE, C>(
+        action?: (s: State<S>) => R,
+        onPromised?: ((s: State<S>) => RL) | Exclude<C, Function>,
+        onError?: ((e: StateErrorAtPath, s: State<S>) => RE) | Exclude<C, Function>,
+        context?: Exclude<C, Function>
+    ): InferredStateDenullType<S> | R | RL | RE {
+        if (!action) {
+            const r = this.denull();
+            if (r) {
+                return r[self] as InferredStateDenullType<S>;
+            }
+            return r as unknown as InferredStateDenullType<S>;
+        }
+
+        const contextArg = typeof onPromised === 'function'
+            ? (typeof onError === 'function' ? context : onError)
+            : onPromised;
+
+        const runBatch = ((actionArg: () => (R | RL | RE)) => {
+            if (contextArg !== undefined) {
+                const opts = { context: contextArg }
+                try {
+                    this.state.startBatch(this.path, opts)
+                    return actionArg()
+                } finally {
+                    this.state.finishBatch(this.path, opts)
+                }
+            } else {
+                return actionArg()
+            }
+        })
+            
+        if (typeof onPromised === 'function' && this.promised) {
+            return runBatch(() => {
+                const r = (onPromised as ((s: State<S>) => RL))(this[self])
+                if (r as unknown as symbol === postpone) {
+                    // tslint:disable-next-line: no-any
+                    this.state.postponeBatch(
+                        () => this.map(action, onPromised as any, onError as any, context as any))
+                }
+                return r;
+            })
+        }
+        
+        if (typeof onError === 'function' && this.error) {
+            return runBatch(() => (onError as ((e: StateErrorAtPath, s: State<S>) => RE))(this.error, this[self]))
+        }
+        
+        return runBatch(() => action(this[self]))
+    }
+
+    attach(plugin: () => Plugin): State<S>
+    attach(pluginId: symbol): [PluginCallbacks, PluginStateControl<S>] | undefined
+    attach(p: (() => Plugin) | symbol):
+        State<S> | [PluginCallbacks, PluginStateControl<S>] | undefined {
+
+        if (typeof p === 'symbol') {
+            const plugin = this.with(p, () => undefined);
+            if (plugin) {
+                const capturedThis = this;
+                const result: [PluginCallbacks, PluginStateControl<S>] | undefined =  [
+                    plugin[1],
+                    {
+                        get() {
+                            return capturedThis.getUntracked()
+                        },
+                        set(v): Path[] {
+                            return [capturedThis.setUntracked(v)]
+                        },
+                        merge(v): Path[] {
+                            return capturedThis.mergeUntracked(v)
+                        },
+                        rerender(paths) {
+                            return capturedThis.update(paths);
+                        }
+                    }
+                ]
+                return result;
+            }
+            return undefined;
+        }
+        return this.with(p)[self];
     }
 }
 
@@ -2219,133 +2139,8 @@ export type InitialValueAtRoot<S> = SetInitialStateAction<S>;
  * @internal
  * @experimental
  */
-export const $get = Symbol()
-/**
- * @hidden
- * @ignore
- * @internal
- * @experimental
- */
-export const $set = Symbol()
-/**
- * @hidden
- * @ignore
- * @internal
- * @experimental
- */
-export const $merge = Symbol()
-/**
- * @hidden
- * @ignore
- * @internal
- * @experimental
- */
-export const $destroy = Symbol()
-/**
- * @hidden
- * @ignore
- * @internal
- * @experimental
- */
-export const $keys = Symbol()
-/**
- * @hidden
- * @ignore
- * @internal
- * @experimental
- */
-export const $denull = Symbol()
-/**
- * @hidden
- * @ignore
- * @internal
- * @experimental
- */
-export const $promised = Symbol()
-/**
- * @hidden
- * @ignore
- * @internal
- * @experimental
- */
-export const $error = Symbol()
-/**
- * @hidden
- * @ignore
- * @internal
- * @experimental
- */
-export const $batch = Symbol()
-/**
- * @hidden
- * @ignore
- * @internal
- * @experimental
- */
-export const $attach = Symbol()
-
-/**
- * @hidden
- * @ignore
- * @internal
- * @experimental
- */
-export type InferredStateKeysType<S> =
-    S extends ReadonlyArray<infer _> ? ReadonlyArray<number> :
-    S extends null ? undefined :
-    S extends object ? ReadonlyArray<keyof S> :
-    undefined;
-
-/**
- * @hidden
- * @ignore
- * @internal
- * @experimental
- */
-export type InferredStateDenullType<S> =
-    S extends undefined ? undefined :
-    S extends null ? null : State<S>;
-
-/**
- * @hidden
- * @ignore
- * @internal
- * @experimental
- */
-export interface PluginStateControl<S> {
-    get(): S;
-    set(newValue: SetStateAction<S>): Path[];
-    merge(mergeValue: SetPartialStateAction<S>): Path[];
-    rerender(paths: Path[]): void;
-}
-/**
- * @hidden
- * @ignore
- * @internal
- * @experimental
- */
-export interface PluginV2 {
-    readonly id: symbol;
-    readonly create: (state: State<StateValueAtRoot>) => PluginCallbacks;
-}
-
-/**
- * @hidden
- * @ignore
- * @internal
- * @experimental
- */
 export interface StateMixin<S> {
-    [$get]: S;
-    [$set](value: SetStateAction<S>): void;
-    [$merge](value: SetPartialStateAction<S>): void;
-    [$keys]: InferredStateKeysType<S>;
-    [$denull]: InferredStateDenullType<S>;
-    [$promised]: boolean;
-    [$error]: StateErrorAtPath | undefined;
-    [$batch](action: (s: State<S>) => void, options?: BatchOptions): void
-    [$attach](plugin: () => PluginV2): this
-    [$attach](pluginId: symbol): [PluginCallbacks, PluginStateControl<S>] | undefined
+    [self]: StateMethods<S>;
 }
 
 /**
@@ -2355,7 +2150,7 @@ export interface StateMixin<S> {
  * @experimental
  */
 export interface StateDestroyMixin {
-    [$destroy](): void;
+    [self]: DestroyMixin;
 }
 
 /**
@@ -2371,46 +2166,107 @@ export type State<S> = StateMixin<S> & (
 );
 
 /**
- * @hidden
- * @ignore
- * @internal
- * @experimental
+ * Creates new state and returns an instance of state link
+ * interface to manage the state or to hook in React components.
+ *
+ * You can create as many global states as you need.
+ *
+ * When you do not need the global state anymore,
+ * it should be destroyed by calling
+ * `destroy()` method of the returned instance.
+ * This is necessary for some plugins,
+ * which allocate native resources,
+ * like subscription to databases, broadcast channels, etc.
+ * In most cases, a global state is used during
+ * whole life time of an application and would not require
+ * destruction. However, if you have got, for example,
+ * a catalog of dynamically created and destroyed global states,
+ * the states should be destroyed as advised above.
+ *
+ * @param initial Initial value of the state.
+ * It can be a value OR a promise,
+ * which asynchronously resolves to a value,
+ * OR a function returning a value or a promise.
+ *
+ * @typeparam S Type of a value of the state
+ *
+ * @returns [StateLink](#interfacesstatelinkmd) instance,
+ * which can be used directly to get and set state value
+ * outside of React components.
+ * When you need to use the state in a functional `React` component,
+ * pass the created state to `useStateLink` function and
+ * use the returned result in the component's logic.
  */
 export function createState<S>(
     initial: SetInitialStateAction<S>
 ): State<S> & StateDestroyMixin {
-    const stateLink = createStateLink(initial) as StateLinkImpl<S>;
-    const result = stateLink.asExperimentalState as State<S> & StateDestroyMixin;
+    const stateLink = createStateLink(initial);
     if (createState[DevToolsID]) {
-        result[$attach](createState[DevToolsID])
+        stateLink.attach(createState[DevToolsID])
     }
-    return result;
+    return stateLink[self] as State<S> & StateDestroyMixin;
 }
 
 /**
- * @hidden
- * @ignore
- * @internal
- * @experimental
+ * Enables a functional React component to use a state,
+ * either created by [createStateLink](#createstatelink) (*global* state) or
+ * derived from another call to `useStateLink` (*scoped* state).
+ *
+ * The `useStateLink` forces a component to rerender everytime, when:
+ * - a segment/part of the state data is updated *AND only if*
+ * - this segement was **used** by the component during or after the latest rendering.
+ *
+ * For example, if the state value is `{ a: 1, b: 2 }` and
+ * a component uses only `a` property of the state, it will rerender
+ * only when the whole state object is updated or when `a` property is updated.
+ * Setting the state value/property to the same value is also considered as an update.
+ *
+ * A component can use one or many states,
+ * i.e. you may call `useStateLink` multiple times for multiple states.
+ *
+ * The same state can be used by multiple different components.
+ *
+ * @param source a reference to the state to hook into
+ *
+ * The `useStateLink` is a hook and should follow React's rules of hooks.
+ *
+ * @returns an instance of [StateLink](#interfacesstatelinkmd) interface,
+ * which **must be** used within the component (during rendering
+ * or in effects) or it's children.
  */
 export function useState<S>(
     source: State<S>
 ): State<S>;
 /**
- * @hidden
- * @ignore
- * @internal
- * @experimental
+ * This function enables a functional React component to use a state,
+ * created per component by `useStateLink` (*local* state).
+ * In this case `useStateLink` behaves similarly to `React.useState`,
+ * but the returned instance of [StateLink](#interfacesstatelinkmd)
+ * has got more features.
+ *
+ * When a state is used by only one component, and maybe it's children,
+ * it is recommended to use *local* state instead of *global*,
+ * which is created by [createStateLink](#createstatelink).
+ *
+ * *Local* (per component) state is created when a component is mounted
+ * and automatically destroyed when a component is unmounted.
+ *
+ * The same as with the usage of a *global* state,
+ * `useStateLink` forces a component to rerender when:
+ * - a segment/part of the state data is updated *AND only if*
+ * - this segement was **used** by the component during or after the latest rendering.
+ *
+ * You can use as many local states within the same component as you need.
+ *
+ * @param source A reference to the state to hook into.
+ *
+ * @returns an instance of [StateLink](#interfacesstatelinkmd) interface,
+ * which **must be** used within the component (during rendering
+ * or in effects) or it's children.
  */
 export function useState<S>(
     source: SetInitialStateAction<S>
 ): State<S>;
-/**
- * @hidden
- * @ignore
- * @internal
- * @experimental
- */
 export function useState<S>(
     source: SetInitialStateAction<S> | State<S>
 ): State<S> {
@@ -2421,10 +2277,68 @@ export function useState<S>(
             source = sl; // get underlying StateLink
         }
     }
-    const statelink = useStateLink(source) as StateLinkImpl<S>;
-    const result = statelink.asExperimentalState;
+    const statelink = useStateLink(source as SetInitialStateAction<S>);
     if (useState[DevToolsID]) {
-        result[$attach](useState[DevToolsID])
+        statelink.attach(useState[DevToolsID])
     }
-    return result;
+    return statelink[self];
+}
+
+/**
+ * Allows to use a state without defining a functional react component.
+ * It can be also used in class-based React components. It is also
+ * particularly usefull for creating *scoped* states.
+ *
+ * For example the following 3 code samples are equivivalent:
+ *
+ * ```tsx
+ * const globalState = createStateLink('');
+ *
+ * const MyComponent = () => {
+ *     const state = useStateLink(globalState);
+ *     return <input value={state.value}
+ *         onChange={e => state.set(e.target.value)} />;
+ * }
+ *
+ * const MyComponent = () => <StateFragment state={globalState}>{
+ *     state => <input value={state.value}
+ *         onChange={e => state.set(e.target.value)}>
+ * }</StateFragment>
+ *
+ * class MyComponent extends React.Component {
+ *     render() {
+ *         return <StateFragment state={globalState}>{
+ *             state => <input value={state.value}
+ *                 onChange={e => state.set(e.target.value)}>
+ *         }</StateFragment>
+ *     }
+ * }
+ * ```
+ */
+export function StateFragmentV2<S>(
+    props: {
+        state: State<S>,
+        children: (state: State<S>) => React.ReactElement,
+    }
+): React.ReactElement;
+/**
+ * Allows to use a state without defining a functional react component.
+ * See more at [StateFragment](#statefragment)
+ */
+export function StateFragmentV2<S>(
+    props: {
+        state: SetInitialStateAction<S>,
+        children: (state: State<S>) => React.ReactElement,
+    }
+): React.ReactElement;
+export function StateFragmentV2<S>(
+    props: {
+        state: SetInitialStateAction<S> | State<S>,
+        children: (state: State<S>) => React.ReactElement,
+    }
+): React.ReactElement {
+    // tslint:disable-next-line: no-any
+    type AnyArgument = any; // typesafety is guaranteed by overloaded functions above
+    const scoped = useState<S>(props.state as AnyArgument);
+    return props.children(scoped as AnyArgument);
 }

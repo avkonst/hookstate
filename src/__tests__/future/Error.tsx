@@ -1,4 +1,4 @@
-import { useState, $get, $set } from '../../';
+import { useState, self } from '../../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import React from 'react';
@@ -13,7 +13,7 @@ test('error: should not allow set to another state value', async () => {
     });
 
     expect(() => {
-        state2.result.current.prop2[$set](p => state1.result.current[$get].prop1);
+        state2.result.current.prop2[self].set(p => state1.result.current[self].get().prop1);
     // tslint:disable-next-line: max-line-length
     }).toThrow(`StateLink is used incorrectly. Attempted 'set(state.get() at '/prop1')' at '/prop2'. Hint: did you mean to use state.set(lodash.cloneDeep(value)) instead of state.set(value)?`);
 });
@@ -24,7 +24,7 @@ test('error: should not allow create state from another state value', async () =
     });
 
     const state2 = renderHook(() => {
-        return useState(state1.result.current[$get].prop1)
+        return useState(state1.result.current[self].get().prop1)
     })
 
     expect(state2.result.error.message)
@@ -42,7 +42,7 @@ test('error: should not allow create state from another state value (nested)', a
     })
 
     const state3 = renderHook(() => {
-        return useState(state2.result.current.prop1[$get])
+        return useState(state2.result.current.prop1[self].get())
     })
 
     expect(state3.result.error.message)
