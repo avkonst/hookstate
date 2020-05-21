@@ -1624,6 +1624,26 @@ class StateLinkImpl<S> implements StateLink<S>,
         return undefined as InferredStateLinkKeysType<S>;
     }
 
+    child(key: number | string) {
+        this.nestedLinksCache = this.nestedLinksCache || {};
+        const cachehit = this.nestedLinksCache[key];
+        if (cachehit) {
+            return cachehit;
+        }
+        const r = new StateLinkImpl(
+            this.state,
+            this.path.slice().concat(key),
+            this.onUpdateUsed,
+            this.valueSource[key],
+            this.valueEdition
+        )
+        if (this.isDowngraded) {
+            r.isDowngraded = true;
+        }
+        this.nestedLinksCache[key] = r;
+        return r;
+    }
+    
     get nested(): InferredStateLinkNestedType<S> {
         const currentValue = this.getUntracked()
         if (this[NestedCache] === undefined) {
@@ -1911,9 +1931,12 @@ class StateLinkImpl<S> implements StateLink<S>,
                     const index = Number(key);
                     if (!Number.isInteger(index)) {
                         return undefined;
-                    }              
+                    }
+                    return this.child(index)[self]
+                    // return (this.nested)![index][self];
                 }
-                return (this.nested)![key][self];
+                return this.child(key.toString())[self]
+                // return (this.nested)![key.toString()][self];
             }
         },
         (_, key, value) => {
