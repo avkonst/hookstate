@@ -1,3 +1,5 @@
+import { StateMarkerID, self } from '@hookstate/core';
+
 var PluginID = Symbol('Validate');
 var emptyErrors = [];
 var ValidationPluginInstance = /** @class */ (function () {
@@ -43,13 +45,13 @@ var ValidationPluginInstance = /** @class */ (function () {
         if (depth === 0) {
             return consistentResult();
         }
-        var _a = this.getRulesAndNested(l.path), existingRules = _a[0], nestedRulesKeys = _a[1];
+        var _a = this.getRulesAndNested(l[self].path), existingRules = _a[0], nestedRulesKeys = _a[1];
         for (var i = 0; i < existingRules.length; i += 1) {
             var r = existingRules[i];
-            if (!r.rule(l.value)) {
+            if (!r.rule(l[self].value)) {
                 var err = {
-                    path: l.path,
-                    message: typeof r.message === 'function' ? r.message(l.value) : r.message,
+                    path: l[self].path,
+                    message: typeof r.message === 'function' ? r.message(l[self].value) : r.message,
                     severity: r.severity
                 };
                 if (!filter || filter(err)) {
@@ -67,8 +69,8 @@ var ValidationPluginInstance = /** @class */ (function () {
             // console.log('getResults nested rules 0 length', result)
             return consistentResult();
         }
-        var nestedInst = l.nested;
-        if (nestedInst === undefined) {
+        var nestedInst = l;
+        if (nestedInst[self].keys === undefined) {
             // console.log('getResults no nested inst', result)
             return consistentResult();
         }
@@ -125,35 +127,46 @@ var ValidationPluginInstance = /** @class */ (function () {
     };
     return ValidationPluginInstance;
 }());
-function Validation(self) {
-    if (self) {
-        var _a = self.with(PluginID), l_1 = _a[0], instance = _a[1];
+function Validation($this) {
+    if ($this) {
+        var state_1;
+        if ($this[StateMarkerID]) {
+            state_1 = $this;
+        }
+        else {
+            state_1 = $this[self];
+        }
+        var plugin = state_1[self].attach(PluginID)[0];
+        if (plugin instanceof Error) {
+            throw plugin;
+        }
+        var instance = plugin;
         var inst_1 = instance;
         return {
             validate: function (r, m, s) {
-                inst_1.addRule(l_1.path, {
+                inst_1.addRule(state_1[self].path, {
                     rule: r,
                     message: m,
                     severity: s || 'error'
                 });
             },
             validShallow: function () {
-                return inst_1.getErrors(l_1, 1, undefined, true).length === 0;
+                return inst_1.getErrors(state_1, 1, undefined, true).length === 0;
             },
             valid: function () {
-                return inst_1.getErrors(l_1, Number.MAX_SAFE_INTEGER, undefined, true).length === 0;
+                return inst_1.getErrors(state_1, Number.MAX_SAFE_INTEGER, undefined, true).length === 0;
             },
             invalidShallow: function () {
-                return inst_1.getErrors(l_1, 1, undefined, true).length !== 0;
+                return inst_1.getErrors(state_1, 1, undefined, true).length !== 0;
             },
             invalid: function () {
-                return inst_1.getErrors(l_1, Number.MAX_SAFE_INTEGER, undefined, true).length !== 0;
+                return inst_1.getErrors(state_1, Number.MAX_SAFE_INTEGER, undefined, true).length !== 0;
             },
             errors: function (filter, depth, first) {
-                return inst_1.getErrors(l_1, depth === undefined ? Number.MAX_SAFE_INTEGER : depth, filter, first);
+                return inst_1.getErrors(state_1, depth === undefined ? Number.MAX_SAFE_INTEGER : depth, filter, first);
             },
             firstError: function (filter, depth) {
-                var r = inst_1.getErrors(l_1, depth === undefined ? Number.MAX_SAFE_INTEGER : depth, filter, true);
+                var r = inst_1.getErrors(state_1, depth === undefined ? Number.MAX_SAFE_INTEGER : depth, filter, true);
                 if (r.length === 0) {
                     return {};
                 }

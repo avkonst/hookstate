@@ -1,5 +1,5 @@
 
-import { Plugin, Path, StateLink, StateValueAtPath } from '@hookstate/core';
+import { Plugin, Path, StateLink, StateValueAtPath, State, StateMarkerID, self } from '@hookstate/core';
 
 export type ValidationSeverity = 'error' | 'warning';
 
@@ -75,7 +75,7 @@ class ValidationPluginInstance<S> {
         result[PluginID] = newMap;
     }
 
-    getErrors(l: StateLink<StateValueAtPath>,
+    getErrors(l: State<StateValueAtPath>,
         depth: number,
         filter?: (e: ValidationError) => boolean,
         first?: boolean): ReadonlyArray<ValidationError> {
@@ -87,13 +87,13 @@ class ValidationPluginInstance<S> {
             return consistentResult();
         }
 
-        const [existingRules, nestedRulesKeys] = this.getRulesAndNested(l.path);
+        const [existingRules, nestedRulesKeys] = this.getRulesAndNested(l[self].path);
         for (let i = 0; i < existingRules.length; i += 1) {
             const r = existingRules[i];
-            if (!r.rule(l.value)) {
+            if (!r.rule(l[self].value)) {
                 const err = {
-                    path: l.path,
-                    message: typeof r.message === 'function' ? r.message(l.value) : r.message,
+                    path: l[self].path,
+                    message: typeof r.message === 'function' ? r.message(l[self].value) : r.message,
                     severity: r.severity
                 };
                 if (!filter || filter(err)) {
@@ -111,8 +111,8 @@ class ValidationPluginInstance<S> {
             // console.log('getResults nested rules 0 length', result)
             return consistentResult();
         }
-        const nestedInst = l.nested;
-        if (nestedInst === undefined) {
+        const nestedInst = l;
+        if (nestedInst[self].keys === undefined) {
             // console.log('getResults no nested inst', result)
             return consistentResult();
         }
@@ -172,36 +172,49 @@ class ValidationPluginInstance<S> {
 
 // tslint:disable-next-line: function-name
 export function Validation(): Plugin;
-export function Validation<S>(self: StateLink<S>): ValidationExtensions<S>;
-export function Validation<S>(self?: StateLink<S>): Plugin | ValidationExtensions<S> {
-    if (self) {
-        const [l, instance] = self.with(PluginID);
-        const inst = instance as ValidationPluginInstance<S>;
+export function Validation<S>($this: StateLink<S>): ValidationExtensions<S>;
+export function Validation<S>($this: State<S>): ValidationExtensions<S>;
+export function Validation<S>($this?: State<S> | StateLink<S>): Plugin | ValidationExtensions<S> {
+    if ($this) {
+        let state: State<S>;
+        if ($this[StateMarkerID]) {
+            state = ($this as State<S>);
+        } else {
+            state = ($this as StateLink<S>)[self];
+        }
+
+        const [plugin] = state[self].attach(PluginID);
+        if (plugin instanceof Error) {
+            throw plugin
+        }
+        const instance = plugin as ValidationPluginInstance<S>;
+
+        const inst = instance;
         return {
             validate: (r, m, s) => {
-                inst.addRule(l.path, {
+                inst.addRule(state[self].path, {
                     rule: r,
                     message: m,
                     severity: s || 'error'
                 })
             },
             validShallow(): boolean {
-                return inst.getErrors(l, 1, undefined, true).length === 0
+                return inst.getErrors(state, 1, undefined, true).length === 0
             },
             valid(): boolean {
-                return inst.getErrors(l, Number.MAX_SAFE_INTEGER, undefined, true).length === 0
+                return inst.getErrors(state, Number.MAX_SAFE_INTEGER, undefined, true).length === 0
             },
             invalidShallow(): boolean {
-                return inst.getErrors(l, 1, undefined, true).length !== 0
+                return inst.getErrors(state, 1, undefined, true).length !== 0
             },
             invalid(): boolean {
-                return inst.getErrors(l, Number.MAX_SAFE_INTEGER, undefined, true).length !== 0
+                return inst.getErrors(state, Number.MAX_SAFE_INTEGER, undefined, true).length !== 0
             },
             errors: (filter, depth, first) => {
-                return inst.getErrors(l, depth === undefined ? Number.MAX_SAFE_INTEGER : depth, filter, first);
+                return inst.getErrors(state, depth === undefined ? Number.MAX_SAFE_INTEGER : depth, filter, first);
             },
             firstError: (filter, depth) => {
-                const r = inst.getErrors(l, depth === undefined ? Number.MAX_SAFE_INTEGER : depth, filter, true);
+                const r = inst.getErrors(state, depth === undefined ? Number.MAX_SAFE_INTEGER : depth, filter, true);
                 if (r.length === 0) {
                     return {};
                 }

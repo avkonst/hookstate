@@ -1,6 +1,6 @@
 {
     "name": "@hookstate/validation",
-    "version": "1.5.2",
+    "version": "1.8.0",
     "description": "Plugin for @hookstate/core to enable validation of data state.",
     "license": "MIT",
     "author": {
@@ -35,12 +35,12 @@
     },
     "dependencies": {},
     "peerDependencies": {
-        "@hookstate/core": "^1.8.1"
+        "@hookstate/core": "^1.8.3"
     },
     "devDependencies": {
         "@babel/core": "7.9.6",
         "@babel/runtime": "7.9.6",
-        "@hookstate/core": "^1.7.0",
+        "@hookstate/core": "1.8.3",
         "@rollup/plugin-babel": "5.0.2",
         "@rollup/plugin-commonjs": "12.0.0",
         "@rollup/plugin-node-resolve": "8.0.0",
@@ -53,7 +53,6 @@
         "@types/react": "16.9.35",
         "@types/react-dom": "16.9.8",
         "cross-env": "7.0.2",
-        "jest": "26.0.1",
         "npm-check-updates": "6.0.1",
         "react": "16.13.1",
         "react-dom": "16.13.1",

@@ -1,4 +1,4 @@
-import { Plugin, Path, StateLink } from '@hookstate/core';
+import { Plugin, Path, StateLink, State } from '@hookstate/core';
 export declare type ValidationSeverity = 'error' | 'warning';
 export interface ValidationError {
     readonly message: string;
@@ -15,4 +15,5 @@ export interface ValidationExtensions<S> {
     errors(filter?: (e: ValidationError) => boolean, depth?: number, first?: boolean): ReadonlyArray<ValidationError>;
 }
 export declare function Validation(): Plugin;
-export declare function Validation<S>(self: StateLink<S>): ValidationExtensions<S>;
+export declare function Validation<S>($this: StateLink<S>): ValidationExtensions<S>;
+export declare function Validation<S>($this: State<S>): ValidationExtensions<S>;
