@@ -619,7 +619,7 @@ export interface DevToolsExtensions {
  *
  * @returns Interface to interact with the development tools for a given state.
  */
-export declare function DevTools(state: StateLink<StateValueAtPath> | State<StateValueAtPath>): DevToolsExtensions;
+export declare function DevTools<S>(state: StateLink<S> | State<S>): DevToolsExtensions;
 /**
  * @hidden
  * @ignore

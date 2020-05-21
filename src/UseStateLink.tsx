@@ -853,15 +853,15 @@ export interface DevToolsExtensions {
  * 
  * @returns Interface to interact with the development tools for a given state.
  */
-export function DevTools(state: StateLink<StateValueAtPath> | State<StateValueAtPath>): DevToolsExtensions {
+export function DevTools<S>(state: StateLink<S> | State<S>): DevToolsExtensions {
     if (state[StateMarkerID]) {
-        const plugin = (state as State<StateValueAtPath>)[self].attach(DevToolsID);
+        const plugin = (state as State<S>)[self].attach(DevToolsID);
         if (plugin) {
             return plugin[0] as DevToolsExtensions;
         }
         return EmptyDevToolsExtensions;
     } else {
-        const plugin = (state as StateLink<StateValueAtPath>).with(DevToolsID, () => undefined);
+        const plugin = (state as StateLink<S>).with(DevToolsID, () => undefined);
         if (plugin) {
             return plugin[1] as DevToolsExtensions;
         }
