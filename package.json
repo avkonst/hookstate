@@ -64,7 +64,6 @@
         "rollup-plugin-typescript2": "0.26.0",
         "rollup-plugin-peer-deps-external": "2.2.2",
         "ts-jest": "26.0.0",
-        "tslib": "2.0.0",
         "tslint": "6.1.2",
         "tslint-react": "5.0.0",
         "typedoc": "0.17.7",
