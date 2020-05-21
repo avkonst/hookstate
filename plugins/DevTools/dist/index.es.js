@@ -1,4 +1,4 @@
-import { createStateLink, DevTools, useStateLink, DevToolsID, None } from '@hookstate/core';
+import { createState, self as self$1, DevTools, useStateLink, DevToolsID, createStateLink, useState, none } from '@hookstate/core';
 
 /*! *****************************************************************************
 Copyright (c) Microsoft Corporation. All rights reserved.
@@ -791,7 +791,7 @@ function DevToolsInit() {
     var PluginIdPersistedSettings = Symbol('PersistedSettings');
     var MonitoredStatesLogger = function (_) { };
     var MonitoredStatesLabel = '@hookstate/devtools: settings';
-    MonitoredStates = createStateLink(function () {
+    MonitoredStates = createState(function () {
         var p = localStorage.getItem(MonitoredStatesLabel);
         if (!p) {
             return {
@@ -800,10 +800,9 @@ function DevToolsInit() {
             };
         }
         return JSON.parse(p);
-    })
-        .with(function () { return ({
+    })[self$1].attach(function () { return ({
         id: PluginIdPersistedSettings,
-        create: function () { return ({
+        init: function () { return ({
             onSet: function (p) {
                 var v = p.state;
                 if (!v || !v.monitored || !Array.isArray(v.monitored)) {
@@ -817,7 +816,7 @@ function DevToolsInit() {
                 v.callstacksDepth = Number.isInteger(depth) && depth >= 0 ? depth : IsDevelopment ? 30 : 0;
                 localStorage.setItem(MonitoredStatesLabel, JSON.stringify(v));
                 if (v !== p.state) {
-                    MonitoredStates.set(v);
+                    MonitoredStates[self$1].set(v);
                 }
             }
         }); }
@@ -831,7 +830,7 @@ function DevToolsInit() {
         if ('stackTraceLimit' in Error && 'captureStackTrace' in Error) {
             var oldLimit = Error.stackTraceLimit;
             Error.stackTraceLimit = 2;
-            Error.captureStackTrace(dummyError, MonitoredStates.with);
+            Error.captureStackTrace(dummyError, MonitoredStates[self$1].attach);
             Error.stackTraceLimit = oldLimit;
         }
         var s = dummyError.stack;
@@ -858,10 +857,10 @@ function DevToolsInit() {
                         try {
                             fromRemote = true;
                             if ('value' in action) {
-                                l.set(action.value);
+                                l[self$1].set(action.value);
                             }
                             else {
-                                l.set(None);
+                                l[self$1].set(none);
                             }
                         }
                         finally {
@@ -878,8 +877,8 @@ function DevToolsInit() {
                             var valid = true;
                             for (var _i = 0, _a = action.path; _i < _a.length; _i++) {
                                 var p = _a[_i];
-                                if (l.nested) {
-                                    l = l.nested[p];
+                                if (l[p]) {
+                                    l = l[p];
                                 }
                                 else {
                                     valid = false;
@@ -896,20 +895,17 @@ function DevToolsInit() {
                 }
                 else if (action.type === 'RERENDER' && action.path && isValidPath(action.path)) {
                     // rerender request from development tools
-                    lnk.with(DevToolsID)[0].update([action.path]);
+                    lnk[self$1].attach(DevToolsID)[1].rerender([action.path]);
                 }
                 else if (action.type === 'BREAKPOINT') {
                     onBreakpoint();
                 }
             }
-            if (lnk.promised) {
-                return None;
-            }
-            return lnk.value;
+            return lnk[self$1].map(function (l) { return l[self$1].value; }, function () { return none; });
         }, reduxDevtoolsExtension_2({
             name: window.location.hostname + ": " + assignedId,
-            trace: MonitoredStates.value.callstacksDepth !== 0,
-            traceLimit: MonitoredStates.value.callstacksDepth,
+            trace: MonitoredStates[self$1].value.callstacksDepth !== 0,
+            traceLimit: MonitoredStates[self$1].value.callstacksDepth,
             autoPause: true,
             shouldHotReload: false,
             features: {
@@ -943,12 +939,12 @@ function DevToolsInit() {
         return dispatch;
     }
     function isMonitored(assignedId, globalOrLabeled) {
-        return MonitoredStates.value.monitored.includes(assignedId) || (IsDevelopment && globalOrLabeled);
+        return MonitoredStates[self$1].value.monitored.includes(assignedId) || (IsDevelopment && globalOrLabeled);
     }
     function DevToolsInternal(isGlobal) {
         return {
             id: DevToolsID,
-            create: function (lnk) {
+            init: function (lnk) {
                 var assignedName = getLabel(isGlobal);
                 var submitToMonitor;
                 var breakpoint = false;
@@ -979,9 +975,9 @@ function DevToolsInit() {
                                 breakpoint = !breakpoint;
                             });
                             // inject on set listener
-                            lnk.with(function () { return ({
+                            lnk[self$1].attach(function () { return ({
                                 id: PluginIdMonitored,
-                                create: function () { return ({
+                                init: function () { return ({
                                     onSet: function (p) {
                                         submitToMonitor(__assign(__assign({}, p), { type: "SET [" + p.path.join('/') + "]" }));
                                         if (breakpoint) {
@@ -1019,11 +1015,13 @@ function DevToolsInit() {
             }
         };
     }
-    MonitoredStates.with(DevToolsInternal);
+    MonitoredStates[self$1].attach(DevToolsInternal);
     DevTools(MonitoredStates).label(MonitoredStatesLabel);
     MonitoredStatesLogger = function (str) { return DevTools(MonitoredStates).log(str); };
     useStateLink[DevToolsID] = DevToolsInternal;
     createStateLink[DevToolsID] = function () { return DevToolsInternal(true); };
+    useState[DevToolsID] = DevToolsInternal;
+    createState[DevToolsID] = function () { return DevToolsInternal(true); };
 }
 DevToolsInit(); // attach on load
 

@@ -1,10 +1,10 @@
 import {
-    createStateLink,
-    useStateLink,
+    createState,
+    useState,
     StateValueAtRoot,
     StateValueAtPath,
-    StateLink,
-    None,
+    State,
+    none,
     Path,
     Plugin,
     PluginCallbacks,
@@ -12,12 +12,15 @@ import {
     DevTools,
     DevToolsID,
     DevToolsExtensions,
+    self,
+    useStateLink,
+    createStateLink,
 } from '@hookstate/core'
 
 import { createStore } from 'redux';
 import { devToolsEnhancer } from 'redux-devtools-extension';
 
-let MonitoredStates: StateLink<{ monitored: string[], callstacksDepth: number }>;
+let MonitoredStates: State<{ monitored: string[], callstacksDepth: number }>;
 
 export function DevToolsInit() {
     if (// already initialized
@@ -35,7 +38,7 @@ export function DevToolsInit() {
     
     let MonitoredStatesLogger = (_: string) => { /* */ };
     const MonitoredStatesLabel = '@hookstate/devtools: settings';
-    MonitoredStates = createStateLink(() => {
+    MonitoredStates = createState(() => {
             const p = localStorage.getItem(MonitoredStatesLabel)
             if (!p) {
                 return {
@@ -44,10 +47,9 @@ export function DevToolsInit() {
                 }
             }
             return JSON.parse(p) as { monitored: string[], callstacksDepth: number }
-        })
-        .with(() => ({
+        })[self].attach(() => ({
             id: PluginIdPersistedSettings,
-            create: () => ({
+            init: () => ({
                 onSet: p => {
                     let v = p.state;
                     if (!v || !v.monitored || !Array.isArray(v.monitored)) {
@@ -60,7 +62,7 @@ export function DevToolsInit() {
                     v.callstacksDepth = Number.isInteger(depth) && depth >= 0 ? depth : IsDevelopment ? 30 : 0;
                     localStorage.setItem(MonitoredStatesLabel, JSON.stringify(v))
                     if (v !== p.state) {
-                        MonitoredStates.set(v)
+                        MonitoredStates[self].set(v)
                     }
                 }
             })
@@ -76,7 +78,7 @@ export function DevToolsInit() {
         if ('stackTraceLimit' in Error && 'captureStackTrace' in Error) {
             const oldLimit = Error.stackTraceLimit
             Error.stackTraceLimit = 2;
-            Error.captureStackTrace(dummyError, MonitoredStates.with)
+            Error.captureStackTrace(dummyError, MonitoredStates[self].attach)
             Error.stackTraceLimit = oldLimit;
         }
         const s = dummyError.stack;
@@ -93,7 +95,7 @@ export function DevToolsInit() {
     }
     
     function createReduxDevToolsLogger(
-        lnk: StateLink<StateValueAtRoot>, assignedId: string, onBreakpoint: () => void) {
+        lnk: State<StateValueAtRoot>, assignedId: string, onBreakpoint: () => void) {
         let fromRemote = false;
         let fromLocal = false;
         const reduxStore = createStore(
@@ -102,13 +104,13 @@ export function DevToolsInit() {
                     const isValidPath = (p: Path) => Array.isArray(p) &&
                         p.findIndex(l => typeof l !== 'string' && typeof l !== 'number') === -1;
                     if (action.type.startsWith('SET')) {
-                        const setState = (l: StateLink<StateValueAtPath>) => {
+                        const setState = (l: State<StateValueAtPath>) => {
                             try {
                                 fromRemote = true;
                                 if ('value' in action) {
-                                    l.set(action.value)
+                                    l[self].set(action.value)
                                 } else {
-                                    l.set(None)
+                                    l[self].set(none)
                                 }
                             } finally {
                                 fromRemote = false;
@@ -123,8 +125,8 @@ export function DevToolsInit() {
                                 let l = lnk;
                                 let valid = true;
                                 for (let p of action.path) {
-                                    if (l.nested) {
-                                        l = l.nested[p];
+                                    if (l[p]) {
+                                        l = l[p];
                                     } else {
                                         valid = false;
                                     }
@@ -138,20 +140,17 @@ export function DevToolsInit() {
                         }
                     } else if (action.type === 'RERENDER' && action.path && isValidPath(action.path)) {
                         // rerender request from development tools
-                        lnk.with(DevToolsID)[0].update([action.path!])
+                        lnk[self].attach(DevToolsID)[1].rerender([action.path!])
                     } else if (action.type === 'BREAKPOINT') {
                         onBreakpoint()
                     }
                 }
-                if (lnk.promised) {
-                    return None;
-                }
-                return lnk.value;
+                return lnk[self].map(l => l[self].value, () => none)
             },
             devToolsEnhancer({
                 name: `${window.location.hostname}: ${assignedId}`,
-                trace: MonitoredStates.value.callstacksDepth !== 0,
-                traceLimit: MonitoredStates.value.callstacksDepth,
+                trace: MonitoredStates[self].value.callstacksDepth !== 0,
+                traceLimit: MonitoredStates[self].value.callstacksDepth,
                 autoPause: true,
                 shouldHotReload: false,
                 features: {
@@ -186,13 +185,13 @@ export function DevToolsInit() {
     }
     
     function isMonitored(assignedId: string, globalOrLabeled?: boolean) {
-        return MonitoredStates.value.monitored.includes(assignedId) || (IsDevelopment && globalOrLabeled)
+        return MonitoredStates[self].value.monitored.includes(assignedId) || (IsDevelopment && globalOrLabeled)
     }
     
     function DevToolsInternal(isGlobal?: boolean): Plugin {
         return ({
             id: DevToolsID,
-            create: (lnk) => {
+            init: (lnk) => {
                 let assignedName = getLabel(isGlobal);
                 let submitToMonitor: ReturnType<typeof createReduxDevToolsLogger> | undefined;
                 let breakpoint = false;
@@ -223,9 +222,9 @@ export function DevToolsInit() {
                                 breakpoint = !breakpoint;
                             });
                             // inject on set listener
-                            lnk.with(() => ({
+                            lnk[self].attach(() => ({
                                 id: PluginIdMonitored,
-                                create: () => ({
+                                init: () => ({
                                     onSet: (p: PluginCallbacksOnSetArgument) => {
                                         submitToMonitor!({ ...p, type: `SET [${p.path.join('/')}]` })
                                         if (breakpoint) {
@@ -262,11 +261,13 @@ export function DevToolsInit() {
         } as Plugin)
     }
     
-    MonitoredStates.with(DevToolsInternal)
+    MonitoredStates[self].attach(DevToolsInternal)
     DevTools(MonitoredStates).label(MonitoredStatesLabel)
     MonitoredStatesLogger = (str) => DevTools(MonitoredStates).log(str)
     
     useStateLink[DevToolsID] = DevToolsInternal
     createStateLink[DevToolsID] = () => DevToolsInternal(true)
+    useState[DevToolsID] = DevToolsInternal
+    createState[DevToolsID] = () => DevToolsInternal(true)
 };
 DevToolsInit() // attach on load

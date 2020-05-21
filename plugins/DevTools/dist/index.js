@@ -795,7 +795,7 @@ function DevToolsInit() {
     var PluginIdPersistedSettings = Symbol('PersistedSettings');
     var MonitoredStatesLogger = function (_) { };
     var MonitoredStatesLabel = '@hookstate/devtools: settings';
-    MonitoredStates = core.createStateLink(function () {
+    MonitoredStates = core.createState(function () {
         var p = localStorage.getItem(MonitoredStatesLabel);
         if (!p) {
             return {
@@ -804,10 +804,9 @@ function DevToolsInit() {
             };
         }
         return JSON.parse(p);
-    })
-        .with(function () { return ({
+    })[core.self].attach(function () { return ({
         id: PluginIdPersistedSettings,
-        create: function () { return ({
+        init: function () { return ({
             onSet: function (p) {
                 var v = p.state;
                 if (!v || !v.monitored || !Array.isArray(v.monitored)) {
@@ -821,7 +820,7 @@ function DevToolsInit() {
                 v.callstacksDepth = Number.isInteger(depth) && depth >= 0 ? depth : IsDevelopment ? 30 : 0;
                 localStorage.setItem(MonitoredStatesLabel, JSON.stringify(v));
                 if (v !== p.state) {
-                    MonitoredStates.set(v);
+                    MonitoredStates[core.self].set(v);
                 }
             }
         }); }
@@ -835,7 +834,7 @@ function DevToolsInit() {
         if ('stackTraceLimit' in Error && 'captureStackTrace' in Error) {
             var oldLimit = Error.stackTraceLimit;
             Error.stackTraceLimit = 2;
-            Error.captureStackTrace(dummyError, MonitoredStates.with);
+            Error.captureStackTrace(dummyError, MonitoredStates[core.self].attach);
             Error.stackTraceLimit = oldLimit;
         }
         var s = dummyError.stack;
@@ -862,10 +861,10 @@ function DevToolsInit() {
                         try {
                             fromRemote = true;
                             if ('value' in action) {
-                                l.set(action.value);
+                                l[core.self].set(action.value);
                             }
                             else {
-                                l.set(core.None);
+                                l[core.self].set(core.none);
                             }
                         }
                         finally {
@@ -882,8 +881,8 @@ function DevToolsInit() {
                             var valid = true;
                             for (var _i = 0, _a = action.path; _i < _a.length; _i++) {
                                 var p = _a[_i];
-                                if (l.nested) {
-                                    l = l.nested[p];
+                                if (l[p]) {
+                                    l = l[p];
                                 }
                                 else {
                                     valid = false;
@@ -900,20 +899,17 @@ function DevToolsInit() {
                 }
                 else if (action.type === 'RERENDER' && action.path && isValidPath(action.path)) {
                     // rerender request from development tools
-                    lnk.with(core.DevToolsID)[0].update([action.path]);
+                    lnk[core.self].attach(core.DevToolsID)[1].rerender([action.path]);
                 }
                 else if (action.type === 'BREAKPOINT') {
                     onBreakpoint();
                 }
             }
-            if (lnk.promised) {
-                return core.None;
-            }
-            return lnk.value;
+            return lnk[core.self].map(function (l) { return l[core.self].value; }, function () { return core.none; });
         }, reduxDevtoolsExtension_2({
             name: window.location.hostname + ": " + assignedId,
-            trace: MonitoredStates.value.callstacksDepth !== 0,
-            traceLimit: MonitoredStates.value.callstacksDepth,
+            trace: MonitoredStates[core.self].value.callstacksDepth !== 0,
+            traceLimit: MonitoredStates[core.self].value.callstacksDepth,
             autoPause: true,
             shouldHotReload: false,
             features: {
@@ -947,12 +943,12 @@ function DevToolsInit() {
         return dispatch;
     }
     function isMonitored(assignedId, globalOrLabeled) {
-        return MonitoredStates.value.monitored.includes(assignedId) || (IsDevelopment && globalOrLabeled);
+        return MonitoredStates[core.self].value.monitored.includes(assignedId) || (IsDevelopment && globalOrLabeled);
     }
     function DevToolsInternal(isGlobal) {
         return {
             id: core.DevToolsID,
-            create: function (lnk) {
+            init: function (lnk) {
                 var assignedName = getLabel(isGlobal);
                 var submitToMonitor;
                 var breakpoint = false;
@@ -983,9 +979,9 @@ function DevToolsInit() {
                                 breakpoint = !breakpoint;
                             });
                             // inject on set listener
-                            lnk.with(function () { return ({
+                            lnk[core.self].attach(function () { return ({
                                 id: PluginIdMonitored,
-                                create: function () { return ({
+                                init: function () { return ({
                                     onSet: function (p) {
                                         submitToMonitor(__assign(__assign({}, p), { type: "SET [" + p.path.join('/') + "]" }));
                                         if (breakpoint) {
@@ -1023,11 +1019,13 @@ function DevToolsInit() {
             }
         };
     }
-    MonitoredStates.with(DevToolsInternal);
+    MonitoredStates[core.self].attach(DevToolsInternal);
     core.DevTools(MonitoredStates).label(MonitoredStatesLabel);
     MonitoredStatesLogger = function (str) { return core.DevTools(MonitoredStates).log(str); };
     core.useStateLink[core.DevToolsID] = DevToolsInternal;
     core.createStateLink[core.DevToolsID] = function () { return DevToolsInternal(true); };
+    core.useState[core.DevToolsID] = DevToolsInternal;
+    core.createState[core.DevToolsID] = function () { return DevToolsInternal(true); };
 }
 DevToolsInit(); // attach on load
 
