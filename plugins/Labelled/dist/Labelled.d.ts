@@ -1,4 +1,4 @@
-import { StateLink, Plugin, StateValueAtPath } from '@hookstate/core';
+import { StateLink, Plugin, State } from '@hookstate/core';
 /**
  * A plugin which allows to assign a label to a state.
  * It can be used by other extensions, like development tools or
@@ -32,4 +32,5 @@ export declare function Labelled(label: string): () => Plugin;
  * }
  * ```
  */
-export declare function Labelled(link: StateLink<StateValueAtPath>): string | undefined;
+export declare function Labelled<S>(link: StateLink<S>): string | undefined;
+export declare function Labelled<S>(link: State<S>): string | undefined;

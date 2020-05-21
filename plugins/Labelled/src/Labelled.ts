@@ -1,4 +1,4 @@
-import { StateLink, Plugin, StateValueAtPath, PluginCallbacks } from '@hookstate/core';
+import { StateLink, Plugin, StateValueAtPath, PluginCallbacks, State, StateMarkerID, self, StateMethods } from '@hookstate/core';
 
 const LabelledID = Symbol('Labelled');
 
@@ -35,19 +35,32 @@ export function Labelled(label: string): () => Plugin;
  * }
  * ```
  */
-export function Labelled(link: StateLink<StateValueAtPath>): string | undefined;
-export function Labelled(labelOrLink: string | StateLink<StateValueAtPath>): (() => Plugin) | string | undefined {
+export function Labelled<S>(link: StateLink<S>): string | undefined;
+export function Labelled<S>(link: State<S>): string | undefined;
+export function Labelled<S>(labelOrLink: string | StateLink<S> | State<S>):
+    (() => Plugin) | string | undefined {
+        
     if (typeof labelOrLink === 'string') {
         const label = labelOrLink;
         return () => ({
             id: LabelledID,
-            create: () => {
+            init: () => {
                 return ({
                     label: label
                 } as PluginCallbacks);
             }
         })
     }
-    const plugin = labelOrLink.with(LabelledID, () => undefined);
-    return plugin && (plugin[1] as { label: string }).label;
+    if (labelOrLink[StateMarkerID]) {
+        const th = labelOrLink as State<S>;
+        const [plugin] = th[self].attach(LabelledID);
+        if (plugin instanceof Error) {
+            return undefined;
+        }
+        return (plugin as { label: string }).label;
+    } else {
+        const th = labelOrLink as StateLink<S>;
+        const plugin = th.with(LabelledID, () => undefined);
+        return plugin && (plugin[1] as { label: string }).label;
+    }
 }
