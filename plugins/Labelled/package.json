@@ -1,6 +1,6 @@
 {
     "name": "@hookstate/labelled",
-    "version": "1.6.0",
+    "version": "1.8.0",
     "description": "Plugin for @hookstate/core, which allows to assign a label / name / alias for a state.",
     "license": "MIT",
     "author": {
