@@ -1,5 +1,4 @@
-
-import { Plugin, StateValueAtRoot, PluginCallbacks, StateLink } from '@hookstate/core';
+import { Plugin, StateValueAtRoot, PluginCallbacks, State, self } from '@hookstate/core';
 
 const PluginID = Symbol('LocalPersistence');
 
@@ -7,13 +6,17 @@ const PluginID = Symbol('LocalPersistence');
 export function Persistence(localStorageKey: string): (() => Plugin) {
     return () => ({
         id: PluginID,
-        create: (state: StateLink<StateValueAtRoot>) => {
+        init: (state: State<StateValueAtRoot>) => {
             const persisted = localStorage.getItem(localStorageKey);
             if (persisted !== null) {
                 const result = JSON.parse(persisted);
-                state.set(result);
-            } else if (!state.promised) {
-                localStorage.setItem(localStorageKey, JSON.stringify(state.value))
+                state[self].set(result);
+            } else {
+                state[self].map(
+                    l => localStorage.setItem(localStorageKey, JSON.stringify(l[self].value)),
+                    () => {/**/},
+                    () => {/**/},
+                )
             }
             return {
                 onSet: (p) => {
