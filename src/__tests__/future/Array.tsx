@@ -23,6 +23,50 @@ test('array: should rerender used', async () => {
     expect(Object.keys(result.current[self].get())).toEqual(['0', '1']);
 });
 
+test('array: should rerender used (length)', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useState([0, 5])
+    });
+    expect(result.current.length).toStrictEqual(2);
+
+    act(() => {
+        result.current[self].set([1, 5]);
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(result.current[self].get()[0]).toStrictEqual(1);
+    expect(result.current[self].get()[1]).toStrictEqual(5);
+    expect(result.current.length).toEqual(2);
+    expect(result.current[self].get().length).toEqual(2);
+    expect(Object.keys(result.current)).toEqual(['0', '1']);
+    expect(Object.keys(result.current[self].get())).toEqual(['0', '1']);
+});
+
+test('array: should rerender used (iterated)', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useState([0, 5])
+    });
+    expect(result.current.find(i => false)).toStrictEqual(undefined);
+
+    act(() => {
+        result.current[0][self].set(2);
+    });
+    expect(renderTimes).toStrictEqual(1);
+
+    act(() => {
+        result.current[2][self].set(4);
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(result.current[self].get()[0]).toStrictEqual(2);
+    expect(result.current[self].get()[2]).toStrictEqual(4);
+    expect(result.current[self].get()[1]).toStrictEqual(5);
+    expect(result.current.length).toEqual(3);
+    expect(result.current[self].get().length).toEqual(3);
+});
+
 test('array: should not rerender used length unchanged', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {

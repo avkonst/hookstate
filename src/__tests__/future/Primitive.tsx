@@ -10,13 +10,13 @@ test('primitive: should rerender used', async () => {
         return useState(0)
     });
     expect(renderTimes).toStrictEqual(1);
-    expect(result.current[self].get()).toStrictEqual(0);
+    expect(result.current.get()).toStrictEqual(0);
 
     act(() => {
-        result.current[self].set(p => p + 1);
+        result.current.set(p => p + 1);
     });
     expect(renderTimes).toStrictEqual(2);
-    expect(result.current[self].get()).toStrictEqual(1);
+    expect(result.current.get()).toStrictEqual(1);
 });
 
 test('primitive: should rerender used when set to the same', async () => {
@@ -26,13 +26,13 @@ test('primitive: should rerender used when set to the same', async () => {
         return useState(0)
     });
     expect(renderTimes).toStrictEqual(1);
-    expect(result.current[self].get()).toStrictEqual(0);
+    expect(result.current.get()).toStrictEqual(0);
 
     act(() => {
-        result.current[self].set(p => p);
+        result.current.set(p => p);
     });
     expect(renderTimes).toStrictEqual(2);
-    expect(result.current[self].get()).toStrictEqual(0);
+    expect(result.current.get()).toStrictEqual(0);
 });
 
 test('primitive: should rerender when keys used', async () => {
@@ -42,13 +42,13 @@ test('primitive: should rerender when keys used', async () => {
         return useState('value')
     });
     expect(renderTimes).toStrictEqual(1);
-    expect(result.current[self].keys).toEqual(undefined);
+    expect(result.current.keys).toEqual(undefined);
 
     act(() => {
-        result.current[self].set(p => p);
+        result.current.set(p => p);
     });
     expect(renderTimes).toStrictEqual(2);
-    expect(result.current[self].keys).toEqual(undefined);
+    expect(result.current.keys).toEqual(undefined);
 });
 
 test('primitive: should not rerender unused', async () => {
@@ -60,10 +60,10 @@ test('primitive: should not rerender unused', async () => {
     expect(renderTimes).toStrictEqual(1);
 
     act(() => {
-        result.current[self].set(p => p + 1);
+        result.current.set(p => p + 1);
     });
     expect(renderTimes).toStrictEqual(1);
-    expect(result.current[self].get()).toStrictEqual(1);
+    expect(result.current.get()).toStrictEqual(1);
     expect(() => result.current['non-existing']).toThrow('StateLink is used incorrectly. Attempted \'get\' at \'/\'. Hint: target value is not an object to contain properties');
     expect(() => result.current[0]).toThrow('StateLink is used incorrectly. Attempted \'get\' at \'/\'. Hint: target value is not an object to contain properties');
 });
@@ -77,12 +77,12 @@ test('primitive: global state', async () => {
         return useState(stateInf)
     });
 
-    expect(result.current[self].get()).toStrictEqual(0);
+    expect(result.current.get()).toStrictEqual(0);
     act(() => {
-        result.current[self].set(p => p + 1);
+        result.current.set(p => p + 1);
     });
     expect(renderTimes).toStrictEqual(2);
-    expect(result.current[self].get()).toStrictEqual(1);
+    expect(result.current.get()).toStrictEqual(1);
 });
 
 test('primitive: global state created locally', async () => {
@@ -93,12 +93,12 @@ test('primitive: global state created locally', async () => {
         return useState(state)
     });
 
-    expect(result.current[self].get()).toStrictEqual(0);
+    expect(result.current.get()).toStrictEqual(0);
     act(() => {
-        result.current[self].set(p => p + 1);
+        result.current.set(p => p + 1);
     });
     expect(renderTimes).toStrictEqual(2);
-    expect(result.current[self].get()).toStrictEqual(1);
+    expect(result.current.get()).toStrictEqual(1);
 });
 
 test('primitive: stale state should auto refresh', async () => {
@@ -113,7 +113,7 @@ test('primitive: stale state should auto refresh', async () => {
                 // which should be the latest
                 // even if the effect is not rerun on rerender
                 act(() => {
-                    r[self].set(r[self].get() + 1) // 1 + 1
+                    r.set(r.get() + 1) // 1 + 1
                 })
             }, 100)
             return () => clearInterval(timer)
@@ -124,20 +124,20 @@ test('primitive: stale state should auto refresh', async () => {
     act(() => {
         // this also marks it as used,
         // although it was not used during rendering
-        result.current[self].set(result.current[self].get() + 1); // 0 + 1
+        result.current.set(result.current.get() + 1); // 0 + 1
     });
     expect(renderTimes).toStrictEqual(2);
-    expect(result.current[self].get()).toStrictEqual(1);
+    expect(result.current.get()).toStrictEqual(1);
     
     await new Promise(resolve => setTimeout(() => resolve(), 110));
     expect(renderTimes).toStrictEqual(3);
-    expect(result.current[self].get()).toStrictEqual(2);
+    expect(result.current.get()).toStrictEqual(2);
     
     act(() => {
-        result.current[self].set(p => p + 1);
+        result.current.set(p => p + 1);
     });
     expect(renderTimes).toStrictEqual(4);
-    expect(result.current[self].get()).toStrictEqual(3);
+    expect(result.current.get()).toStrictEqual(3);
 });
 
 test('primitive: state value should be the latest', async () => {
@@ -147,18 +147,18 @@ test('primitive: state value should be the latest', async () => {
         const r = useState(0)
         React.useEffect(() => {
             act(() => {
-                r[self].set(r[self].get() + 1) // 0 + 1
-                r[self].set(r[self].get() + 1) // 1 + 1
+                r.set(r.get() + 1) // 0 + 1
+                r.set(r.get() + 1) // 1 + 1
             })
         }, [])
         return r
     });
     expect(renderTimes).toStrictEqual(2);
-    expect(result.current[self].get()).toStrictEqual(2);
+    expect(result.current.get()).toStrictEqual(2);
 
     act(() => {
-        result.current[self].set(p => p + 1); // 2 + 1
+        result.current.set(p => p + 1); // 2 + 1
     });
     expect(renderTimes).toStrictEqual(3);
-    expect(result.current[self].get()).toStrictEqual(3);
+    expect(result.current.get()).toStrictEqual(3);
 });

@@ -312,7 +312,9 @@ export interface StateMixinDestroy {
  */
 export type State<S> = StateMixin<S> & (
     S extends ReadonlyArray<(infer U)> ? ReadonlyArray<State<U>> :
-    S extends object ?  { readonly [K in keyof Required<S>]: State<S[K]>; } :
+    S extends (undefined | null | number | string | boolean | bigint) ?
+        Omit<StateMethods<S>, keyof StateMixin<S>> :
+    S extends object ? { readonly [K in keyof Required<S>]: State<S[K]>; } :
     {}
 );
 
@@ -1844,15 +1846,12 @@ class StateLinkImpl<S> implements StateLink<S>,
     }
     
     get [self](): State<S> {
-        const getValueSourceTracked = () => {
-            this.get() // mark used
-            return this.valueSource
-        }
-        let bootstrapValueSource = this.valueSource; // no need to use this.getUntracked() to refresh
-        if (typeof bootstrapValueSource !== 'object' || bootstrapValueSource === null) {
-            bootstrapValueSource = {} as S;
-        }
-        return proxyWrap(this.path, bootstrapValueSource, getValueSourceTracked,
+        return proxyWrap(this.path, 
+            this.valueSource,
+            () => {
+                this.get() // get latest & mark used
+                return this.valueSource
+            },
         (_, key) => {
             if (key === StateMarkerID) {
                 // should be tested before target is obtained
@@ -1870,11 +1869,38 @@ class StateLinkImpl<S> implements StateLink<S>,
                     throw new StateLinkInvalidUsageError('toJSON()', this.path,
                         'did you mean to use JSON.stringify(state.get()) instead of JSON.stringify(state)?');
                 }
-                const currentValue = getValueSourceTracked();
-                if (typeof currentValue !== 'object' || currentValue === null) {
-                    throw new StateLinkInvalidUsageError('get', this.path,
-                        `target value is not an object to contain properties`)
+                
+                const currentValue = this.getUntracked(true);
+                if (// if currentValue is primitive type
+                    (typeof currentValue !== 'object' || currentValue === null) &&
+                    // if promised, it will be none
+                    currentValue !== none) {
+                    switch (key) {
+                        case 'path':
+                            return this.path
+                        case 'keys':
+                            return this.keys
+                        case 'value':
+                            return this.value
+                        case 'get':
+                            return () => this.get()
+                        case 'set':
+                            return (p: SetStateAction<S>) => this.set(p)
+                        case 'merge':
+                            return (p: SetPartialStateAction<S>) => this.merge(p)
+                        case 'map':
+                            // tslint:disable-next-line: no-any
+                            return (...args: any[]) => this.map(args[0], args[1], args[2], args[3])
+                        case 'attach':
+                            return (p: symbol) => this.attach(p)
+                        default:
+                            this.get() // mark used
+                            throw new StateLinkInvalidUsageError('get', this.path,
+                                `target value is not an object to contain properties`)
+                    }
                 }
+
+                this.get() // mark used
                 if (Array.isArray(currentValue)) {
                     if (key === 'length') {
                         return currentValue.length;
@@ -2013,6 +2039,9 @@ function proxyWrap(
 ) {
     const onInvalidUsage = (op: string) => {
         throw new StateLinkInvalidUsageError(op, path)
+    }
+    if (typeof targetBootstrap !== 'object' || targetBootstrap === null) {
+        targetBootstrap = {}
     }
     return new Proxy(targetBootstrap, {
         getPrototypeOf: (target) => {
