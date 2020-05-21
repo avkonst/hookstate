@@ -43,7 +43,7 @@ export function DevToolsInit() {
                     callstacksDepth: IsDevelopment ? 30 : 0
                 }
             }
-            return JSON.parse(p)
+            return JSON.parse(p) as { monitored: string[], callstacksDepth: number }
         })
         .with(() => ({
             id: PluginIdPersistedSettings,
