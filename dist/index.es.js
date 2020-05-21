@@ -30,11 +30,21 @@ function __extends(d, b) {
 }
 
 /**
- * @experimental
+ * Special symbol which is used as a property to switch
+ * between [StateMethods](#interfacesstatemethodsmd) and the corresponding [State](#interfacesstatemd).
  */
-var None = Symbol('none');
+var self = Symbol('self');
+/**
+ * Special symbol which might be returned by onPromised callback of [StateMethods.map](#map) function.
+ */
+var postpone = Symbol('postpone');
+/**
+ * Special symbol which might be used to delete properties
+ * from an object calling [StateMethods.set](#set) or [StateMethods.merge](#merge).
+ */
+var none = Symbol('none');
 function createStateLink(initial, transform) {
-    var stateLink = createState(initial).accessUnmounted();
+    var stateLink = createStore(initial).accessUnmounted();
     if (createStateLink[DevToolsID]) {
         stateLink.with(createStateLink[DevToolsID]);
     }
@@ -68,7 +78,7 @@ function useStateLink(source, transform) {
     else {
         // Local state mount
         // eslint-disable-next-line react-hooks/rules-of-hooks
-        var _d = React.useState(function () { return ({ state: createState(source) }); }), value_2 = _d[0], setValue_3 = _d[1];
+        var _d = React.useState(function () { return ({ state: createStore(source) }); }), value_2 = _d[0], setValue_3 = _d[1];
         var link = useSubscribedStateLink(value_2.state, RootPath, function () { return setValue_3({ state: value_2.state }); }, value_2.state, undefined);
         React.useEffect(function () { return function () { return value_2.state.destroy(); }; }, []);
         if (useStateLink[DevToolsID]) {
@@ -77,22 +87,79 @@ function useStateLink(source, transform) {
         return tf ? injectTransform(link, tf) : link;
     }
 }
-function StateFragment(props) {
-    var scoped = useStateLink(props.state, props.transform);
-    return props.children(scoped);
+/**
+ * Creates new state and returns it.
+ *
+ * You can create as many global states as you need.
+ *
+ * When you the state is not needed anymore,
+ * it should be destroyed by calling
+ * `destroy()` method of the returned instance.
+ * This is necessary for some plugins,
+ * which allocate native resources,
+ * like subscription to databases, broadcast channels, etc.
+ * In most cases, a global state is used during
+ * whole life time of an application and would not require
+ * destruction. However, if you have got, for example,
+ * a catalog of dynamically created and destroyed global states,
+ * the states should be destroyed as advised above.
+ *
+ * @param initial Initial value of the state.
+ * It can be a value OR a promise,
+ * which asynchronously resolves to a value,
+ * OR a function returning a value or a promise.
+ *
+ * @typeparam S Type of a value of the state
+ *
+ * @returns [State](#interfacesstatemd) instance,
+ * which can be used directly to get and set state value
+ * outside of React components.
+ * When you need to use the state in a functional `React` component,
+ * pass the created state to [useState](#usestate) function and
+ * use the returned result in the component's logic.
+ */
+function createState(initial) {
+    var stateLink = createStateLink(initial);
+    if (createState[DevToolsID]) {
+        stateLink.attach(createState[DevToolsID]);
+    }
+    return stateLink[self];
+}
+function useState(source) {
+    if (typeof source === 'object' && source !== null) {
+        var sl = source[StateMarkerID];
+        if (sl) {
+            // it is already state object
+            source = sl; // get underlying StateLink
+        }
+    }
+    var statelink = useStateLink(source);
+    if (useState[DevToolsID]) {
+        statelink.attach(useState[DevToolsID]);
+    }
+    return statelink[self];
 }
 /**
- * It is used in combination with [StateLink.wrap](#wrap).
- * It minimises rerendering for states reduced down to a comparable values.
- *
- * @param transform the original transform function for [StateLink.wrap](#wrap).
- * The first argument is a state link to wrap.
- * The second argument, if available,
- * is the previous result returned by the function.
- *
- * @param equals a function which compares the next and the previous
- * wrapped state values and return true, if there is no change. By default,
- * it is shallow triple-equal comparison, i.e. `===`.
+ * @hidden
+ * @ignore
+ * @internal
+ * @deprecated declared for backward compatibility
+ */
+function StateFragment(props) {
+    if (props.state[StateMarkerID]) {
+        var scoped = useState(props.state);
+        return props.children(scoped);
+    }
+    else {
+        var scoped = useStateLink(props.state, props.transform);
+        return props.children(scoped);
+    }
+}
+/**
+ * @hidden
+ * @ignore
+ * @internal
+ * @deprecated declared for backward compatibility
  */
 function StateMemo(transform, equals) {
     return function (link, prev) {
@@ -105,20 +172,19 @@ function StateMemo(transform, equals) {
  * state usage tracking. It is useful for performance tuning. For example:
  *
  * ```tsx
- * const globalState = createStateLink(someLargeObject as object)
+ * const globalState = createState(someLargeObject as object)
  * const MyComponent = () => {
- *     const state = useStateLink(globalState)
+ *     const state = useState(globalState)
  *         .with(Downgraded); // the whole state will be used
  *                            // by this component, so no point
  *                            // to track usage of individual properties
- *     return <>{JSON.stringify(state.value)}</>
+ *     return <>{JSON.stringify(state[self].value)}</>
  * }
  * ```
  */
 function Downgraded() {
     return {
-        id: DowngradedID,
-        create: function () { return ({}); }
+        id: DowngradedID
     };
 }
 /**
@@ -141,11 +207,20 @@ var DevToolsID = Symbol('DevTools');
  * @returns Interface to interact with the development tools for a given state.
  */
 function DevTools(state) {
-    var plugin = state.with(DevToolsID, function () { return undefined; });
-    if (plugin) {
-        return plugin[1];
+    if (state[StateMarkerID]) {
+        var plugin = state[self].attach(DevToolsID);
+        if (plugin) {
+            return plugin[0];
+        }
+        return EmptyDevToolsExtensions;
     }
-    return EmptyDevToolsExtensions;
+    else {
+        var plugin = state.with(DevToolsID, function () { return undefined; });
+        if (plugin) {
+            return plugin[1];
+        }
+        return EmptyDevToolsExtensions;
+    }
 }
 ///
 /// INTERNAL SYMBOLS (LIBRARY IMPLEMENTATION)
@@ -182,10 +257,17 @@ var PluginUnknownError = /** @class */ (function (_super) {
 var DowngradedID = Symbol('Downgraded');
 var StateMemoID = Symbol('StateMemo');
 var ProxyMarkerID = Symbol('ProxyMarker');
+/**
+ * @hidden
+ * @ignore
+ * @internal
+ * remove export when plugins are migrated to version 2
+ */
+var StateMarkerID = Symbol('State');
 var RootPath = [];
 var DestroyedEdition = -1;
-var State = /** @class */ (function () {
-    function State(_value) {
+var Store = /** @class */ (function () {
+    function Store(_value) {
         this._value = _value;
         this._edition = 0;
         this._subscribers = new Set();
@@ -204,7 +286,7 @@ var State = /** @class */ (function () {
             this._promised = this.createPromised(undefined);
         }
     }
-    State.prototype.createPromised = function (newValue) {
+    Store.prototype.createPromised = function (newValue) {
         var _this = this;
         var promised = new Promised(newValue ? Promise.resolve(newValue) : undefined, function (r) {
             if (_this.promised === promised && _this.edition !== DestroyedEdition) {
@@ -228,21 +310,21 @@ var State = /** @class */ (function () {
         });
         return promised;
     };
-    Object.defineProperty(State.prototype, "edition", {
+    Object.defineProperty(Store.prototype, "edition", {
         get: function () {
             return this._edition;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
-    Object.defineProperty(State.prototype, "promised", {
+    Object.defineProperty(Store.prototype, "promised", {
         get: function () {
             return this._promised;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
-    State.prototype.get = function (path) {
+    Store.prototype.get = function (path) {
         var result = this._value;
         if (result === None) {
             return result;
@@ -252,7 +334,7 @@ var State = /** @class */ (function () {
         });
         return result;
     };
-    State.prototype.set = function (path, value, mergeValue) {
+    Store.prototype.set = function (path, value, mergeValue) {
         if (this._edition < 0) {
             // TODO convert to warning
             throw new StateLinkInvalidUsageError("set state for the destroyed state", path, 'make sure all asynchronous operations are cancelled (unsubscribed) when the state is destroyed. ' +
@@ -358,7 +440,7 @@ var State = /** @class */ (function () {
         // no-op
         return path;
     };
-    State.prototype.update = function (paths) {
+    Store.prototype.update = function (paths) {
         if (this._batches) {
             this._batchesPendingPaths = this._batchesPendingPaths || [];
             this._batchesPendingPaths = this._batchesPendingPaths.concat(paths);
@@ -368,13 +450,13 @@ var State = /** @class */ (function () {
         this._subscribers.forEach(function (s) { return s.onSet(paths, actions); });
         actions.forEach(function (a) { return a(); });
     };
-    State.prototype.afterSet = function (params) {
+    Store.prototype.afterSet = function (params) {
         if (this._edition !== DestroyedEdition) {
             this._edition += 1;
             this._setSubscribers.forEach(function (cb) { return cb(params); });
         }
     };
-    State.prototype.startBatch = function (path, options) {
+    Store.prototype.startBatch = function (path, options) {
         this._batches += 1;
         var cbArgument = {
             path: path
@@ -387,7 +469,7 @@ var State = /** @class */ (function () {
         }
         this._batchStartSubscribers.forEach(function (cb) { return cb(cbArgument); });
     };
-    State.prototype.finishBatch = function (path, options) {
+    Store.prototype.finishBatch = function (path, options) {
         var cbArgument = {
             path: path
         };
@@ -407,19 +489,20 @@ var State = /** @class */ (function () {
             }
         }
     };
-    State.prototype.postponeBatch = function (action) {
+    Store.prototype.postponeBatch = function (action) {
         this._batchesPendingActions = this._batchesPendingActions || [];
         this._batchesPendingActions.push(action);
     };
-    State.prototype.getPlugin = function (pluginId) {
+    Store.prototype.getPlugin = function (pluginId) {
         return this._plugins.get(pluginId);
     };
-    State.prototype.register = function (plugin) {
+    Store.prototype.register = function (plugin) {
         var existingInstance = this._plugins.get(plugin.id);
         if (existingInstance) {
             return;
         }
-        var pluginCallbacks = plugin.create(this.accessUnmounted());
+        var pluginCallbacks = plugin.create ? plugin.create(this.accessUnmounted()) :
+            plugin.init ? plugin.init(this.accessUnmounted()[self]) : {};
         this._plugins.set(plugin.id, pluginCallbacks);
         if (pluginCallbacks.onSet) {
             this._setSubscribers.add(function (p) { return pluginCallbacks.onSet(p); });
@@ -434,27 +517,27 @@ var State = /** @class */ (function () {
             this._batchFinishSubscribers.add(function (p) { return pluginCallbacks.onBatchFinish(p); });
         }
     };
-    State.prototype.accessUnmounted = function () {
+    Store.prototype.accessUnmounted = function () {
         return new StateLinkImpl(this, RootPath, NoActionOnUpdate, this.get(RootPath), this.edition
         // TODO downgraded plugin should not be used here as it affects all inherited links (which is temporary fixed in the useStateLink)
         // instead optimisations are possible based on checks of onUpdateUsed === NoActionOnUpdate
         ).with(Downgraded); // it does not matter how it is used, it is not subscribed anyway
     };
-    State.prototype.subscribe = function (l) {
+    Store.prototype.subscribe = function (l) {
         this._subscribers.add(l);
     };
-    State.prototype.unsubscribe = function (l) {
+    Store.prototype.unsubscribe = function (l) {
         this._subscribers.delete(l);
     };
-    State.prototype.destroy = function () {
+    Store.prototype.destroy = function () {
         var _this = this;
         this._destroySubscribers.forEach(function (cb) { return cb(_this._value !== None ? { state: _this._value } : {}); });
         this._edition = DestroyedEdition;
     };
-    State.prototype.toJSON = function () {
+    Store.prototype.toJSON = function () {
         throw new StateLinkInvalidUsageError('toJSON()', RootPath, 'did you mean to use JSON.stringify(state.get()) instead of JSON.stringify(state)?');
     };
-    return State;
+    return Store;
 }());
 var SynteticID = Symbol('SynteticTypeInferenceMarker');
 var ValueCache = Symbol('ValueCache');
@@ -578,7 +661,7 @@ var StateLinkImpl = /** @class */ (function () {
         get: function () {
             return this.get();
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(StateLinkImpl.prototype, "promised", {
@@ -589,7 +672,7 @@ var StateLinkImpl = /** @class */ (function () {
             }
             return false;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(StateLinkImpl.prototype, "error", {
@@ -603,7 +686,7 @@ var StateLinkImpl = /** @class */ (function () {
             }
             return undefined;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     StateLinkImpl.prototype.setUntracked = function (newValue, mergeValue) {
@@ -667,7 +750,7 @@ var StateLinkImpl = /** @class */ (function () {
             updatedPath = this.setUntracked(currentValue, sourceValue);
         }
         else if (typeof currentValue === 'string') {
-            return [this.setUntracked((currentValue + String(sourceValue)))];
+            return [this.setUntracked((currentValue + String(sourceValue)), sourceValue)];
         }
         else {
             return [this.setUntracked(sourceValue)];
@@ -702,7 +785,11 @@ var StateLinkImpl = /** @class */ (function () {
             this.state.finishBatch(this.path, options);
         }
     };
+    // remove in version 2, replace by rerender
     StateLinkImpl.prototype.update = function (paths) {
+        this.state.update(paths);
+    };
+    StateLinkImpl.prototype.rerender = function (paths) {
         this.state.update(paths);
     };
     StateLinkImpl.prototype.denull = function () {
@@ -799,7 +886,7 @@ var StateLinkImpl = /** @class */ (function () {
             }
             return undefined;
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     Object.defineProperty(StateLinkImpl.prototype, "nested", {
@@ -818,7 +905,7 @@ var StateLinkImpl = /** @class */ (function () {
             }
             return this[NestedCache];
         },
-        enumerable: true,
+        enumerable: false,
         configurable: true
     });
     StateLinkImpl.prototype.nestedArrayImpl = function (currentValue) {
@@ -1003,18 +1090,240 @@ var StateLinkImpl = /** @class */ (function () {
             }
         });
     };
+    Object.defineProperty(StateLinkImpl.prototype, self, {
+        get: function () {
+            var _this = this;
+            var getValueSourceTracked = function () {
+                _this.get(); // mark used
+                return _this.valueSource;
+            };
+            var bootstrapValueSource = this.valueSource; // no need to use this.getUntracked() to refresh
+            if (typeof bootstrapValueSource !== 'object' || bootstrapValueSource === null) {
+                bootstrapValueSource = {};
+            }
+            return proxyWrap(this.path, bootstrapValueSource, getValueSourceTracked, function (_, key) {
+                if (key === StateMarkerID) {
+                    // should be tested before target is obtained
+                    // to keep it clean from usage marker
+                    return _this;
+                }
+                if (typeof key === 'symbol') {
+                    if (key === self) {
+                        return _this;
+                    }
+                    else {
+                        return undefined;
+                    }
+                }
+                else {
+                    if (key === 'toJSON') {
+                        throw new StateLinkInvalidUsageError('toJSON()', _this.path, 'did you mean to use JSON.stringify(state.get()) instead of JSON.stringify(state)?');
+                    }
+                    var currentValue = getValueSourceTracked();
+                    if (typeof currentValue !== 'object' || currentValue === null) {
+                        throw new StateLinkInvalidUsageError('get', _this.path, "target value is not an object to contain properties");
+                    }
+                    if (Array.isArray(currentValue)) {
+                        if (key === 'length') {
+                            return currentValue.length;
+                        }
+                        if (key in Array.prototype) {
+                            return Array.prototype[key];
+                        }
+                        var index = Number(key);
+                        if (!Number.isInteger(index)) {
+                            return undefined;
+                        }
+                    }
+                    return (_this.nested)[key][self];
+                }
+            }, function (_, key, value) {
+                throw new StateLinkInvalidUsageError('set', _this.path, "did you mean to use 'state." + String(key) + "[self].set(value)' instead of 'state." + String(key) + " = value'?");
+            });
+        },
+        enumerable: false,
+        configurable: true
+    });
+    StateLinkImpl.prototype.map = function (action, onPromised, onError, context) {
+        var _this = this;
+        if (!action) {
+            var r = this.denull();
+            if (r) {
+                return r[self];
+            }
+            return r;
+        }
+        var contextArg = typeof onPromised === 'function'
+            ? (typeof onError === 'function' ? context : onError)
+            : onPromised;
+        var runBatch = (function (actionArg) {
+            if (contextArg !== undefined) {
+                var opts = { context: contextArg };
+                try {
+                    _this.state.startBatch(_this.path, opts);
+                    return actionArg();
+                }
+                finally {
+                    _this.state.finishBatch(_this.path, opts);
+                }
+            }
+            else {
+                return actionArg();
+            }
+        });
+        if (typeof onPromised === 'function' && this.promised) {
+            return runBatch(function () {
+                var r = onPromised(_this[self]);
+                if (r === postpone) {
+                    // tslint:disable-next-line: no-any
+                    _this.state.postponeBatch(function () { return _this.map(action, onPromised, onError, context); });
+                }
+                return r;
+            });
+        }
+        if (typeof onError === 'function' && this.error) {
+            return runBatch(function () { return onError(_this.error, _this[self]); });
+        }
+        return runBatch(function () { return action(_this[self]); });
+    };
+    StateLinkImpl.prototype.attach = function (p) {
+        if (typeof p === 'symbol') {
+            var plugin = this.with(p, function () { return undefined; });
+            if (plugin) {
+                var capturedThis_1 = this;
+                var result = [
+                    plugin[1],
+                    // TODO need to create an instance until version 2
+                    // because of the incompatible return types from methods
+                    {
+                        getUntracked: function () {
+                            return capturedThis_1.getUntracked();
+                        },
+                        setUntracked: function (v) {
+                            return [capturedThis_1.setUntracked(v)];
+                        },
+                        mergeUntracked: function (v) {
+                            return capturedThis_1.mergeUntracked(v);
+                        },
+                        rerender: function (paths) {
+                            return capturedThis_1.rerender(paths);
+                        }
+                    }
+                ];
+                return result;
+            }
+            return undefined;
+        }
+        return this.with(p)[self];
+    };
     return StateLinkImpl;
 }());
-function createState(initial) {
+function proxyWrap(path, 
+// tslint:disable-next-line: no-any
+targetBootstrap, 
+// tslint:disable-next-line: no-any
+targetGetter, 
+// tslint:disable-next-line: no-any
+propertyGetter, 
+// tslint:disable-next-line: no-any
+propertySetter) {
+    var onInvalidUsage = function (op) {
+        throw new StateLinkInvalidUsageError(op, path);
+    };
+    return new Proxy(targetBootstrap, {
+        getPrototypeOf: function (target) {
+            // should satisfy the invariants:
+            // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy/handler/getPrototypeOf#Invariants
+            var targetReal = targetGetter();
+            if (targetReal === undefined || targetReal === null) {
+                return null;
+            }
+            return Object.getPrototypeOf(targetReal);
+        },
+        setPrototypeOf: function (target, v) {
+            return onInvalidUsage('setPrototypeOf');
+        },
+        isExtensible: function (target) {
+            // should satisfy the invariants:
+            // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy/handler/isExtensible#Invariants
+            return true; // required to satisfy the invariants of the getPrototypeOf
+            // return Object.isExtensible(target);
+        },
+        preventExtensions: function (target) {
+            return onInvalidUsage('preventExtensions');
+        },
+        getOwnPropertyDescriptor: function (target, p) {
+            var targetReal = targetGetter();
+            if (targetReal === undefined || targetReal === null) {
+                return undefined;
+            }
+            var origin = Object.getOwnPropertyDescriptor(targetReal, p);
+            if (origin && Array.isArray(targetReal) && p in Array.prototype) {
+                return origin;
+            }
+            return origin && {
+                configurable: true,
+                enumerable: origin.enumerable,
+                get: function () { return propertyGetter(undefined, p); },
+                set: undefined
+            };
+        },
+        has: function (target, p) {
+            if (typeof p === 'symbol') {
+                return false;
+            }
+            var targetReal = targetGetter();
+            if (typeof targetReal === 'object' && targetReal !== null) {
+                return p in targetReal;
+            }
+            return false;
+        },
+        get: propertyGetter,
+        set: propertySetter,
+        deleteProperty: function (target, p) {
+            return onInvalidUsage('deleteProperty');
+        },
+        defineProperty: function (target, p, attributes) {
+            return onInvalidUsage('defineProperty');
+        },
+        enumerate: function (target) {
+            var targetReal = targetGetter();
+            if (Array.isArray(targetReal)) {
+                return Object.keys(targetReal).concat('length');
+            }
+            if (targetReal === undefined || targetReal === null) {
+                return [];
+            }
+            return Object.keys(targetReal);
+        },
+        ownKeys: function (target) {
+            var targetReal = targetGetter();
+            if (Array.isArray(targetReal)) {
+                return Object.keys(targetReal).concat('length');
+            }
+            if (targetReal === undefined || targetReal === null) {
+                return [];
+            }
+            return Object.keys(targetReal);
+        },
+        apply: function (target, thisArg, argArray) {
+            return onInvalidUsage('apply');
+        },
+        construct: function (target, argArray, newTarget) {
+            return onInvalidUsage('construct');
+        }
+    });
+}
+function createStore(initial) {
     var initialValue = initial;
     if (typeof initial === 'function') {
         initialValue = initial();
     }
-    if (typeof initialValue === 'object' && initialValue[ProxyMarkerID]) {
+    if (typeof initialValue === 'object' && initialValue !== null && initialValue[ProxyMarkerID]) {
         throw new StateLinkInvalidUsageError("create/useStateLink(state.get() at '/" + initialValue[ProxyMarkerID].path.join('/') + "')", RootPath, 'did you mean to use create/useStateLink(state) OR ' +
             'create/useStateLink(lodash.cloneDeep(state.get())) instead of create/useStateLink(state.get())?');
     }
-    return new State(initialValue);
+    return new Store(initialValue);
 }
 function useSubscribedStateLink(state, path, update, subscribeTarget, disabledTracking) {
     var link = new StateLinkImpl(state, path, update, state.get(path), state.edition);
@@ -1074,6 +1383,13 @@ function useStateLinkUnmounted(source, transform) {
     }
     return source;
 }
+/**
+ * @hidden
+ * @ignore
+ * @internal
+ * @deprecated declared for backward compatibility
+ */
+var None = none;
 
-export { DevTools, DevToolsID, Downgraded, None, StateFragment, StateMemo, createStateLink, useStateLink, useStateLinkUnmounted };
+export { DevTools, DevToolsID, Downgraded, None, StateFragment, StateMarkerID, StateMemo, createState, createStateLink, none, postpone, self, useState, useStateLink, useStateLinkUnmounted };
 //# sourceMappingURL=index.es.js.map
