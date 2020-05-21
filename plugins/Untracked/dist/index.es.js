@@ -1,12 +1,25 @@
+import { StateMarkerID, self } from '@hookstate/core';
+
 var PluginID = Symbol('Untracked');
-function Untracked(self) {
-    if (self) {
-        var link_1 = self.with(PluginID)[0];
-        return {
-            get: function () { return link_1.getUntracked(); },
-            set: function (v) { return link_1.setUntracked(v); },
-            merge: function (v) { return link_1.mergeUntracked(v); }
-        };
+function Untracked($this) {
+    if ($this) {
+        if ($this[StateMarkerID]) {
+            var th = $this;
+            var _a = th[self].attach(PluginID), _1 = _a[0], controls_1 = _a[1];
+            return {
+                get: function () { return controls_1.getUntracked(); },
+                set: function (v) { return controls_1.setUntracked(v); },
+                merge: function (v) { return controls_1.mergeUntracked(v); }
+            };
+        }
+        else {
+            var link_1 = $this.with(PluginID)[0];
+            return {
+                get: function () { return link_1.getUntracked(); },
+                set: function (v) { return link_1.setUntracked(v); },
+                merge: function (v) { return link_1.mergeUntracked(v); }
+            };
+        }
     }
     return {
         id: PluginID,
