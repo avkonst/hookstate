@@ -274,9 +274,11 @@ export interface StateMethods<S> {
     /**
      * For plugin developers only.
      * It is a method to get the instance of the previously attached plugin.
-     * If a plugin has not been attached to a state, it returns undefined.
+     * If a plugin has not been attached to a state,
+     * it returns an Error as the first element.
+     * A plugin may trhow an error to indicate that plugin has not been attached.
      */
-    attach<R = never>(pluginId: symbol, alt?: () => R): [PluginCallbacks, PluginStateControl<S>] | R
+    attach(pluginId: symbol): [PluginCallbacks | Error, PluginStateControl<S>]
 }
 
 /**
@@ -856,10 +858,10 @@ export interface DevToolsExtensions {
 export function DevTools<S>(state: StateLink<S> | State<S>): DevToolsExtensions {
     if (state[StateMarkerID]) {
         const plugin = (state as State<S>)[self].attach(DevToolsID);
-        if (plugin) {
-            return plugin[0] as DevToolsExtensions;
+        if (plugin[0] instanceof Error) {
+            return EmptyDevToolsExtensions;
         }
-        return EmptyDevToolsExtensions;
+        return plugin[0] as DevToolsExtensions;
     } else {
         const plugin = (state as StateLink<S>).with(DevToolsID, () => undefined);
         if (plugin) {
@@ -1962,9 +1964,9 @@ class StateLinkImpl<S> implements StateLink<S>,
     }
 
     attach(plugin: () => Plugin): State<S>
-    attach<R>(pluginId: symbol, alt: () => R): [PluginCallbacks, PluginStateControl<S>] | R
-    attach<R>(p: (() => Plugin) | symbol, alt?: () => R):
-        State<S> | [PluginCallbacks, PluginStateControl<S>] | R {
+    attach(pluginId: symbol): [PluginCallbacks | Error, PluginStateControl<S>]
+    attach(p: (() => Plugin) | symbol):
+        State<S> | [PluginCallbacks | Error, PluginStateControl<S>] {
         if (typeof p === 'function') {
             const pluginMeta = p();
             if (pluginMeta.id === DowngradedID) {
@@ -1975,31 +1977,25 @@ class StateLinkImpl<S> implements StateLink<S>,
             return this[self];
         } else {
             const instance = this.state.getPlugin(p);
-            if (instance) {
-                const capturedThis = this;
-                return [instance, 
-                    // TODO need to create an instance until version 2
-                    // because of the incompatible return types from methods
-                    {
-                        getUntracked() {
-                            return capturedThis.getUntracked()
-                        },
-                        setUntracked(v): Path[] {
-                            return [capturedThis.setUntracked(v)]
-                        },
-                        mergeUntracked(v): Path[] {
-                            return capturedThis.mergeUntracked(v)
-                        },
-                        rerender(paths) {
-                            return capturedThis.rerender(paths);
-                        }
+            const capturedThis = this;
+            return [instance || (new PluginUnknownError(p)), 
+                // TODO need to create an instance until version 2
+                // because of the incompatible return types from methods
+                {
+                    getUntracked() {
+                        return capturedThis.getUntracked()
+                    },
+                    setUntracked(v): Path[] {
+                        return [capturedThis.setUntracked(v)]
+                    },
+                    mergeUntracked(v): Path[] {
+                        return capturedThis.mergeUntracked(v)
+                    },
+                    rerender(paths) {
+                        return capturedThis.rerender(paths);
                     }
-                ];
-            }
-            if (alt) {
-                return alt();
-            }
-            throw new PluginUnknownError(p)
+                }
+            ];
         }
     }
 }

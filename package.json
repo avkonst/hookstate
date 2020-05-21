@@ -52,7 +52,6 @@
         "@types/react-dom": "16.9.8",
         "concat-md": "0.3.5",
         "cross-env": "7.0.2",
-        "jest": "26.0.1",
         "npm-check-updates": "6.0.1",
         "react": "16.9.0",
         "react-dom": "16.13.1",

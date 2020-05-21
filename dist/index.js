@@ -251,6 +251,7 @@ function extractSymbol(s) {
     }
     return result;
 }
+// TODO replace by StateLinkInvalidUsageError
 var PluginUnknownError = /** @class */ (function (_super) {
     __extends(PluginUnknownError, _super);
     function PluginUnknownError(s) {
@@ -1193,34 +1194,37 @@ var StateLinkImpl = /** @class */ (function () {
         return runBatch(function () { return action(_this[self]); });
     };
     StateLinkImpl.prototype.attach = function (p) {
-        if (typeof p === 'symbol') {
-            var plugin = this.with(p, function () { return undefined; });
-            if (plugin) {
-                var capturedThis_1 = this;
-                var result = [
-                    plugin[1],
-                    // TODO need to create an instance until version 2
-                    // because of the incompatible return types from methods
-                    {
-                        getUntracked: function () {
-                            return capturedThis_1.getUntracked();
-                        },
-                        setUntracked: function (v) {
-                            return [capturedThis_1.setUntracked(v)];
-                        },
-                        mergeUntracked: function (v) {
-                            return capturedThis_1.mergeUntracked(v);
-                        },
-                        rerender: function (paths) {
-                            return capturedThis_1.rerender(paths);
-                        }
-                    }
-                ];
-                return result;
+        if (typeof p === 'function') {
+            var pluginMeta = p();
+            if (pluginMeta.id === DowngradedID) {
+                this.isDowngraded = true;
+                return this[self];
             }
-            return undefined;
+            this.state.register(pluginMeta);
+            return this[self];
         }
-        return this.with(p)[self];
+        else {
+            var instance = this.state.getPlugin(p);
+            var capturedThis_1 = this;
+            return [instance || new PluginUnknownError(p), 
+                // TODO need to create an instance until version 2
+                // because of the incompatible return types from methods
+                {
+                    getUntracked: function () {
+                        return capturedThis_1.getUntracked();
+                    },
+                    setUntracked: function (v) {
+                        return [capturedThis_1.setUntracked(v)];
+                    },
+                    mergeUntracked: function (v) {
+                        return capturedThis_1.mergeUntracked(v);
+                    },
+                    rerender: function (paths) {
+                        return capturedThis_1.rerender(paths);
+                    }
+                }
+            ];
+        }
     };
     return StateLinkImpl;
 }());

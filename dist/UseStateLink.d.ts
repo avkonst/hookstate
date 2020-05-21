@@ -225,9 +225,11 @@ export interface StateMethods<S> {
     /**
      * For plugin developers only.
      * It is a method to get the instance of the previously attached plugin.
-     * If a plugin has not been attached to a state, it returns undefined.
+     * If a plugin has not been attached to a state,
+     * it returns an Error as the first element.
+     * A plugin may trhow an error to indicate that plugin has not been attached.
      */
-    attach(pluginId: symbol): [PluginCallbacks, PluginStateControl<S>] | undefined;
+    attach(pluginId: symbol): [PluginCallbacks | Error, PluginStateControl<S>];
 }
 /**
  * Mixin for the [StateMethods](#interfacesstatemethodsmd), which can be destroyed by a client.

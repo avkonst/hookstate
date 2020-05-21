@@ -82,18 +82,18 @@ test('plugin: common flow callbacks', async () => {
     expect(Object.keys(result.current[self].get()[0])).toEqual(['f1', 'f2']);
     expect(messages.slice(4)).toEqual([]);
 
-    (result.current[self].attach(TestPlugin)![0] as { onExtension(): void; }).onExtension();
+    (result.current[self].attach(TestPlugin)[0] as { onExtension(): void; }).onExtension();
     expect(messages.slice(4)).toEqual(['onExtension called']);
 
     result.current[self].map((s) => {
         messages.push(`batch executed, state: ${JSON.stringify(s[self].get())}`)
     }, 'custom context')
     expect(messages.slice(5)).toEqual(['onBatchStart called, []: [{\"f1\":2,\"f2\":\"str2\"}], context: \"custom context\"', 'batch executed, state: [{\"f1\":2,\"f2\":\"str2\"}]', 'onBatchFinish called, []: [{\"f1\":2,\"f2\":\"str2\"}], context: \"custom context\"'])
-    expect(result.current[self].attach(TestPluginUnknown)).toEqual(undefined)
+    expect(result.current[self].attach(TestPluginUnknown)[0] instanceof Error).toEqual(true)
 
     expect(result.current[self].get()[0].f1).toStrictEqual(2);
     expect(result.current[self].get()[0].f2).toStrictEqual('str2');
-    const controls = result.current[self].attach(TestPlugin)![1];
+    const controls = result.current[self].attach(TestPlugin)[1];
     expect(renderTimes).toStrictEqual(4);
     act(() => {
         controls.setUntracked([{ f1: 0, f2: 'str3' }])
@@ -104,7 +104,7 @@ test('plugin: common flow callbacks', async () => {
     expect(result.current[self].get()[0].f1).toStrictEqual(0);
     expect(result.current[self].get()[0].f2).toStrictEqual('str3');
     expect(renderTimes).toStrictEqual(4);
-    const controlsNested = result.current[0].f2[self].attach(TestPlugin)![1];
+    const controlsNested = result.current[0].f2[self].attach(TestPlugin)[1];
     act(() => {
         controlsNested.mergeUntracked('str2')
     })
@@ -230,10 +230,10 @@ test('plugin: common flow callbacks global state', async () => {
     expect(Object.keys(result.current[self].get()[0])).toEqual(['f1', 'f2']);
     expect(messages.slice(3)).toEqual([]);
 
-    (result.current[self].attach(TestPlugin)![0] as { onExtension(): void; }).onExtension();
+    (result.current[self].attach(TestPlugin)[0] as { onExtension(): void; }).onExtension();
     expect(messages.slice(3)).toEqual(['onExtension called']);
 
-    expect(result.current[self].attach(TestPluginUnknown)).toEqual(undefined)
+    expect(result.current[self].attach(TestPluginUnknown)[0] instanceof Error).toEqual(true)
 
     unmount()
     expect(messages.slice(4)).toEqual([])
@@ -324,7 +324,7 @@ test('plugin: common flow callbacks devtools', async () => {
         DevTools(result.current).log('onExtension called');
         expect(messages.slice(3)).toEqual(['LABELLED onExtension called']);
 
-        expect(result.current[self].attach(TestPluginUnknown)).toEqual(undefined)
+        expect(result.current[self].attach(TestPluginUnknown)[0] instanceof Error).toEqual(true)
 
         unmount()
         expect(messages.slice(4)).toEqual(['LABELLED onDestroy called, [{\"f1\":2,\"f2\":\"str\"}]'])
@@ -416,7 +416,7 @@ test('plugin: common flow callbacks global state devtools', async () => {
         DevTools(result.current).log('onExtension called');
         expect(messages.slice(4)).toEqual(['LABELLED2 onExtension called']);
 
-        expect(result.current[self].attach(TestPluginUnknown)).toEqual(undefined)
+        expect(result.current[self].attach(TestPluginUnknown)[0] instanceof Error).toEqual(true)
 
         unmount()
         expect(messages.slice(5)).toEqual([])
