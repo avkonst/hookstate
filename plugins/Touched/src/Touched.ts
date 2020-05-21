@@ -1,5 +1,4 @@
-
-import { Path, Plugin, StateLink, Downgraded, StateValueAtPath, PluginCallbacks, PluginCallbacksOnSetArgument } from '@hookstate/core';
+import { Path, Plugin, StateLink, Downgraded, StateValueAtPath, PluginCallbacks, PluginCallbacksOnSetArgument, State, StateMarkerID, self, StateMethods } from '@hookstate/core';
 
 import { Initial } from '@hookstate/initial';
 
@@ -53,7 +52,7 @@ class TouchedPluginInstance implements PluginCallbacks {
         }
         return undefined;
     }
-    touched = (l: StateLink<StateValueAtPath>): boolean => {
+    touched = (l: StateMethods<StateValueAtPath>): boolean => {
         const t = this.getTouched(l.path);
         if (t !== undefined) {
             // For optimization purposes, there is nothing being used from the link value
@@ -61,28 +60,42 @@ class TouchedPluginInstance implements PluginCallbacks {
             // when the source value is updated.
             // We do the trick to fix it, we mark the value being 'deeply used',
             // so any changes for this value or any nested will trigger rerender.
-            const _ = l.with(Downgraded).value;
+            const _ = l.attach(Downgraded)[self].value;
             return t;
         }
-        return Initial(l).modified();
+        return Initial(l[self]).modified();
     }
 }
 
 // tslint:disable-next-line: function-name
 export function Touched(): Plugin;
-export function Touched<S>(self: StateLink<S>): TouchedExtensions;
-export function Touched<S>(self?: StateLink<S>): Plugin | TouchedExtensions {
-    if (self) {
-        const [link, instance] = self.with(PluginID);
-        const inst = instance as TouchedPluginInstance;
-        return {
-            touched: () => inst.touched(link),
-            untouched: () => !inst.touched(link)
+export function Touched<S>($this: StateLink<S>): TouchedExtensions;
+export function Touched<S>($this: State<S>): TouchedExtensions;
+export function Touched<S>($this?: State<S> | StateLink<S>): Plugin | TouchedExtensions {
+    if ($this) {
+        if ($this[StateMarkerID]) {
+            const th = $this as State<S>;
+            const [instance, controls] = th[self].attach(PluginID);
+            if (instance instanceof Error) {
+                throw instance
+            }
+            const inst = instance as TouchedPluginInstance;
+            return {
+                touched: () => inst.touched(th[self]),
+                untouched: () => !inst.touched(th[self])
+            }
+        } else {
+            const [link, instance] = ($this as StateLink<S>).with(PluginID);
+            const inst = instance as TouchedPluginInstance;
+            return {
+                touched: () => inst.touched(link),
+                untouched: () => !inst.touched(link)
+            }
         }
     }
     return {
         id: PluginID,
-        create: () => {
+        init: () => {
             return new TouchedPluginInstance();
         }
     }

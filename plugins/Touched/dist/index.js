@@ -54,10 +54,10 @@ var TouchedPluginInstance = /** @class */ (function () {
                 // when the source value is updated.
                 // We do the trick to fix it, we mark the value being 'deeply used',
                 // so any changes for this value or any nested will trigger rerender.
-                var _1 = l.with(core.Downgraded).value;
+                var _1 = l.attach(core.Downgraded)[core.self].value;
                 return t;
             }
-            return initial.Initial(l).modified();
+            return initial.Initial(l[core.self]).modified();
         };
     }
     TouchedPluginInstance.prototype.onSet = function (p) {
@@ -65,18 +65,32 @@ var TouchedPluginInstance = /** @class */ (function () {
     };
     return TouchedPluginInstance;
 }());
-function Touched(self) {
-    if (self) {
-        var _a = self.with(PluginID), link_1 = _a[0], instance = _a[1];
-        var inst_1 = instance;
-        return {
-            touched: function () { return inst_1.touched(link_1); },
-            untouched: function () { return !inst_1.touched(link_1); }
-        };
+function Touched($this) {
+    if ($this) {
+        if ($this[core.StateMarkerID]) {
+            var th_1 = $this;
+            var _a = th_1[core.self].attach(PluginID), instance = _a[0], controls = _a[1];
+            if (instance instanceof Error) {
+                throw instance;
+            }
+            var inst_1 = instance;
+            return {
+                touched: function () { return inst_1.touched(th_1[core.self]); },
+                untouched: function () { return !inst_1.touched(th_1[core.self]); }
+            };
+        }
+        else {
+            var _b = $this.with(PluginID), link_1 = _b[0], instance = _b[1];
+            var inst_2 = instance;
+            return {
+                touched: function () { return inst_2.touched(link_1); },
+                untouched: function () { return !inst_2.touched(link_1); }
+            };
+        }
     }
     return {
         id: PluginID,
-        create: function () {
+        init: function () {
             return new TouchedPluginInstance();
         }
     };
