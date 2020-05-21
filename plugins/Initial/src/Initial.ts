@@ -5,7 +5,11 @@ import {
     Plugin,
     StateLink,
     StateValueAtPath,
-    StateValueAtRoot
+    StateValueAtRoot,
+    State,
+    self,
+    StateMarkerID,
+    StateMethods
 } from '@hookstate/core';
 
 import isEqual from 'lodash.isequal';
@@ -29,8 +33,8 @@ class InitialPluginInstance {
         });
         return result;
     }
-    getModified = (l: StateLink<StateValueAtPath>): boolean => {
-        l.with(Downgraded)
+    getModified = (l: StateMethods<StateValueAtPath>): boolean => {
+        l.attach(Downgraded)
         return !isEqual(l.value, this.getInitial(l.path))
     }
 }
@@ -39,15 +43,30 @@ const PluginID = Symbol('Initial');
 
 // tslint:disable-next-line: function-name
 export function Initial(): Plugin;
-export function Initial<S>(self: StateLink<S>): InitialExtensions<S>;
-export function Initial<S>(self?: StateLink<S>): Plugin | InitialExtensions<S> {
-    if (self) {
-        const [link, instance] = self.with(PluginID);
-        const inst = instance as InitialPluginInstance;
-        return {
-            get: () => inst.getInitial(link.path),
-            modified: () => inst.getModified(link),
-            unmodified: () => !inst.getModified(link)
+export function Initial<S>($this: StateLink<S>): InitialExtensions<S>;
+export function Initial<S>($this: State<S>): InitialExtensions<S>;
+export function Initial<S>($this?: StateLink<S> | State<S>): Plugin | InitialExtensions<S> {
+    if ($this) {
+        if ($this[StateMarkerID]) {
+            const $th = $this as State<S>
+            const [instance, link] = $th[self].attach(PluginID);
+            if (instance instanceof Error) {
+                throw instance;
+            }
+            const inst = instance as InitialPluginInstance;
+            return {
+                get: () => inst.getInitial($th[self].path),
+                modified: () => inst.getModified($th[self]),
+                unmodified: () => !inst.getModified($th[self])
+            }
+        } else {
+            const [link, instance] = ($this as StateLink<S>).with(PluginID);
+            const inst = instance as InitialPluginInstance;
+            return {
+                get: () => inst.getInitial(link.path),
+                modified: () => inst.getModified(link),
+                unmodified: () => !inst.getModified(link)
+            }
         }
     }
     return {
