@@ -7,7 +7,11 @@ import {
     PluginCallbacks,
     StateLink,
     StateLinkPlugable,
-    PluginCallbacksOnSetArgument
+    PluginCallbacksOnSetArgument,
+    StateMethods,
+    State,
+    StateMarkerID,
+    self
 } from '@hookstate/core';
 
 export interface LoggerExtensions {
@@ -32,13 +36,13 @@ class LoggerPluginInstance implements PluginCallbacks {
             p);
     }
 
-    log(l: StateLink<StateValueAtPath> & StateLinkPlugable<StateValueAtPath>) {
+    log(path: Path, l: Pick<StateLinkPlugable<StateValueAtPath>, 'getUntracked'>) {
         // tslint:disable-next-line: no-console
         return console.log(
-            `[hookstate]: current value at path '/${l.path.join('/')}: ` +
+            `[hookstate]: current value at path '/${path.join('/')}: ` +
             `${this.toJsonTrimmed(l.getUntracked())}'`,
             {
-                path: l.path,
+                path: path,
                 value: l.getUntracked()
             });
     }
@@ -48,18 +52,33 @@ const PluginID = Symbol('Logger');
 
 // tslint:disable-next-line: function-name
 export function Logger(): Plugin;
-export function Logger<S>(self: StateLink<S>): LoggerExtensions;
-export function Logger<S>(self?: StateLink<S>): Plugin | LoggerExtensions {
-    if (self) {
-        const [link, instance] = self.with(PluginID);
-        const inst = instance as LoggerPluginInstance;
-        return {
-            log: () => inst.log(link)
+export function Logger<S>($this: StateLink<S>): LoggerExtensions;
+export function Logger<S>($this: State<S>): LoggerExtensions;
+export function Logger<S>($this?: StateLink<S> | State<S>): Plugin | LoggerExtensions {
+    if ($this) {
+        if ($this[StateMarkerID]) {
+            const th = $this as State<S>
+            let [instance, controls] = th[self].attach(PluginID);
+            if (instance instanceof Error) {
+                // auto attach instead of throwing
+                Logger(th)
+                instance = th[self].attach(PluginID)[0];
+            }
+            const inst = instance as LoggerPluginInstance;
+            return {
+                log: () => inst.log(th[self].path, controls)
+            }
+        } else {
+            const [link, instance] = ($this as StateLink<S>).with(PluginID);
+            const inst = instance as LoggerPluginInstance;
+            return {
+                log: () => inst.log(link.path, link)
+            }
         }
     }
     return {
         id: PluginID,
-        create: () => {
+        init: () => {
             // tslint:disable-next-line: no-console
             console.log(`[hookstate]: logger attached`);
             return new LoggerPluginInstance();

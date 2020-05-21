@@ -1,6 +1,6 @@
 {
     "name": "@hookstate/logger",
-    "version": "1.5.2",
+    "version": "1.8.0",
     "description": "Plugin for @hookstate/core to enable logging.",
     "license": "MIT",
     "author": {
@@ -35,10 +35,10 @@
     },
     "dependencies": {},
     "peerDependencies": {
-        "@hookstate/core": "^1.8.1"
+        "@hookstate/core": "^1.8.3"
     },
     "devDependencies": {
-        "@hookstate/core": "^1.8.1",
+        "@hookstate/core": "1.8.3",
         "@testing-library/react": "10.0.4",
         "@testing-library/react-hooks": "3.2.1",
         "@types/jest": "25.2.3",
@@ -49,7 +49,6 @@
         "babel-core": "6.26.3",
         "babel-runtime": "6.26.0",
         "cross-env": "7.0.2",
-        "jest": "26.0.1",
         "jest-mock-console": "^1.0.0",
         "npm-check-updates": "6.0.1",
         "react": "16.13.1",

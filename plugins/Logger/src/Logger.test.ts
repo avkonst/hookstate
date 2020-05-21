@@ -1,4 +1,4 @@
-import { useStateLink } from '@hookstate/core';
+import { useState, self } from '@hookstate/core';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import { Logger } from './Logger';
@@ -11,7 +11,7 @@ test('logger: should log objects untracked', async () => {
         let renderTimes = 0
         const { result } = renderHook(() => {
             renderTimes += 1;
-            return useStateLink({ prop: 1 }).with(Logger)
+            return useState({ prop: 1 })[self].attach(Logger)
         });
         // tslint:disable-next-line: no-console
         expect(console.log).toHaveBeenCalledTimes(1);
@@ -22,7 +22,7 @@ test('logger: should log objects untracked', async () => {
         expect(console.log).toHaveBeenCalledTimes(2);
 
         act(() => {
-            result.current.set(p => ({ prop: p.prop + 1 }));
+            result.current[self].set(p => ({ prop: p.prop + 1 }));
         });
         // logger should not mark objects as used
         expect(renderTimes).toStrictEqual(1);
@@ -50,7 +50,7 @@ test('logger: should log objects untracked', async () => {
         ]);
 
         act(() => {
-            result.current.nested.prop.set(p => p + 1);
+            result.current.prop[self].set(p => p + 1);
         });
         // logger should not mark objects as used
         expect(renderTimes).toStrictEqual(1);
@@ -80,7 +80,7 @@ test('logger: should log undefined prop', async () => {
         let renderTimes = 0
         const { result } = renderHook(() => {
             renderTimes += 1;
-            return useStateLink<{ prop: undefined | null }>({ prop: undefined }).with(Logger)
+            return useState<{ prop: undefined | null }>({ prop: undefined })[self].attach(Logger)
         });
         // tslint:disable-next-line: no-console
         expect(console.log).toHaveBeenCalledTimes(1);
@@ -91,7 +91,7 @@ test('logger: should log undefined prop', async () => {
         expect(console.log).toHaveBeenCalledTimes(2);
 
         act(() => {
-            result.current.set(p => ({ prop: null }));
+            result.current[self].set(p => ({ prop: null }));
         });
         // logger should not mark objects as used
         expect(renderTimes).toStrictEqual(1);
@@ -133,7 +133,7 @@ test('logger: should log undefined value', async () => {
         let renderTimes = 0
         const { result } = renderHook(() => {
             renderTimes += 1;
-            return useStateLink<null | undefined>(undefined).with(Logger)
+            return useState<null | undefined>(undefined)[self].attach(Logger)
         });
         // tslint:disable-next-line: no-console
         expect(console.log).toHaveBeenCalledTimes(1);
@@ -144,7 +144,7 @@ test('logger: should log undefined value', async () => {
         expect(console.log).toHaveBeenCalledTimes(2);
 
         act(() => {
-            result.current.set(p => null);
+            result.current[self].set(p => null);
         });
         // logger should not mark objects as used
         expect(renderTimes).toStrictEqual(1);
