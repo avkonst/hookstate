@@ -276,7 +276,7 @@ export interface StateMethods<S> {
      * It is a method to get the instance of the previously attached plugin.
      * If a plugin has not been attached to a state, it returns undefined.
      */
-    attach(pluginId: symbol): [PluginCallbacks, PluginStateControl<S>] | undefined
+    attach<R = never>(pluginId: symbol, alt?: () => R): [PluginCallbacks, PluginStateControl<S>] | R
 }
 
 /**
@@ -894,6 +894,7 @@ function extractSymbol(s: symbol) {
     return result;
 }
 
+// TODO replace by StateLinkInvalidUsageError
 class PluginUnknownError extends Error {
     constructor(s: symbol) {
         super(`Plugin '${extractSymbol(s)}' has not been attached to the StateInf or StateLink. ` +
@@ -1961,16 +1962,22 @@ class StateLinkImpl<S> implements StateLink<S>,
     }
 
     attach(plugin: () => Plugin): State<S>
-    attach(pluginId: symbol): [PluginCallbacks, PluginStateControl<S>] | undefined
-    attach(p: (() => Plugin) | symbol):
-        State<S> | [PluginCallbacks, PluginStateControl<S>] | undefined {
-
-        if (typeof p === 'symbol') {
-            const plugin = this.with(p, () => undefined);
-            if (plugin) {
+    attach<R>(pluginId: symbol, alt: () => R): [PluginCallbacks, PluginStateControl<S>] | R
+    attach<R>(p: (() => Plugin) | symbol, alt?: () => R):
+        State<S> | [PluginCallbacks, PluginStateControl<S>] | R {
+        if (typeof p === 'function') {
+            const pluginMeta = p();
+            if (pluginMeta.id === DowngradedID) {
+                this.isDowngraded = true;
+                return this[self];
+            }
+            this.state.register(pluginMeta);
+            return this[self];
+        } else {
+            const instance = this.state.getPlugin(p);
+            if (instance) {
                 const capturedThis = this;
-                const result: [PluginCallbacks, PluginStateControl<S>] | undefined =  [
-                    plugin[1],
+                return [instance, 
                     // TODO need to create an instance until version 2
                     // because of the incompatible return types from methods
                     {
@@ -1987,12 +1994,13 @@ class StateLinkImpl<S> implements StateLink<S>,
                             return capturedThis.rerender(paths);
                         }
                     }
-                ]
-                return result;
+                ];
             }
-            return undefined;
+            if (alt) {
+                return alt();
+            }
+            throw new PluginUnknownError(p)
         }
-        return this.with(p)[self];
     }
 }
 
