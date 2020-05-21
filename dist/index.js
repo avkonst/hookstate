@@ -215,10 +215,10 @@ var DevToolsID = Symbol('DevTools');
 function DevTools(state) {
     if (state[StateMarkerID]) {
         var plugin = state[self].attach(DevToolsID);
-        if (plugin) {
-            return plugin[0];
+        if (plugin[0] instanceof Error) {
+            return EmptyDevToolsExtensions;
         }
-        return EmptyDevToolsExtensions;
+        return plugin[0];
     }
     else {
         var plugin = state.with(DevToolsID, function () { return undefined; });
@@ -1206,7 +1206,7 @@ var StateLinkImpl = /** @class */ (function () {
         else {
             var instance = this.state.getPlugin(p);
             var capturedThis_1 = this;
-            return [instance || new PluginUnknownError(p), 
+            return [instance || (new PluginUnknownError(p)), 
                 // TODO need to create an instance until version 2
                 // because of the incompatible return types from methods
                 {
