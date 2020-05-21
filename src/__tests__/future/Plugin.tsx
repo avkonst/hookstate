@@ -96,7 +96,7 @@ test('plugin: common flow callbacks', async () => {
     const controls = result.current[self].attach(TestPlugin)![1];
     expect(renderTimes).toStrictEqual(4);
     act(() => {
-        controls.set([{ f1: 0, f2: 'str3' }])
+        controls.setUntracked([{ f1: 0, f2: 'str3' }])
     })
     expect(renderTimes).toStrictEqual(4);
     expect(messages.slice(8)).toEqual(['onSet called, []: [{\"f1\":0,\"f2\":\"str3\"}], [{\"f1\":2,\"f2\":\"str2\"}] => [{\"f1\":0,\"f2\":\"str3\"}], undefined']);
@@ -106,7 +106,7 @@ test('plugin: common flow callbacks', async () => {
     expect(renderTimes).toStrictEqual(4);
     const controlsNested = result.current[0].f2[self].attach(TestPlugin)![1];
     act(() => {
-        controlsNested.merge('str2')
+        controlsNested.mergeUntracked('str2')
     })
     expect(renderTimes).toStrictEqual(4);
     expect(messages.slice(9)).toEqual(
