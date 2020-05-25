@@ -890,6 +890,19 @@ var StateLinkImpl = /** @class */ (function () {
         enumerable: false,
         configurable: true
     });
+    StateLinkImpl.prototype.child = function (key) {
+        this.nestedLinksCache = this.nestedLinksCache || {};
+        var cachehit = this.nestedLinksCache[key];
+        if (cachehit) {
+            return cachehit;
+        }
+        var r = new StateLinkImpl(this.state, this.path.slice().concat(key), this.onUpdateUsed, this.valueSource[key], this.valueEdition);
+        if (this.isDowngraded) {
+            r.isDowngraded = true;
+        }
+        this.nestedLinksCache[key] = r;
+        return r;
+    };
     Object.defineProperty(StateLinkImpl.prototype, "nested", {
         get: function () {
             var currentValue = this.getUntracked();
@@ -1094,15 +1107,10 @@ var StateLinkImpl = /** @class */ (function () {
     Object.defineProperty(StateLinkImpl.prototype, self, {
         get: function () {
             var _this = this;
-            var getValueSourceTracked = function () {
-                _this.get(); // mark used
+            return proxyWrap(this.path, this.valueSource, function () {
+                _this.get(); // get latest & mark used
                 return _this.valueSource;
-            };
-            var bootstrapValueSource = this.valueSource; // no need to use this.getUntracked() to refresh
-            if (typeof bootstrapValueSource !== 'object' || bootstrapValueSource === null) {
-                bootstrapValueSource = {};
-            }
-            return proxyWrap(this.path, bootstrapValueSource, getValueSourceTracked, function (_, key) {
+            }, function (_, key) {
                 if (key === StateMarkerID) {
                     // should be tested before target is obtained
                     // to keep it clean from usage marker
@@ -1120,10 +1128,41 @@ var StateLinkImpl = /** @class */ (function () {
                     if (key === 'toJSON') {
                         throw new StateLinkInvalidUsageError('toJSON()', _this.path, 'did you mean to use JSON.stringify(state.get()) instead of JSON.stringify(state)?');
                     }
-                    var currentValue = getValueSourceTracked();
-                    if (typeof currentValue !== 'object' || currentValue === null) {
-                        throw new StateLinkInvalidUsageError('get', _this.path, "target value is not an object to contain properties");
+                    var currentValue = _this.getUntracked(true);
+                    if ( // if currentValue is primitive type
+                    (typeof currentValue !== 'object' || currentValue === null) &&
+                        // if promised, it will be none
+                        currentValue !== none) {
+                        switch (key) {
+                            case 'path':
+                                return _this.path;
+                            case 'keys':
+                                return _this.keys;
+                            case 'value':
+                                return _this.value;
+                            case 'get':
+                                return function () { return _this.get(); };
+                            case 'set':
+                                return function (p) { return _this.set(p); };
+                            case 'merge':
+                                return function (p) { return _this.merge(p); };
+                            case 'map':
+                                // tslint:disable-next-line: no-any
+                                return function () {
+                                    var args = [];
+                                    for (var _i = 0; _i < arguments.length; _i++) {
+                                        args[_i] = arguments[_i];
+                                    }
+                                    return _this.map(args[0], args[1], args[2], args[3]);
+                                };
+                            case 'attach':
+                                return function (p) { return _this.attach(p); };
+                            default:
+                                _this.get(); // mark used
+                                throw new StateLinkInvalidUsageError('get', _this.path, "target value is not an object to contain properties");
+                        }
                     }
+                    _this.get(); // mark used
                     if (Array.isArray(currentValue)) {
                         if (key === 'length') {
                             return currentValue.length;
@@ -1135,8 +1174,11 @@ var StateLinkImpl = /** @class */ (function () {
                         if (!Number.isInteger(index)) {
                             return undefined;
                         }
+                        return _this.child(index)[self];
+                        // return (this.nested)![index][self];
                     }
-                    return (_this.nested)[key][self];
+                    return _this.child(key.toString())[self];
+                    // return (this.nested)![key.toString()][self];
                 }
             }, function (_, key, value) {
                 throw new StateLinkInvalidUsageError('set', _this.path, "did you mean to use 'state." + String(key) + "[self].set(value)' instead of 'state." + String(key) + " = value'?");
@@ -1234,6 +1276,9 @@ propertySetter) {
     var onInvalidUsage = function (op) {
         throw new StateLinkInvalidUsageError(op, path);
     };
+    if (typeof targetBootstrap !== 'object' || targetBootstrap === null) {
+        targetBootstrap = {};
+    }
     return new Proxy(targetBootstrap, {
         getPrototypeOf: function (target) {
             // should satisfy the invariants:

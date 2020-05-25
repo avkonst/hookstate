@@ -312,7 +312,14 @@ export interface StateMixinDestroy {
  */
 export type State<S> = StateMixin<S> & (
     S extends ReadonlyArray<(infer U)> ? ReadonlyArray<State<U>> :
-    S extends (undefined | null | number | string | boolean | bigint) ?
+    // workaround for typescript unfolding State<boolean> to 
+    // State<true> | State<false>, which results in broken type information
+    // for direct state methods.
+    // Note: this is covered by tests, so if you remove next 2 lines
+    // you will see where it breaks the compilation
+    S extends (true | false) ?
+        Omit<StateMethods<boolean>, keyof StateMixin<S>> :
+    S extends (undefined | null | number | boolean | string | bigint) ?
         Omit<StateMethods<S>, keyof StateMixin<S>> :
     S extends object ? { readonly [K in keyof Required<S>]: State<S[K]>; } :
     {}

@@ -257,7 +257,7 @@ export interface StateMixinDestroy {
 /**
  * Type of a result of [createState](#createstate) and [useState](#usestate) functions
  */
-export declare type State<S> = StateMixin<S> & (S extends ReadonlyArray<(infer U)> ? ReadonlyArray<State<U>> : S extends object ? {
+export declare type State<S> = StateMixin<S> & (S extends ReadonlyArray<(infer U)> ? ReadonlyArray<State<U>> : S extends (true | false) ? Omit<StateMethods<boolean>, keyof StateMixin<S>> : S extends (undefined | null | number | boolean | string | bigint) ? Omit<StateMethods<S>, keyof StateMixin<S>> : S extends object ? {
     readonly [K in keyof Required<S>]: State<S[K]>;
 } : {});
 /**

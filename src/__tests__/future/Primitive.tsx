@@ -19,6 +19,22 @@ test('primitive: should rerender used', async () => {
     expect(result.current.get()).toStrictEqual(1);
 });
 
+test('primitive: should rerender used (boolean)', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useState(true)
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(result.current.get()).toStrictEqual(true);
+
+    act(() => {
+        result.current.set(p => !p);
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(result.current.get()).toStrictEqual(false);
+});
+
 test('primitive: should rerender used when set to the same', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {

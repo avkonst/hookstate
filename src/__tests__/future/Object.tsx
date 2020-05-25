@@ -16,10 +16,31 @@ test('object: should rerender used', async () => {
     expect(result.current[self].get().field1).toStrictEqual(0);
 
     act(() => {
-        result.current.field1[self].set(p => p + 1);
+        result.current.field1.set(p => p + 1);
     });
     expect(renderTimes).toStrictEqual(2);
     expect(result.current[self].get().field1).toStrictEqual(1);
+    expect(Object.keys(result.current)).toEqual(['field1', 'field2']);
+    expect(Object.keys(result.current[self].get())).toEqual(['field1', 'field2']);
+});
+
+test('object: should rerender used (boolean-direct)', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useState({
+            field1: true,
+            field2: 'str'
+        })
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(result.current[self].get().field1).toStrictEqual(true);
+
+    act(() => {
+        result.current.field1.set(p => !p);
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(result.current[self].get().field1).toStrictEqual(false);
     expect(Object.keys(result.current)).toEqual(['field1', 'field2']);
     expect(Object.keys(result.current[self].get())).toEqual(['field1', 'field2']);
 });
