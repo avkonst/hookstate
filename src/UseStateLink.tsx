@@ -79,7 +79,7 @@ export type InferredStateKeysType<S> =
  * 
  * @typeparam S Type of a value of a state
  */
-export type InferredStateOrNullType<S> =
+export type InferredStateDenullType<S> =
     S extends undefined ? undefined :
     S extends null ? null : State<S>;
 
@@ -269,7 +269,7 @@ export interface StateMethods<S> {
      * If state value is null or undefined, returns state value.
      * Otherwise, it returns this state instance but
      * with null and undefined removed from the type parameter.
-     * It is very useful to handle states potentially holding undefined values.
+     * It is very useful to handle states potentially holding undefined or null values.
      * For example:
      * 
      * ```tsx
@@ -280,7 +280,7 @@ export interface StateMethods<S> {
      * }
      * ```
      */
-    map(): InferredStateOrNullType<S>;
+    map(): InferredStateDenullType<S>;
 
     /**
      * Adds plugin to the state.
@@ -2002,19 +2002,19 @@ class StateLinkImpl<S> implements StateLink<S>,
         action: (s: State<S>) => R,
         context?: Exclude<C, Function>
     ): R;
-    map(): InferredStateOrNullType<S>;
+    map(): InferredStateDenullType<S>;
     map<R, RL, RE, C>(
         action?: (s: State<S>) => R,
         onPromised?: ((s: State<S>) => RL) | Exclude<C, Function>,
         onError?: ((e: StateErrorAtRoot, s: State<S>) => RE) | Exclude<C, Function>,
         context?: Exclude<C, Function>
-    ): InferredStateOrNullType<S> | R | RL | RE {
+    ): InferredStateDenullType<S> | R | RL | RE {
         if (!action) {
             const r = this.denull();
             if (r) {
-                return r[self] as InferredStateOrNullType<S>;
+                return r[self] as InferredStateDenullType<S>;
             }
-            return r as unknown as InferredStateOrNullType<S>;
+            return r as unknown as InferredStateDenullType<S>;
         }
 
         const contextArg = typeof onPromised === 'function'
