@@ -17,21 +17,19 @@ const App: React.FC = () => {
       }}>
         <div style={{ minWidth: 400, maxWidth: 800, padding: 20 }}>
           <div style={{ marginBottom: 30 }}>
-            <a
+            This is a sample <a
               style={{ color: '#09d3ac' }}
               href="https://github.com/avkonst/hookstate"
               target="_blank"
               rel="noopener noreferrer"
-            >
-              Hookstate
-            </a> is simple to learn, but very powerfull and incredibly fast state management for React that is based on hooks.
+            >Hookstate</a> application.
             <br/><span style={{ fontSize: '0.7em' }}>
-              This is a sample application with <a
+              Source code is available on <a
                 style={{ color: '#09d3ac' }}
                 href="https://github.com/avkonst/hookstate/tree/master/hookstate.js.org/demos/todolist"
                 target="_blank"
                 rel="noopener noreferrer"
-              >source code</a> available on Github. 
+              >GitHub</a>. 
             </span>
           </div>
           <SettingsViewer />
