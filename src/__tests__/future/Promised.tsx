@@ -37,6 +37,96 @@ test('primitive: should rerender used on promise resolve', async () => {
     expect(result.current[self].get()).toEqual(100);
 });
 
+test('array: should rerender used on promise resolve', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useState([0])
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(result.current[0].get()).toStrictEqual(0);
+
+    const promise = new Promise<number[]>(resolve => setTimeout(() => {
+        act(() => resolve([100]))
+    }, 500))
+    act(() => {
+        result.current[self].set(promise);
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(result.current[self].map(() => false, () => true)).toStrictEqual(true);
+    expect(() => result.current[self].map(() => false, (s) => s[self].keys, e => e))
+        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+    expect(() => result.current[self].get())
+        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+
+    expect(() => result.current[self].set([200]))
+        .toThrow('StateLink is used incorrectly. Attempted \'write promised state\' at \'/\'')
+        
+    await act(async () => {
+        await promise;
+    })
+    expect(renderTimes).toStrictEqual(3);
+    expect(result.current[self].map(() => false, () => true)).toStrictEqual(false);
+    expect(result.current[self].map(() => false, (s) => s[self].value, e => e)).toEqual(false);
+    expect(result.current[self].get()).toEqual([100]);
+});
+
+test('array: should rerender used on promise resolve (global)', async () => {
+    let renderTimes = 0
+    const state = createState([0])
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useState(state)
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(result.current[0].get()).toStrictEqual(0);
+
+    const promise = new Promise<number[]>(resolve => setTimeout(() => {
+        act(() => resolve([100]))
+    }, 500))
+    act(() => {
+        result.current[self].set(promise);
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(result.current[self].map(() => false, () => true)).toStrictEqual(true);
+    expect(() => result.current[self].map(() => false, (s) => s[self].keys, e => e))
+        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+    expect(() => result.current[self].get())
+        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+
+    expect(() => result.current[self].set([200]))
+        .toThrow('StateLink is used incorrectly. Attempted \'write promised state\' at \'/\'')
+        
+    await act(async () => {
+        await promise;
+    })
+    expect(renderTimes).toStrictEqual(3);
+    expect(result.current[self].map(() => false, () => true)).toStrictEqual(false);
+    expect(result.current[self].map(() => false, (s) => s[self].value, e => e)).toEqual(false);
+    expect(result.current[self].get()).toEqual([100]);
+});
+
+test('array: should rerender used on promise resolve (global promise)', async () => {
+    let renderTimes = 0
+    const state = createState(new Promise<number[]>(resolve => setTimeout(() => {
+        act(() => resolve([100]))
+    }, 500)))
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useState(state)
+    });
+    expect(renderTimes).toStrictEqual(1);
+
+    expect(result.current[self].map(() => false, () => true)).toStrictEqual(true);
+    expect(() => result.current[self].map(() => false, (s) => s[self].keys, e => e))
+        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+    expect(() => result.current[self].get())
+        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+
+    expect(() => result.current[self].set([200]))
+        .toThrow('StateLink is used incorrectly. Attempted \'write promised state\' at \'/\'')
+});
+
 test('primitive: should rerender used on promise resolve manual', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {

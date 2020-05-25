@@ -1,13 +1,12 @@
-import { createStateLink, useStateLink } from '@hookstate/core';
+import { createState, useState, self } from '@hookstate/core';
 
-const state = createStateLink({
+export const useSettingsState = createState({
     isEditableInline: true,
     isScopedUpdateEnabled: true,
     isHighlightUpdatesEnabled: true
-})
+})[self].map(s => () => {
+    const state = useState(s)
 
-export function useSettingsState() {
-    return useStateLink(state,
     // This function wraps the state by an interface,
     // i.e. the state link is not accessible directly outside of this module.
     // The state for tasks in TasksState.ts exposes the state directly.
@@ -15,24 +14,24 @@ export function useSettingsState() {
     // depending on your circumstances. Apply your engineering judgement
     // to choose the best option. If unsure, exposing the state directly
     // like it is done in the TasksState.ts is a safe bet.        
-    s => ({
+    return ({
         get isEditableInline() {
-            return s.nested.isEditableInline.get()
+            return state.isEditableInline.get()
         },
         toogleEditableInline() {
-            s.nested.isEditableInline.set(p => !p)
+            state.isEditableInline.set(p => !p)
         },
         get isScopedUpdateEnabled() {
-            return s.nested.isScopedUpdateEnabled.get()
+            return state.isScopedUpdateEnabled.get()
         },
         toogleScopedUpdate() {
-            s.nested.isScopedUpdateEnabled.set(p => !p)
+            state.isScopedUpdateEnabled.set(p => !p)
         },
         get isHighlightUpdateEnabled() {
-            return s.nested.isHighlightUpdatesEnabled.get()
+            return state.isHighlightUpdatesEnabled.get()
         },
         toogleHighlightUpdate() {
-            s.nested.isHighlightUpdatesEnabled.set(p => !p)
+            state.isHighlightUpdatesEnabled.set(p => !p)
         }
-    }))
-}
+    })   
+})

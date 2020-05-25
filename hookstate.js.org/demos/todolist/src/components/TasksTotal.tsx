@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTasksState } from './TasksState';
 import { useSettingsState } from './SettingsState';
+import { self } from '@hookstate/core';
 
 export function TasksTotal() {
     // Use both global stores in the same component.
@@ -30,16 +31,17 @@ export function TasksTotal() {
                 }}
             />
         }
-        {!tasksState.promised &&
-            <div  style={{
+        {tasksState[self].map(
+            ts => <div key="" style={{
                 display: 'flex',
                 justifyContent: 'space-evenly',
                 flexGrow: 2
             }}>
-                <div>Total tasks: {tasksState.value.length}</div>
-                <div>Done: {tasksState.value.filter(i=> i.done).length}</div>
-                <div>Remaining: {tasksState.value.filter(i=> !i.done).length}</div>
-            </div>
-        }
+                <div>Total tasks: {ts.length}</div>
+                <div>Done: {ts.filter(i => i.done.value).length}</div>
+                <div>Remaining: {ts.filter(i => !i.done.value).length}</div>
+            </div>,
+            () => <></> // if promised
+        )}
     </div>
 }

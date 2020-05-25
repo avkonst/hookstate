@@ -1,9 +1,9 @@
 import React from 'react';
 import { useTasksState, Task } from './TasksState';
-import { StateLink, useStateLink, None } from '@hookstate/core';
+import { State, useState, None, self } from '@hookstate/core';
 import { useSettingsState } from './SettingsState';
 
-function TaskEditor(props: { task: StateLink<Task> }) {
+function TaskEditor(props: { task: State<Task> }) {
     // The next hook is *global state* link of the global state wrapped by an interface. 
     // In the case of large scale arrays,
     // it would be more efficient if settings were obtained by the parent
@@ -17,24 +17,24 @@ function TaskEditor(props: { task: StateLink<Task> }) {
     // we could use 'props.task' everywhere instead of taskState.
     //     See https://github.com/avkonst/hookstate#usestatelink
     //     for more details about the *scoped state*.
-    let taskState = useStateLink(props.task);
+    let taskState = useState(props.task);
     if (!settingsState.isScopedUpdateEnabled) {
         // For demonstration purposes, we allow to opt out of
         // the *scoped state* optimisation, if it is disabled:
         // (scope state is still created, but not used in this case)
         taskState = props.task;
     }
-    // State link to access and mutate the global state:
-    const taskNameGlobal = taskState.nested.name;
+    // State to access and mutate the global state:
+    const taskNameGlobal = taskState.name;
 
-    // The next hook is *local state* link with the initial state equal
+    // The next hook is *local state* with the initial state equal
     // to the copy of the state value, which was supplied in properties. 
-    // State link to access and mutate a COPY of the global state:
-    const taskNameLocal = useStateLink(taskState.nested.name.get());
+    // State to access and mutate a COPY of the global state:
+    const taskNameLocal = useState(taskState.name.get());
 
     // The next hook is *local state* link with the initial state
     // created from a constant
-    const isEditing = useStateLink(false)
+    const isEditing = useState(false)
 
     // This is the trick to obtain different color on every run of this function
     var colors = ['#ff0000', '#00ff00', '#0000ff'];
@@ -73,8 +73,8 @@ function TaskEditor(props: { task: StateLink<Task> }) {
                         margin: 20
                     }}
                     type="checkbox"
-                    checked={taskState.nested.done.get()}
-                    onChange={() => taskState.nested.done.set(p => !p)}
+                    checked={taskState.done.get()}
+                    onChange={() => taskState.done.set(p => !p)}
                 />
             </div>
             <div style={{ flexGrow: 2 }}>
@@ -86,7 +86,7 @@ function TaskEditor(props: { task: StateLink<Task> }) {
                         color: 'white',
                         width: '90%',
                         padding: 10,
-                        textDecoration: taskState.nested.done.get() ? 'line-through' : 'none',
+                        textDecoration: taskState.done.get() ? 'line-through' : 'none',
                     }}
                     readOnly={!(settingsState.isEditableInline || isEditing.get())}
                     value={
@@ -141,7 +141,7 @@ function TaskEditor(props: { task: StateLink<Task> }) {
                 borderColor="red"
                 onClick={() => {
                     isEditing.set(false)
-                    taskState.set(None)
+                    taskState[self].set(None)
                 }}
                 text="Delete"
             />
@@ -152,33 +152,32 @@ function TaskEditor(props: { task: StateLink<Task> }) {
 export function TasksViewer() {
     const tasksState = useTasksState()
     
-    if (tasksState.promised) {
-        return <div style={{ textAlign: 'center' }}>
+    return tasksState[self].map(
+        ts => <div key="" style={{ textAlign: 'left', marginBottom: 50 }}>{
+            ts.map((task, i) => <TaskEditor
+                key={task.id.value}
+                task={task}
+            />)
+        }
+        <div style={{ textAlign: 'right' }} >
+            <Button
+                style={{ marginTop: 20, minWidth: 300 }}
+                borderColor="lightgreen"
+                onClick={() => {
+                    ts[ts.length][self].set({
+                        id: Math.random().toString() + ts.length,
+                        name: 'Untitled Task #' + (ts.length + 1),
+                        done: false
+                    })
+                }}
+                text="Add new task"
+            />
+        </div>
+        </div>,
+        () => <div style={{ textAlign: 'center' }}>
             Loading initial state asynchronously...
         </div>
-    }
-    
-    return <div style={{ textAlign: 'left', marginBottom: 50 }}>{
-        tasksState.nested.map((task, i) => <TaskEditor
-            key={task.value.id}
-            task={task}
-        />)
-    }
-    <div style={{ textAlign: 'right' }} >
-        <Button
-            style={{ marginTop: 20, minWidth: 300 }}
-            borderColor="lightgreen"
-            onClick={() => {
-                tasksState.nested[tasksState.nested.length].set({
-                    id: Math.random().toString() + tasksState.nested.length,
-                    name: 'Untitled Task #' + (tasksState.nested.length + 1),
-                    done: false
-                })
-            }}
-            text="Add new task"
-        />
-    </div>
-    </div>
+    )
 }
 
 function Button(props: {

@@ -1,4 +1,4 @@
-import { createStateLink, useStateLink } from '@hookstate/core';
+import { createState, useState, self } from '@hookstate/core';
 
 export interface Task {
     id: string;
@@ -6,7 +6,7 @@ export interface Task {
     done: boolean;
 }
 
-const state = createStateLink<Task[]>(new Promise(resolve => {
+const state = createState<Task[]>(new Promise(resolve => {
     // Emulate asynchronous loading of the initial state data.
     // The real application would run some fetch request,
     // to get the initial data from a server.
@@ -35,11 +35,11 @@ export function useTasksState() {
     // depending on your circumstances. Apply your engineering judgement
     // to choose the best option. If unsure, exposing the state directly
     // like it is done below is a safe bet.        
-    return useStateLink(state)
+    return useState(state)
 }
 
 // for example purposes, let's update the state outside of a React component
-setTimeout(() => state.nested[state.value.length].set({
+setTimeout(() => state[state.length][self].set({
     id: '100',
     name: 'Spread few words about Hookstate',
     done: false
