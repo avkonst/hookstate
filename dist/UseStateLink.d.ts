@@ -58,7 +58,7 @@ export declare type InferredStateKeysType<S> = S extends ReadonlyArray<infer _> 
  *
  * @typeparam S Type of a value of a state
  */
-export declare type InferredStateOrNullType<S> = S extends undefined ? undefined : S extends null ? null : State<S>;
+export declare type InferredStateOrnullType<S> = S extends undefined ? undefined : S extends null ? null : State<S>;
 /**
  * For plugin developers only.
  * An instance to manipulate the state in more controlled way.
@@ -222,18 +222,8 @@ export interface StateMethods<S> {
      * If state value is null or undefined, returns state value.
      * Otherwise, it returns this state instance but
      * with null and undefined removed from the type parameter.
-     * It is very useful to handle states potentially holding undefined values.
-     * For example:
-     *
-     * ```tsx
-     * const state: State<number | undefined> = useState<number | undefined>(undefined)
-     * const stateOrNull: State<number> | undefined = state.map()
-     * if (stateOrNull) {
-     *     stateOrNull[self].value // <-- will be of type number
-     * }
-     * ```
      */
-    map(): InferredStateOrNullType<S>;
+    ornull: InferredStateOrnullType<S>;
     /**
      * Adds plugin to the state.
      */

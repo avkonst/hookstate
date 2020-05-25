@@ -129,13 +129,13 @@ test('object: should rerender when keys used', async () => {
     expect(result.current[self].keys).toEqual(['field']);
 
     act(() => {
-        result.current[self].map()!.field[self].set(p => p);
+        result.current[self].ornull!.field[self].set(p => p);
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current[self].keys).toEqual(['field']);
 
     act(() => {
-        result.current[self].map()!.optional[self].set(2);
+        result.current[self].ornull!.optional[self].set(2);
     });
     expect(renderTimes).toStrictEqual(2);
     expect(result.current[self].keys).toEqual(['field', 'optional']);
@@ -304,12 +304,12 @@ test('object: should denull', async () => {
         return useState<{} | null>({})
     });
 
-    const state = result.current[self].map()
+    const state = result.current[self].ornull
     expect(state ? state[self].get() : null).toEqual({})
     act(() => {
         result.current[self].set(p => null);
         result.current[self].set(null);
     });
     expect(renderTimes).toStrictEqual(2);
-    expect(result.current[self].map()).toEqual(null)
+    expect(result.current[self].ornull).toEqual(null)
 });

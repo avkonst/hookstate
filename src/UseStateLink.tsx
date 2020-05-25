@@ -79,7 +79,7 @@ export type InferredStateKeysType<S> =
  * 
  * @typeparam S Type of a value of a state
  */
-export type InferredStateDenullType<S> =
+export type InferredStateOrnullType<S> =
     S extends undefined ? undefined :
     S extends null ? null : State<S>;
 
@@ -269,18 +269,8 @@ export interface StateMethods<S> {
      * If state value is null or undefined, returns state value.
      * Otherwise, it returns this state instance but
      * with null and undefined removed from the type parameter.
-     * It is very useful to handle states potentially holding undefined or null values.
-     * For example:
-     * 
-     * ```tsx
-     * const state: State<number | undefined> = useState<number | undefined>(undefined)
-     * const stateOrNull: State<number> | undefined = state.map()
-     * if (stateOrNull) {
-     *     stateOrNull[self].value // <-- will be of type number
-     * }
-     * ```
      */
-    map(): InferredStateDenullType<S>;
+    ornull: InferredStateOrnullType<S>;
 
     /**
      * Adds plugin to the state.
@@ -2002,21 +1992,12 @@ class StateLinkImpl<S> implements StateLink<S>,
         action: (s: State<S>) => R,
         context?: Exclude<C, Function>
     ): R;
-    map(): InferredStateDenullType<S>;
     map<R, RL, RE, C>(
-        action?: (s: State<S>) => R,
+        action: (s: State<S>) => R,
         onPromised?: ((s: State<S>) => RL) | Exclude<C, Function>,
         onError?: ((e: StateErrorAtRoot, s: State<S>) => RE) | Exclude<C, Function>,
         context?: Exclude<C, Function>
-    ): InferredStateDenullType<S> | R | RL | RE {
-        if (!action) {
-            const r = this.denull();
-            if (r) {
-                return r[self] as InferredStateDenullType<S>;
-            }
-            return r as unknown as InferredStateDenullType<S>;
-        }
-
+    ): InferredStateOrnullType<S> | R | RL | RE {
         const contextArg = typeof onPromised === 'function'
             ? (typeof onError === 'function' ? context : onError)
             : onPromised;
@@ -2052,6 +2033,14 @@ class StateLinkImpl<S> implements StateLink<S>,
         }
         
         return runBatch(() => action(this[self]))
+    }
+
+    get ornull(): InferredStateOrnullType<S> {
+        const r = this.denull();
+        if (r) {
+            return r[self] as InferredStateOrnullType<S>;
+        }
+        return r as unknown as InferredStateOrnullType<S>;        
     }
 
     attach(plugin: () => Plugin): State<S>

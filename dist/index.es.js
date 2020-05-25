@@ -1191,13 +1191,6 @@ var StateLinkImpl = /** @class */ (function () {
     });
     StateLinkImpl.prototype.map = function (action, onPromised, onError, context) {
         var _this = this;
-        if (!action) {
-            var r = this.denull();
-            if (r) {
-                return r[self];
-            }
-            return r;
-        }
         var contextArg = typeof onPromised === 'function'
             ? (typeof onError === 'function' ? context : onError)
             : onPromised;
@@ -1231,6 +1224,17 @@ var StateLinkImpl = /** @class */ (function () {
         }
         return runBatch(function () { return action(_this[self]); });
     };
+    Object.defineProperty(StateLinkImpl.prototype, "ornull", {
+        get: function () {
+            var r = this.denull();
+            if (r) {
+                return r[self];
+            }
+            return r;
+        },
+        enumerable: false,
+        configurable: true
+    });
     StateLinkImpl.prototype.attach = function (p) {
         if (typeof p === 'function') {
             var pluginMeta = p();
