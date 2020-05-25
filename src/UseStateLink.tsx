@@ -23,11 +23,15 @@ export type Path = ReadonlyArray<string | number>;
 
 /**
  * Type of an argument of [StateMethods.set](#set).
+ * 
+ * @typeparam S Type of a value of a state
  */
 export type SetStateAction<S> = (S | Promise<S>) | ((prevState: S) => (S | Promise<S>));
 
 /**
  * Type of an argument of [StateMethods.merge](#merge).
+ * 
+ * @typeparam S Type of a value of a state
  */
 export type SetPartialStateAction<S> =
     S extends ReadonlyArray<(infer U)> ?
@@ -37,12 +41,14 @@ export type SetPartialStateAction<S> =
 
 /**
  * Type of an argument of [createState](#createstate) and [useState](#usestate).
+ * 
+ * @typeparam S Type of a value of a state
  */
 export type SetInitialStateAction<S> = S | Promise<S> | (() => S | Promise<S>)
 
 /**
  * Special symbol which is used as a property to switch
- * between [StateMethods](#interfacesstatemethodsmd) and the corresponding [State](#interfacesstatemd).
+ * between [StateMethods](#interfacesstatemethodsmd) and the corresponding [State](#state).
  */
 export const self = Symbol('self')
 
@@ -59,6 +65,8 @@ export const none = Symbol('none') as StateValueAtPath;
 
 /**
  * Return type of [StateMethods.keys](#keys).
+ * 
+ * @typeparam S Type of a value of a state
  */
 export type InferredStateKeysType<S> =
     S extends ReadonlyArray<infer _> ? ReadonlyArray<number> :
@@ -68,6 +76,8 @@ export type InferredStateKeysType<S> =
 
 /**
  * Return type of [StateMethods.map()](#map).
+ * 
+ * @typeparam S Type of a value of a state
  */
 export type InferredStateOrNullType<S> =
     S extends undefined ? undefined :
@@ -76,6 +86,8 @@ export type InferredStateOrNullType<S> =
 /**
  * For plugin developers only.
  * An instance to manipulate the state in more controlled way.
+ * 
+ * @typeparam S Type of a value of a state
  */
 export interface PluginStateControl<S> {
     /**
@@ -104,10 +116,14 @@ export interface PluginStateControl<S> {
 
 /**
  * An interface to manage a state in Hookstate.
+ * 
+ * @typeparam S Type of a value of a state
  */
 export interface StateMethods<S> {
     /**
      * Returns the state instance managed by these methods.
+     * 
+     * 
      */
     [self]: State<S>;
 
@@ -126,7 +142,7 @@ export interface StateMethods<S> {
 
     /**
      * Return the keys of nested states.
-     * For a given state of [State](#interfacesstatemd) type,
+     * For a given state of [State](#state) type,
      * `state[self].keys` will be structurally equal to Object.keys(state),
      * with two minor difference:
      * 1. if `state[self].value` is an array, the returned result will be
@@ -282,7 +298,8 @@ export interface StateMethods<S> {
 }
 
 /**
- * Mixin for the [StateMethods](#interfacesstatemethodsmd), which can be destroyed by a client.
+ * Mixin for the [StateMethods](#interfacesstatemethodsmd) for a [State](#state),
+ * which can be destroyed by a client.
  */
 export interface StateMethodsDestroy {
     /**
@@ -294,21 +311,33 @@ export interface StateMethodsDestroy {
 }
 
 /**
- * An interface to jump to [StateMethods][#interfacesstatemethodsmd] from [State](#interfacesstatemd).
+ * User's state mixin with the special `self`-symbol property,
+ * which allows to get [StateMethods](#interfacesstatemethodsmd) for a [State](#state).
+ * 
+ * @typeparam S Type of a value of a state
  */
 export interface StateMixin<S> {
+    /**
+     * Returns [StateMethods](#interfacesstatemethodsmd) for a [State](#state) 
+     */
     [self]: StateMethods<S>;
 }
 
 /**
- * An interface to jump to destroyable [StateMethods][#interfacesstatemethodsmd] from [State](#interfacesstatemd).
+ * User's state mixin with the special `self`-symbol property,
+ * which allows to get [StateMethodsDestroy](#interfacesstatemethodsdestroymd) for a [State](#state).
  */
 export interface StateMixinDestroy {
+    /**
+     * Returns [StateMethodsDestroy](#interfacesstatemethodsdestroymd) for a [State](#state) 
+     */
     [self]: StateMethodsDestroy;
 }
 
 /**
  * Type of a result of [createState](#createstate) and [useState](#usestate) functions
+ * 
+ * @typeparam S Type of a value of a state
  */
 export type State<S> = StateMixin<S> & (
     S extends ReadonlyArray<(infer U)> ? ReadonlyArray<State<U>> :
@@ -571,7 +600,7 @@ export function useStateLink<S, R>(
  *
  * @typeparam S Type of a value of the state
  *
- * @returns [State](#interfacesstatemd) instance,
+ * @returns [State](#state) instance,
  * which can be used directly to get and set state value
  * outside of React components.
  * When you need to use the state in a functional `React` component,
@@ -611,7 +640,7 @@ export function createState<S>(
  *
  * The `useState` is a hook and should follow React's rules of hooks.
  *
- * @returns an instance of [State](#interfacesstatemd),
+ * @returns an instance of [State](#state),
  * which **must be** used within the component (during rendering
  * or in effects) or it's children.
  */
@@ -622,7 +651,7 @@ export function useState<S>(
  * This function enables a functional React component to use a state,
  * created per component by [useState](#usestate) (*local* state).
  * In this case `useState` behaves similarly to `React.useState`,
- * but the returned instance of [State](#interfacesstatemd)
+ * but the returned instance of [State](#state)
  * has got more features.
  *
  * When a state is used by only one component, and maybe it's children,
@@ -641,7 +670,7 @@ export function useState<S>(
  *
  * @param source An initial value state.
  *
- * @returns an instance of [State](#interfacesstatemd),
+ * @returns an instance of [State](#state),
  * which **must be** used within the component (during rendering
  * or in effects) or it's children.
  */
@@ -695,6 +724,8 @@ export function useState<S>(
  *     }
  * }
  * ```
+ * 
+ * @typeparam S Type of a value of a state
  */
 export function StateFragment<S>(
     props: {
@@ -754,6 +785,8 @@ export function StateFragment<S>(
 /**
  * Allows to use a state without defining a functional react component.
  * See more at [StateFragment](#statefragment)
+ * 
+ * @typeparam S Type of a value of a state
  * // TODO uncomment once moved to version 2
  */
 // export function StateFragment<S>(
@@ -863,6 +896,8 @@ export interface DevToolsExtensions {
  * @param state A state to relate to the extension.
  * 
  * @returns Interface to interact with the development tools for a given state.
+ * 
+ * @typeparam S Type of a value of a state
  */
 export function DevTools<S>(state: StateLink<S> | State<S>): DevToolsExtensions {
     if (state[StateMarkerID]) {

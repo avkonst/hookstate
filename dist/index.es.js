@@ -31,7 +31,7 @@ function __extends(d, b) {
 
 /**
  * Special symbol which is used as a property to switch
- * between [StateMethods](#interfacesstatemethodsmd) and the corresponding [State](#interfacesstatemd).
+ * between [StateMethods](#interfacesstatemethodsmd) and the corresponding [State](#state).
  */
 var self = Symbol('self');
 /**
@@ -111,7 +111,7 @@ function useStateLink(source, transform) {
  *
  * @typeparam S Type of a value of the state
  *
- * @returns [State](#interfacesstatemd) instance,
+ * @returns [State](#state) instance,
  * which can be used directly to get and set state value
  * outside of React components.
  * When you need to use the state in a functional `React` component,
@@ -205,6 +205,8 @@ var DevToolsID = Symbol('DevTools');
  * @param state A state to relate to the extension.
  *
  * @returns Interface to interact with the development tools for a given state.
+ *
+ * @typeparam S Type of a value of a state
  */
 function DevTools(state) {
     if (state[StateMarkerID]) {
