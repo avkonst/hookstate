@@ -151,33 +151,35 @@ function TaskEditor(props: { task: State<Task> }) {
 
 export function TasksViewer() {
     const tasksState = useTasksState()
+    const [loading] = tasksState[self].map();
     
-    return tasksState[self].map(
-        ts => <div key="" style={{ textAlign: 'left', marginBottom: 50 }}>{
-            ts.map((task, i) => <TaskEditor
-                key={task.id.value}
-                task={task}
-            />)
-        }
+    if (loading) {
+        return <div style={{ textAlign: 'center' }}>
+            Loading initial state asynchronously...
+        </div>
+    }
+    
+    return <div key="" style={{ textAlign: 'left', marginBottom: 50 }}>{
+        tasksState.map((task, i) => <TaskEditor
+            key={task.id.value}
+            task={task}
+        />)
+    }
         <div style={{ textAlign: 'right' }} >
             <Button
                 style={{ marginTop: 20, minWidth: 300 }}
                 borderColor="lightgreen"
                 onClick={() => {
-                    ts[ts.length][self].set({
-                        id: Math.random().toString() + ts.length,
-                        name: 'Untitled Task #' + (ts.length + 1),
+                    tasksState[tasksState.length][self].set({
+                        id: Math.random().toString() + tasksState.length,
+                        name: 'Untitled Task #' + (tasksState.length + 1),
                         done: false
                     })
                 }}
                 text="Add new task"
             />
         </div>
-        </div>,
-        () => <div style={{ textAlign: 'center' }}>
-            Loading initial state asynchronously...
-        </div>
-    )
+    </div>
 }
 
 function Button(props: {

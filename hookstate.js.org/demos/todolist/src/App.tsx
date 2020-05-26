@@ -17,20 +17,18 @@ const App: React.FC = () => {
       }}>
         <div style={{ minWidth: 400, maxWidth: 800, padding: 20 }}>
           <div style={{ marginBottom: 30 }}>
-            This is a sample <a
+            This is <a
               style={{ color: '#09d3ac' }}
               href="https://github.com/avkonst/hookstate"
               target="_blank"
               rel="noopener noreferrer"
-            >Hookstate</a> application.
-            <br/><span style={{ fontSize: '0.7em' }}>
-              Source code is available on <a
+            >Hookstate</a> demo application.
+              Source code is on <a
                 style={{ color: '#09d3ac' }}
                 href="https://github.com/avkonst/hookstate/tree/master/hookstate.js.org/demos/todolist"
                 target="_blank"
                 rel="noopener noreferrer"
               >GitHub</a>. 
-            </span>
           </div>
           <SettingsViewer />
           <TasksTotal />

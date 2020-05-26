@@ -47,7 +47,7 @@ export function SettingsViewer() {
                     onChange={() => settingsState.toogleHighlightUpdate()}
                 />
             </div>
-            <div style={{ paddingLeft: 10, paddingBottom: 10}}>
+            <div style={{ paddingLeft: 10, paddingBottom: 10, paddingRight: 10 }}>
                 highlight updates
             </div>
         </div>
