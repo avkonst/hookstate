@@ -6,7 +6,7 @@ sidebar_label: Using state without hook
 
 import { PreviewSample } from '../src/PreviewSample'
 
-You can use Hookstate without a hook. It is particularly useful for intergration with old class-based React components.
+You can use Hookstate without a hook. It is particularly useful for integration with old class-based React components.
 It works with [global](./global-state), [local](./local-state), [nested](./nested-state) and [scoped](./scoped-state) states the same way.
 
 The following example demonstrates how to use a global state without [useState](typedoc-hookstate-core#usestate) hook:
