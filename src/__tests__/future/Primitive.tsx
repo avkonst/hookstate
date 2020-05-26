@@ -35,6 +35,72 @@ test('primitive: should rerender used (boolean)', async () => {
     expect(result.current.get()).toStrictEqual(false);
 });
 
+test('primitive: should rerender used (null)', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useState<number | null>(null)
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(result.current.get()).toStrictEqual(null);
+
+    act(() => {
+        result.current[self].set(2);
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(result.current.get()).toStrictEqual(2);
+});
+
+test('primitive: should rerender used (undefined)', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useState<number | undefined>(undefined)
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(result.current.get()).toStrictEqual(undefined);
+
+    act(() => {
+        result.current[self].set(2);
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(result.current.get()).toStrictEqual(2);
+});
+
+test('primitive: should rerender used (global null)', async () => {
+    let renderTimes = 0
+    const state = createState<number | null>(null)
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useState(state)
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(result.current.get()).toStrictEqual(null);
+
+    act(() => {
+        result.current[self].set(2);
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(result.current.get()).toStrictEqual(2);
+});
+
+test('primitive: should rerender used (global undefined)', async () => {
+    let renderTimes = 0
+    const state = createState<number | undefined>(undefined)
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useState(state)
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(result.current.get()).toStrictEqual(undefined);
+
+    act(() => {
+        result.current[self].set(2);
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(result.current.get()).toStrictEqual(2);
+});
+
 test('primitive: should rerender used when set to the same', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
