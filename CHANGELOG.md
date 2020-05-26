@@ -1,3 +1,7 @@
+# 1.8.X
+
+### Preparation for version 2 interface
+
 # 1.7.0
 
 ### Support for development tools

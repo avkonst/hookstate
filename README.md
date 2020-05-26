@@ -8,10 +8,10 @@
 <br/>
 
 <p align="center">
-  <a href="#why-hookstate">Why?</a> •
-  <a href="#quick-start">Demos / Examples</a> •
-  <a href="#api-documentation">Documentation</a> •
-  <a href="#plugins">Plugins</a>
+  <a href="https://hookstate.js.org">Why?</a> •
+  <a href="https://hookstate.js.org/docs/getting-started">Docs / Samples</a> •
+  <a href="https://hookstate.js.org/demo-todolist">Demo application</a> •
+  <a href="https://hookstate.js.org/docs/extensions-overview">Plugins</a>
   <a href="./CHANGELOG.md">Changelog</a>
 </p>
 
