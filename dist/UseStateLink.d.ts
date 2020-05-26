@@ -513,32 +513,6 @@ export declare function useState<S>(source: SetInitialStateAction<S>): State<S>;
  * It can be also used in class-based React components. It is also
  * particularly usefull for creating *scoped* states.
  *
- * For example the following 3 code samples are equivivalent:
- *
- * ```tsx
- * const globalState = createState('');
- *
- * const MyComponent = () => {
- *     const state = useState(globalState);
- *     return <input value={state[self].value}
- *         onChange={e => state[self].set(e.target.value)} />;
- * }
- *
- * const MyComponent = () => <StateFragment state={globalState}>{
- *     state => <input value={state[self].value}
- *         onChange={e => state[self].set(e.target.value)}>
- * }</StateFragment>
- *
- * class MyComponent extends React.Component {
- *     render() {
- *         return <StateFragment state={globalState}>{
- *             state => <input value={state[self].value}
- *                 onChange={e => state[self].set(e.target.value)}>
- *         }</StateFragment>
- *     }
- * }
- * ```
- *
  * @typeparam S Type of a value of a state
  */
 export declare function StateFragment<S>(props: {

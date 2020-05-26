@@ -81,7 +81,7 @@ export const PreviewSample = (props: { example?: string, sampleFirst?: boolean }
     }
     return <>
         <PreviewWithAsyncSource url={ExampleCodeUrl(exampleId)} sampleFirst={props.sampleFirst}>
-            {exampleMeta.demo}
+            {exampleMeta}
         </PreviewWithAsyncSource>
     </>
 }

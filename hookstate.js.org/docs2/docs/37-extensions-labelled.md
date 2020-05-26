@@ -6,4 +6,4 @@ sidebar_label: Labelled state
 
 import { PreviewSample } from '../src/PreviewSample'
 
-
+Placeholder. To be completed.

@@ -1,10 +1,10 @@
 import React from 'react';
-import { useStateLink, StateLink } from '@hookstate/core';
+import { useState, State, self } from '@hookstate/core';
 
 interface Node { name: string; children?: Node[] }
 
 export const ExampleComponent = () => {
-    const state = useStateLink<Node[] | undefined>([
+    const state = useState<Node[] | undefined>([
         {
             name: 'Node 1',
             children: [
@@ -22,10 +22,10 @@ export const ExampleComponent = () => {
     </>
 }
 
-function NodeNameEditor(props: { nameState: StateLink<string> }) {
-    // useStateLink is optinal for performance
+function NodeNameEditor(props: { nameState: State<string> }) {
+    // scoped state is optinal for performance
     // could use props.nameState everywhere instead
-    const state = useStateLink(props.nameState);
+    const state = useState(props.nameState);
     return <>
         <p>
             <input
@@ -36,29 +36,29 @@ function NodeNameEditor(props: { nameState: StateLink<string> }) {
     </>
 }
 
-function NodeListEditor(props: { nodes: StateLink<Node[] | undefined> }) {
-    // useStateLink is optinal for performance
+function NodeListEditor(props: { nodes: State<Node[] | undefined> }) {
+    // scoped stte is optinal for performance
     // could use props.nodes everywhere instead
-    const state = useStateLink(props.nodes);
+    const state = useState(props.nodes);
     return <div style={{ paddingLeft: 20 }}>
-        {state.nested && state.nested.map((nodeState: StateLink<Node>, i) =>
+        {state[self].ornull && state[self].ornull.map((nodeState: State<Node>, i) =>
             <div key={i}>
-                <NodeNameEditor nameState={nodeState.nested.name} />
-                <NodeListEditor nodes={nodeState.nested.children} />
+                <NodeNameEditor nameState={nodeState.name} />
+                <NodeListEditor nodes={nodeState.children} />
             </div>
         )}
-        <p><button onClick={() => state.set(nodes => (nodes || []).concat([{ name: 'Untitled' }]))}>
+        <p><button onClick={() => state[self].set(nodes => (nodes || []).concat([{ name: 'Untitled' }]))}>
             Add Node
         </button></p>
     </div>
 }
 
-function JsonDump(props: { state: StateLink<Node[] | undefined> }) {
+function JsonDump(props: { state: State<Node[] | undefined> }) {
     // useStateLink is optinal for performance
     // could use props.state everywhere instead
-    const state = useStateLink(props.state);
+    const state = useState(props.state);
     return <p>
-        Current state: {JSON.stringify(state.value)} <br/>
+        Current state: {JSON.stringify(state[self].value)} <br/>
         Last render at: {(new Date()).toISOString()} 
     </p>
 }

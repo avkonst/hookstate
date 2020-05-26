@@ -8,9 +8,11 @@ import { PreviewSample } from '../src/PreviewSample'
 
 ## Downgraded plugin
 
-Placeholder
+Placeholder. To be completed.
 
 ## Untracked plugin
 
-Placeholder
+Placeholder. To be completed.
+
+<PreviewSample example="plugin-untracked" />
 

@@ -6,4 +6,4 @@ sidebar_label: Batching state updates
 
 import { PreviewSample } from '../src/PreviewSample'
 
-
+Placeholder. To be completed.

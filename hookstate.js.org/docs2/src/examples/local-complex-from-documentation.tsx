@@ -1,22 +1,22 @@
 import React from 'react';
-import { useStateLink, StateLink } from '@hookstate/core';
+import { useState, State, self } from '@hookstate/core';
 
 interface Task { name: string; priority?: number }
 
 export const ExampleComponent = () => {
-    const state: StateLink<Task[]> = useStateLink([{ name: 'First Task' }] as Task[]);
+    const state: State<Task[]> = useState([{ name: 'First Task' }] as Task[]);
     return <>
-        {state.nested.map((taskState: StateLink<Task>, taskIndex) =>
+        {state.map((taskState: State<Task>, taskIndex) =>
             <TaskEditor key={taskIndex} taskState={taskState} />
         )}
-        <button onClick={() => state.merge([{ name: 'Untitled' }])}>Add task</button>
+        <button onClick={() => state[self].merge([{ name: 'Untitled' }])}>Add task</button>
     </>
 }
 
-function TaskEditor(props: { taskState: StateLink<Task> }) {
+function TaskEditor(props: { taskState: State<Task> }) {
     const taskState = props.taskState;
     return <p><input
-        value={taskState.nested.name.get()}
-        onChange={e => taskState.nested.name.set(e.target.value)}
+        value={taskState.name.get()}
+        onChange={e => taskState.name.set(e.target.value)}
     /></p>
 }

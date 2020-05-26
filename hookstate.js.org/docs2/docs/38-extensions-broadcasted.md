@@ -6,4 +6,4 @@ sidebar_label: Broadcasted state
 
 import { PreviewSample } from '../src/PreviewSample'
 
-
+Placeholder. To be completed.

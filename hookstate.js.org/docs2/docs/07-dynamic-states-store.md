@@ -1,9 +1,9 @@
 ---
 id: dynamic-states-store
-title: Catalog of dynamically created / destroyed states
-sidebar_label: Dynamic states store
+title: Dynamically created / destroyed states
+sidebar_label: Dynamic states
 ---
 
 import { PreviewSample } from '../src/PreviewSample'
 
-
+Placeholder. To be completed.

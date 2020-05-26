@@ -1,13 +1,12 @@
 import React from 'react';
-import { useStateLink } from '@hookstate/core';
+import { useState, self } from '@hookstate/core';
 import { Validation } from '@hookstate/validation';
 
 interface Task { name: string }
 
 export const ExampleComponent = () => {
-    const state = useStateLink([{ name: 'First Task' }, { name: 'Second Task' }] as Task[])
-        // enable the plugin
-        .with(Validation)
+    const state = useState([{ name: 'First Task' }, { name: 'Second Task' }] as Task[])
+    state[self].attach(Validation) // enable the plugin
 
     // configure rules
     Validation(state).validate(tasks => tasks.length >= 3,
@@ -27,21 +26,21 @@ export const ExampleComponent = () => {
                 JSON.stringify(Validation(state).firstError(
                     i => i.severity === 'error', 1))}</u> <br/>
         </p>
-        {state.nested.map((taskState, taskIndex) => {
+        {state.map((taskState, taskIndex) => {
             // attaching validation to any element in the array applies it to every
-            Validation(taskState.nested.name).validate(
+            Validation(taskState.name).validate(
                 taskName => taskName.length > 0, 'Task name should not be empty')
             return <p key={taskIndex}>
                 Is this task valid?: {Validation(taskState).valid().toString()} <br/>
-                Is the name of the task valid?: {Validation(taskState.nested.name).valid().toString()} <br/>
+                Is the name of the task valid?: {Validation(taskState.name).valid().toString()} <br/>
                 This task validation errors and warnings: {JSON.stringify(Validation(taskState).errors())} <br/>
                 <input
-                    value={taskState.nested.name.get()}
-                    onChange={e => taskState.nested.name.set(e.target.value)}
+                    value={taskState.name.get()}
+                    onChange={e => taskState.name.set(e.target.value)}
                 />
             </p>
         })}
-        <p><button onClick={() => state.set(tasks => tasks.concat([{ name: '' }]))}>
+        <p><button onClick={() => state[self].merge([{ name: '' }])}>
             Add task
         </button></p>
     </>

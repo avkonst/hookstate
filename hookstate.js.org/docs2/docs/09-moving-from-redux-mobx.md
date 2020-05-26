@@ -4,4 +4,4 @@ title: Moving from Redux / Mobx
 sidebar_label: Moving from Redux / Mobx
 ---
 
-## Placeholder
+Placeholder. To be completed.

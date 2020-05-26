@@ -12,14 +12,15 @@ module.exports = {
             'global-state',
             'local-state',
             'nested-state',
-            'mapped-state',
+            'scoped-state',
+            'nullable-state',
             'asynchronous-state',
             'recursive-state',
             'exporting-state',
             'dynamic-states-store',
             'using-without-statehook',
-            'moving-from-redux-mobx',
-            'organising-application'
+            'using-with-memo',
+            'moving-from-redux-mobx'
         ],
         Performance: [
             'performance-intro',
@@ -30,10 +31,13 @@ module.exports = {
             'performance-preact',
         ],
         Extensions: [
-            'extensions-overview', 'extensions-initial', 'extensions-touched',
-            'extensions-validation', 'extensions-persistence',
+            'extensions-overview',
+            'extensions-initial',
+            'extensions-touched',
+            'extensions-validation',
             'extensions-labelled',
             'extensions-broadcasted',
+            'extensions-persistence',
             'extensions-offline',
             'writing-plugin'
         ],

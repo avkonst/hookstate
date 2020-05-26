@@ -6,4 +6,4 @@ sidebar_label: Writing a plugin
 
 import { PreviewSample } from '../src/PreviewSample'
 
-
+Placeholder. To be completed.

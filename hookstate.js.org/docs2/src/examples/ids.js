@@ -14,7 +14,6 @@ const ExampleIds = {
     PluginInitial: 'plugin-initial',
     PluginInitialStateFragment: 'plugin-initial-statefragment',
     PluginTouched: 'plugin-touched',
-    PluginLogger: 'plugin-logger',
     PluginPersistence: 'plugin-persistence',
     PluginValidation: 'plugin-validation',
     PluginUntracked: 'plugin-untracked'

@@ -6,4 +6,4 @@ sidebar_label: Using with Preact
 
 import { PreviewSample } from '../src/PreviewSample'
 
-## Placeholder
+Placeholder. To be completed.

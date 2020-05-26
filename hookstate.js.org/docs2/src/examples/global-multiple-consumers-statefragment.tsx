@@ -1,30 +1,9 @@
 import React from 'react';
-import { createStateLink, useStateLink, StateFragment } from '@hookstate/core';
+import { createState, StateFragment } from '@hookstate/core';
 
-const stateLink = createStateLink({ priority: 0, task: 'Untitled Task' });
+const state = createState(0);
 
-export const ExampleComponent = () => {
-    const state = useStateLink(stateLink)
-    return <>
-        <StateFragment state={state}>{scopedstate => {
-            return <p>
-                Last render at: {(new Date()).toISOString()} <br/>
-                <span>Current state: {JSON.stringify(scopedstate.value)}</span>
-            </p>
-        }}</StateFragment>
-        <StateFragment state={state.nested.task}>{scopedstate => {
-            return <p>
-                Last render at: {(new Date()).toISOString()} <br/>
-                <span>Task name: {scopedstate.value} </span>
-                <input value={scopedstate.value} onChange={e => scopedstate.set(e.target.value)}/>
-            </p>
-        }}</StateFragment>
-        <StateFragment state={state.nested.priority}>{scopedstate => {
-            return <p>
-                Last render at: {(new Date()).toISOString()} <br/>
-                <span>Task priority: {scopedstate.value} </span>
-                <button onClick={() => scopedstate.set(p => p + 1)}>Increase priority</button>
-            </p>
-        }}</StateFragment>
-    </>
-}
+export const ExampleComponent = () => <StateFragment state={state}>{s => <span>
+        Current state: {s.value} <button onClick={() => s.set(p => p + 1)}>Increment</button>
+    </span>
+}</StateFragment>
