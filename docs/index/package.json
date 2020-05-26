@@ -5,8 +5,7 @@
   "scripts": {
     "start": "docusaurus start --no-open --host 0.0.0.0",
     "build": "docusaurus build",
-    "build-site.bak": "docusaurus build && cp -r build ../../index/build/docs",
-    "build-site": "echo docs build skipped due to https://github.com/facebook/docusaurus/issues/2431",
+    "build-site": "docusaurus build && cp -r build ../../build/docs",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
     "apply-updates": "ncu -u"
