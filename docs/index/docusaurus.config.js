@@ -4,7 +4,6 @@ module.exports = {
   url: 'https://hookstate.js.org',
   baseUrl: '/',
   favicon: 'img/favicon-32.png',
-  // organizationName: 'facebook', // Usually your GitHub org/user name.
   projectName: 'avkonst/hookstate', // Usually your repo name.
   themeConfig: {
     disableDarkMode: true,
@@ -45,11 +44,11 @@ module.exports = {
           items: [
             {
               label: 'Standard plugins',
-              href: 'docs/extensions',
+              href: 'docs/extensions-overview',
             },
             {
               label: 'Development tools',
-              href: 'docs/devtool',
+              href: 'docs/devtools',
             },
           ],
         },
@@ -81,7 +80,7 @@ module.exports = {
         docs: {
           sidebarPath: require.resolve('./sidebars.js'),
           editUrl:
-            'https://github.com/avkonst/hookstate/edit/master/hookstate.js.org/docs2',
+            'https://github.com/avkonst/hookstate/edit/master/docs/index',
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),

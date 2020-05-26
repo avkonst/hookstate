@@ -28,8 +28,7 @@ const features = [
     description: (
       <>
         Incredible performance based on unique method for tracking of used/rendered and updated state segments.
-        See the performance demos with <Link to={'docs/getting-started'}>huge table state</Link> and
-        with <Link to={'docs/getting-started'}>huge form state</Link>.
+        Ideal solution for huge states and very frequent updates. <Link to={'docs/performance-intro'}>Learn more...</Link>.
       </>
     ),
   },
@@ -61,7 +60,7 @@ const features = [
       <>
         Extend or customize your state hooks. There are several standard plugins available:
         initial state value, touched fields tracking, modified fields tracking,
-        state validation, persistence, and <Link to={'docs/getting-started'}>a lot more...</Link>
+        state validation, persistence, and <Link to={'docs/extensions-overview'}>a lot more...</Link>
       </>
     ),
   },
@@ -74,7 +73,7 @@ const features = [
         to trace and set state values,
         to set breakpoints on state changes,
         to identify components using a segment of a state,
-        and <Link to={'docs/getting-started'}>a lot more...</Link>
+        and <Link to={'docs/devtools'}>a lot more...</Link>
       </>
     ),
   },

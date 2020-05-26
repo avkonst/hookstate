@@ -5,6 +5,7 @@
   "homepage": ".",
   "dependencies": {
     "@hookstate/core": "^1.8.7",
+    "@hookstate/devtools": "^1.8.2",
     "@types/jest": "25.2.3",
     "@types/lodash.clonedeep": "^4.5.6",
     "@types/node": "14.0.5",
