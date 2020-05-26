@@ -5,7 +5,7 @@
   "scripts": {
     "start": "docusaurus start --no-open --host 0.0.0.0",
     "build": "docusaurus build",
-    "build-site": "docusaurus build && cp -r build ../../build/docs",
+    "build-site": "docusaurus build && cp .netlify-headers build/_headers && cp .netlify-redirects build/_redirects",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
     "apply-updates": "ncu -u"

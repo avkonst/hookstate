@@ -1,0 +1,14 @@
+# see format of the file here: https://www.netlify.com/docs/headers-and-basic-auth/#custom-headers
+
+/checkline
+   # Headers for that path:
+   Cache-Control: no-cache
+
+/version.json
+   # Headers for that path:
+   Cache-Control: no-cache
+
+/*
+  # required for https://hstspreload.org, see https://www.netlify.com/docs/ssl/#forcing-ssl
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  
