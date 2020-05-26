@@ -8,9 +8,9 @@ import { PreviewSample } from '../src/PreviewSample'
 
 ## Dealing with nullable state
 
-If a state can be missing (eg. nested property is undefined) or null, checking for null state value is essential before diving into the nested states.
+If a state can be missing (e.g. nested property is `undefined`) or `null`, checking for null state value is essential before diving into the nested states.
 
-Typescript will fail a compilation if you attempt to work with nested states of a state, which might have null or underfined state value. For example:
+Typescript will fail a compilation if you attempt to work with nested states of a state, which might have `null`/`undefined` state value. For example:
 
 ```tsx
 interface Task { name: string, priority?: number }
@@ -31,15 +31,15 @@ Here is the recommended way to check for `null`/`undefined` before unfolding nes
 // type is for clarity, it is inferred by the compiler
 const stateOrNull: State<Task> | null = state[self].ornull
 if (stateOrNull) {
-    // no compilation and runtime errors
+    // neither compilation nor runtime errors
     stateOrNull.name[self].value
 
-    // no compilation and runtime errors
+    // neither compilation nor runtime errors
     stateOrNull[self].value.name
 }
 ```
 
-[StateMethods.ornull](typedoc-hookstate-core.md#ornull) property is a very convenient to deal with nullable and undefined value states. Here is the example of a component, which receives a state, those state value might be null.
+[StateMethods.ornull](typedoc-hookstate-core.md#ornull) property is a very convenient way to deal in those cases. Here is the example of a component, which receives a state whose value might be `null`.
 
 ```tsx
 const MyInputField = (props: { state: State<string | null>}) => {
