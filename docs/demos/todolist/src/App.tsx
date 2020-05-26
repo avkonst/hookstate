@@ -25,7 +25,7 @@ const App: React.FC = () => {
             >Hookstate</a> demo application.
               Source code is on <a
                 style={{ color: '#09d3ac' }}
-                href="https://github.com/avkonst/hookstate/tree/master/hookstate.js.org/demos/todolist"
+                href="https://github.com/avkonst/hookstate/tree/master/docs/demos/todolist"
                 target="_blank"
                 rel="noopener noreferrer"
               >GitHub</a>. 

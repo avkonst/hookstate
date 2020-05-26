@@ -17,7 +17,7 @@ import { ExampleComponent as ExamplePluginUntracked } from './plugin-untracked';
 
 import ExampleIds from './ids';
 
-const baseUrl = 'https://raw.githubusercontent.com/avkonst/hookstate/master/hookstate.js.org/docs2/src/examples/'
+const baseUrl = 'https://raw.githubusercontent.com/avkonst/hookstate/master/docs/index/src/examples/'
 
 export const ExampleCodeUrl = (id: string) => `${baseUrl}${id}.tsx`;
 

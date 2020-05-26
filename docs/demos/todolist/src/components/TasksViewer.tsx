@@ -15,7 +15,7 @@ function TaskEditor(props: { task: State<Task> }) {
     // The next hook is *scoped state* link of a fragment of the global state. 
     // Scoped state is an optional optimisation,
     // we could use 'props.task' everywhere instead of taskState.
-    //     See https://github.com/avkonst/hookstate#usestatelink
+    //     See https://hookstate.js.org/docs/scoped-state
     //     for more details about the *scoped state*.
     let taskState = useState(props.task);
     if (!settingsState.isScopedUpdateEnabled) {
