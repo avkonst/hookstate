@@ -8,6 +8,7 @@ import { ExampleComponent as ExampleLocalComplexFromDocumentation } from './loca
 import { ExampleComponent as ExampleLocalComplexTreeStructure } from './local-complex-tree-structure';
 import { ExampleComponent as ExamplePerformanceLargeTable } from './performance-demo-large-table';
 import { ExampleComponent as ExamplePerformanceLargeForm } from './performance-demo-large-form';
+import { ExampleComponent as ExampleGlobalMultipleConsumersStateFragment } from './global-multiple-consumers-statefragment';
 
 import { ExampleComponent as ExamplePluginInitial } from './plugin-initial';
 import { ExampleComponent as ExamplePluginTouched } from './plugin-touched';
@@ -15,23 +16,22 @@ import { ExampleComponent as ExamplePluginPersistence } from './plugin-persisten
 import { ExampleComponent as ExamplePluginValidation } from './plugin-validation';
 import { ExampleComponent as ExamplePluginUntracked } from './plugin-untracked';
 
-import ExampleIds from './ids';
-
 const baseUrl = 'https://raw.githubusercontent.com/avkonst/hookstate/master/docs/index/src/examples/'
 
 export const ExampleCodeUrl = (id: string) => `${baseUrl}${id}.tsx`;
 
 export const ExamplesRepo: Map<string, React.ReactElement> = new Map();
-ExamplesRepo.set(ExampleIds.GlobalPrimitive, <ExampleGlobalPrimitive />);
-ExamplesRepo.set(ExampleIds.GlobalPrimitiveInterface, <ExampleGlobalPrimitiveInterface />);
-ExamplesRepo.set(ExampleIds.LocalPrimitive, <ExampleLocalPrimitive />);
-ExamplesRepo.set(ExampleIds.LocalComplexFromDocumentation, <ExampleLocalComplexFromDocumentation />);
-ExamplesRepo.set(ExampleIds.AsyncState, <ExampleAsyncState />);
-ExamplesRepo.set(ExampleIds.LocalComplexTreeStructure, <ExampleLocalComplexTreeStructure />);
-ExamplesRepo.set(ExampleIds.PerformanceLargeTable, <ExamplePerformanceLargeTable />);
-ExamplesRepo.set(ExampleIds.PerformanceLargeForm, <ExamplePerformanceLargeForm />);
-ExamplesRepo.set(ExampleIds.PluginInitial, <ExamplePluginInitial />);
-ExamplesRepo.set(ExampleIds.PluginTouched, <ExamplePluginTouched />);
-ExamplesRepo.set(ExampleIds.PluginValidation, <ExamplePluginValidation />);
-ExamplesRepo.set(ExampleIds.PluginPersistence, <ExamplePluginPersistence />);
-ExamplesRepo.set(ExampleIds.PluginUntracked, <ExamplePluginUntracked />);
+ExamplesRepo.set('global-getting-started', <ExampleGlobalPrimitive />);
+ExamplesRepo.set('global-getting-started-interface', <ExampleGlobalPrimitiveInterface />);
+ExamplesRepo.set('local-getting-started', <ExampleLocalPrimitive />);
+ExamplesRepo.set('local-complex-from-documentation', <ExampleLocalComplexFromDocumentation />);
+ExamplesRepo.set('local-async-state', <ExampleAsyncState />);
+ExamplesRepo.set('local-complex-tree-structure', <ExampleLocalComplexTreeStructure />);
+ExamplesRepo.set('performance-demo-large-table', <ExamplePerformanceLargeTable />);
+ExamplesRepo.set('performance-demo-large-form', <ExamplePerformanceLargeForm />);
+ExamplesRepo.set('global-multiple-consumers-statefragment', <ExampleGlobalMultipleConsumersStateFragment />);
+ExamplesRepo.set('plugin-initial', <ExamplePluginInitial />);
+ExamplesRepo.set('plugin-touched', <ExamplePluginTouched />);
+ExamplesRepo.set('plugin-validation', <ExamplePluginValidation />);
+ExamplesRepo.set('plugin-persistence', <ExamplePluginPersistence />);
+ExamplesRepo.set('plugin-untracked', <ExamplePluginUntracked />);

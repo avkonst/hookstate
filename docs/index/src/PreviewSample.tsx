@@ -2,8 +2,6 @@ import React from 'react'
 
 import { ExamplesRepo, ExampleCodeUrl } from './examples/Index';
 
-import ExampleIds from './examples/ids';
-
 import Highlight, { PrismTheme, defaultProps } from 'prism-react-renderer';
 import theme from 'prism-react-renderer/themes/palenight';
 
@@ -73,7 +71,7 @@ const PreviewWithAsyncSource = (props: React.PropsWithChildren<{ url: string, sa
 
 export const PreviewSample = (props: { example?: string, sampleFirst?: boolean }) => {
     const exampleId = props.example && ExamplesRepo.has(props.example)
-        ? props.example : ExampleIds.GlobalPrimitive;
+        ? props.example : 'global-getting-started';
     const exampleMeta = ExamplesRepo.get(exampleId)!;
 
     if (typeof window === 'undefined') {

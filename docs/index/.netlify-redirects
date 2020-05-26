@@ -9,5 +9,22 @@ https://hookstate.netlify.com/* https://hookstate.js.org/:splat 301!
 # the demo sample app handles routes internally, including non-existing pages
 /demo-todolist/* /demo-todolist/index.html 200​
 
+# route old code sample links:
+/global-getting-started /docs/global-state
+/global-getting-started-interface /docs/exporting-state
+/local-getting-started /docs/local-state
+/local-complex-from-documentation /docs/scoped-state
+/local-async-state /docs/asynchronous-state
+/local-complex-tree-structure /docs/recursive-state
+/performance-demo-large-table /docs/performance-frequent-updates
+/performance-demo-large-form /docs/performance-large-state
+/global-multiple-consumers-statefragment /docs/using-without-statehook
+/plugin-initial /docs/extensions-initial
+/plugin-initial-statefragment /docs/extensions-initial
+/plugin-touched /docs/extensions-touched
+/plugin-persistence /docs/extensions-persistence
+/plugin-validation /docs/extensions-validation
+/plugin-untracked /docs/performance-managed-rendering
+
 # the application handles routes internally, including non-existing pages
 /* /index.html 200​
