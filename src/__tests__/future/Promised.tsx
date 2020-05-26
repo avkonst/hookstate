@@ -20,6 +20,7 @@ test('primitive: should rerender used on promise resolve', async () => {
     });
     expect(renderTimes).toStrictEqual(2);
     expect(result.current[self].map(() => false, () => true)).toStrictEqual(true);
+    expect(result.current[self].map()).toStrictEqual([true, undefined, undefined]);
     expect(() => result.current[self].map(() => false, (s) => s[self].keys, e => e))
         .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
     expect(() => result.current[self].get())
@@ -32,7 +33,8 @@ test('primitive: should rerender used on promise resolve', async () => {
         await promise;
     })
     expect(renderTimes).toStrictEqual(3);
-    expect(result.current[self].map(() => false, () => true)).toStrictEqual(false);
+    expect(result.current.map(() => false, () => true)).toStrictEqual(false);
+    expect(result.current[self].map()).toStrictEqual([false, undefined, 100]);
     expect(result.current[self].map(() => false, (s) => s[self].value, e => e)).toEqual(false);
     expect(result.current[self].get()).toEqual(100);
 });
@@ -281,6 +283,7 @@ test('primitive: should rerender used on promise rejected', async () => {
     })
     expect(renderTimes).toStrictEqual(3);
     expect(result.current[self].map(() => false, () => true)).toStrictEqual(false);
+    expect(result.current[self].map()).toStrictEqual([false, 'some error rejected', undefined]);
     expect(result.current[self].map(() => false, (s) => s[self].value, e => e)).toEqual('some error rejected');
     expect(() => result.current[self].get()).toThrow('some error rejected');
 });
