@@ -219,6 +219,15 @@ export interface StateMethods<S> {
      */
     map<R, C>(action: (s: State<S>) => R, context?: Exclude<C, Function>): R;
     /**
+     * Unfolds this state to an array representing promise state.
+     * The first element of the array result indicates if promise is loading
+     * (true - loading: promise is not resolved, false - not loading: promise is resolved).
+     * The second element with be either undefined or a value of an error,
+     * which the resolved promise rejected. The third element will be
+     * either undefined or a value of a state, if promise is resolved.
+     */
+    map(): [boolean, StateErrorAtRoot | undefined, S | undefined];
+    /**
      * If state value is null or undefined, returns state value.
      * Otherwise, it returns this state instance but
      * with null and undefined removed from the type parameter.

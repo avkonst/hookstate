@@ -1191,6 +1191,15 @@ var StateLinkImpl = /** @class */ (function () {
     });
     StateLinkImpl.prototype.map = function (action, onPromised, onError, context) {
         var _this = this;
+        if (!action) {
+            if (this.promised) {
+                return [true, undefined, undefined];
+            }
+            if (this.error) {
+                return [false, this.error, undefined];
+            }
+            return [false, undefined, this.value];
+        }
         var contextArg = typeof onPromised === 'function'
             ? (typeof onError === 'function' ? context : onError)
             : onPromised;
