@@ -23,8 +23,8 @@ export const ExampleComponent = () => {
 }
 
 function NodeNameEditor(props: { nameState: State<string> }) {
-    // scoped state is optinal for performance
-    // could use props.nameState everywhere instead
+    // scoped state is optional for performance
+    // could have used props.nameState everywhere instead
     const state = useState(props.nameState);
     return <>
         <p>
@@ -37,8 +37,8 @@ function NodeNameEditor(props: { nameState: State<string> }) {
 }
 
 function NodeListEditor(props: { nodes: State<Node[] | undefined> }) {
-    // scoped stte is optinal for performance
-    // could use props.nodes everywhere instead
+    // scoped state is optional for performance
+    // could have used props.nodes everywhere instead
     const state = useState(props.nodes);
     return <div style={{ paddingLeft: 20 }}>
         {state[self].ornull && state[self].ornull.map((nodeState: State<Node>, i) =>
@@ -54,8 +54,8 @@ function NodeListEditor(props: { nodes: State<Node[] | undefined> }) {
 }
 
 function JsonDump(props: { state: State<Node[] | undefined> }) {
-    // useStateLink is optinal for performance
-    // could use props.state everywhere instead
+    // scoped state is optional for performance
+    // could have used props.state everywhere instead
     const state = useState(props.state);
     return <p>
         Current state: {JSON.stringify(state[self].value)} <br/>
