@@ -1265,7 +1265,6 @@ class Store implements Subscribable {
 
 const SynteticID = Symbol('SynteticTypeInferenceMarker');
 const ValueCache = Symbol('ValueCache');
-const NestedCache = Symbol('NestedCache');
 const UnmountedCallback = Symbol('UnmountedCallback');
 
 const NoActionOnUpdate = () => { /* empty */ };
@@ -1361,7 +1360,6 @@ class StateLinkImpl<S> implements StateLink<S>,
                 // a link which has been discarded after rerender
                 // but still captured by some callback or an effect
                 delete this[ValueCache]
-                delete this[NestedCache]
             } else {
                 // this link is still mounted to a component
                 // populate cache again to ensure correct tracking of usage
@@ -1369,11 +1367,6 @@ class StateLinkImpl<S> implements StateLink<S>,
                 if (ValueCache in this) {
                     delete this[ValueCache]
                     this.get(true)
-                }
-                if (NestedCache in this) {
-                    delete this[NestedCache]
-                    // tslint:disable-next-line no-unused-expression
-                    this.nested // trigger call to mark 'nested' as used again
                 }
             }
         }
@@ -1592,14 +1585,14 @@ class StateLinkImpl<S> implements StateLink<S>,
     private updateIfUsed(paths: Path[], actions: (() => void)[]): boolean {
         const update = () => {
             if (this.isDowngraded &&
-                (ValueCache in this || NestedCache in this)) {
+                (ValueCache in this)) {
                 actions.push(this.onUpdateUsed);
                 return true;
             }
             for (let path of paths) {
                 const firstChildKey = path[this.path.length];
                 if (firstChildKey === undefined) {
-                    if (ValueCache in this || NestedCache in this) {
+                    if (ValueCache in this) {
                         actions.push(this.onUpdateUsed);
                         return true;
                     }
@@ -1654,62 +1647,6 @@ class StateLinkImpl<S> implements StateLink<S>,
         return r;
     }
     
-    get nested(): InferredStateLinkNestedType<S> {
-        const currentValue = this.getUntracked()
-        if (this[NestedCache] === undefined) {
-            if (Array.isArray(currentValue)) {
-                this[NestedCache] = this.nestedArrayImpl(currentValue);
-            } else if (typeof currentValue === 'object' && currentValue !== null) {
-                this[NestedCache] = this.nestedObjectImpl(currentValue as unknown as object);
-            } else {
-                this[NestedCache] = undefined;
-            }
-        }
-        return this[NestedCache] as InferredStateLinkNestedType<S>;
-    }
-
-    private nestedArrayImpl(currentValue: StateValueAtPath[]): InferredStateLinkNestedType<S> {
-        this.nestedLinksCache = this.nestedLinksCache || {};
-        const proxyGetterCache = this.nestedLinksCache;
-
-        const getter = (target: object, key: PropertyKey) => {
-            if (key === 'length') {
-                return (target as []).length;
-            }
-            if (key in Array.prototype) {
-                return Array.prototype[key];
-            }
-            if (key === ProxyMarkerID) {
-                return this;
-            }
-            if (typeof key === 'symbol') {
-                return undefined;
-            }
-            const index = Number(key);
-            if (!Number.isInteger(index)) {
-                return undefined;
-            }
-            const cachehit = proxyGetterCache[index];
-            if (cachehit) {
-                return cachehit;
-            }
-            const r = new StateLinkImpl(
-                this.state,
-                this.path.slice().concat(index),
-                this.onUpdateUsed,
-                target[index],
-                this.valueEdition
-            )
-            if (this.isDowngraded) {
-                r.isDowngraded = true;
-            }
-            proxyGetterCache[index] = r;
-            return r;
-        };
-        return this.proxyWrap(currentValue, getter) as
-            unknown as InferredStateLinkNestedType<S>;
-    }
-
     private valueArrayImpl(currentValue: StateValueAtPath[]): S {
         return proxyWrap(
             this.path,
@@ -1747,38 +1684,6 @@ class StateLinkImpl<S> implements StateLink<S>,
         ) as unknown as S;
     }
 
-    private nestedObjectImpl(currentValue: object): InferredStateLinkNestedType<S> {
-        this.nestedLinksCache = this.nestedLinksCache || {};
-        const proxyGetterCache = this.nestedLinksCache;
-
-        const getter = (target: object, key: PropertyKey) => {
-            if (key === ProxyMarkerID) {
-                return this;
-            }
-            if (typeof key === 'symbol') {
-                return undefined;
-            }
-            const cachehit = proxyGetterCache[key];
-            if (cachehit) {
-                return cachehit;
-            }
-            const r = new StateLinkImpl(
-                this.state,
-                this.path.slice().concat(key.toString()),
-                this.onUpdateUsed,
-                target[key],
-                this.valueEdition
-            );
-            if (this.isDowngraded) {
-                r.isDowngraded = true;
-            }
-            proxyGetterCache[key] = r;
-            return r;
-        };
-        return this.proxyWrap(currentValue, getter) as
-            unknown as InferredStateLinkNestedType<S>;
-    }
-
     private valueObjectImpl(currentValue: object): S {
         return proxyWrap(
             this.path,
@@ -1806,81 +1711,6 @@ class StateLinkImpl<S> implements StateLink<S>,
         ) as unknown as S;
     }
 
-    // tslint:disable-next-line: no-any
-    private proxyWrap(objectToWrap: any,
-        // tslint:disable-next-line: no-any
-        getter: (target: any, key: PropertyKey) => any,
-        // tslint:disable-next-line: no-any
-        setter?: (target: any, p: PropertyKey, value: any, receiver: any) => boolean
-    ) {
-        const onInvalidUsage = (op: ErrorId) => {
-            throw new StateLinkInvalidUsageError(this.path, op)
-        }
-        return new Proxy(objectToWrap, {
-            getPrototypeOf: (target) => {
-                return Object.getPrototypeOf(target);
-            },
-            setPrototypeOf: (target, v) => {
-                return onInvalidUsage(ErrorId.SetPrototypeOf_Value)
-            },
-            isExtensible: (target) => {
-                // should satisfy the invariants:
-                // https://developer.mozilla.org/en-US/docs/Web/JavaScript/
-                // Reference/Global_Objects/Proxy/handler/isExtensible#Invariants
-                return Object.isExtensible(target);
-            },
-            preventExtensions: (target) => {
-                return onInvalidUsage(ErrorId.PreventExtensions_Value)
-            },
-            getOwnPropertyDescriptor: (target, p) => {
-                const origin = Object.getOwnPropertyDescriptor(target, p);
-                if (origin && Array.isArray(target) && p in Array.prototype) {
-                    return origin;
-                }
-                return origin && {
-                    configurable: true, // JSON.stringify() does not work for an object without it
-                    enumerable: origin.enumerable,
-                    get: () => getter(target as object, p),
-                    set: undefined
-                };
-            },
-            has: (target, p) => {
-                if (typeof p === 'symbol') {
-                    return false;
-                }
-                return p in target;
-            },
-            get: getter,
-            set: setter || ((target, p, value, receiver) => {
-                return onInvalidUsage(ErrorId.SetProperty_Value)
-            }),
-            deleteProperty: (target, p) => {
-                return onInvalidUsage(ErrorId.DeleteProperty_Value)
-            },
-            defineProperty: (target, p, attributes) => {
-                return onInvalidUsage(ErrorId.DefineProperty_Value)
-            },
-            enumerate: (target) => {
-                if (Array.isArray(target)) {
-                    return Object.keys(target).concat('length');
-                }
-                return Object.keys(target);
-            },
-            ownKeys: (target) => {
-                if (Array.isArray(target)) {
-                    return Object.keys(target).concat('length');
-                }
-                return Object.keys(target);
-            },
-            apply: (target, thisArg, argArray?) => {
-                return onInvalidUsage(ErrorId.Apply_Value)
-            },
-            construct: (target, argArray, newTarget?) => {
-                return onInvalidUsage(ErrorId.Construct_Value)
-            }
-        });
-    }
-    
     get [self](): State<S> {
         return proxyWrap(this.path, 
             this.valueSource,
@@ -2437,7 +2267,6 @@ export const None = none;
 export interface StateLink<S> extends StateMethods<S> {
     readonly promised: boolean;
     readonly error: StateErrorAtRoot | undefined; //tslint:disable-line: no-any
-    readonly nested: InferredStateLinkNestedType<S>;
     denull(): InferredStateLinkDenullType<S>;
     batch(action: (s: StateLink<S>) => void, options?: BatchOptions): void;
     wrap<R>(transform: (state: StateLink<S>, prev: R | undefined) => R): WrappedStateLink<R>;
