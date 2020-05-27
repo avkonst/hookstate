@@ -443,97 +443,18 @@ export interface Plugin {
     readonly init?: (state: State<StateValueAtRoot>) => PluginCallbacks;
 }
 
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export function createStateLink<S>(
-    initial: SetInitialStateAction<S>
-): StateLink<S> & StateMethodsDestroy;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export function createStateLink<S, R>(
-    initial: SetInitialStateAction<S>,
-    transform: (state: StateLink<S>, prev: R | undefined) => R
-): WrappedStateLink<R> & StateMethodsDestroy;
-export function createStateLink<S, R>(
-    initial: SetInitialStateAction<S>,
-    transform?: ((state: StateLink<S>, prev: R | undefined) => R)
-): (StateLink<S> & StateMethodsDestroy) |
-    (WrappedStateLink<R> & StateMethodsDestroy) {
-    const stateLink = createStore(initial).accessUnmounted() as StateLinkImpl<S>
-    if (createStateLink[DevToolsID]) {
-        stateLink.with(createStateLink[DevToolsID])
-    }
-    if (transform) {
-        return stateLink.wrap(transform)
-    }
-    return stateLink
-}
-
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export function useStateLink<S>(
-    source: StateLink<S>
-): StateLink<S>;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export function useStateLink<S, R>(
-    source: StateLink<S>,
-    transform: (state: StateLink<S>, prev: R | undefined) => R
-): R;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export function useStateLink<R>(
-    source: WrappedStateLink<R>
-): R;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export function useStateLink<S>(
+function useStateMethods<S>(
+    source: StateMethods<S>
+): StateMethodsImpl<S>;
+function useStateMethods<S>(
     source: SetInitialStateAction<S>
-): StateLink<S>;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export function useStateLink<S, R>(
-    source: SetInitialStateAction<S>,
-    transform: (state: StateLink<S>, prev: R | undefined) => R
-): R;
-export function useStateLink<S, R>(
-    source: SetInitialStateAction<S> | StateLink<S> | WrappedStateLink<R>,
-    transform?: (state: StateLink<S>, prev: R | undefined) => R
-): StateLink<S> | R {
-    const [parentLink, tf] =
-        source instanceof StateLinkImpl ?
-            [source as StateLinkImpl<S>, transform] :
-            source instanceof WrappedStateLinkImpl ?
-                [source.state as StateLinkImpl<S>, source.transform] :
-                [undefined, transform];
+): StateMethodsImpl<S>;
+function useStateMethods<S>(
+    source: SetInitialStateAction<S> | StateMethods<S>
+): StateMethodsImpl<S> {
+    const parentLink = source instanceof StateMethodsImpl ?
+        source as StateMethodsImpl<S> :
+        undefined
     if (parentLink) {
         if (parentLink.onUpdateUsed === NoActionOnUpdate) {
             // Global state mount
@@ -545,7 +466,7 @@ export function useStateLink<S, R>(
                 () => setValue({ state: value.state }),
                 value.state,
                 undefined);
-            return tf ? injectTransform(link, tf) : link;
+            return link;
         } else {
             // Scoped state mount
             // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -556,7 +477,7 @@ export function useStateLink<S, R>(
                 () => setValue({}),
                 parentLink,
                 parentLink.isDowngraded);
-            return tf ? injectTransform(link, tf) : link;
+            return link;
         }
     } else {
         // Local state mount
@@ -569,10 +490,7 @@ export function useStateLink<S, R>(
             value.state,
             undefined);
         React.useEffect(() => () => value.state.destroy(), []);
-        if (useStateLink[DevToolsID]) {
-            link.with(useStateLink[DevToolsID])
-        }
-        return tf ? injectTransform(link, tf) : link;
+        return link;
     }
 }
 
@@ -610,11 +528,11 @@ export function useStateLink<S, R>(
 export function createState<S>(
     initial: SetInitialStateAction<S>
 ): State<S> & StateMixinDestroy {
-    const stateLink = createStateLink(initial);
+    const stateLink = createStore(initial).accessUnmounted();
     if (createState[DevToolsID]) {
-        stateLink.attach(createState[DevToolsID])
+        stateLink[self].attach(createState[DevToolsID])
     }
-    return stateLink[self] as State<S> & StateMixinDestroy;
+    return stateLink as State<S> & StateMixinDestroy;
 }
 
 /**
@@ -689,7 +607,7 @@ export function useState<S>(
             sourceIsInitialValue = false
         }
     }
-    const statelink = useStateLink(source as SetInitialStateAction<S>);
+    const statelink = useStateMethods(source as SetInitialStateAction<S>);
     if (sourceIsInitialValue && useState[DevToolsID]) {
         statelink.attach(useState[DevToolsID])
     }
@@ -710,117 +628,25 @@ export function StateFragment<S>(
     }
 ): React.ReactElement;
 /**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export function StateFragment<S>(
-    props: {
-        state: StateLink<S>,
-        children: (state: StateLink<S>) => React.ReactElement,
-    }
-): React.ReactElement;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated use StateFragment(state={state.wrap(transform)}) instead
- */
-export function StateFragment<S, E extends {}, R>(
-    props: {
-        state: StateLink<S>,
-        transform: (state: StateLink<S>, prev: R | undefined) => R,
-        children: (state: R) => React.ReactElement,
-    }
-): React.ReactElement;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export function StateFragment<R>(
-    props: {
-        state: WrappedStateLink<R>,
-        children: (state: R) => React.ReactElement,
-    }
-): React.ReactElement;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export function StateFragment<S>(
-    props: {
-        state: SetInitialStateAction<S>,
-        children: (state: StateLink<S>) => React.ReactElement,
-    }
-): React.ReactElement;
-/**
  * Allows to use a state without defining a functional react component.
  * See more at [StateFragment](#statefragment)
  * 
  * @typeparam S Type of a value of a state
- * // TODO uncomment once moved to version 2
  */
-// export function StateFragment<S>(
-//     props: {
-//         state: SetInitialStateAction<S>,
-//         children: (state: State<S>) => React.ReactElement,
-//     }
-// ): React.ReactElement;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export function StateFragment<S, R>(
+export function StateFragment<S>(
     props: {
         state: SetInitialStateAction<S>,
-        transform: (state: StateLink<S>, prev: R | undefined) => R,
-        children: (state: R) => React.ReactElement,
+        children: (state: State<S>) => React.ReactElement,
     }
 ): React.ReactElement;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export function StateFragment<S, E extends {}, R>(
+export function StateFragment<S>(
     props: {
-        state: SetInitialStateAction<S> | State<S> | StateLink<S> | WrappedStateLink<R>,
-        transform?: (state: StateLink<S>, prev: R | undefined) => R,
-        children: (state: State<S> | StateLink<S> | R) => React.ReactElement,
+        state: State<S> | SetInitialStateAction<S>,
+        children: (state: State<S>) => React.ReactElement,
     }
 ): React.ReactElement {
-    // tslint:disable-next-line: no-any
-    type AnyArgument = any; // typesafety is guaranteed by overloaded functions above
-    if (props.state[StateMarkerID]) {
-        const scoped = useState<S>(props.state as AnyArgument);
-        return props.children(scoped as AnyArgument);
-    } else {
-        const scoped = useStateLink<S, {}>(props.state as AnyArgument, props.transform as AnyArgument);
-        return props.children(scoped as AnyArgument);
-    }
-}
-
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export function StateMemo<S, R>(
-    transform: (state: StateLink<S>, prev: R | undefined) => R,
-    equals?: (next: R, prev: R) => boolean) {
-    return (link: StateLink<S>, prev: R | undefined) => {
-        link[StateMemoID] = equals || ((n: R, p: R) => (n === p))
-        return transform(link, prev);
-    }
+    const scoped = useState(props.state as State<S>);
+    return props.children(scoped);
 }
 
 /**
@@ -857,9 +683,15 @@ export const DevToolsID = Symbol('DevTools');
  * Return type of [DevTools](#devtools).
  */
 export interface DevToolsExtensions {
+    /**
+     * Assigns custom label to identify the state in the development tools
+     * @param name label for development tools
+     */
     label(name: string): void;
-    // tslint:disable-next-line: no-any
-    log(str: string, data?: any): void;
+    /**
+     * Logs to the development tools
+     */
+    log(str: string, data?: any): void;    // tslint:disable-line: no-any
 }
 
 /**
@@ -939,13 +771,7 @@ interface Subscribable {
 const DowngradedID = Symbol('Downgraded');
 const StateMemoID = Symbol('StateMemo');
 const ProxyMarkerID = Symbol('ProxyMarker');
-/**
- * @hidden
- * @ignore
- * @internal
- * remove export when plugins are migrated to version 2
- */
-export const StateMarkerID = Symbol('State');
+const StateMarkerID = Symbol('State');
 
 const RootPath: Path = [];
 const DestroyedEdition = -1
@@ -1208,8 +1034,7 @@ class Store implements Subscribable {
             return;
         }
 
-        const pluginCallbacks = plugin.create ? plugin.create(this.accessUnmounted()) :
-            plugin.init ? plugin.init(this.accessUnmounted()[self]) : {};
+        const pluginCallbacks = plugin.init ? plugin.init(this.accessUnmounted()) : {};
         this._plugins.set(plugin.id, pluginCallbacks);
         if (pluginCallbacks.onSet) {
             this._setSubscribers.add((p) => pluginCallbacks.onSet!(p))
@@ -1226,7 +1051,7 @@ class Store implements Subscribable {
     }
 
     accessUnmounted() {
-        return new StateLinkImpl<StateValueAtRoot>(
+        return new StateMethodsImpl<StateValueAtRoot>(
             this,
             RootPath,
             NoActionOnUpdate,
@@ -1234,7 +1059,7 @@ class Store implements Subscribable {
             this.edition
             // TODO downgraded plugin should not be used here as it affects all inherited links (which is temporary fixed in the useStateLink)
             // instead optimisations are possible based on checks of onUpdateUsed === NoActionOnUpdate
-        ).with(Downgraded) // it does not matter how it is used, it is not subscribed anyway
+        ).attach(Downgraded) // it does not matter how it is used, it is not subscribed anyway
     }
 
     subscribe(l: Subscriber) {
@@ -1261,36 +1086,6 @@ const UnmountedCallback = Symbol('UnmountedCallback');
 
 const NoActionOnUpdate = () => { /* empty */ };
 NoActionOnUpdate[UnmountedCallback] = true
-
-class WrappedStateLinkImpl<S, R> implements WrappedStateLink<R>, StateMethodsDestroy {
-    // tslint:disable-next-line: variable-name
-    public __synteticTypeInferenceMarkerInf = SynteticID;
-    public disabledTracking: boolean | undefined;
-
-    constructor(
-        public readonly state: StateLinkImpl<S>,
-        public readonly transform: (state: StateLink<S>, prev: R | undefined) => R,
-    ) { }
-
-    access(): R {
-        return this.transform(this.state, undefined)
-    }
-
-    with(plugin: () => Plugin): this {
-        this.state.with(plugin);
-        return this;
-    }
-
-    wrap<R2>(transform: (state: R, prev: R2 | undefined) => R2) {
-        return new WrappedStateLinkImpl<S, R2>(this.state, (s, p) => {
-            return transform(this.transform(s, undefined), p)
-        })
-    }
-
-    destroy() {
-        this.state.destroy()
-    }
-}
 
 type ErrorValueAtPath = any; //tslint:disable-line: no-any
 
@@ -1324,19 +1119,16 @@ class Promised {
     }
 }
 
-class StateLinkImpl<S> implements StateLink<S>,
-    StateMethodsDestroy,
-    ExtendedStateLinkMixin<S>,
-    Subscribable, Subscriber {
+class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subscribable, Subscriber {
     public isDowngraded: boolean | undefined;
     private subscribers: Set<Subscriber> | undefined;
 
-    private nestedLinksCache: Record<string | number, StateLinkImpl<S[keyof S]>> | undefined;
+    private nestedLinksCache: Record<string | number, StateMethodsImpl<S[keyof S]>> | undefined;
 
     constructor(
         public readonly state: Store,
         public readonly path: Path,
-        public onUpdateUsed: (() => void),
+        public readonly onUpdateUsed: (() => void),
         public valueSource: S,
         public valueEdition: number
     ) { }
@@ -1494,36 +1286,8 @@ class StateLinkImpl<S> implements StateLink<S>,
         this.state.update(paths)
     }
 
-    with(plugin: () => Plugin): this;
-    with<R = never>(pluginId: symbol, alt?: () => R): [StateLink<S> & ExtendedStateLinkMixin<S>, PluginCallbacks] | R;
-    with<R = never>(plugin: (() => Plugin) | symbol, alt?: () => R):
-        this | [StateLink<S> & ExtendedStateLinkMixin<S>, PluginCallbacks] | R {
-        if (typeof plugin === 'function') {
-            const pluginMeta = plugin();
-            if (pluginMeta.id === DowngradedID) {
-                this.isDowngraded = true;
-                return this;
-            }
-            this.state.register(pluginMeta);
-            return this;
-        } else {
-            const instance = this.state.getPlugin(plugin);
-            if (instance) {
-                return [this, instance];
-            }
-            if (alt) {
-                return alt();
-            }
-            throw new StateLinkInvalidUsageError(this.path, ErrorId.GetUnknownPlugin, plugin.toString())
-        }
-    }
-
     access() {
         return this;
-    }
-
-    wrap<R>(transform: (state: StateLink<S>, prev: R | undefined) => R) {
-        return new WrappedStateLinkImpl<S, R>(this, transform)
     }
 
     destroy(): void {
@@ -1596,7 +1360,7 @@ class StateLinkImpl<S> implements StateLink<S>,
         if (cachehit) {
             return cachehit;
         }
-        const r = new StateLinkImpl(
+        const r = new StateMethodsImpl(
             this.state,
             this.path.slice().concat(key),
             this.onUpdateUsed,
@@ -1997,7 +1761,7 @@ function useSubscribedStateLink<S>(
     subscribeTarget: Subscribable,
     disabledTracking: boolean | undefined
 ) {
-    const link = new StateLinkImpl<S>(
+    const link = new StateMethodsImpl<S>(
         state,
         path,
         update,
@@ -2005,7 +1769,7 @@ function useSubscribedStateLink<S>(
         state.edition
     );
     if (disabledTracking) {
-        link.with(Downgraded)
+        link.attach(Downgraded)
     }
     React.useEffect(() => {
         subscribeTarget.subscribe(link);
@@ -2015,88 +1779,4 @@ function useSubscribedStateLink<S>(
         }
     });
     return link;
-}
-
-function injectTransform<S, R>(
-    link: StateLinkImpl<S>,
-    transform: (state: StateLink<S>, prev: R | undefined) => R
-) {
-    if (link.onUpdateUsed[UnmountedCallback]) {
-        // this is unmounted link
-        return transform(link, undefined);
-    }
-    let injectedOnUpdateUsed: (() => void) | undefined = undefined;
-    const originOnUpdateUsed = link.onUpdateUsed;
-    link.onUpdateUsed = () => {
-        if (injectedOnUpdateUsed) {
-            return injectedOnUpdateUsed();
-        }
-        return originOnUpdateUsed();
-    }
-
-    const result = transform(link, undefined);
-    const stateMemoEquals: ((a: R, b: R) => boolean) | undefined = link[StateMemoID];
-    if (stateMemoEquals === undefined) {
-        return result;
-    }
-    delete link[StateMemoID];
-
-    injectedOnUpdateUsed = () => {
-        const updatedResult = transform(link, result);
-        // if result is not changed, it does not affect the rendering result too
-        // so, we skip triggering rerendering in this case
-        if (!stateMemoEquals(updatedResult, result)) {
-            originOnUpdateUsed();
-        }
-    }
-    return result;
-}
-
-///
-/// EXTERNAL DEPRECATED SYMBOLS (left for backward compatibility, will be removed in version 2)
-///
-
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export interface StateLink<S> extends StateMethods<S> {
-}
-
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export interface WrappedStateLink<R> {
-    __synteticTypeInferenceMarkerInf: symbol;
-    access(): R;
-    with(plugin: () => Plugin): this;
-    wrap<R2>(transform: (state: R, prev: R2 | undefined) => R2): WrappedStateLink<R2>
-}
-
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export interface ExtendedStateLinkMixin<S> {
-    getUntracked(): S;
-    setUntracked(newValue: SetStateAction<S>): Path;
-    mergeUntracked(mergeValue: SetPartialStateAction<S>): Path | Path[];
-    update(paths: Path[]): void;
-}
-
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export interface Plugin {
-    readonly create?: (state: StateLink<StateValueAtRoot>) => PluginCallbacks;
 }
