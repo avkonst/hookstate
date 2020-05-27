@@ -110,18 +110,12 @@ function DevToolsInitializeInternal() {
             return defaultLabel()
         }
         const parts = s.split('\n');
-        if (parts.length < 6) {
+        if (parts.length < 3) {
             return defaultLabel()
         }
-        for (let ind = 2; ind <= parts.length; ind += 1) {
-            const result = parts[ind]
-                .replace(/\s*[(].*/, '')
-                .replace(/\s*at\s*/, '')
-            if (result[0] >= 'A' && result[0] <= 'Z') {
-                return result
-            }
-        }
-        return defaultLabel()
+        return parts[2]
+            .replace(/\s*[(].*/, '')
+            .replace(/\s*at\s*/, '')
     }
     
     function createReduxDevToolsLogger(
