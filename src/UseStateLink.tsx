@@ -460,7 +460,7 @@ function useStateMethods<S>(
             // Global state mount
             // eslint-disable-next-line react-hooks/rules-of-hooks
             const [value, setValue] = React.useState({ state: parentLink.state });
-            const link = useSubscribedStateLink<S>(
+            const link = useSubscribedStateMethods<S>(
                 value.state,
                 parentLink.path,
                 () => setValue({ state: value.state }),
@@ -471,7 +471,7 @@ function useStateMethods<S>(
             // Scoped state mount
             // eslint-disable-next-line react-hooks/rules-of-hooks
             const [, setValue] = React.useState({});
-            const link = useSubscribedStateLink<S>(
+            const link = useSubscribedStateMethods<S>(
                 parentLink.state,
                 parentLink.path,
                 () => setValue({}),
@@ -483,7 +483,7 @@ function useStateMethods<S>(
         // Local state mount
         // eslint-disable-next-line react-hooks/rules-of-hooks
         const [value, setValue] = React.useState(() => ({ state: createStore(source) }));
-        const link = useSubscribedStateLink<S>(
+        const link = useSubscribedStateMethods<S>(
             value.state,
             RootPath,
             () => setValue({ state: value.state }),
@@ -528,11 +528,11 @@ function useStateMethods<S>(
 export function createState<S>(
     initial: SetInitialStateAction<S>
 ): State<S> & StateMixinDestroy {
-    const stateLink = createStore(initial).accessUnmounted();
+    const state = createStore(initial).accessUnmounted();
     if (createState[DevToolsID]) {
-        stateLink[self].attach(createState[DevToolsID])
+        state[self].attach(createState[DevToolsID])
     }
-    return stateLink as State<S> & StateMixinDestroy;
+    return state as State<S> & StateMixinDestroy;
 }
 
 /**
@@ -603,15 +603,15 @@ export function useState<S>(
         const sl = source[StateMarkerID]
         if (sl) {
             // it is already state object
-            source = sl; // get underlying StateLink
+            source = sl; // get underlying StateMethods
             sourceIsInitialValue = false
         }
     }
-    const statelink = useStateMethods(source as SetInitialStateAction<S>);
+    const statemethods = useStateMethods(source as SetInitialStateAction<S>);
     if (sourceIsInitialValue && useState[DevToolsID]) {
-        statelink.attach(useState[DevToolsID])
+        statemethods.attach(useState[DevToolsID])
     }
-    return statelink[self];
+    return statemethods[self];
 }
 
 /**
@@ -752,7 +752,7 @@ enum ErrorId {
     Apply_Value = 214,
 }
 
-class StateLinkInvalidUsageError extends Error {
+class StateInvalidUsageError extends Error {
     constructor(path: Path, id: ErrorId, details?: string) {
         super(`Error: HOOKSTATE-${id} [path: /${path.join('/')}${details ? `, details: ${details}` : ''}]. ` +
             `See https://hookstate.js.org/docs/exceptions#hookstate-${id}`)
@@ -855,7 +855,7 @@ class Store implements Subscribable {
 
     set(path: Path, value: StateValueAtPath, mergeValue: Partial<StateValueAtPath> | undefined): Path {
         if (this._edition < 0) {
-            throw new StateLinkInvalidUsageError(path, ErrorId.SetStateWhenDestroyed)
+            throw new StateInvalidUsageError(path, ErrorId.SetStateWhenDestroyed)
         }
 
         if (path.length === 0) {
@@ -878,7 +878,7 @@ class Store implements Subscribable {
                 delete onSetArg.value
                 delete onSetArg.state
             } else if (this._promised && !this._promised.resolver) {
-                throw new StateLinkInvalidUsageError(path, ErrorId.SetStateWhenPromised)
+                throw new StateInvalidUsageError(path, ErrorId.SetStateWhenPromised)
             }
 
             let prevValue = this._value;
@@ -897,7 +897,7 @@ class Store implements Subscribable {
         }
 
         if (typeof value === 'object' && Promise.resolve(value) === value) {
-            throw new StateLinkInvalidUsageError(path, ErrorId.SetStateNestedToPromised)
+            throw new StateInvalidUsageError(path, ErrorId.SetStateNestedToPromised)
         }
 
         let target = this._value;
@@ -1057,7 +1057,7 @@ class Store implements Subscribable {
             NoActionOnUpdate,
             this.get(RootPath),
             this.edition
-            // TODO downgraded plugin should not be used here as it affects all inherited links (which is temporary fixed in the useStateLink)
+            // TODO downgraded plugin should not be used here as it affects all inherited links (which is temporary fixed in the useStateMethods)
             // instead optimisations are possible based on checks of onUpdateUsed === NoActionOnUpdate
         ).attach(Downgraded) // it does not matter how it is used, it is not subscribed anyway
     }
@@ -1076,7 +1076,7 @@ class Store implements Subscribable {
     }
 
     toJSON() {
-        throw new StateLinkInvalidUsageError(RootPath, ErrorId.ToJson_Value);
+        throw new StateInvalidUsageError(RootPath, ErrorId.ToJson_Value);
     }
 }
 
@@ -1158,7 +1158,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
             if (this.state.promised && this.state.promised.error) {
                 throw this.state.promised.error;
             }
-            throw new StateLinkInvalidUsageError(this.path, ErrorId.GetStateWhenPromised)
+            throw new StateInvalidUsageError(this.path, ErrorId.GetStateWhenPromised)
         }
         return this.valueSource;
     }
@@ -1207,7 +1207,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
             newValue = (newValue as ((prevValue: S) => S))(this.getUntracked());
         }
         if (typeof newValue === 'object' && newValue !== null && newValue[ProxyMarkerID]) {
-            throw new StateLinkInvalidUsageError(this.path, ErrorId.SetStateToValueFromState)
+            throw new StateInvalidUsageError(this.path, ErrorId.SetStateToValueFromState)
         }
         return this.state.set(this.path, newValue, mergeValue);
     }
@@ -1405,7 +1405,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                     target[key] = value;
                     return true;
                 }
-                throw new StateLinkInvalidUsageError(this.path, ErrorId.SetProperty_Value)
+                throw new StateInvalidUsageError(this.path, ErrorId.SetProperty_Value)
             },
             true
         ) as unknown as S;
@@ -1432,7 +1432,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                     target[key] = value;
                     return true;
                 }
-                throw new StateLinkInvalidUsageError(this.path, ErrorId.SetProperty_Value)
+                throw new StateInvalidUsageError(this.path, ErrorId.SetProperty_Value)
             },
             true
         ) as unknown as S;
@@ -1459,7 +1459,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                 }
             } else {
                 if (key === 'toJSON') {
-                    throw new StateLinkInvalidUsageError(this.path, ErrorId.ToJson_State);
+                    throw new StateInvalidUsageError(this.path, ErrorId.ToJson_State);
                 }
                 
                 const currentValue = this.getUntracked(true);
@@ -1487,7 +1487,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                             return (p: symbol) => this.attach(p)
                         default:
                             this.get() // mark used
-                            throw new StateLinkInvalidUsageError(this.path, ErrorId.GetStatePropertyWhenPrimitive)
+                            throw new StateInvalidUsageError(this.path, ErrorId.GetStatePropertyWhenPrimitive)
                     }
                 }
 
@@ -1509,7 +1509,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
             }
         },
         (_, key, value) => {
-            throw new StateLinkInvalidUsageError(this.path, ErrorId.SetProperty_State)
+            throw new StateInvalidUsageError(this.path, ErrorId.SetProperty_State)
         },
         false) as unknown as State<S>;
     }
@@ -1606,7 +1606,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         } else {
             const instance = this.state.getPlugin(p);
             const capturedThis = this;
-            return [instance || (new StateLinkInvalidUsageError(this.path, ErrorId.GetUnknownPlugin, p.toString())), 
+            return [instance || (new StateInvalidUsageError(this.path, ErrorId.GetUnknownPlugin, p.toString())), 
                 // TODO need to create an instance until version 2
                 // because of the incompatible return types from methods
                 {
@@ -1641,7 +1641,7 @@ function proxyWrap(
     isValueProxy: boolean
 ) {
     const onInvalidUsage = (op: ErrorId) => {
-        throw new StateLinkInvalidUsageError(path, op)
+        throw new StateInvalidUsageError(path, op)
     }
     if (typeof targetBootstrap !== 'object' || targetBootstrap === null) {
         targetBootstrap = {}
@@ -1749,12 +1749,12 @@ function createStore<S>(initial: SetInitialStateAction<S>): Store {
         initialValue = (initial as (() => S | Promise<S>))();
     }
     if (typeof initialValue === 'object' && initialValue !== null && initialValue[ProxyMarkerID]) {
-        throw new StateLinkInvalidUsageError(RootPath, ErrorId.InitStateToValueFromState)
+        throw new StateInvalidUsageError(RootPath, ErrorId.InitStateToValueFromState)
     }
     return new Store(initialValue);
 }
 
-function useSubscribedStateLink<S>(
+function useSubscribedStateMethods<S>(
     state: Store,
     path: Path,
     update: () => void,
