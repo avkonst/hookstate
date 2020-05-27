@@ -1711,7 +1711,10 @@ class StateLinkImpl<S> implements StateLink<S>,
     }
 
     private valueArrayImpl(currentValue: StateValueAtPath[]): S {
-        return this.proxyWrap(currentValue,
+        return proxyWrap(
+            this.path,
+            currentValue,
+            () => currentValue,
             (target: object, key: PropertyKey) => {
                 if (key === 'length') {
                     return (target as []).length;
@@ -1730,7 +1733,7 @@ class StateLinkImpl<S> implements StateLink<S>,
                 if (!Number.isInteger(index)) {
                     return undefined;
                 }
-                return (this.nested)![index].get();
+                return this.child(index).get();
             },
             (target: object, key: PropertyKey, value: StateValueAtPath) => {
                 if (typeof key === 'symbol') {
@@ -1739,7 +1742,8 @@ class StateLinkImpl<S> implements StateLink<S>,
                     return true;
                 }
                 throw new StateLinkInvalidUsageError(this.path, ErrorId.SetProperty_Value)
-            }
+            },
+            true
         ) as unknown as S;
     }
 
@@ -1776,7 +1780,10 @@ class StateLinkImpl<S> implements StateLink<S>,
     }
 
     private valueObjectImpl(currentValue: object): S {
-        return this.proxyWrap(currentValue,
+        return proxyWrap(
+            this.path,
+            currentValue,
+            () => currentValue,
             (target: object, key: PropertyKey) => {
                 if (key === ProxyMarkerID) {
                     return this;
@@ -1785,7 +1792,7 @@ class StateLinkImpl<S> implements StateLink<S>,
                     // allow clients to associate hidden cache with state values
                     return target[key];
                 }
-                return (this.nested)![key].value;
+                return this.child(key).get();
             },
             (target: object, key: PropertyKey, value: StateValueAtPath) => {
                 if (typeof key === 'symbol') {
@@ -1794,7 +1801,8 @@ class StateLinkImpl<S> implements StateLink<S>,
                     return true;
                 }
                 throw new StateLinkInvalidUsageError(this.path, ErrorId.SetProperty_Value)
-            }
+            },
+            true
         ) as unknown as S;
     }
 
@@ -1945,7 +1953,8 @@ class StateLinkImpl<S> implements StateLink<S>,
         },
         (_, key, value) => {
             throw new StateLinkInvalidUsageError(this.path, ErrorId.SetProperty_State)
-        }) as unknown as State<S>;
+        },
+        false) as unknown as State<S>;
     }
     
     map<R, RL, RE, C>(
@@ -2071,7 +2080,8 @@ function proxyWrap(
     // tslint:disable-next-line: no-any
     propertyGetter: (unused: any, key: PropertyKey) => any,
     // tslint:disable-next-line: no-any
-    propertySetter: (unused: any, p: PropertyKey, value: any, receiver: any) => boolean
+    propertySetter: (unused: any, p: PropertyKey, value: any, receiver: any) => boolean,
+    isValueProxy: boolean
 ) {
     const onInvalidUsage = (op: ErrorId) => {
         throw new StateLinkInvalidUsageError(path, op)
@@ -2090,7 +2100,9 @@ function proxyWrap(
             return Object.getPrototypeOf(targetReal);
         },
         setPrototypeOf: (target, v) => {
-            return onInvalidUsage(ErrorId.SetPrototypeOf_State)
+            return onInvalidUsage(isValueProxy ?
+                ErrorId.SetPrototypeOf_State :
+                ErrorId.SetPrototypeOf_Value)
         },
         isExtensible: (target) => {
             // should satisfy the invariants:
@@ -2099,7 +2111,9 @@ function proxyWrap(
             // return Object.isExtensible(target);
         },
         preventExtensions: (target) => {
-            return onInvalidUsage(ErrorId.PreventExtensions_State)
+            return onInvalidUsage(isValueProxy ?
+                ErrorId.PreventExtensions_State :
+                ErrorId.PreventExtensions_Value)
         },
         getOwnPropertyDescriptor: (target, p) => {
             const targetReal = targetGetter()
@@ -2130,10 +2144,14 @@ function proxyWrap(
         get: propertyGetter,
         set: propertySetter,
         deleteProperty: (target, p) => {
-            return onInvalidUsage(ErrorId.DeleteProperty_State)
+            return onInvalidUsage(isValueProxy ?
+                ErrorId.DeleteProperty_State :
+                ErrorId.DeleteProperty_Value)
         },
         defineProperty: (target, p, attributes) => {
-            return onInvalidUsage(ErrorId.DefineProperty_State)
+            return onInvalidUsage(isValueProxy ?
+                ErrorId.DefineProperty_State :
+                ErrorId.DefineProperty_Value)
         },
         enumerate: (target) => {
             const targetReal = targetGetter()
@@ -2156,10 +2174,14 @@ function proxyWrap(
             return Object.keys(targetReal);
         },
         apply: (target, thisArg, argArray?) => {
-            return onInvalidUsage(ErrorId.Apply_State)
+            return onInvalidUsage(isValueProxy ?
+                ErrorId.Apply_State:
+                ErrorId.Apply_Value)
         },
         construct: (target, argArray, newTarget?) => {
-            return onInvalidUsage(ErrorId.Construct_State)
+            return onInvalidUsage(isValueProxy ?
+                ErrorId.Construct_State :
+                ErrorId.Construct_Value)
         }
     });
 }
