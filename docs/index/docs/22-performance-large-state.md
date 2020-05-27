@@ -1,7 +1,7 @@
 ---
 id: performance-large-state
 title: Large state / Large forms
-sidebar_label: Large states & forms
+sidebar_label: Large states
 ---
 
 import { PreviewSample } from '../src/PreviewSample'

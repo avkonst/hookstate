@@ -17,10 +17,10 @@ module.exports = {
             'asynchronous-state',
             'recursive-state',
             'exporting-state',
-            'dynamic-states-store',
+            // 'dynamic-states-store',
             'using-without-statehook',
-            'using-with-memo',
-            'moving-from-redux-mobx'
+            // 'using-with-memo',
+            // 'moving-from-redux-mobx'
         ],
         Performance: [
             'performance-intro',
@@ -36,9 +36,9 @@ module.exports = {
             'extensions-touched',
             'extensions-validation',
             'extensions-labelled',
-            'extensions-broadcasted',
+            // 'extensions-broadcasted',
             'extensions-persistence',
-            'extensions-offline',
+            // 'extensions-offline',
             'writing-plugin'
         ],
         'Development Tools': ['devtools'],

@@ -6,4 +6,5 @@ sidebar_label: Using with Preact
 
 import { PreviewSample } from '../src/PreviewSample'
 
-Placeholder. To be completed.
+Some people find that Preact improves the performance of an application.
+We verified that the Hookstate works with Preact just out of the box.
