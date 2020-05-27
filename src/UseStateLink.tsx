@@ -680,15 +680,17 @@ export function useState<S>(
 export function useState<S>(
     source: SetInitialStateAction<S> | State<S>
 ): State<S> {
+    let sourceIsInitialValue = true
     if (typeof source === 'object' && source !== null) {
-        const sl = source[StateMarkerID];
+        const sl = source[StateMarkerID]
         if (sl) {
             // it is already state object
             source = sl; // get underlying StateLink
+            sourceIsInitialValue = false
         }
     }
     const statelink = useStateLink(source as SetInitialStateAction<S>);
-    if (useState[DevToolsID]) {
+    if (sourceIsInitialValue && useState[DevToolsID]) {
         statelink.attach(useState[DevToolsID])
     }
     return statelink[self];
