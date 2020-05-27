@@ -929,19 +929,10 @@ enum ErrorId {
 }
 
 class StateLinkInvalidUsageError extends Error {
-    constructor(path: Path, id: ErrorId) {
-        super(`Error: HOOKSTATE-${id} [path: /${path.join('/')}]. ` +
+    constructor(path: Path, id: ErrorId, details?: string) {
+        super(`Error: HOOKSTATE-${id} [path: /${path.join('/')}${details ? `, details: ${details}` : ''}]. ` +
             `See https://hookstate.js.org/docs/exceptions#HOOKSTATE-${id}`)
     }
-}
-
-function extractSymbol(s: symbol) {
-    let result = s.toString();
-    const symstr = 'Symbol('
-    if (result.startsWith(symstr) && result.endsWith(')')) {
-        result = result.substring(symstr.length, result.length - 1)
-    }
-    return result;
 }
 
 interface Subscriber {
@@ -1567,7 +1558,7 @@ class StateLinkImpl<S> implements StateLink<S>,
             if (alt) {
                 return alt();
             }
-            throw new StateLinkInvalidUsageError(this.path, ErrorId.GetUnknownPlugin)
+            throw new StateLinkInvalidUsageError(this.path, ErrorId.GetUnknownPlugin, plugin.toString())
         }
     }
 
@@ -2049,7 +2040,7 @@ class StateLinkImpl<S> implements StateLink<S>,
         } else {
             const instance = this.state.getPlugin(p);
             const capturedThis = this;
-            return [instance || (new StateLinkInvalidUsageError(this.path, ErrorId.GetUnknownPlugin)), 
+            return [instance || (new StateLinkInvalidUsageError(this.path, ErrorId.GetUnknownPlugin, p.toString())), 
                 // TODO need to create an instance until version 2
                 // because of the incompatible return types from methods
                 {
