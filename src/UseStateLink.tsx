@@ -875,20 +875,12 @@ export interface DevToolsExtensions {
  * 
  * @typeparam S Type of a value of a state
  */
-export function DevTools<S>(state: StateLink<S> | State<S>): DevToolsExtensions {
-    if (state[StateMarkerID]) {
-        const plugin = (state as State<S>)[self].attach(DevToolsID);
-        if (plugin[0] instanceof Error) {
-            return EmptyDevToolsExtensions;
-        }
-        return plugin[0] as DevToolsExtensions;
-    } else {
-        const plugin = (state as StateLink<S>).with(DevToolsID, () => undefined);
-        if (plugin) {
-            return plugin[1] as DevToolsExtensions;
-        }
+export function DevTools<S>(state: State<S>): DevToolsExtensions {
+    const plugin = (state as State<S>)[self].attach(DevToolsID);
+    if (plugin[0] instanceof Error) {
         return EmptyDevToolsExtensions;
     }
+    return plugin[0] as DevToolsExtensions;
 }
 
 ///
@@ -1493,27 +1485,6 @@ class StateLinkImpl<S> implements StateLink<S>,
         this.state.update(this.mergeUntracked(sourceValue));
     }
 
-    batch(action: (s: StateLink<S>) => void, options?: BatchOptions): void {
-        if (this.promised) {
-            const ifPromised = options && options.ifPromised || 'reject'
-            if (ifPromised === 'postpone') {
-                return this.state.postponeBatch(() => this.batch(action, options))
-            }
-            if (ifPromised === 'discard') {
-                return;
-            }
-            if (ifPromised === 'reject') {
-                this.get(); // this will throw (default behavior)
-            }
-        }
-        try {
-            this.state.startBatch(this.path, options)
-            action(this)
-        } finally {
-            this.state.finishBatch(this.path, options)
-        }
-    }
-
     // remove in version 2, replace by rerender
     update(paths: Path[]) {
         this.state.update(paths)
@@ -1521,14 +1492,6 @@ class StateLinkImpl<S> implements StateLink<S>,
 
     rerender(paths: Path[]) {
         this.state.update(paths)
-    }
-
-    denull(): InferredStateLinkDenullType<S>  {
-        const value = this.get()
-        if (value === null || value === undefined) {
-            return value as unknown as InferredStateLinkDenullType<S>;
-        }
-        return this as unknown as InferredStateLinkDenullType<S>;
     }
 
     with(plugin: () => Plugin): this;
@@ -1615,16 +1578,16 @@ class StateLinkImpl<S> implements StateLink<S>,
         return updated;
     }
 
-    get keys(): InferredStateLinkKeysType<S> {
+    get keys(): InferredStateKeysType<S> {
         const value = this.get()
         if (Array.isArray(value)) {
             return Object.keys(value).map(i => Number(i)).filter(i => Number.isInteger(i)) as
-                unknown as InferredStateLinkKeysType<S>;
+                unknown as InferredStateKeysType<S>;
         }
         if (typeof value === 'object' && value !== null) {
-            return Object.keys(value) as unknown as InferredStateLinkKeysType<S>;
+            return Object.keys(value) as unknown as InferredStateKeysType<S>;
         }
-        return undefined as InferredStateLinkKeysType<S>;
+        return undefined as InferredStateKeysType<S>;
     }
 
     child(key: number | string) {
@@ -1857,11 +1820,11 @@ class StateLinkImpl<S> implements StateLink<S>,
     }
 
     get ornull(): InferredStateOrnullType<S> {
-        const r = this.denull();
-        if (r) {
-            return r[self] as InferredStateOrnullType<S>;
+        const value = this.get()
+        if (value === null || value === undefined) {
+            return value as unknown as InferredStateOrnullType<S>;
         }
-        return r as unknown as InferredStateOrnullType<S>;        
+        return this[self] as InferredStateOrnullType<S>;
     }
 
     attach(plugin: () => Plugin): State<S>
@@ -2097,157 +2060,10 @@ function injectTransform<S, R>(
  * @hidden
  * @ignore
  * @internal
- * @deprecated use source directly instead
- */
-export function useStateLinkUnmounted<S>(
-    source: DestroyableStateLink<S>,
-): StateLink<S>;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated use source.wrap(transform).access() instead
- */
-export function useStateLinkUnmounted<S, R>(
-    source: DestroyableStateLink<S>,
-    transform: (state: StateLink<S>) => R
-): R;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated use source.access() instead
- */
-export function useStateLinkUnmounted<R>(
-    source: DestroyableWrappedStateLink<R>,
-): R;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated use source directly or source.wrap(transform).access() instead
- */
-export function useStateLinkUnmounted<S, R>(
-    source: DestroyableStateLink<S> | DestroyableWrappedStateLink<R>,
-    transform?: (state: StateLink<S>) => R
-): StateLink<S> | R {
-    if (source instanceof WrappedStateLinkImpl) {
-        return source.access()
-    }
-    if (transform) {
-        return transform(source as DestroyableStateLink<S>)
-    }
-    return source as DestroyableStateLink<S>;
-}
-
-/**
- * @hidden
- * @ignore
- * @internal
- * @depracated default export is deprecated
- */
-export default useStateLink;
-
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export type DestroyableStateLink<S> =
-    StateLink<S> & StateMethodsDestroy;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export type DestroyableWrappedStateLink<R> =
-    WrappedStateLink<R> & StateMethodsDestroy;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export type StateRef<S> = StateInf<StateLink<S>>
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export type StateInf<S> = S extends StateLink<infer U> ? DestroyableStateLink<U> : DestroyableWrappedStateLink<S>
-
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export type StateLinkPlugable<S> = ExtendedStateLinkMixin<S>;
-
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export type InitialValueAtRoot<S> = SetInitialStateAction<S>;
-
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export type InferredStateLinkKeysType<S> = InferredStateKeysType<S>;
-
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export type InferredStateLinkDenullType<S> =
-    S extends undefined ? undefined :
-    S extends null ? null : StateLink<S>;
-
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export interface BatchOptions {
-    ifPromised?: 'postpone' | 'discard' | 'reject' | 'execute',
-    context?: AnyContext;
-}
-
-/**
- * @hidden
- * @ignore
- * @internal
  * @deprecated declared for backward compatibility
  */
 export interface StateLink<S> extends StateMethods<S> {
-    readonly promised: boolean;
-    readonly error: StateErrorAtRoot | undefined; //tslint:disable-line: no-any
-    denull(): InferredStateLinkDenullType<S>;
-    batch(action: (s: StateLink<S>) => void, options?: BatchOptions): void;
-    wrap<R>(transform: (state: StateLink<S>, prev: R | undefined) => R): WrappedStateLink<R>;
-    with(plugin: () => Plugin): this;
-    with<R = never>(pluginId: symbol, alt?: () => R): [StateLink<S> & ExtendedStateLinkMixin<S>, PluginCallbacks] | R;
-    access(): StateLink<S>;
 }
-
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export type DestroyMixin = StateMethodsDestroy
 
 /**
  * @hidden
