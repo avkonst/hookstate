@@ -478,8 +478,9 @@ export function createState<S>(
     initial: SetInitialStateAction<S>
 ): State<S> & StateMixinDestroy {
     const state = createStore(initial).accessUnmounted();
-    if (createState[DevToolsID]) {
-        state[self].attach(createState[DevToolsID])
+    const devtools = createState[DevToolsID]
+    if (devtools) {
+        state[self].attach(devtools)
     }
     return state as State<S> & StateMixinDestroy;
 }
@@ -557,8 +558,9 @@ export function useState<S>(
         }
     }
     const statemethods = useStateMethods(source as SetInitialStateAction<S>);
-    if (sourceIsInitialValue && useState[DevToolsID]) {
-        statemethods.attach(useState[DevToolsID])
+    const devtools = useState[DevToolsID]
+    if (sourceIsInitialValue && devtools) {
+        statemethods.attach(devtools)
     }
     return statemethods[self];
 }
