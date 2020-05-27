@@ -15,7 +15,7 @@ test('error: should not allow set to another state value', async () => {
     expect(() => {
         state2.result.current.prop2[self].set(p => state1.result.current[self].get().prop1);
     // tslint:disable-next-line: max-line-length
-    }).toThrow(`StateLink is used incorrectly. Attempted 'set(state.get() at '/prop1')' at '/prop2'. Hint: did you mean to use state.set(lodash.cloneDeep(value)) instead of state.set(value)?`);
+    }).toThrow(`Error: HOOKSTATE-102 [path: /prop2]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-102`);
 });
 
 test('error: should not allow create state from another state value', async () => {
@@ -29,7 +29,7 @@ test('error: should not allow create state from another state value', async () =
 
     expect(state2.result.error.message)
         // tslint:disable-next-line: max-line-length
-        .toEqual(`StateLink is used incorrectly. Attempted 'create/useStateLink(state.get() at '/prop1')' at '/'. Hint: did you mean to use create/useStateLink(state) OR create/useStateLink(lodash.cloneDeep(state.get())) instead of create/useStateLink(state.get())?`)
+        .toEqual(`Error: HOOKSTATE-101 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-101`)
 });
 
 test('error: should not allow create state from another state value (nested)', async () => {
@@ -47,7 +47,7 @@ test('error: should not allow create state from another state value (nested)', a
 
     expect(state3.result.error.message)
         // tslint:disable-next-line: max-line-length
-        .toEqual(`StateLink is used incorrectly. Attempted 'create/useStateLink(state.get() at '/prop1')' at '/'. Hint: did you mean to use create/useStateLink(state) OR create/useStateLink(lodash.cloneDeep(state.get())) instead of create/useStateLink(state.get())?`)
+        .toEqual(`Error: HOOKSTATE-101 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-101`)
 });
 
 test('error: should not allow serialization of statelink', async () => {
@@ -56,5 +56,5 @@ test('error: should not allow serialization of statelink', async () => {
     });
     
     expect(() => JSON.stringify(state1))
-    .toThrow('StateLink is used incorrectly. Attempted \'toJSON()\' at \'/\'. Hint: did you mean to use JSON.stringify(state.get()) instead of JSON.stringify(state)?')
+    .toThrow('Error: HOOKSTATE-109 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-109')
 });

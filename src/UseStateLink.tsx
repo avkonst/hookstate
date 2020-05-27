@@ -900,10 +900,38 @@ const EmptyDevToolsExtensions: DevToolsExtensions = {
     log() { /* */ }
 }
 
+enum ErrorId {
+    InitStateToValueFromState = 101,
+    SetStateToValueFromState = 102,
+    GetStateWhenPromised = 103,
+    SetStateWhenPromised = 104,
+    SetStateNestedToPromised = 105,
+    SetStateWhenDestroyed = 106,
+    GetStatePropertyWhenPrimitive = 107,
+    ToJson_Value = 108,
+    ToJson_State = 109,
+    GetUnknownPlugin = 120,
+
+    SetProperty_State = 201,
+    SetProperty_Value = 202,
+    SetPrototypeOf_State = 203,
+    SetPrototypeOf_Value = 204,
+    PreventExtensions_State = 205,
+    PreventExtensions_Value = 206,
+    DefineProperty_State = 207,
+    DefineProperty_Value = 208,
+    DeleteProperty_State = 209,
+    DeleteProperty_Value = 210,
+    Construct_State = 211,
+    Construct_Value = 212,
+    Apply_State = 213,
+    Apply_Value = 214,
+}
+
 class StateLinkInvalidUsageError extends Error {
-    constructor(op: string, path: Path, hint?: string) {
-        super(`StateLink is used incorrectly. Attempted '${op}' at '/${path.join('/')}'` +
-            (hint ? `. Hint: ${hint}` : ''))
+    constructor(path: Path, id: ErrorId) {
+        super(`Error: HOOKSTATE-${id} [path: /${path.join('/')}]. ` +
+            `See https://hookstate.js.org/docs/exceptions#HOOKSTATE-${id}`)
     }
 }
 
@@ -914,15 +942,6 @@ function extractSymbol(s: symbol) {
         result = result.substring(symstr.length, result.length - 1)
     }
     return result;
-}
-
-// TODO replace by StateLinkInvalidUsageError
-class PluginUnknownError extends Error {
-    constructor(s: symbol) {
-        super(`Plugin '${extractSymbol(s)}' has not been attached to the StateInf or StateLink. ` +
-            `Hint: you might need to register the required plugin using 'with' method. ` +
-            `See https://github.com/avkonst/hookstate#plugins for more details`)
-    }
 }
 
 interface Subscriber {
@@ -1027,13 +1046,7 @@ class Store implements Subscribable {
 
     set(path: Path, value: StateValueAtPath, mergeValue: Partial<StateValueAtPath> | undefined): Path {
         if (this._edition < 0) {
-            // TODO convert to warning
-            throw new StateLinkInvalidUsageError(
-                `set state for the destroyed state`,
-                path,
-                'make sure all asynchronous operations are cancelled (unsubscribed) when the state is destroyed. ' +
-                'Global state is explicitly destroyed at \'StateInf.destroy()\'. ' +
-                'Local state is automatically destroyed when a component is unmounted.')
+            throw new StateLinkInvalidUsageError(path, ErrorId.SetStateWhenDestroyed)
         }
 
         if (path.length === 0) {
@@ -1056,11 +1069,7 @@ class Store implements Subscribable {
                 delete onSetArg.value
                 delete onSetArg.state
             } else if (this._promised && !this._promised.resolver) {
-                // TODO add hint
-                throw new StateLinkInvalidUsageError(
-                    `write promised state`,
-                    path,
-                    '')
+                throw new StateLinkInvalidUsageError(path, ErrorId.SetStateWhenPromised)
             }
 
             let prevValue = this._value;
@@ -1079,10 +1088,7 @@ class Store implements Subscribable {
         }
 
         if (typeof value === 'object' && Promise.resolve(value) === value) {
-            throw new StateLinkInvalidUsageError(
-                // TODO add hint
-                'set promise for nested property', path, ''
-            )
+            throw new StateLinkInvalidUsageError(path, ErrorId.SetStateNestedToPromised)
         }
 
         let target = this._value;
@@ -1262,8 +1268,7 @@ class Store implements Subscribable {
     }
 
     toJSON() {
-        throw new StateLinkInvalidUsageError('toJSON()', RootPath,
-        'did you mean to use JSON.stringify(state.get()) instead of JSON.stringify(state)?');
+        throw new StateLinkInvalidUsageError(RootPath, ErrorId.ToJson_Value);
     }
 }
 
@@ -1385,8 +1390,7 @@ class StateLinkImpl<S> implements StateLink<S>,
             if (this.state.promised && this.state.promised.error) {
                 throw this.state.promised.error;
             }
-            // TODO add hint
-            throw new StateLinkInvalidUsageError('read promised state', this.path)
+            throw new StateLinkInvalidUsageError(this.path, ErrorId.GetStateWhenPromised)
         }
         return this.valueSource;
     }
@@ -1435,10 +1439,7 @@ class StateLinkImpl<S> implements StateLink<S>,
             newValue = (newValue as ((prevValue: S) => S))(this.getUntracked());
         }
         if (typeof newValue === 'object' && newValue !== null && newValue[ProxyMarkerID]) {
-            throw new StateLinkInvalidUsageError(
-                `set(state.get() at '/${newValue[ProxyMarkerID].path.join('/')}')`,
-                this.path,
-                'did you mean to use state.set(lodash.cloneDeep(value)) instead of state.set(value)?')
+            throw new StateLinkInvalidUsageError(this.path, ErrorId.SetStateToValueFromState)
         }
         return this.state.set(this.path, newValue, mergeValue);
     }
@@ -1566,7 +1567,7 @@ class StateLinkImpl<S> implements StateLink<S>,
             if (alt) {
                 return alt();
             }
-            throw new PluginUnknownError(plugin)
+            throw new StateLinkInvalidUsageError(this.path, ErrorId.GetUnknownPlugin)
         }
     }
 
@@ -1746,8 +1747,7 @@ class StateLinkImpl<S> implements StateLink<S>,
                     target[key] = value;
                     return true;
                 }
-                throw new StateLinkInvalidUsageError('set', this.path,
-                    `did you mean to use 'state.nested[${key}].set(value)' instead of 'state[${key}] = value'?`)
+                throw new StateLinkInvalidUsageError(this.path, ErrorId.SetProperty_Value)
             }
         ) as unknown as S;
     }
@@ -1802,8 +1802,7 @@ class StateLinkImpl<S> implements StateLink<S>,
                     target[key] = value;
                     return true;
                 }
-                throw new StateLinkInvalidUsageError('set', this.path,
-                    `did you mean to use 'state.nested.${key}.set(value)' instead of 'state.${key} = value'?`)
+                throw new StateLinkInvalidUsageError(this.path, ErrorId.SetProperty_Value)
             }
         ) as unknown as S;
     }
@@ -1815,15 +1814,15 @@ class StateLinkImpl<S> implements StateLink<S>,
         // tslint:disable-next-line: no-any
         setter?: (target: any, p: PropertyKey, value: any, receiver: any) => boolean
     ) {
-        const onInvalidUsage = (op: string) => {
-            throw new StateLinkInvalidUsageError(op, this.path)
+        const onInvalidUsage = (op: ErrorId) => {
+            throw new StateLinkInvalidUsageError(this.path, op)
         }
         return new Proxy(objectToWrap, {
             getPrototypeOf: (target) => {
                 return Object.getPrototypeOf(target);
             },
             setPrototypeOf: (target, v) => {
-                return onInvalidUsage('setPrototypeOf')
+                return onInvalidUsage(ErrorId.SetPrototypeOf_Value)
             },
             isExtensible: (target) => {
                 // should satisfy the invariants:
@@ -1832,7 +1831,7 @@ class StateLinkImpl<S> implements StateLink<S>,
                 return Object.isExtensible(target);
             },
             preventExtensions: (target) => {
-                return onInvalidUsage('preventExtensions')
+                return onInvalidUsage(ErrorId.PreventExtensions_Value)
             },
             getOwnPropertyDescriptor: (target, p) => {
                 const origin = Object.getOwnPropertyDescriptor(target, p);
@@ -1854,13 +1853,13 @@ class StateLinkImpl<S> implements StateLink<S>,
             },
             get: getter,
             set: setter || ((target, p, value, receiver) => {
-                return onInvalidUsage('set')
+                return onInvalidUsage(ErrorId.SetProperty_Value)
             }),
             deleteProperty: (target, p) => {
-                return onInvalidUsage('deleteProperty')
+                return onInvalidUsage(ErrorId.DeleteProperty_Value)
             },
             defineProperty: (target, p, attributes) => {
-                return onInvalidUsage('defineProperty')
+                return onInvalidUsage(ErrorId.DefineProperty_Value)
             },
             enumerate: (target) => {
                 if (Array.isArray(target)) {
@@ -1875,10 +1874,10 @@ class StateLinkImpl<S> implements StateLink<S>,
                 return Object.keys(target);
             },
             apply: (target, thisArg, argArray?) => {
-                return onInvalidUsage('apply')
+                return onInvalidUsage(ErrorId.Apply_Value)
             },
             construct: (target, argArray, newTarget?) => {
-                return onInvalidUsage('construct')
+                return onInvalidUsage(ErrorId.Construct_Value)
             }
         });
     }
@@ -1904,8 +1903,7 @@ class StateLinkImpl<S> implements StateLink<S>,
                 }
             } else {
                 if (key === 'toJSON') {
-                    throw new StateLinkInvalidUsageError('toJSON()', this.path,
-                        'did you mean to use JSON.stringify(state.get()) instead of JSON.stringify(state)?');
+                    throw new StateLinkInvalidUsageError(this.path, ErrorId.ToJson_State);
                 }
                 
                 const currentValue = this.getUntracked(true);
@@ -1933,8 +1931,7 @@ class StateLinkImpl<S> implements StateLink<S>,
                             return (p: symbol) => this.attach(p)
                         default:
                             this.get() // mark used
-                            throw new StateLinkInvalidUsageError('get', this.path,
-                                `target value is not an object to contain properties`)
+                            throw new StateLinkInvalidUsageError(this.path, ErrorId.GetStatePropertyWhenPrimitive)
                     }
                 }
 
@@ -1951,15 +1948,12 @@ class StateLinkImpl<S> implements StateLink<S>,
                         return undefined;
                     }
                     return this.child(index)[self]
-                    // return (this.nested)![index][self];
                 }
                 return this.child(key.toString())[self]
-                // return (this.nested)![key.toString()][self];
             }
         },
         (_, key, value) => {
-            throw new StateLinkInvalidUsageError('set', this.path,
-                `did you mean to use 'state.${String(key)}[self].set(value)' instead of 'state.${String(key)} = value'?`)
+            throw new StateLinkInvalidUsageError(this.path, ErrorId.SetProperty_State)
         }) as unknown as State<S>;
     }
     
@@ -2055,7 +2049,7 @@ class StateLinkImpl<S> implements StateLink<S>,
         } else {
             const instance = this.state.getPlugin(p);
             const capturedThis = this;
-            return [instance || (new PluginUnknownError(p)), 
+            return [instance || (new StateLinkInvalidUsageError(this.path, ErrorId.GetUnknownPlugin)), 
                 // TODO need to create an instance until version 2
                 // because of the incompatible return types from methods
                 {
@@ -2088,8 +2082,8 @@ function proxyWrap(
     // tslint:disable-next-line: no-any
     propertySetter: (unused: any, p: PropertyKey, value: any, receiver: any) => boolean
 ) {
-    const onInvalidUsage = (op: string) => {
-        throw new StateLinkInvalidUsageError(op, path)
+    const onInvalidUsage = (op: ErrorId) => {
+        throw new StateLinkInvalidUsageError(path, op)
     }
     if (typeof targetBootstrap !== 'object' || targetBootstrap === null) {
         targetBootstrap = {}
@@ -2105,7 +2099,7 @@ function proxyWrap(
             return Object.getPrototypeOf(targetReal);
         },
         setPrototypeOf: (target, v) => {
-            return onInvalidUsage('setPrototypeOf')
+            return onInvalidUsage(ErrorId.SetPrototypeOf_State)
         },
         isExtensible: (target) => {
             // should satisfy the invariants:
@@ -2114,7 +2108,7 @@ function proxyWrap(
             // return Object.isExtensible(target);
         },
         preventExtensions: (target) => {
-            return onInvalidUsage('preventExtensions')
+            return onInvalidUsage(ErrorId.PreventExtensions_State)
         },
         getOwnPropertyDescriptor: (target, p) => {
             const targetReal = targetGetter()
@@ -2145,10 +2139,10 @@ function proxyWrap(
         get: propertyGetter,
         set: propertySetter,
         deleteProperty: (target, p) => {
-            return onInvalidUsage('deleteProperty')
+            return onInvalidUsage(ErrorId.DeleteProperty_State)
         },
         defineProperty: (target, p, attributes) => {
-            return onInvalidUsage('defineProperty')
+            return onInvalidUsage(ErrorId.DefineProperty_State)
         },
         enumerate: (target) => {
             const targetReal = targetGetter()
@@ -2171,10 +2165,10 @@ function proxyWrap(
             return Object.keys(targetReal);
         },
         apply: (target, thisArg, argArray?) => {
-            return onInvalidUsage('apply')
+            return onInvalidUsage(ErrorId.Apply_State)
         },
         construct: (target, argArray, newTarget?) => {
-            return onInvalidUsage('construct')
+            return onInvalidUsage(ErrorId.Construct_State)
         }
     });
 }
@@ -2185,11 +2179,7 @@ function createStore<S>(initial: SetInitialStateAction<S>): Store {
         initialValue = (initial as (() => S | Promise<S>))();
     }
     if (typeof initialValue === 'object' && initialValue !== null && initialValue[ProxyMarkerID]) {
-        throw new StateLinkInvalidUsageError(
-            `create/useStateLink(state.get() at '/${initialValue[ProxyMarkerID].path.join('/')}')`,
-            RootPath,
-            'did you mean to use create/useStateLink(state) OR ' +
-            'create/useStateLink(lodash.cloneDeep(state.get())) instead of create/useStateLink(state.get())?')
+        throw new StateLinkInvalidUsageError(RootPath, ErrorId.InitStateToValueFromState)
     }
     return new Store(initialValue);
 }

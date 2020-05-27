@@ -160,7 +160,7 @@ test('plugin: common flow callbacks', async () => {
 
     act(() => {
         expect(() => result.current[0].f1[self].set(p => p + 1)).toThrow(
-            'StateLink is used incorrectly. Attempted \'set state for the destroyed state\' at \'/0/f1\'. Hint: make sure all asynchronous operations are cancelled (unsubscribed) when the state is destroyed. Global state is explicitly destroyed at \'StateInf.destroy()\'. Local state is automatically destroyed when a component is unmounted.'
+            'Error: HOOKSTATE-106 [path: /0/f1]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-106'
         );
     });
     expect(renderTimes).toStrictEqual(8);
@@ -252,7 +252,7 @@ test('plugin: common flow callbacks global state', async () => {
 
     act(() => {
         expect(() => result.current[0].f1[self].set(p => p + 1)).toThrow(
-            'StateLink is used incorrectly. Attempted \'set state for the destroyed state\' at \'/0/f1\'. Hint: make sure all asynchronous operations are cancelled (unsubscribed) when the state is destroyed. Global state is explicitly destroyed at \'StateInf.destroy()\'. Local state is automatically destroyed when a component is unmounted.'
+            'Error: HOOKSTATE-106 [path: /0/f1]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-106'
         );
     });
     expect(renderTimes).toStrictEqual(3);
@@ -334,7 +334,7 @@ test('plugin: common flow callbacks devtools', async () => {
 
         act(() => {
             expect(() => result.current[0].f1[self].set(p => p + 1)).toThrow(
-                'StateLink is used incorrectly. Attempted \'set state for the destroyed state\' at \'/0/f1\'. Hint: make sure all asynchronous operations are cancelled (unsubscribed) when the state is destroyed. Global state is explicitly destroyed at \'StateInf.destroy()\'. Local state is automatically destroyed when a component is unmounted.'
+                'Error: HOOKSTATE-106 [path: /0/f1]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-106'
             );
         });
         expect(renderTimes).toStrictEqual(3);
@@ -435,7 +435,7 @@ test('plugin: common flow callbacks global state devtools', async () => {
 
         act(() => {
             expect(() => result.current[0].f1[self].set(p => p + 1)).toThrow(
-                'StateLink is used incorrectly. Attempted \'set state for the destroyed state\' at \'/0/f1\'. Hint: make sure all asynchronous operations are cancelled (unsubscribed) when the state is destroyed. Global state is explicitly destroyed at \'StateInf.destroy()\'. Local state is automatically destroyed when a component is unmounted.'
+                'Error: HOOKSTATE-106 [path: /0/f1]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-106'
             );
         });
         expect(renderTimes).toStrictEqual(3);

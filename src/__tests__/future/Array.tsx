@@ -180,7 +180,7 @@ test('array: should not rerender used symbol properties', async () => {
     result.current[self].get()[TestSymbol] = 100
 
     expect(() => { result.current[self].get()[0] = 100 })
-    .toThrow('StateLink is used incorrectly. Attempted \'set\' at \'/\'. Hint: did you mean to use \'state.nested[0].set(value)\' instead of \'state[0] = value\'?')
+    .toThrow('Error: HOOKSTATE-202 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-202')
 
     expect(renderTimes).toStrictEqual(1);
     expect('length' in result.current[self].get()).toStrictEqual(true);

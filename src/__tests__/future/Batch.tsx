@@ -109,12 +109,12 @@ test('object: should rerender used via nested batch promised', async () => {
     expect(renderTimes).toStrictEqual(2);
     expect(result.current[self].map(() => false, () => true)).toStrictEqual(true);
     expect(() => result.current[self].map((s) => false, (s: State<number>) => s[self].keys))
-        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+        .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-103');
     expect(() => result.current[self].get())
-        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+        .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-103');
 
     expect(() => result.current[self].set(200))
-        .toThrow('StateLink is used incorrectly. Attempted \'write promised state\' at \'/\'')
+        .toThrow('Error: HOOKSTATE-104 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-104')
 
     let executed = false;
     act(() => {
@@ -123,7 +123,7 @@ test('object: should rerender used via nested batch promised', async () => {
             expect(renderTimes).toStrictEqual(2);
             result.current[self].set(10000)
             expect(renderTimes).toStrictEqual(2);
-        }, (s) => s[self].value)).toThrow(`StateLink is used incorrectly. Attempted 'read promised state' at '/'`)
+        }, (s) => s[self].value)).toThrow(`Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-103`)
     })
     expect(executed).toBeFalsy()
 
@@ -133,7 +133,7 @@ test('object: should rerender used via nested batch promised', async () => {
             expect(renderTimes).toStrictEqual(2);
             result.current[self].set(10000)
             expect(renderTimes).toStrictEqual(2);
-        }, (s) => s[self].value)).toThrow(`StateLink is used incorrectly. Attempted 'read promised state' at '/'`)
+        }, (s) => s[self].value)).toThrow(`Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-103`)
     })
     expect(executed).toBeFalsy()
 
@@ -143,7 +143,7 @@ test('object: should rerender used via nested batch promised', async () => {
             executed = true;
             expect(renderTimes).toStrictEqual(2);
             result.current[self].set(10000)
-        }, null)).toThrow(`StateLink is used incorrectly. Attempted 'write promised state' at '/'`)
+        }, null)).toThrow(`Error: HOOKSTATE-104 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-104`)
     })
     expect(executed).toBeTruthy()
 
@@ -201,9 +201,9 @@ test('object: should rerender used via nested batch promised manual', async () =
     expect(renderTimes).toStrictEqual(1);
     expect(result.current[self].map(() => false, () => true)).toStrictEqual(true);
     expect(() => result.current[self].map(() => undefined, (s) => s[self].keys))
-        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+        .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-103');
     expect(() => result.current[self].get())
-        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+        .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-103');
 
     act(() => {
         result.current[self].map(() => {

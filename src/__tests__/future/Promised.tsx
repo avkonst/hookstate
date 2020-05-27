@@ -22,12 +22,12 @@ test('primitive: should rerender used on promise resolve', async () => {
     expect(result.current[self].map(() => false, () => true)).toStrictEqual(true);
     expect(result.current[self].map()).toStrictEqual([true, undefined, undefined]);
     expect(() => result.current[self].map(() => false, (s) => s[self].keys, e => e))
-        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+        .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-103');
     expect(() => result.current[self].get())
-        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+        .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-103');
 
     expect(() => result.current[self].set(200))
-        .toThrow('StateLink is used incorrectly. Attempted \'write promised state\' at \'/\'')
+        .toThrow('Error: HOOKSTATE-104 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-104')
         
     await act(async () => {
         await promise;
@@ -57,12 +57,12 @@ test('array: should rerender used on promise resolve', async () => {
     expect(renderTimes).toStrictEqual(2);
     expect(result.current[self].map(() => false, () => true)).toStrictEqual(true);
     expect(() => result.current[self].map(() => false, (s) => s[self].keys, e => e))
-        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+        .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-103');
     expect(() => result.current[self].get())
-        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+        .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-103');
 
     expect(() => result.current[self].set([200]))
-        .toThrow('StateLink is used incorrectly. Attempted \'write promised state\' at \'/\'')
+        .toThrow('Error: HOOKSTATE-104 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-104')
         
     await act(async () => {
         await promise;
@@ -92,12 +92,12 @@ test('array: should rerender used on promise resolve (global)', async () => {
     expect(renderTimes).toStrictEqual(2);
     expect(result.current[self].map(() => false, () => true)).toStrictEqual(true);
     expect(() => result.current[self].map(() => false, (s) => s[self].keys, e => e))
-        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+        .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-103');
     expect(() => result.current[self].get())
-        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+        .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-103');
 
     expect(() => result.current[self].set([200]))
-        .toThrow('StateLink is used incorrectly. Attempted \'write promised state\' at \'/\'')
+        .toThrow('Error: HOOKSTATE-104 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-104')
         
     await act(async () => {
         await promise;
@@ -121,12 +121,12 @@ test('array: should rerender used on promise resolve (global promise)', async ()
 
     expect(result.current[self].map(() => false, () => true)).toStrictEqual(true);
     expect(() => result.current[self].map(() => false, (s) => s[self].keys, e => e))
-        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+        .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-103');
     expect(() => result.current[self].get())
-        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+        .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-103');
 
     expect(() => result.current[self].set([200]))
-        .toThrow('StateLink is used incorrectly. Attempted \'write promised state\' at \'/\'')
+        .toThrow('Error: HOOKSTATE-104 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-104')
 });
 
 test('primitive: should rerender used on promise resolve manual', async () => {
@@ -138,9 +138,9 @@ test('primitive: should rerender used on promise resolve manual', async () => {
     expect(renderTimes).toStrictEqual(1);
     expect(result.current[self].map(() => false, () => true)).toStrictEqual(true);
     expect(() => result.current[self].map(() => false, (s) => s[self].value, e => e))
-        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+        .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-103');
     expect(() => result.current[self].get())
-        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+        .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-103');
 
     act(() => {
         result.current[self].set(100);
@@ -163,9 +163,9 @@ test('primitive: should rerender used on promise resolve second', async () => {
     expect(renderTimes).toStrictEqual(1);
     expect(result.current[self].map(() => false, () => true)).toStrictEqual(true);
     expect(() => result.current[self].map(() => false, (s) => s[self].value, e => e))
-        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+        .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-103');
     expect(() => result.current[self].get())
-        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+        .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-103');
 
     const promise = new Promise<number>(resolve => setTimeout(() => {
         act(() => resolve(200))
@@ -176,9 +176,9 @@ test('primitive: should rerender used on promise resolve second', async () => {
     expect(renderTimes).toStrictEqual(2);
     expect(result.current[self].map(() => false, () => true)).toStrictEqual(true);
     expect(() => result.current[self].map(() => false, (s) => s[self].value, e => e))
-        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+        .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-103');
     expect(() => result.current[self].get())
-        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+        .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-103');
 
     await act(async () => {
         await promise;
@@ -205,9 +205,9 @@ test('primitive: should rerender used on promise resolved', async () => {
     expect(renderTimes).toStrictEqual(2);
     expect(result.current[self].map(() => false, () => true)).toStrictEqual(true);
     expect(() => result.current[self].map(() => false, (s) => s[self].value, e => e))
-        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+        .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-103');
     expect(() => result.current[self].get())
-        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+        .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-103');
 
     await act(async () => {
         await promise;
@@ -236,9 +236,9 @@ test('primitive: should rerender used on promise reject', async () => {
     expect(renderTimes).toStrictEqual(2);
     expect(result.current[self].map(() => false, () => true)).toStrictEqual(true);
     expect(() => result.current[self].map(() => false, (s) => s[self].value, e => e))
-        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+        .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-103');
     expect(() => result.current[self].get())
-        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+        .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-103');
 
     try {
         await act(async () => {
@@ -270,9 +270,9 @@ test('primitive: should rerender used on promise rejected', async () => {
     expect(renderTimes).toStrictEqual(2);
     expect(result.current[self].map(() => false, () => true)).toStrictEqual(true);
     expect(() => result.current[self].map(() => false, (s) => s[self].value, e => e))
-        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+        .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-103');
     expect(() => result.current[self].get())
-        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+        .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-103');
 
     await act(async () => {
         try {
@@ -299,9 +299,9 @@ test('primitive: should rerender used on promise resolve init', async () => {
     expect(renderTimes).toStrictEqual(1);
     expect(result.current[self].map(() => false, () => true)).toStrictEqual(true);
     expect(() => result.current[self].map(() => false, (s) => s[self].value, e => e))
-        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+        .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-103');
     expect(() => result.current[self].get())
-        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+        .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-103');
 
     await act(async () => {
         await new Promise(resolve => setTimeout(() => act(() => resolve()), 600));
@@ -326,9 +326,9 @@ test('primitive: should rerender used on promise resolve init global', async () 
     expect(renderTimes).toStrictEqual(1);
     expect(result.current[self].map(() => false, () => true)).toStrictEqual(true);
     expect(() => result.current[self].map(() => false, (s) => s[self].value, e => e))
-        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+        .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-103');
     expect(() => result.current[self].get())
-        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+        .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-103');
 
     await act(async () => {
         await new Promise(resolve => setTimeout(() => act(() => resolve()), 600));
@@ -353,9 +353,9 @@ test('primitive: should rerender used on promise reject init global', async () =
     expect(renderTimes).toStrictEqual(1);
     expect(result.current[self].map(() => false, () => true)).toStrictEqual(true);
     expect(() => result.current[self].map(() => false, (s) => s[self].value, e => e))
-        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+        .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-103');
     expect(() => result.current[self].get())
-        .toThrow('StateLink is used incorrectly. Attempted \'read promised state\' at \'/\'');
+        .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-103');
 
     try {
         await act(async () => {

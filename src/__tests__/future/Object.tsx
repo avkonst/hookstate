@@ -84,7 +84,7 @@ test('object: should not rerender used symbol properties', async () => {
     expect(result.current[TestSymbol]).toEqual(undefined)
     
     expect(() => { result.current[self].get().field1 = 100 })
-    .toThrow('StateLink is used incorrectly. Attempted \'set\' at \'/\'. Hint: did you mean to use \'state.nested.field1.set(value)\' instead of \'state.field1 = value\'?')
+    .toThrow('Error: HOOKSTATE-202 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-202')
     
     result.current[self].get()[TestSymbol] = 100
 
