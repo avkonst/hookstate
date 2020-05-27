@@ -839,31 +839,40 @@ function DevToolsInitializeInternal() {
     }); });
     var lastUnlabelledId = 0;
     function getLabel(isGlobal) {
+        function defaultLabel() {
+            return (isGlobal ? 'global' : 'local') + "-state-" + (lastUnlabelledId += 1);
+        }
         // The intention was to get the label fast under production
         // but it is unclear if it actually improves anything
         // It seems like if the browser's extension is enabled,
         // it is far more conventient to get proper names for states
         // if (!IsDevelopment) {
-        //     return `${isGlobal ? 'global' : 'local'}-state-${lastUnlabelledId += 1}`
+        //     return defaultLabel()
         // }
         var dummyError = {};
         if ('stackTraceLimit' in Error && 'captureStackTrace' in Error) {
             var oldLimit = Error.stackTraceLimit;
-            Error.stackTraceLimit = 2;
+            Error.stackTraceLimit = 6;
             Error.captureStackTrace(dummyError, SettingsState[core.self].attach);
             Error.stackTraceLimit = oldLimit;
         }
         var s = dummyError.stack;
         if (!s) {
-            return (isGlobal ? 'global' : 'local') + "-state-" + (lastUnlabelledId += 1);
+            return defaultLabel();
         }
-        var parts = s.split('\n', 3);
-        if (parts.length < 3) {
-            return (isGlobal ? 'global' : 'local') + "-state-" + (lastUnlabelledId += 1);
+        var parts = s.split('\n');
+        if (parts.length < 6) {
+            return defaultLabel();
         }
-        return parts[2]
-            .replace(/\s*[(].*/, '')
-            .replace(/\s*at\s*/, '');
+        for (var ind = 2; ind <= parts.length; ind += 1) {
+            var result = parts[ind]
+                .replace(/\s*[(].*/, '')
+                .replace(/\s*at\s*/, '');
+            if (result[0] >= 'A' && result[0] <= 'Z') {
+                return result;
+            }
+        }
+        return defaultLabel();
     }
     function createReduxDevToolsLogger(lnk, assignedId, onBreakpoint) {
         var fromRemote = false;
@@ -1038,8 +1047,6 @@ function DevToolsInitializeInternal() {
     SettingsState[core.self].attach(DevToolsInternal);
     core.DevTools(SettingsState).label(MonitoredStatesLabel);
     MonitoredStatesLogger = function (str) { return core.DevTools(SettingsState).log(str); };
-    core.useStateLink[core.DevToolsID] = DevToolsInternal;
-    core.createStateLink[core.DevToolsID] = function () { return DevToolsInternal(true); };
     core.useState[core.DevToolsID] = DevToolsInternal;
     core.createState[core.DevToolsID] = function () { return DevToolsInternal(true); };
 }
