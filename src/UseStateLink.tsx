@@ -931,7 +931,7 @@ enum ErrorId {
 class StateLinkInvalidUsageError extends Error {
     constructor(path: Path, id: ErrorId, details?: string) {
         super(`Error: HOOKSTATE-${id} [path: /${path.join('/')}${details ? `, details: ${details}` : ''}]. ` +
-            `See https://hookstate.js.org/docs/exceptions#HOOKSTATE-${id}`)
+            `See https://hookstate.js.org/docs/exceptions#hookstate-${id}`)
     }
 }
 

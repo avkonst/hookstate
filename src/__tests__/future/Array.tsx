@@ -180,7 +180,7 @@ test('array: should not rerender used symbol properties', async () => {
     result.current[self].get()[TestSymbol] = 100
 
     expect(() => { result.current[self].get()[0] = 100 })
-    .toThrow('Error: HOOKSTATE-202 [path: /]. See https://hookstate.js.org/docs/exceptions#HOOKSTATE-202')
+    .toThrow('Error: HOOKSTATE-202 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-202')
 
     expect(renderTimes).toStrictEqual(1);
     expect('length' in result.current[self].get()).toStrictEqual(true);

@@ -131,7 +131,7 @@ JSON.stringify(state[self].value)
 
 ## HOOKSTATE-109
 
-See [HOOKSTATE-108](./HOOKSTATE-108)
+See [HOOKSTATE-108](#hookstate-108)
 
 ## HOOKSTATE-120
 
