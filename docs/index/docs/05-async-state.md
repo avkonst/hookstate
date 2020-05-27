@@ -10,7 +10,7 @@ The root state can be set to a promise value, either as an initial value for [cr
 
 ## Checking if state is loading
 
-While a promise is not resolved or rejected almost any operation will result in an exception. To check if underlying promise is resolved or rejected use [StateMethods.map](typedoc-hookstate-core#map) method in one of it's forms. For example:
+While a promise is not resolved or rejected almost any operation will result in an exception. To check if underlying promise is resolved or rejected use [StateMethods.map](typedoc-hookstate-core#map) method in one of its forms. For example:
 
 <PreviewSample example="local-async-state" />
 
@@ -24,7 +24,7 @@ state[self].map(
 )
 ```
 
-You can also trap in a separate callback when a promise is rejected:
+You can also have a separate callback to handle the case when the promise is rejected:
 
 ```tsx
 const state = useState(new Promise(...));
@@ -37,7 +37,7 @@ state[self].map(
 
 ## Executing an action when state is loaded
 
-It is also possible to postpone an action or error handling until a promise is resolved, which is frequently useful with global states initialised to a promise. To enable this behavior, `onPromised` callback of the [StateMethods.map](typedoc-hookstate-core#map) method should return the special symbol [postpone](typedoc-hookstate-core#const-postpone):
+It is also possible to postpone an action or error handling until a promise is settled, which is frequently useful with global states initialised to a promise. To enable this behavior, `onPromised` callback of the [StateMethods.map](typedoc-hookstate-core#map) method should return the special symbol [postpone](typedoc-hookstate-core#const-postpone):
 
 ```tsx
 const state = createState(new Promise(...));
@@ -47,7 +47,7 @@ state[self].map(
 )
 ```
 
-or:
+Or:
 
 ```tsx
 const state = createState(new Promise(...));

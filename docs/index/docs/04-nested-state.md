@@ -128,7 +128,7 @@ state[self].merge({ b: 2 })
 Notice the `state` object has got **any** property defined
 (although not every property might pass Typescript compiler check).
 We accessed non existing property `b` and set it's state.
-It represents the fact the the state of `undefined` property is actually defined state object,
+It represents the fact the state of `undefined` property is actually defined state object,
 which can be used to set `undefined` property to a new value.
 
 It allows to add new properties to the state using the same method as for updating a property.

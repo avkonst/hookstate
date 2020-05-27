@@ -32,33 +32,32 @@ by
 const taskState = useState(props.taskState);
 ```
 
-You can see what effect the scoped state makes in the following interactive example. Set / unset `use scopped state` checkbox and try editing the fields in the form. Changing colour highlight what components are renredered:
+You can see what effect the scoped state makes in the following interactive example. Set / unset `use scoped state` checkbox and try editing the fields in the form. Colors will change to show which components are re-rendered:
 
 <iframe src="https://hookstate.js.org/demo-todolist" width="100%" height="700px"></iframe>
 
 ### It is efficient
 
-The scopped state makes a form with thousands of fields as responsive as with one field (yes, it is true: we measured the performance): here is the [huge form performance demo](./performance-large-state).
+The scoped state makes a form with thousands of fields as responsive as with one field (yes, it is true: we measured the performance): here is the [huge form performance demo](./performance-large-state).
 
-The scopped state also enables most efficient frequent state updates: here is the [huge very dynamic table performance demo](./performance-frequent-updates).
+The scoped state also enables most efficient frequent state updates: here is the [huge very dynamic table performance demo](./performance-frequent-updates).
 
 ### It is unique
 
-Scopped state is unique feature of Hookstate. There is no other state management library, which we are aware of, offering such a simple and efficient technique. Most of the state management libraries, including Redux, would require:
+Scoped state is unique feature of Hookstate. There is no other state management library, which we are aware of, offering such a simple and efficient technique. Most of the state management libraries, including Redux, would require:
 
 1. to move the state from local state to a global state or to a `React.useRef` container,
 2. to pass field indexes instead of a state to children `TaskEditor` components,
 3. to use a state hook on the global state within `TaskEditor` component
 4. to apply a selector function for a hook using the passed field index (to make sure every individual child component does not use more than what it needs for rendering)
 
-All these points (1-4) have got disadvantages but still do not provide with the same performance gain as the scopped state does:
+All these points (1-4) have disadvantages and still do not provide the same performance gain as the scoped state approach does:
 
-1. exposure of a local state outside of a component is not ideal
-2. indexes of fields? ok, maybe this is not much complex, because this is only one level of nesting. This would quickly become non scalable approach, if fields were deeply nested or indexes had dynamic structure, like for the [recursive state](./recursive-state).
-3. access to the parent's component state via a global reference and a field's index is not ideal
-4. state change for one field triggers execution of the selector function for every field - this is `O(n)` performance in contrast to `O(1)` offered by the scopped state.
+1. Exposure of a local state outside of a component is not ideal.
+2. Indexes of fields? OK, maybe this is not that complex, because it's only one level of nesting. This approach wouldn't scale well if fields were deeply nested or indexes had dynamic structure, as shown in [recursive state](./recursive-state).
+3. Access to the parent's component state via a global reference and a field's index is not ideal.
+4. State change for one field triggers execution of the selector function for every field - this is `O(n)` performance in contrast to `O(1)` offered by the scoped state.
 
 > Note: Hookstate has got other technologies built-in, which allow efficient use of a large global states across many different components without using selector functions. But this is another [performance related topic](./performance-overview).
 
-We consider this is the solid reason why the scopped state approach is far better than the methods used by other state management libraries.
-
+We consider this is the solid reason why the scoped state approach is far better than the methods used by other state management libraries.
