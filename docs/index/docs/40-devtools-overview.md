@@ -83,15 +83,16 @@ Now all the states enumerated in the `monitored` list will be monitored.
 ## Set state value from the development tools
 
 You can set new value for a state at root or at a specific path using the development tools.
-Using the 'Dispatch' form put content for an action and click 'Dispatch' button.
+Put content for an action in the 'Dispatch' form and click 'Dispatch' button.
 
 The easiest way to learn the content of a dispatch action is to inspect an action data for the state update, triggered within an application.
 
-Note: this method can used to configure `@hookstate/devtools: settings` as documented above.
+Note: this method is used to configure `@hookstate/devtools: settings` as documented above.
 
 ## Rerender components which use state value at path
 
-Open React development tools browser's extension and enable 'Highlight on rerender' option. Using the 'Dispatch' form from the Redux development tools trigger an action with the following content:
+Open React development tools browser's extension and enable 'Highlight on rerender' option. Trigger a dispatch action from the Redux development tools with the following content:
+
 ```tsx
 {
     type: 'RERENDER',
@@ -103,7 +104,8 @@ Path in the above example points to the root of a state. It can also point to a 
 
 ## Toogle breakpoint on state update
 
-Using the 'Dispatch' form trigger an action with the following content:
+Trigger a dispatch action from the Redux development tools with the following content:
+
 ```tsx
 {
     type: 'BREAKPOINT',
@@ -131,3 +133,5 @@ const state = useState(...)
 ...
 DevTools(state).log('this is custom log', myData)
 ```
+
+This log data will be visible alongside all other actions, like state updates, attributed to a state.
