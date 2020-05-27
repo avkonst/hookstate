@@ -443,57 +443,6 @@ export interface Plugin {
     readonly init?: (state: State<StateValueAtRoot>) => PluginCallbacks;
 }
 
-function useStateMethods<S>(
-    source: StateMethods<S>
-): StateMethodsImpl<S>;
-function useStateMethods<S>(
-    source: SetInitialStateAction<S>
-): StateMethodsImpl<S>;
-function useStateMethods<S>(
-    source: SetInitialStateAction<S> | StateMethods<S>
-): StateMethodsImpl<S> {
-    const parentLink = source instanceof StateMethodsImpl ?
-        source as StateMethodsImpl<S> :
-        undefined
-    if (parentLink) {
-        if (parentLink.onUpdateUsed === NoActionOnUpdate) {
-            // Global state mount
-            // eslint-disable-next-line react-hooks/rules-of-hooks
-            const [value, setValue] = React.useState({ state: parentLink.state });
-            const link = useSubscribedStateMethods<S>(
-                value.state,
-                parentLink.path,
-                () => setValue({ state: value.state }),
-                value.state,
-                undefined);
-            return link;
-        } else {
-            // Scoped state mount
-            // eslint-disable-next-line react-hooks/rules-of-hooks
-            const [, setValue] = React.useState({});
-            const link = useSubscribedStateMethods<S>(
-                parentLink.state,
-                parentLink.path,
-                () => setValue({}),
-                parentLink,
-                parentLink.isDowngraded);
-            return link;
-        }
-    } else {
-        // Local state mount
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        const [value, setValue] = React.useState(() => ({ state: createStore(source) }));
-        const link = useSubscribedStateMethods<S>(
-            value.state,
-            RootPath,
-            () => setValue({ state: value.state }),
-            value.state,
-            undefined);
-        React.useEffect(() => () => value.state.destroy(), []);
-        return link;
-    }
-}
-
 /**
  * Creates new state and returns it.
  *
@@ -718,6 +667,57 @@ export function DevTools<S>(state: State<S>): DevToolsExtensions {
 ///
 /// INTERNAL SYMBOLS (LIBRARY IMPLEMENTATION)
 ///
+
+function useStateMethods<S>(
+    source: StateMethods<S>
+): StateMethodsImpl<S>;
+function useStateMethods<S>(
+    source: SetInitialStateAction<S>
+): StateMethodsImpl<S>;
+function useStateMethods<S>(
+    source: SetInitialStateAction<S> | StateMethods<S>
+): StateMethodsImpl<S> {
+    const parentLink = source instanceof StateMethodsImpl ?
+        source as StateMethodsImpl<S> :
+        undefined
+    if (parentLink) {
+        if (!parentLink.onUpdateUsed) {
+            // Global state mount
+            // eslint-disable-next-line react-hooks/rules-of-hooks
+            const [value, setValue] = React.useState({ state: parentLink.state });
+            const link = useSubscribedStateMethods<S>(
+                value.state,
+                parentLink.path,
+                () => setValue({ state: value.state }),
+                value.state,
+                undefined);
+            return link;
+        } else {
+            // Scoped state mount
+            // eslint-disable-next-line react-hooks/rules-of-hooks
+            const [, setValue] = React.useState({});
+            const link = useSubscribedStateMethods<S>(
+                parentLink.state,
+                parentLink.path,
+                () => setValue({}),
+                parentLink,
+                parentLink.isDowngraded);
+            return link;
+        }
+    } else {
+        // Local state mount
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const [value, setValue] = React.useState(() => ({ state: createStore(source) }));
+        const link = useSubscribedStateMethods<S>(
+            value.state,
+            RootPath,
+            () => setValue({ state: value.state }),
+            value.state,
+            undefined);
+        React.useEffect(() => () => value.state.destroy(), []);
+        return link;
+    }
+}
 
 const EmptyDevToolsExtensions: DevToolsExtensions = {
     label() { /* */ },
@@ -1052,7 +1052,7 @@ class Store implements Subscribable {
         return new StateMethodsImpl<StateValueAtRoot>(
             this,
             RootPath,
-            NoActionOnUpdate,
+            undefined,
             this.get(RootPath),
             this.edition
             // TODO downgraded plugin should not be used here as it affects all inherited links (which is temporary fixed in the useStateMethods)
@@ -1079,16 +1079,10 @@ class Store implements Subscribable {
 }
 
 const ValueCache = Symbol('ValueCache');
-const UnmountedCallback = Symbol('UnmountedCallback');
-
-const NoActionOnUpdate = () => { /* empty */ };
-NoActionOnUpdate[UnmountedCallback] = true
-
-type ErrorValueAtPath = any; //tslint:disable-line: no-any
 
 class Promised {
     public fullfilled?: true;
-    public error?: ErrorValueAtPath;
+    public error?: StateErrorAtRoot;
     public resolver?: () => void;
 
     constructor(public promise: Promise<StateValueAtPath> | undefined,
@@ -1125,7 +1119,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
     constructor(
         public readonly state: Store,
         public readonly path: Path,
-        public readonly onUpdateUsed: (() => void),
+        public onUpdateUsed: (() => void) | undefined,
         public valueSource: S,
         public valueEdition: number
     ) { }
@@ -1135,7 +1129,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
             this.valueSource = this.state.get(this.path)
             this.valueEdition = this.state.edition
 
-            if (this.onUpdateUsed[UnmountedCallback]) {
+            if (!this.onUpdateUsed) {
                 // this link is not mounted to a component
                 // for example, it might be global link or
                 // a link which has been discarded after rerender
@@ -1308,15 +1302,14 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
 
     private updateIfUsed(paths: Path[], actions: (() => void)[]): boolean {
         const update = () => {
-            if (this.isDowngraded &&
-                (ValueCache in this)) {
+            if (this.isDowngraded && (ValueCache in this) && this.onUpdateUsed) {
                 actions.push(this.onUpdateUsed);
                 return true;
             }
             for (let path of paths) {
                 const firstChildKey = path[this.path.length];
                 if (firstChildKey === undefined) {
-                    if (ValueCache in this) {
+                    if (ValueCache in this && this.onUpdateUsed) {
                         actions.push(this.onUpdateUsed);
                         return true;
                     }
@@ -1766,7 +1759,7 @@ function useSubscribedStateMethods<S>(
     React.useEffect(() => {
         subscribeTarget.subscribe(link);
         return () => {
-            link.onUpdateUsed[UnmountedCallback] = true
+            link.onUpdateUsed = undefined
             subscribeTarget.unsubscribe(link);
         }
     });
