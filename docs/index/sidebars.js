@@ -20,7 +20,8 @@ module.exports = {
             // 'dynamic-states-store',
             'using-without-statehook',
             // 'using-with-memo',
-            // 'moving-from-redux-mobx'
+            // 'moving-from-redux-mobx',
+            'migrating-to-v2'
         ],
         Performance: [
             'performance-intro',
