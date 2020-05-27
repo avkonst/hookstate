@@ -1193,18 +1193,18 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         return undefined;
     }
 
-    setUntracked(newValue: SetStateAction<S>, mergeValue?: Partial<StateValueAtPath>): Path {
+    setUntracked(newValue: SetStateAction<S>, mergeValue?: Partial<StateValueAtPath>): [Path] {
         if (typeof newValue === 'function') {
             newValue = (newValue as ((prevValue: S) => S))(this.getUntracked());
         }
         if (typeof newValue === 'object' && newValue !== null && newValue[SelfMethodsID]) {
             throw new StateInvalidUsageError(this.path, ErrorId.SetStateToValueFromState)
         }
-        return this.state.set(this.path, newValue, mergeValue);
+        return [this.state.set(this.path, newValue, mergeValue)];
     }
 
     set(newValue: SetStateAction<S>) {
-        this.state.update([this.setUntracked(newValue)]);
+        this.state.update(this.setUntracked(newValue));
     }
 
     mergeUntracked(sourceValue: SetPartialStateAction<S>): Path[] {
@@ -1213,12 +1213,12 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
             sourceValue = (sourceValue as Function)(currentValue);
         }
 
-        let updatedPath: Path;
+        let updatedPaths: [Path];
         let deletedOrInsertedProps = false
 
         if (Array.isArray(currentValue)) {
             if (Array.isArray(sourceValue)) {
-                return [this.setUntracked(currentValue.concat(sourceValue) as unknown as S, sourceValue)]
+                return this.setUntracked(currentValue.concat(sourceValue) as unknown as S, sourceValue)
             } else {
                 const deletedIndexes: number[] = []
                 Object.keys(sourceValue).sort().forEach(i => {
@@ -1238,7 +1238,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                 deletedIndexes.reverse().forEach(p => {
                     (currentValue as unknown as []).splice(p, 1)
                 })
-                updatedPath = this.setUntracked(currentValue, sourceValue)
+                updatedPaths = this.setUntracked(currentValue, sourceValue)
             }
         } else if (typeof currentValue === 'object' && currentValue !== null) {
             Object.keys(sourceValue).forEach(key => {
@@ -1251,16 +1251,17 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                     currentValue[key] = newPropValue
                 }
             })
-            updatedPath = this.setUntracked(currentValue, sourceValue)
+            updatedPaths = this.setUntracked(currentValue, sourceValue)
         } else if (typeof currentValue === 'string') {
-            return [this.setUntracked((currentValue + String(sourceValue)) as unknown as S, sourceValue)]
+            return this.setUntracked((currentValue + String(sourceValue)) as unknown as S, sourceValue)
         } else {
-            return [this.setUntracked(sourceValue as S)]
+            return this.setUntracked(sourceValue as S)
         }
 
-        if (updatedPath !== this.path || deletedOrInsertedProps) {
-            return [updatedPath]
+        if (updatedPaths.length !== 1 || updatedPaths[0] !== this.path || deletedOrInsertedProps) {
+            return updatedPaths
         }
+        const updatedPath = updatedPaths[0]
         return Object.keys(sourceValue).map(p => updatedPath.slice().concat(p))
     }
 
@@ -1589,25 +1590,10 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
             this.state.register(pluginMeta);
             return this[self];
         } else {
-            const instance = this.state.getPlugin(p);
-            const capturedThis = this;
-            return [instance || (new StateInvalidUsageError(this.path, ErrorId.GetUnknownPlugin, p.toString())), 
-                // TODO need to create an instance until version 2
-                // because of the incompatible return types from methods
-                {
-                    getUntracked() {
-                        return capturedThis.getUntracked()
-                    },
-                    setUntracked(v): Path[] {
-                        return [capturedThis.setUntracked(v)]
-                    },
-                    mergeUntracked(v): Path[] {
-                        return capturedThis.mergeUntracked(v)
-                    },
-                    rerender(paths) {
-                        return capturedThis.rerender(paths);
-                    }
-                }
+            return [
+                this.state.getPlugin(p) ||
+                    (new StateInvalidUsageError(this.path, ErrorId.GetUnknownPlugin, p.toString())), 
+                this
             ];
         }
     }
