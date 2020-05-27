@@ -1781,15 +1781,15 @@
   dependencies:
     "@hapi/hoek" "8.x.x"
 
-"@hookstate/core@^1.8.7":
+"@hookstate/core@1.8.7":
   version "1.8.7"
   resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-1.8.7.tgz#f236e79fee09f7ecf1d61e7cdc164fe1afa3f9aa"
   integrity sha512-iId2KbDC+nYlilo0ZxeUu2ndntM/CNaSlvRqMDxTNyL4dFXTs30/XZyuV9/b98/pM2baJdIVELrI6ywXzOjygw==
 
-"@hookstate/devtools@^1.8.2":
-  version "1.8.2"
-  resolved "https://registry.yarnpkg.com/@hookstate/devtools/-/devtools-1.8.2.tgz#e64fa5d1d7332751add67fd2cb9097c84eb898ba"
-  integrity sha512-iZcTzVgGB9khdxb7CP8e0Y9cWFiAYE/N+gcedM52tuIJWL+ASRPAOc0VI14VljlIgmJlaNfots+IHvrfKpL48w==
+"@hookstate/devtools@1.8.5":
+  version "1.8.5"
+  resolved "https://registry.yarnpkg.com/@hookstate/devtools/-/devtools-1.8.5.tgz#c015ce2de1ebe0fb264324c6a24e21a5f813a42a"
+  integrity sha512-Cu9S9nANUEuTjixuMtXXBscZfEbQgsrwvjocc3yZcgGl5WHYPyaV8+XNejpyD8doKXLMlQL6iebuDpVyt/KB5g==
   dependencies:
     redux "4.0.5"
     redux-devtools-extension "2.13.8"
@@ -2221,18 +2221,6 @@
   version "7.0.3"
   resolved "https://registry.yarnpkg.com/@types/json-schema/-/json-schema-7.0.3.tgz#bdfd69d61e464dcc81b25159c270d75a73c1a636"
   integrity sha512-Il2DtDVRGDcqjDtE+rF8iqg1CArehSK84HZJCT7AMITlyXRBpuPhqGLDQMowraqqu1coEaimg4ZOqggt6L6L+A==
-
-"@types/lodash.clonedeep@^4.5.6":
-  version "4.5.6"
-  resolved "https://registry.yarnpkg.com/@types/lodash.clonedeep/-/lodash.clonedeep-4.5.6.tgz#3b6c40a0affe0799a2ce823b440a6cf33571d32b"
-  integrity sha512-cE1jYr2dEg1wBImvXlNtp0xDoS79rfEdGozQVgliDZj1uERH4k+rmEMTudP9b4VQ8O6nRb5gPqft0QzEQGMQgA==
-  dependencies:
-    "@types/lodash" "*"
-
-"@types/lodash@*":
-  version "4.14.146"
-  resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.14.146.tgz#de0d2c8610012f12a6a796455054cbc654f8fecf"
-  integrity sha512-JzJcmQ/ikHSv7pbvrVNKJU5j9jL9VLf3/gqs048CEnBVVVEv4kve3vLxoPHGvclutS+Il4SBIuQQ087m1eHffw==
 
 "@types/minimatch@*":
   version "3.0.3"
@@ -10349,7 +10337,7 @@ react-dev-utils@^10.2.1:
     strip-ansi "6.0.0"
     text-table "0.2.0"
 
-react-dom@^16.13.1:
+react-dom@16.13.1:
   version "16.13.1"
   resolved "https://registry.yarnpkg.com/react-dom/-/react-dom-16.13.1.tgz#c1bd37331a0486c078ee54c4740720993b2e0e7f"
   integrity sha512-81PIMmVLnCNLO/fFOQxdQkvEq/+Hfpv24XNJfpyZhTRfO0QcmQIF/PgCa1zCOj2w1hrn12MFLyaJ/G0+Mxtfag==
@@ -10434,7 +10422,7 @@ react-scripts@3.4.1:
   optionalDependencies:
     fsevents "2.1.2"
 
-react@^16.13.1:
+react@16.13.1:
   version "16.13.1"
   resolved "https://registry.yarnpkg.com/react/-/react-16.13.1.tgz#2e818822f1a9743122c063d6410d85c1e3afe48e"
   integrity sha512-YMZQQq32xHLX0bz5Mnibv1/LHb3Sqzngu7xstSM+vrkE5Kzr9xE0yMByK5kMoTK30YVJE61WfbxIFFvfeDKT1w==
