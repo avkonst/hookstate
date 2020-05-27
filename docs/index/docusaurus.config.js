@@ -31,11 +31,11 @@ module.exports = {
           items: [
             {
               label: 'Getting started',
-              to: 'docs/getting-started',
+              to: 'https://hookstate.js.org/docs/getting-started',
             },
             {
               label: 'API reference',
-              to: 'docs/typedoc-hookstate-core',
+              to: 'https://hookstate.js.org/docs/typedoc-hookstate-core',
             },
           ],
         },
@@ -44,11 +44,11 @@ module.exports = {
           items: [
             {
               label: 'Standard plugins',
-              href: 'docs/extensions-overview',
+              href: 'https://hookstate.js.org/docs/extensions-overview',
             },
             {
               label: 'Development tools',
-              href: 'docs/devtools',
+              href: 'https://hookstate.js.org/docs/devtools',
             },
           ],
         },

@@ -10,6 +10,7 @@ import { ExampleComponent as ExamplePerformanceLargeTable } from './performance-
 import { ExampleComponent as ExamplePerformanceLargeForm } from './performance-demo-large-form';
 import { ExampleComponent as ExampleGlobalMultipleConsumersStateFragment } from './global-multiple-consumers-statefragment';
 
+import { ExampleComponent as ExamplePluginLabelled } from './plugin-labelled';
 import { ExampleComponent as ExamplePluginInitial } from './plugin-initial';
 import { ExampleComponent as ExamplePluginTouched } from './plugin-touched';
 import { ExampleComponent as ExamplePluginPersistence } from './plugin-persistence';
@@ -30,6 +31,7 @@ ExamplesRepo.set('local-complex-tree-structure', <ExampleLocalComplexTreeStructu
 ExamplesRepo.set('performance-demo-large-table', <ExamplePerformanceLargeTable />);
 ExamplesRepo.set('performance-demo-large-form', <ExamplePerformanceLargeForm />);
 ExamplesRepo.set('global-multiple-consumers-statefragment', <ExampleGlobalMultipleConsumersStateFragment />);
+ExamplesRepo.set('plugin-labelled', <ExamplePluginLabelled />);
 ExamplesRepo.set('plugin-initial', <ExamplePluginInitial />);
 ExamplesRepo.set('plugin-touched', <ExamplePluginTouched />);
 ExamplesRepo.set('plugin-validation', <ExamplePluginValidation />);

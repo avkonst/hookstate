@@ -15,6 +15,7 @@
     "@docusaurus/preset-classic": "2.0.0-alpha.55",
     "@hookstate/core": "1.8.7",
     "@hookstate/initial": "1.8.0",
+    "@hookstate/labelled": "^1.8.0",
     "@hookstate/persistence": "1.8.0",
     "@hookstate/touched": "1.8.0",
     "@hookstate/untracked": "1.8.0",

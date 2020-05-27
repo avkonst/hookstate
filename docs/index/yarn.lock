@@ -1237,6 +1237,11 @@
   resolved "https://registry.yarnpkg.com/@hookstate/initial/-/initial-1.8.0.tgz#3d3ff812bbd8e2d7fe893230ba2440a1194eeb92"
   integrity sha512-k2moSjQvNYfRPKld4KqTpNzvy13sGtPA+7Y8n6CLXM4cZucHcymSqZrUHsTwPxKs8z+17jm6uESzrgK+saI1hQ==
 
+"@hookstate/labelled@^1.8.0":
+  version "1.8.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/labelled/-/labelled-1.8.0.tgz#246bc6f3e16364a0f0ef74aa2d7aa41aa2fd9c1e"
+  integrity sha512-yl+Ij1xHIWRFuuSDbIrg5Fos8uf6tkb3uiQ63/jpXTWXbu2UGNmBhcTU7JbKSKH+bzAEeyUuqib4K9OEOxVEYQ==
+
 "@hookstate/persistence@1.8.0":
   version "1.8.0"
   resolved "https://registry.yarnpkg.com/@hookstate/persistence/-/persistence-1.8.0.tgz#73de8acae007356b2e17dab169fbc69f22ce7d42"
