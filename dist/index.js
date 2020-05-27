@@ -132,15 +132,17 @@ function createState(initial) {
     return stateLink[self];
 }
 function useState(source) {
+    var sourceIsInitialValue = true;
     if (typeof source === 'object' && source !== null) {
         var sl = source[StateMarkerID];
         if (sl) {
             // it is already state object
             source = sl; // get underlying StateLink
+            sourceIsInitialValue = false;
         }
     }
     var statelink = useStateLink(source);
-    if (useState[DevToolsID]) {
+    if (sourceIsInitialValue && useState[DevToolsID]) {
         statelink.attach(useState[DevToolsID]);
     }
     return statelink[self];
@@ -237,31 +239,40 @@ var EmptyDevToolsExtensions = {
     label: function () { },
     log: function () { }
 };
+var ErrorId;
+(function (ErrorId) {
+    ErrorId[ErrorId["InitStateToValueFromState"] = 101] = "InitStateToValueFromState";
+    ErrorId[ErrorId["SetStateToValueFromState"] = 102] = "SetStateToValueFromState";
+    ErrorId[ErrorId["GetStateWhenPromised"] = 103] = "GetStateWhenPromised";
+    ErrorId[ErrorId["SetStateWhenPromised"] = 104] = "SetStateWhenPromised";
+    ErrorId[ErrorId["SetStateNestedToPromised"] = 105] = "SetStateNestedToPromised";
+    ErrorId[ErrorId["SetStateWhenDestroyed"] = 106] = "SetStateWhenDestroyed";
+    ErrorId[ErrorId["GetStatePropertyWhenPrimitive"] = 107] = "GetStatePropertyWhenPrimitive";
+    ErrorId[ErrorId["ToJson_Value"] = 108] = "ToJson_Value";
+    ErrorId[ErrorId["ToJson_State"] = 109] = "ToJson_State";
+    ErrorId[ErrorId["GetUnknownPlugin"] = 120] = "GetUnknownPlugin";
+    ErrorId[ErrorId["SetProperty_State"] = 201] = "SetProperty_State";
+    ErrorId[ErrorId["SetProperty_Value"] = 202] = "SetProperty_Value";
+    ErrorId[ErrorId["SetPrototypeOf_State"] = 203] = "SetPrototypeOf_State";
+    ErrorId[ErrorId["SetPrototypeOf_Value"] = 204] = "SetPrototypeOf_Value";
+    ErrorId[ErrorId["PreventExtensions_State"] = 205] = "PreventExtensions_State";
+    ErrorId[ErrorId["PreventExtensions_Value"] = 206] = "PreventExtensions_Value";
+    ErrorId[ErrorId["DefineProperty_State"] = 207] = "DefineProperty_State";
+    ErrorId[ErrorId["DefineProperty_Value"] = 208] = "DefineProperty_Value";
+    ErrorId[ErrorId["DeleteProperty_State"] = 209] = "DeleteProperty_State";
+    ErrorId[ErrorId["DeleteProperty_Value"] = 210] = "DeleteProperty_Value";
+    ErrorId[ErrorId["Construct_State"] = 211] = "Construct_State";
+    ErrorId[ErrorId["Construct_Value"] = 212] = "Construct_Value";
+    ErrorId[ErrorId["Apply_State"] = 213] = "Apply_State";
+    ErrorId[ErrorId["Apply_Value"] = 214] = "Apply_Value";
+})(ErrorId || (ErrorId = {}));
 var StateLinkInvalidUsageError = /** @class */ (function (_super) {
     __extends(StateLinkInvalidUsageError, _super);
-    function StateLinkInvalidUsageError(op, path, hint) {
-        return _super.call(this, "StateLink is used incorrectly. Attempted '" + op + "' at '/" + path.join('/') + "'" +
-            (hint ? ". Hint: " + hint : '')) || this;
+    function StateLinkInvalidUsageError(path, id, details) {
+        return _super.call(this, "Error: HOOKSTATE-" + id + " [path: /" + path.join('/') + (details ? ", details: " + details : '') + "]. " +
+            ("See https://hookstate.js.org/docs/exceptions#hookstate-" + id)) || this;
     }
     return StateLinkInvalidUsageError;
-}(Error));
-function extractSymbol(s) {
-    var result = s.toString();
-    var symstr = 'Symbol(';
-    if (result.startsWith(symstr) && result.endsWith(')')) {
-        result = result.substring(symstr.length, result.length - 1);
-    }
-    return result;
-}
-// TODO replace by StateLinkInvalidUsageError
-var PluginUnknownError = /** @class */ (function (_super) {
-    __extends(PluginUnknownError, _super);
-    function PluginUnknownError(s) {
-        return _super.call(this, "Plugin '" + extractSymbol(s) + "' has not been attached to the StateInf or StateLink. " +
-            "Hint: you might need to register the required plugin using 'with' method. " +
-            "See https://github.com/avkonst/hookstate#plugins for more details") || this;
-    }
-    return PluginUnknownError;
 }(Error));
 var DowngradedID = Symbol('Downgraded');
 var StateMemoID = Symbol('StateMemo');
@@ -345,10 +356,7 @@ var Store = /** @class */ (function () {
     };
     Store.prototype.set = function (path, value, mergeValue) {
         if (this._edition < 0) {
-            // TODO convert to warning
-            throw new StateLinkInvalidUsageError("set state for the destroyed state", path, 'make sure all asynchronous operations are cancelled (unsubscribed) when the state is destroyed. ' +
-                'Global state is explicitly destroyed at \'StateInf.destroy()\'. ' +
-                'Local state is automatically destroyed when a component is unmounted.');
+            throw new StateLinkInvalidUsageError(path, ErrorId.SetStateWhenDestroyed);
         }
         if (path.length === 0) {
             // Root value UPDATE case,
@@ -371,8 +379,7 @@ var Store = /** @class */ (function () {
                 delete onSetArg.state;
             }
             else if (this._promised && !this._promised.resolver) {
-                // TODO add hint
-                throw new StateLinkInvalidUsageError("write promised state", path, '');
+                throw new StateLinkInvalidUsageError(path, ErrorId.SetStateWhenPromised);
             }
             var prevValue = this._value;
             if (prevValue === None) {
@@ -387,9 +394,7 @@ var Store = /** @class */ (function () {
             return path;
         }
         if (typeof value === 'object' && Promise.resolve(value) === value) {
-            throw new StateLinkInvalidUsageError(
-            // TODO add hint
-            'set promise for nested property', path, '');
+            throw new StateLinkInvalidUsageError(path, ErrorId.SetStateNestedToPromised);
         }
         var target = this._value;
         for (var i = 0; i < path.length - 1; i += 1) {
@@ -544,7 +549,7 @@ var Store = /** @class */ (function () {
         this._edition = DestroyedEdition;
     };
     Store.prototype.toJSON = function () {
-        throw new StateLinkInvalidUsageError('toJSON()', RootPath, 'did you mean to use JSON.stringify(state.get()) instead of JSON.stringify(state)?');
+        throw new StateLinkInvalidUsageError(RootPath, ErrorId.ToJson_Value);
     };
     return Store;
 }());
@@ -643,8 +648,7 @@ var StateLinkImpl = /** @class */ (function () {
             if (this.state.promised && this.state.promised.error) {
                 throw this.state.promised.error;
             }
-            // TODO add hint
-            throw new StateLinkInvalidUsageError('read promised state', this.path);
+            throw new StateLinkInvalidUsageError(this.path, ErrorId.GetStateWhenPromised);
         }
         return this.valueSource;
     };
@@ -703,7 +707,7 @@ var StateLinkImpl = /** @class */ (function () {
             newValue = newValue(this.getUntracked());
         }
         if (typeof newValue === 'object' && newValue !== null && newValue[ProxyMarkerID]) {
-            throw new StateLinkInvalidUsageError("set(state.get() at '/" + newValue[ProxyMarkerID].path.join('/') + "')", this.path, 'did you mean to use state.set(lodash.cloneDeep(value)) instead of state.set(value)?');
+            throw new StateLinkInvalidUsageError(this.path, ErrorId.SetStateToValueFromState);
         }
         return this.state.set(this.path, newValue, mergeValue);
     };
@@ -826,7 +830,7 @@ var StateLinkImpl = /** @class */ (function () {
             if (alt) {
                 return alt();
             }
-            throw new PluginUnknownError(plugin);
+            throw new StateLinkInvalidUsageError(this.path, ErrorId.GetUnknownPlugin, plugin.toString());
         }
     };
     StateLinkImpl.prototype.access = function () {
@@ -991,7 +995,7 @@ var StateLinkImpl = /** @class */ (function () {
                 target[key] = value;
                 return true;
             }
-            throw new StateLinkInvalidUsageError('set', _this.path, "did you mean to use 'state.nested[" + key + "].set(value)' instead of 'state[" + key + "] = value'?");
+            throw new StateLinkInvalidUsageError(_this.path, ErrorId.SetProperty_Value);
         });
     };
     StateLinkImpl.prototype.nestedObjectImpl = function (currentValue) {
@@ -1035,7 +1039,7 @@ var StateLinkImpl = /** @class */ (function () {
                 target[key] = value;
                 return true;
             }
-            throw new StateLinkInvalidUsageError('set', _this.path, "did you mean to use 'state.nested." + key + ".set(value)' instead of 'state." + key + " = value'?");
+            throw new StateLinkInvalidUsageError(_this.path, ErrorId.SetProperty_Value);
         });
     };
     // tslint:disable-next-line: no-any
@@ -1046,14 +1050,14 @@ var StateLinkImpl = /** @class */ (function () {
     setter) {
         var _this = this;
         var onInvalidUsage = function (op) {
-            throw new StateLinkInvalidUsageError(op, _this.path);
+            throw new StateLinkInvalidUsageError(_this.path, op);
         };
         return new Proxy(objectToWrap, {
             getPrototypeOf: function (target) {
                 return Object.getPrototypeOf(target);
             },
             setPrototypeOf: function (target, v) {
-                return onInvalidUsage('setPrototypeOf');
+                return onInvalidUsage(ErrorId.SetPrototypeOf_Value);
             },
             isExtensible: function (target) {
                 // should satisfy the invariants:
@@ -1062,7 +1066,7 @@ var StateLinkImpl = /** @class */ (function () {
                 return Object.isExtensible(target);
             },
             preventExtensions: function (target) {
-                return onInvalidUsage('preventExtensions');
+                return onInvalidUsage(ErrorId.PreventExtensions_Value);
             },
             getOwnPropertyDescriptor: function (target, p) {
                 var origin = Object.getOwnPropertyDescriptor(target, p);
@@ -1084,13 +1088,13 @@ var StateLinkImpl = /** @class */ (function () {
             },
             get: getter,
             set: setter || (function (target, p, value, receiver) {
-                return onInvalidUsage('set');
+                return onInvalidUsage(ErrorId.SetProperty_Value);
             }),
             deleteProperty: function (target, p) {
-                return onInvalidUsage('deleteProperty');
+                return onInvalidUsage(ErrorId.DeleteProperty_Value);
             },
             defineProperty: function (target, p, attributes) {
-                return onInvalidUsage('defineProperty');
+                return onInvalidUsage(ErrorId.DefineProperty_Value);
             },
             enumerate: function (target) {
                 if (Array.isArray(target)) {
@@ -1105,10 +1109,10 @@ var StateLinkImpl = /** @class */ (function () {
                 return Object.keys(target);
             },
             apply: function (target, thisArg, argArray) {
-                return onInvalidUsage('apply');
+                return onInvalidUsage(ErrorId.Apply_Value);
             },
             construct: function (target, argArray, newTarget) {
-                return onInvalidUsage('construct');
+                return onInvalidUsage(ErrorId.Construct_Value);
             }
         });
     };
@@ -1134,7 +1138,7 @@ var StateLinkImpl = /** @class */ (function () {
                 }
                 else {
                     if (key === 'toJSON') {
-                        throw new StateLinkInvalidUsageError('toJSON()', _this.path, 'did you mean to use JSON.stringify(state.get()) instead of JSON.stringify(state)?');
+                        throw new StateLinkInvalidUsageError(_this.path, ErrorId.ToJson_State);
                     }
                     var currentValue = _this.getUntracked(true);
                     if ( // if currentValue is primitive type
@@ -1167,7 +1171,7 @@ var StateLinkImpl = /** @class */ (function () {
                                 return function (p) { return _this.attach(p); };
                             default:
                                 _this.get(); // mark used
-                                throw new StateLinkInvalidUsageError('get', _this.path, "target value is not an object to contain properties");
+                                throw new StateLinkInvalidUsageError(_this.path, ErrorId.GetStatePropertyWhenPrimitive);
                         }
                     }
                     _this.get(); // mark used
@@ -1183,13 +1187,11 @@ var StateLinkImpl = /** @class */ (function () {
                             return undefined;
                         }
                         return _this.child(index)[self];
-                        // return (this.nested)![index][self];
                     }
                     return _this.child(key.toString())[self];
-                    // return (this.nested)![key.toString()][self];
                 }
             }, function (_, key, value) {
-                throw new StateLinkInvalidUsageError('set', _this.path, "did you mean to use 'state." + String(key) + "[self].set(value)' instead of 'state." + String(key) + " = value'?");
+                throw new StateLinkInvalidUsageError(_this.path, ErrorId.SetProperty_State);
             });
         },
         enumerable: false,
@@ -1263,7 +1265,7 @@ var StateLinkImpl = /** @class */ (function () {
         else {
             var instance = this.state.getPlugin(p);
             var capturedThis_1 = this;
-            return [instance || (new PluginUnknownError(p)), 
+            return [instance || (new StateLinkInvalidUsageError(this.path, ErrorId.GetUnknownPlugin, p.toString())), 
                 // TODO need to create an instance until version 2
                 // because of the incompatible return types from methods
                 {
@@ -1295,7 +1297,7 @@ propertyGetter,
 // tslint:disable-next-line: no-any
 propertySetter) {
     var onInvalidUsage = function (op) {
-        throw new StateLinkInvalidUsageError(op, path);
+        throw new StateLinkInvalidUsageError(path, op);
     };
     if (typeof targetBootstrap !== 'object' || targetBootstrap === null) {
         targetBootstrap = {};
@@ -1311,7 +1313,7 @@ propertySetter) {
             return Object.getPrototypeOf(targetReal);
         },
         setPrototypeOf: function (target, v) {
-            return onInvalidUsage('setPrototypeOf');
+            return onInvalidUsage(ErrorId.SetPrototypeOf_State);
         },
         isExtensible: function (target) {
             // should satisfy the invariants:
@@ -1320,7 +1322,7 @@ propertySetter) {
             // return Object.isExtensible(target);
         },
         preventExtensions: function (target) {
-            return onInvalidUsage('preventExtensions');
+            return onInvalidUsage(ErrorId.PreventExtensions_State);
         },
         getOwnPropertyDescriptor: function (target, p) {
             var targetReal = targetGetter();
@@ -1351,10 +1353,10 @@ propertySetter) {
         get: propertyGetter,
         set: propertySetter,
         deleteProperty: function (target, p) {
-            return onInvalidUsage('deleteProperty');
+            return onInvalidUsage(ErrorId.DeleteProperty_State);
         },
         defineProperty: function (target, p, attributes) {
-            return onInvalidUsage('defineProperty');
+            return onInvalidUsage(ErrorId.DefineProperty_State);
         },
         enumerate: function (target) {
             var targetReal = targetGetter();
@@ -1377,10 +1379,10 @@ propertySetter) {
             return Object.keys(targetReal);
         },
         apply: function (target, thisArg, argArray) {
-            return onInvalidUsage('apply');
+            return onInvalidUsage(ErrorId.Apply_State);
         },
         construct: function (target, argArray, newTarget) {
-            return onInvalidUsage('construct');
+            return onInvalidUsage(ErrorId.Construct_State);
         }
     });
 }
@@ -1390,8 +1392,7 @@ function createStore(initial) {
         initialValue = initial();
     }
     if (typeof initialValue === 'object' && initialValue !== null && initialValue[ProxyMarkerID]) {
-        throw new StateLinkInvalidUsageError("create/useStateLink(state.get() at '/" + initialValue[ProxyMarkerID].path.join('/') + "')", RootPath, 'did you mean to use create/useStateLink(state) OR ' +
-            'create/useStateLink(lodash.cloneDeep(state.get())) instead of create/useStateLink(state.get())?');
+        throw new StateLinkInvalidUsageError(RootPath, ErrorId.InitStateToValueFromState);
     }
     return new Store(initialValue);
 }
