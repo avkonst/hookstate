@@ -336,7 +336,7 @@ import { none } from '@hookstate/core'
 
 state[1].set(none)
 // or
-state[self].merge({ 1: None })
+state[self].merge({ 1: none })
 ```
 
 #### Avoid the following

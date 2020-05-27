@@ -1,4 +1,4 @@
-import { useState, createState, None, self } from '../../';
+import { useState, createState, none, self } from '../../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import React from 'react';
@@ -144,7 +144,7 @@ test('complex: should delete property when set to none', async () => {
     
     act(() => {
         // deleting existing property
-        result.current[0].field1[self].set(None);
+        result.current[0].field1[self].set(none);
     });
     expect(renderTimes).toStrictEqual(2);
     expect(result.current[0][self].get()).toEqual({ field2: 'str', field3: true });
@@ -152,7 +152,7 @@ test('complex: should delete property when set to none', async () => {
 
     act(() => {
         // deleting non existing property
-        result.current[0].field1[self].set(None);
+        result.current[0].field1[self].set(none);
     });
     expect(renderTimes).toStrictEqual(2);
     expect(result.current[0][self].get()).toEqual({ field2: 'str', field3: true });
@@ -166,14 +166,14 @@ test('complex: should delete property when set to none', async () => {
 
     act(() => {
         // deleting existing but not used in render property
-        result.current[0].field2[self].set(None);
+        result.current[0].field2[self].set(none);
     });
     expect(renderTimes).toStrictEqual(4);
     expect(result.current[0][self].get()).toEqual({ field1: 1, field3: true });
 
     // deleting nested value
     act(() => {
-        result.current[0][self].set(None)
+        result.current[0][self].set(none)
     })
     expect(renderTimes).toStrictEqual(5);
     expect(result.current[self].get()).toEqual([]);

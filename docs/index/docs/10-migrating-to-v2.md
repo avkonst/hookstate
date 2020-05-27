@@ -28,4 +28,4 @@ other properties/methods of `StateLink` | moved to `StateMethods` (and `State` f
 `StateFragment` | `StateFragment` | `state` property accepts an instance of type `State` but not `StateLink` as before.
 `StateMemo` | deleted | `StateMemo` is deleted as it was complex feature with almost no benefit. The same functionality can be more or less achieved with `React.memo` instead.
 transform argument of `createStateLink` and `useStateLink` | deleted | [See here](./exporting-state) how to wrap and export states by a custom interface in the new version.
-`None` | `none` | Renamed.
+`none` | `none` | Renamed.

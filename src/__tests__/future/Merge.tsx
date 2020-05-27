@@ -1,4 +1,4 @@
-import { useState, None, self } from '../../';
+import { useState, none, self } from '../../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import React from 'react';
@@ -101,7 +101,7 @@ test('object: should rerender used after merge delete', async () => {
     expect(result.current.field1[self].get()).toStrictEqual(1);
 
     act(() => {
-        result.current[self].merge(p => ({ field6: None }));
+        result.current[self].merge(p => ({ field6: none }));
     });
     expect(renderTimes).toStrictEqual(2);
     expect(result.current.field1[self].get()).toStrictEqual(1);
@@ -126,8 +126,8 @@ test('object: should rerender used after merge complex', async () => {
 
     act(() => {
         result.current[self].merge({
-            field8: 200, field6: None, field2: 3,
-            field4: None, field5: 2, field3: None, field7: 100
+            field8: 200, field6: none, field2: 3,
+            field4: none, field5: 2, field3: none, field7: 100
         });
     });
     expect(renderTimes).toStrictEqual(2);
@@ -244,7 +244,7 @@ test('array: should rerender used after merge delete', async () => {
     expect(result.current[0][self].get()).toStrictEqual(1);
 
     act(() => {
-        result.current[self].merge(p => ({ 3: None }));
+        result.current[self].merge(p => ({ 3: none }));
     });
     expect(renderTimes).toStrictEqual(2);
     expect(result.current[0][self].get()).toStrictEqual(1);
@@ -262,7 +262,7 @@ test('array: should rerender used after merge complex', async () => {
     expect(result.current[0][self].get()).toStrictEqual(1);
 
     act(() => {
-        result.current[self].merge({ 7: 200, 5: None, 1: 3, 3: None, 4: 2, 2: None, 6: 100 });
+        result.current[self].merge({ 7: 200, 5: none, 1: 3, 3: none, 4: 2, 2: none, 6: 100 });
     });
     expect(renderTimes).toStrictEqual(2);
     expect(result.current[0][self].get()).toStrictEqual(1);

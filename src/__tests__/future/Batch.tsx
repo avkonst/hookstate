@@ -1,4 +1,4 @@
-import { useState, None, self, State } from '../../';
+import { useState, none, self, State } from '../../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import React from 'react';
@@ -196,7 +196,7 @@ test('object: should rerender used via nested batch promised manual', async () =
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState<number>(None)
+        return useState<number>(none)
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current[self].map(() => false, () => true)).toStrictEqual(true);

@@ -1,4 +1,4 @@
-import { useState, createState, None, self } from '../../';
+import { useState, createState, none, self } from '../../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import React from 'react';
@@ -133,7 +133,7 @@ test('primitive: should rerender used on promise resolve manual', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState(None)
+        return useState(none)
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current[self].map(() => false, () => true)).toStrictEqual(true);

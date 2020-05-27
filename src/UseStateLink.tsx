@@ -981,8 +981,8 @@ class Store implements Subscribable {
         if (typeof _value === 'object' &&
             Promise.resolve(_value) === _value) {
             this._promised = this.createPromised(_value)
-            this._value = None
-        } else if (_value === None) {
+            this._value = none
+        } else if (_value === none) {
             this._promised = this.createPromised(undefined)
         }
     }
@@ -1005,7 +1005,7 @@ class Store implements Subscribable {
             },
             () => {
                 if (this._batchesPendingActions &&
-                    this._value !== None &&
+                    this._value !== none &&
                     this.edition !== DestroyedEdition) {
                     const actions = this._batchesPendingActions
                     this._batchesPendingActions = undefined
@@ -1026,7 +1026,7 @@ class Store implements Subscribable {
 
     get(path: Path) {
         let result = this._value;
-        if (result === None) {
+        if (result === none) {
             return result;
         }
         path.forEach(p => {
@@ -1050,13 +1050,13 @@ class Store implements Subscribable {
                 previous: this._value,
                 merged: mergeValue
             }
-            if (value === None) {
+            if (value === none) {
                 this._promised = this.createPromised(undefined)
                 delete onSetArg.value
                 delete onSetArg.state
             } else if (typeof value === 'object' && Promise.resolve(value) === value) {
                 this._promised = this.createPromised(value)
-                value = None
+                value = none
                 delete onSetArg.value
                 delete onSetArg.state
             } else if (this._promised && !this._promised.resolver) {
@@ -1064,13 +1064,13 @@ class Store implements Subscribable {
             }
 
             let prevValue = this._value;
-            if (prevValue === None) {
+            if (prevValue === none) {
                 delete onSetArg.previous
             }
             this._value = value;
             this.afterSet(onSetArg)
 
-            if (prevValue === None && this._value !== None &&
+            if (prevValue === none && this._value !== none &&
                 this.promised && this.promised.resolver) {
                 this.promised.resolver()
             }
@@ -1089,7 +1089,7 @@ class Store implements Subscribable {
 
         const p = path[path.length - 1]
         if (p in target) {
-            if (value !== None) {
+            if (value !== none) {
                 // Property UPDATE case
                 let prevValue = target[p]
                 target[p] = value;
@@ -1124,7 +1124,7 @@ class Store implements Subscribable {
             }
         }
 
-        if (value !== None) {
+        if (value !== none) {
             // Property INSERT case
             target[p] = value;
             this.afterSet({
@@ -1173,7 +1173,7 @@ class Store implements Subscribable {
         if (options && 'context' in options) {
             cbArgument.context = options.context
         }
-        if (this._value !== None) {
+        if (this._value !== none) {
             cbArgument.state = this._value
         }
         this._batchStartSubscribers.forEach(cb => cb(cbArgument))
@@ -1186,7 +1186,7 @@ class Store implements Subscribable {
         if (options && 'context' in options) {
             cbArgument.context = options.context
         }
-        if (this._value !== None) {
+        if (this._value !== none) {
             cbArgument.state = this._value
         }
         this._batchFinishSubscribers.forEach(cb => cb(cbArgument))
@@ -1254,7 +1254,7 @@ class Store implements Subscribable {
     }
 
     destroy() {
-        this._destroySubscribers.forEach(cb => cb(this._value !== None ? { state: this._value } : {}))
+        this._destroySubscribers.forEach(cb => cb(this._value !== none ? { state: this._value } : {}))
         this._edition = DestroyedEdition
     }
 
@@ -1370,7 +1370,7 @@ class StateLinkImpl<S> implements StateLink<S>,
                 }
             }
         }
-        if (this.valueSource === None && !allowPromised) {
+        if (this.valueSource === none && !allowPromised) {
             if (this.state.promised && this.state.promised.error) {
                 throw this.state.promised.error;
             }
@@ -1401,7 +1401,7 @@ class StateLinkImpl<S> implements StateLink<S>,
 
     get promised() {
         const currentValue = this.get(true) // marks used
-        if (currentValue === None && this.state.promised && !this.state.promised.fullfilled) {
+        if (currentValue === none && this.state.promised && !this.state.promised.fullfilled) {
             return true;
         }
         return false;
@@ -1409,7 +1409,7 @@ class StateLinkImpl<S> implements StateLink<S>,
 
     get error() {
         const currentValue = this.get(true) // marks used
-        if (currentValue === None) {
+        if (currentValue === none) {
             if (this.state.promised && this.state.promised.fullfilled) {
                 return this.state.promised.error;
             }
@@ -1449,7 +1449,7 @@ class StateLinkImpl<S> implements StateLink<S>,
                 Object.keys(sourceValue).sort().forEach(i => {
                     const index = Number(i);
                     const newPropValue = sourceValue[index]
-                    if (newPropValue === None) {
+                    if (newPropValue === none) {
                         deletedOrInsertedProps = true
                         deletedIndexes.push(index)
                     } else {
@@ -1468,7 +1468,7 @@ class StateLinkImpl<S> implements StateLink<S>,
         } else if (typeof currentValue === 'object' && currentValue !== null) {
             Object.keys(sourceValue).forEach(key => {
                 const newPropValue = sourceValue[key]
-                if (newPropValue === None) {
+                if (newPropValue === none) {
                     deletedOrInsertedProps = true
                     delete currentValue[key]
                 } else {
@@ -2154,20 +2154,6 @@ export default useStateLink;
  * @internal
  * @deprecated declared for backward compatibility
  */
-export type NestedInferredLink<S> = InferredStateLinkNestedType<S>;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export type NestedInferredKeys<S> = InferredStateLinkKeysType<S>;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
 export type DestroyableStateLink<S> =
     StateLink<S> & StateMethodsDestroy;
 /**
@@ -2215,18 +2201,6 @@ export type InitialValueAtRoot<S> = SetInitialStateAction<S>;
  * @internal
  * @deprecated declared for backward compatibility
  */
-export type InferredStateLinkNestedType<S> =
-    S extends ReadonlyArray<(infer U)> ? ReadonlyArray<StateLink<U>> :
-    S extends null ? undefined :
-    S extends object ? { readonly [K in keyof Required<S>]: StateLink<S[K]>; } :
-    undefined;
-
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
 export type InferredStateLinkKeysType<S> = InferredStateKeysType<S>;
 
 /**
@@ -2249,14 +2223,6 @@ export interface BatchOptions {
     ifPromised?: 'postpone' | 'discard' | 'reject' | 'execute',
     context?: AnyContext;
 }
-
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export const None = none;
 
 /**
  * @hidden

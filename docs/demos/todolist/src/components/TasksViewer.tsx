@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTasksState, Task } from './TasksState';
-import { State, useState, None, self } from '@hookstate/core';
+import { State, useState, none, self } from '@hookstate/core';
 import { useSettingsState } from './SettingsState';
 
 function TaskEditor(props: { task: State<Task> }) {
@@ -141,7 +141,7 @@ function TaskEditor(props: { task: State<Task> }) {
                 borderColor="red"
                 onClick={() => {
                     isEditing.set(false)
-                    taskState[self].set(None)
+                    taskState[self].set(none)
                 }}
                 text="Delete"
             />
