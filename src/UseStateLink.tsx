@@ -600,10 +600,10 @@ export function useState<S>(
 ): State<S> {
     let sourceIsInitialValue = true
     if (typeof source === 'object' && source !== null) {
-        const sl = source[StateMarkerID]
-        if (sl) {
+        const statemethodsSource = source[self]
+        if (statemethodsSource) {
             // it is already state object
-            source = sl; // get underlying StateMethods
+            source = statemethodsSource; // get underlying StateMethods
             sourceIsInitialValue = false
         }
     }
@@ -769,9 +769,7 @@ interface Subscribable {
 }
 
 const DowngradedID = Symbol('Downgraded');
-const StateMemoID = Symbol('StateMemo');
-const ProxyMarkerID = Symbol('ProxyMarker');
-const StateMarkerID = Symbol('State');
+const SelfMethodsID = Symbol('ProxyMarker');
 
 const RootPath: Path = [];
 const DestroyedEdition = -1
@@ -1080,7 +1078,6 @@ class Store implements Subscribable {
     }
 }
 
-const SynteticID = Symbol('SynteticTypeInferenceMarker');
 const ValueCache = Symbol('ValueCache');
 const UnmountedCallback = Symbol('UnmountedCallback');
 
@@ -1206,7 +1203,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         if (typeof newValue === 'function') {
             newValue = (newValue as ((prevValue: S) => S))(this.getUntracked());
         }
-        if (typeof newValue === 'object' && newValue !== null && newValue[ProxyMarkerID]) {
+        if (typeof newValue === 'object' && newValue !== null && newValue[SelfMethodsID]) {
             throw new StateInvalidUsageError(this.path, ErrorId.SetStateToValueFromState)
         }
         return this.state.set(this.path, newValue, mergeValue);
@@ -1386,7 +1383,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                 if (key in Array.prototype) {
                     return Array.prototype[key];
                 }
-                if (key === ProxyMarkerID) {
+                if (key === SelfMethodsID) {
                     return this;
                 }
                 if (typeof key === 'symbol') {
@@ -1417,7 +1414,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
             currentValue,
             () => currentValue,
             (target: object, key: PropertyKey) => {
-                if (key === ProxyMarkerID) {
+                if (key === SelfMethodsID) {
                     return this;
                 }
                 if (typeof key === 'symbol') {
@@ -1446,11 +1443,6 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                 return this.valueSource
             },
         (_, key) => {
-            if (key === StateMarkerID) {
-                // should be tested before target is obtained
-                // to keep it clean from usage marker
-                return this;
-            }
             if (typeof key === 'symbol') {
                 if (key === self) {
                     return this
@@ -1748,7 +1740,7 @@ function createStore<S>(initial: SetInitialStateAction<S>): Store {
     if (typeof initial === 'function') {
         initialValue = (initial as (() => S | Promise<S>))();
     }
-    if (typeof initialValue === 'object' && initialValue !== null && initialValue[ProxyMarkerID]) {
+    if (typeof initialValue === 'object' && initialValue !== null && initialValue[SelfMethodsID]) {
         throw new StateInvalidUsageError(RootPath, ErrorId.InitStateToValueFromState)
     }
     return new Store(initialValue);
