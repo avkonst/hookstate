@@ -780,10 +780,15 @@ unwrapExports(reduxDevtoolsExtension);
 var reduxDevtoolsExtension_1 = reduxDevtoolsExtension.composeWithDevTools;
 var reduxDevtoolsExtension_2 = reduxDevtoolsExtension.devToolsEnhancer;
 
-var MonitoredStates;
-function DevToolsInit() {
+var SettingsState;
+function DevToolsInitialize(settings) {
+    // make sure it is used, otherwise it is stripped out by the compiler
+    DevToolsInitializeInternal();
+    SettingsState[core.self].set(settings);
+}
+function DevToolsInitializeInternal() {
     if ( // already initialized
-    MonitoredStates ||
+    SettingsState ||
         // server-side rendering
         typeof window === 'undefined' ||
         // development tools monitor is not open
@@ -795,8 +800,11 @@ function DevToolsInit() {
     var PluginIdPersistedSettings = Symbol('PersistedSettings');
     var MonitoredStatesLogger = function (_) { };
     var MonitoredStatesLabel = '@hookstate/devtools: settings';
-    MonitoredStates = core.createState(function () {
-        var p = localStorage.getItem(MonitoredStatesLabel);
+    SettingsState = core.createState(function () {
+        // localStorage is not available under react native
+        var p = typeof window !== 'undefined' && window.localStorage &&
+            // read persisted if we can
+            window.localStorage.getItem(MonitoredStatesLabel);
         if (!p) {
             return {
                 monitored: [MonitoredStatesLabel],
@@ -809,6 +817,7 @@ function DevToolsInit() {
         init: function () { return ({
             onSet: function (p) {
                 var v = p.state;
+                // verify what is coming, because it can be anything from devtools
                 if (!v || !v.monitored || !Array.isArray(v.monitored)) {
                     v = v || {};
                     v.monitored = [MonitoredStatesLabel];
@@ -818,23 +827,30 @@ function DevToolsInit() {
                 }
                 var depth = Number(v.callstacksDepth);
                 v.callstacksDepth = Number.isInteger(depth) && depth >= 0 ? depth : IsDevelopment ? 30 : 0;
-                localStorage.setItem(MonitoredStatesLabel, JSON.stringify(v));
+                if (typeof window !== 'undefined' && window.localStorage) {
+                    // persist if we can
+                    window.localStorage.setItem(MonitoredStatesLabel, JSON.stringify(v));
+                }
                 if (v !== p.state) {
-                    MonitoredStates[core.self].set(v);
+                    SettingsState[core.self].set(v);
                 }
             }
         }); }
     }); });
     var lastUnlabelledId = 0;
     function getLabel(isGlobal) {
-        if (!IsDevelopment) {
-            return (isGlobal ? 'global' : 'local') + "-state-" + (lastUnlabelledId += 1);
-        }
+        // The intention was to get the label fast under production
+        // but it is unclear if it actually improves anything
+        // It seems like if the browser's extension is enabled,
+        // it is far more conventient to get proper names for states
+        // if (!IsDevelopment) {
+        //     return `${isGlobal ? 'global' : 'local'}-state-${lastUnlabelledId += 1}`
+        // }
         var dummyError = {};
         if ('stackTraceLimit' in Error && 'captureStackTrace' in Error) {
             var oldLimit = Error.stackTraceLimit;
             Error.stackTraceLimit = 2;
-            Error.captureStackTrace(dummyError, MonitoredStates[core.self].attach);
+            Error.captureStackTrace(dummyError, SettingsState[core.self].attach);
             Error.stackTraceLimit = oldLimit;
         }
         var s = dummyError.stack;
@@ -908,8 +924,8 @@ function DevToolsInit() {
             return lnk[core.self].map(function (l) { return l[core.self].value; }, function () { return core.none; });
         }, reduxDevtoolsExtension_2({
             name: window.location.hostname + ": " + assignedId,
-            trace: MonitoredStates[core.self].value.callstacksDepth !== 0,
-            traceLimit: MonitoredStates[core.self].value.callstacksDepth,
+            trace: SettingsState[core.self].value.callstacksDepth !== 0,
+            traceLimit: SettingsState[core.self].value.callstacksDepth,
             autoPause: true,
             shouldHotReload: false,
             features: {
@@ -943,7 +959,7 @@ function DevToolsInit() {
         return dispatch;
     }
     function isMonitored(assignedId, globalOrLabeled) {
-        return MonitoredStates[core.self].value.monitored.includes(assignedId) || (IsDevelopment && globalOrLabeled);
+        return SettingsState[core.self].value.monitored.includes(assignedId) || (IsDevelopment && globalOrLabeled);
     }
     function DevToolsInternal(isGlobal) {
         return {
@@ -1019,15 +1035,15 @@ function DevToolsInit() {
             }
         };
     }
-    MonitoredStates[core.self].attach(DevToolsInternal);
-    core.DevTools(MonitoredStates).label(MonitoredStatesLabel);
-    MonitoredStatesLogger = function (str) { return core.DevTools(MonitoredStates).log(str); };
+    SettingsState[core.self].attach(DevToolsInternal);
+    core.DevTools(SettingsState).label(MonitoredStatesLabel);
+    MonitoredStatesLogger = function (str) { return core.DevTools(SettingsState).log(str); };
     core.useStateLink[core.DevToolsID] = DevToolsInternal;
     core.createStateLink[core.DevToolsID] = function () { return DevToolsInternal(true); };
     core.useState[core.DevToolsID] = DevToolsInternal;
     core.createState[core.DevToolsID] = function () { return DevToolsInternal(true); };
 }
-DevToolsInit(); // attach on load
+DevToolsInitializeInternal(); // attach on load
 
-exports.DevToolsInit = DevToolsInit;
+exports.DevToolsInitialize = DevToolsInitialize;
 //# sourceMappingURL=index.js.map

@@ -20,11 +20,22 @@ import {
 import { createStore } from 'redux';
 import { devToolsEnhancer } from 'redux-devtools-extension';
 
-let MonitoredStates: State<{ monitored: string[], callstacksDepth: number }>;
+export interface Settings {
+    monitored: string[],
+    callstacksDepth: number
+}
 
-export function DevToolsInit() {
+let SettingsState: State<Settings>;
+
+export function DevToolsInitialize(settings: Settings) {
+    // make sure it is used, otherwise it is stripped out by the compiler
+    DevToolsInitializeInternal()
+    SettingsState[self].set(settings)
+}
+
+function DevToolsInitializeInternal() {
     if (// already initialized
-        MonitoredStates ||
+        SettingsState ||
         // server-side rendering
         typeof window === 'undefined' ||
         // development tools monitor is not open
@@ -38,20 +49,24 @@ export function DevToolsInit() {
     
     let MonitoredStatesLogger = (_: string) => { /* */ };
     const MonitoredStatesLabel = '@hookstate/devtools: settings';
-    MonitoredStates = createState(() => {
-            const p = localStorage.getItem(MonitoredStatesLabel)
+    SettingsState = createState(() => {
+            // localStorage is not available under react native
+            const p = typeof window !== 'undefined' && window.localStorage &&
+                // read persisted if we can
+                window.localStorage.getItem(MonitoredStatesLabel)
             if (!p) {
                 return {
                     monitored: [MonitoredStatesLabel],
                     callstacksDepth: IsDevelopment ? 30 : 0
                 }
             }
-            return JSON.parse(p) as { monitored: string[], callstacksDepth: number }
+            return JSON.parse(p) as Settings
         })[self].attach(() => ({
             id: PluginIdPersistedSettings,
             init: () => ({
                 onSet: p => {
                     let v = p.state;
+                    // verify what is coming, because it can be anything from devtools
                     if (!v || !v.monitored || !Array.isArray(v.monitored)) {
                         v = v || {}
                         v.monitored = [MonitoredStatesLabel]
@@ -60,9 +75,12 @@ export function DevToolsInit() {
                     }
                     const depth = Number(v.callstacksDepth);
                     v.callstacksDepth = Number.isInteger(depth) && depth >= 0 ? depth : IsDevelopment ? 30 : 0;
-                    localStorage.setItem(MonitoredStatesLabel, JSON.stringify(v))
+                    if (typeof window !== 'undefined' && window.localStorage) {
+                        // persist if we can
+                        window.localStorage.setItem(MonitoredStatesLabel, JSON.stringify(v))
+                    }
                     if (v !== p.state) {
-                        MonitoredStates[self].set(v)
+                        SettingsState[self].set(v)
                     }
                 }
             })
@@ -70,15 +88,19 @@ export function DevToolsInit() {
     
     let lastUnlabelledId = 0;
     function getLabel(isGlobal?: boolean) {
-        if (!IsDevelopment) {
-            return `${isGlobal ? 'global' : 'local'}-state-${lastUnlabelledId += 1}`
-        }
+        // The intention was to get the label fast under production
+        // but it is unclear if it actually improves anything
+        // It seems like if the browser's extension is enabled,
+        // it is far more conventient to get proper names for states
+        // if (!IsDevelopment) {
+        //     return `${isGlobal ? 'global' : 'local'}-state-${lastUnlabelledId += 1}`
+        // }
         
         let dummyError: { stack?: string } = {}
         if ('stackTraceLimit' in Error && 'captureStackTrace' in Error) {
             const oldLimit = Error.stackTraceLimit
             Error.stackTraceLimit = 2;
-            Error.captureStackTrace(dummyError, MonitoredStates[self].attach)
+            Error.captureStackTrace(dummyError, SettingsState[self].attach)
             Error.stackTraceLimit = oldLimit;
         }
         const s = dummyError.stack;
@@ -149,8 +171,8 @@ export function DevToolsInit() {
             },
             devToolsEnhancer({
                 name: `${window.location.hostname}: ${assignedId}`,
-                trace: MonitoredStates[self].value.callstacksDepth !== 0,
-                traceLimit: MonitoredStates[self].value.callstacksDepth,
+                trace: SettingsState[self].value.callstacksDepth !== 0,
+                traceLimit: SettingsState[self].value.callstacksDepth,
                 autoPause: true,
                 shouldHotReload: false,
                 features: {
@@ -185,7 +207,7 @@ export function DevToolsInit() {
     }
     
     function isMonitored(assignedId: string, globalOrLabeled?: boolean) {
-        return MonitoredStates[self].value.monitored.includes(assignedId) || (IsDevelopment && globalOrLabeled)
+        return SettingsState[self].value.monitored.includes(assignedId) || (IsDevelopment && globalOrLabeled)
     }
     
     function DevToolsInternal(isGlobal?: boolean): Plugin {
@@ -261,13 +283,13 @@ export function DevToolsInit() {
         } as Plugin)
     }
     
-    MonitoredStates[self].attach(DevToolsInternal)
-    DevTools(MonitoredStates).label(MonitoredStatesLabel)
-    MonitoredStatesLogger = (str) => DevTools(MonitoredStates).log(str)
+    SettingsState[self].attach(DevToolsInternal)
+    DevTools(SettingsState).label(MonitoredStatesLabel)
+    MonitoredStatesLogger = (str) => DevTools(SettingsState).log(str)
     
     useStateLink[DevToolsID] = DevToolsInternal
     createStateLink[DevToolsID] = () => DevToolsInternal(true)
     useState[DevToolsID] = DevToolsInternal
     createState[DevToolsID] = () => DevToolsInternal(true)
 };
-DevToolsInit() // attach on load
+DevToolsInitializeInternal() // attach on load
