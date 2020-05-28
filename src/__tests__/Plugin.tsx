@@ -1,5 +1,5 @@
 import { useState, createState, Plugin, self,
-    DevToolsID, DevTools, DevToolsExtensions, PluginCallbacks } from '../../';
+    DevToolsID, DevTools, DevToolsExtensions, PluginCallbacks } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import React from 'react';

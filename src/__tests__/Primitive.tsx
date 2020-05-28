@@ -1,4 +1,4 @@
-import { useState, createState, self } from '../../';
+import { useState, createState, self } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import React from 'react';

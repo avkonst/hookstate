@@ -1,4 +1,4 @@
-import { useState, none, self, State, postpone } from '../../';
+import { useState, none, self, State, postpone } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import React from 'react';

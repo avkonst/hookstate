@@ -1,4 +1,4 @@
-import { useState, Downgraded, self } from '../../';
+import { useState, Downgraded, self } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import React from 'react';
