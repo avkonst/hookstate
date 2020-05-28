@@ -1,5 +1,5 @@
 
-import { Plugin, SetPartialStateAction, State, StateMarkerID, self } from '@hookstate/core';
+import { Plugin, SetPartialStateAction, State, self } from '@hookstate/core';
 
 export interface UntrackedExtensions<S> {
     get(): S;
@@ -22,6 +22,6 @@ export function Untracked<S>($this?: State<S>): Plugin | UntrackedExtensions<S> 
     }
     return {
         id: PluginID,
-        create: () => ({})
+        init: () => ({})
     }
 }

@@ -17,7 +17,7 @@ function Untracked($this) {
     }
     return {
         id: PluginID,
-        create: function () { return ({}); }
+        init: function () { return ({}); }
     };
 }
 
