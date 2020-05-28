@@ -1052,7 +1052,8 @@ class Store implements Subscribable {
             this,
             RootPath,
             this.get(RootPath),
-            this.edition
+            this.edition,
+            OnSetUsedNoAction
         )[self]
     }
 
@@ -1073,8 +1074,6 @@ class Store implements Subscribable {
         throw new StateInvalidUsageError(RootPath, ErrorId.ToJson_Value);
     }
 }
-
-const ValueCache = Symbol('ValueCache');
 
 class Promised {
     public fullfilled?: true;
@@ -1106,36 +1105,40 @@ class Promised {
     }
 }
 
+// use symbol property to allow for easier reference finding
+const ValueCacheProperty = Symbol('ValueCache');
+
+function OnSetUsedNoAction() { /** no action callback */ }
+
+// use symbol to mark that a function has no effect anymore
+const UnmountedMarker = Symbol('UnmountedMarker');
+OnSetUsedNoAction[UnmountedMarker] = true
+
 class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subscribable, Subscriber {
     private subscribers: Set<Subscriber> | undefined;
 
     private isDowngraded: boolean | undefined;
     private childrenCache: Record<string | number, StateMethodsImpl<S[keyof S]>> | undefined;
-    private onSetUsed: (() => void) | undefined;
-
+    
     constructor(
         public readonly state: Store,
         public readonly path: Path,
         private valueSource: S,
         private valueEdition: number,
-        onSetUsed?: () => void
-    ) {
-        if (onSetUsed) {
-            this.onSetUsed = onSetUsed
-        }
-    }
+        private readonly onSetUsed: () => void
+    ) { }
 
     getUntracked(allowPromised?: boolean) {
         if (this.valueEdition !== this.state.edition) {
             this.valueSource = this.state.get(this.path)
             this.valueEdition = this.state.edition
 
-            if (this.onSetUsed) {
+            if (this.isMounted) {
                 // this link is still mounted to a component
                 // populate cache again to ensure correct tracking of usage
                 // when React scans which states to rerender on update
-                if (ValueCache in this) {
-                    delete this[ValueCache]
+                if (ValueCacheProperty in this) {
+                    delete this[ValueCacheProperty]
                     this.get(true)
                 }
             } else {
@@ -1143,7 +1146,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                 // for example, it might be global link or
                 // a link which has been discarded after rerender
                 // but still captured by some callback or an effect
-                delete this[ValueCache]
+                delete this[ValueCacheProperty]
             }
         }
         if (this.valueSource === none && !allowPromised) {
@@ -1157,18 +1160,18 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
 
     get(allowPromised?: boolean) {
         const currentValue = this.getUntracked(allowPromised)
-        if (!(ValueCache in this)) {
+        if (!(ValueCacheProperty in this)) {
             if (this.isDowngraded) {
-                this[ValueCache] = currentValue;
+                this[ValueCacheProperty] = currentValue;
             } else if (Array.isArray(currentValue)) {
-                this[ValueCache] = this.valueArrayImpl(currentValue);
+                this[ValueCacheProperty] = this.valueArrayImpl(currentValue);
             } else if (typeof currentValue === 'object' && currentValue !== null) {
-                this[ValueCache] = this.valueObjectImpl(currentValue as unknown as object);
+                this[ValueCacheProperty] = this.valueObjectImpl(currentValue as unknown as object);
             } else {
-                this[ValueCache] = currentValue;
+                this[ValueCacheProperty] = currentValue;
             }
         }
-        return this[ValueCache] as S;
+        return this[ValueCacheProperty] as S;
     }
 
     get value(): S {
@@ -1271,23 +1274,23 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
     }
     
     get isMounted(): boolean {
-        return !!this.onSetUsed
+        return !this.onSetUsed[UnmountedMarker]
     }
 
     onUnmount() {
-        delete this.onSetUsed
+        this.onSetUsed[UnmountedMarker] = true
     }
 
     onSet(paths: Path[], actions: (() => void)[]): boolean {
         const update = () => {
-            if (this.isDowngraded && (ValueCache in this) && this.onSetUsed) {
+            if (this.isDowngraded && (ValueCacheProperty in this)) {
                 actions.push(this.onSetUsed);
                 return true;
             }
             for (let path of paths) {
                 const firstChildKey = path[this.path.length];
                 if (firstChildKey === undefined) {
-                    if (ValueCache in this && this.onSetUsed) {
+                    if (ValueCacheProperty in this) {
                         actions.push(this.onSetUsed);
                         return true;
                     }
