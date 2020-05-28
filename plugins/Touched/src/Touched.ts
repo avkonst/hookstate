@@ -1,4 +1,4 @@
-import { Path, Plugin, Downgraded, StateValueAtPath, PluginCallbacks, PluginCallbacksOnSetArgument, State, StateMarkerID, self, StateMethods } from '@hookstate/core';
+import { Path, Plugin, Downgraded, StateValueAtPath, PluginCallbacks, PluginCallbacksOnSetArgument, State, self, StateMethods } from '@hookstate/core';
 
 import { Initial } from '@hookstate/initial';
 

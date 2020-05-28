@@ -2015,15 +2015,15 @@
   dependencies:
     "@hapi/hoek" "8.x.x"
 
-"@hookstate/core@1.8.3":
-  version "1.8.3"
-  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-1.8.3.tgz#61c437ca94c68188274d10afea0597ba9abf8d29"
-  integrity sha512-CostFVqa99Wld9DBvD3MtcUP9p3mijNG8+vEyzvcM+bNFXJY0m0Z+ctGbkyu02apumHYkxizSl55A5pizlSYzw==
+"@hookstate/core@2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-2.0.0.tgz#499fe4075aa84c500c425601cd94e1293bc63c06"
+  integrity sha512-j1IlXrx7+gN5vX07L0Lb56JD/R5wZpBnGEnb7tALtQanYo5m7/Cdf+1YUD7sJZqcNscyvmcERZAr1ajW+bD7lg==
 
-"@hookstate/initial@1.8.0":
-  version "1.8.0"
-  resolved "https://registry.yarnpkg.com/@hookstate/initial/-/initial-1.8.0.tgz#3d3ff812bbd8e2d7fe893230ba2440a1194eeb92"
-  integrity sha512-k2moSjQvNYfRPKld4KqTpNzvy13sGtPA+7Y8n6CLXM4cZucHcymSqZrUHsTwPxKs8z+17jm6uESzrgK+saI1hQ==
+"@hookstate/initial@2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/initial/-/initial-2.0.0.tgz#76b6e29e790f370c558f5279a37eef3fad52f94f"
+  integrity sha512-Gxf6snQQh7bGqQiRv9br3uOII6Js5L2eL2VCCogiAZFLeIPX9X0g/bBYXWWzWOpQ83Hgh+XEYPwU8W2frazapQ==
 
 "@jest/console@^24.7.1":
   version "24.7.1"
@@ -8447,6 +8447,16 @@ lodash._reinterpolate@~3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/lodash._reinterpolate/-/lodash._reinterpolate-3.0.0.tgz#0ccf2d89166af03b3663c796538b75ac6e114d9d"
   integrity sha1-DM8tiRZq8Ds2Y8eWU4t1rG4RTZ0=
+
+lodash.clonedeep@^4.5.0:
+  version "4.5.0"
+  resolved "https://registry.yarnpkg.com/lodash.clonedeep/-/lodash.clonedeep-4.5.0.tgz#e23f3f9c4f8fbdde872529c1071857a086e5ccef"
+  integrity sha1-4j8/nE+Pvd6HJSnBBxhXoIblzO8=
+
+lodash.isequal@^4.5.0:
+  version "4.5.0"
+  resolved "https://registry.yarnpkg.com/lodash.isequal/-/lodash.isequal-4.5.0.tgz#415c4478f2bcc30120c22ce10ed3226f7d3e18e0"
+  integrity sha1-QVxEePK8wwEgwizhDtMib30+GOA=
 
 lodash.memoize@^4.1.2:
   version "4.1.2"
