@@ -1156,7 +1156,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
 
     get(allowPromised?: boolean) {
         const currentValue = this.getUntracked(allowPromised)
-        if (this[ValueCache] === undefined) {
+        if (!(ValueCache in this)) {
             if (this.isDowngraded) {
                 this[ValueCache] = currentValue;
             } else if (Array.isArray(currentValue)) {
