@@ -477,12 +477,12 @@ export interface Plugin {
 export function createState<S>(
     initial: SetInitialStateAction<S>
 ): State<S> & StateMixinDestroy {
-    const state = createStore(initial).accessUnmounted();
+    const methods = createStore(initial).toMethods();
     const devtools = createState[DevToolsID]
     if (devtools) {
-        state[self].attach(devtools)
+        methods.attach(devtools)
     }
-    return state as State<S> & StateMixinDestroy;
+    return methods[self] as State<S> & StateMixinDestroy;
 }
 
 /**
@@ -1031,7 +1031,7 @@ class Store implements Subscribable {
             return;
         }
 
-        const pluginCallbacks = plugin.init ? plugin.init(this.accessUnmounted()) : {};
+        const pluginCallbacks = plugin.init ? plugin.init(this.toMethods()[self]) : {};
         this._plugins.set(plugin.id, pluginCallbacks);
         if (pluginCallbacks.onSet) {
             this._setSubscribers.add((p) => pluginCallbacks.onSet!(p))
@@ -1047,14 +1047,14 @@ class Store implements Subscribable {
         }
     }
 
-    accessUnmounted() {
+    toMethods() {
         return new StateMethodsImpl<StateValueAtRoot>(
             this,
             RootPath,
             this.get(RootPath),
             this.edition,
             OnSetUsedNoAction
-        )[self]
+        )
     }
 
     subscribe(l: Subscriber) {
@@ -1119,6 +1119,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
 
     private isDowngraded: boolean | undefined;
     private childrenCache: Record<string | number, StateMethodsImpl<S[keyof S]>> | undefined;
+    private selfCache: State<S> | undefined;
     
     constructor(
         public readonly state: Store,
@@ -1139,14 +1140,21 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                 // when React scans which states to rerender on update
                 if (ValueCacheProperty in this) {
                     delete this[ValueCacheProperty]
-                    this.get(true)
+                    this.get(true) // renew cache to keep it marked used
                 }
             } else {
-                // this link is not mounted to a component
+                // This link is not mounted to a component
                 // for example, it might be global link or
                 // a link which has been discarded after rerender
-                // but still captured by some callback or an effect
+                // but still captured by some callback or an effect.
+                // If we are here and if it was mounted before,
+                // it means it has not been garbage collected
+                // when a component unmounted.
+                // We take this opportunity to clean up caches
+                // to avoid memory leaks via stale children states cache.
                 delete this[ValueCacheProperty]
+                delete this.childrenCache
+                delete this.selfCache
             }
         }
         if (this.valueSource === none && !allowPromised) {
@@ -1326,10 +1334,14 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
     }
 
     child(key: number | string) {
-        this.childrenCache = this.childrenCache || {};
-        const cachehit = this.childrenCache[key];
-        if (cachehit) {
-            return cachehit;
+        // if this state is not mounted to a hook,
+        // we do not cache children to avoid unnecessary memory leaks
+        if (this.isMounted) {
+            this.childrenCache = this.childrenCache || {};
+            const cachehit = this.childrenCache[key];
+            if (cachehit) {
+                return cachehit;
+            }
         }
         const r = new StateMethodsImpl(
             this.state,
@@ -1341,14 +1353,14 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         if (this.isDowngraded) {
             r.isDowngraded = true;
         }
-        this.childrenCache[key] = r;
+        if (this.childrenCache) {
+            this.childrenCache[key] = r;
+        }
         return r;
     }
     
     private valueArrayImpl(currentValue: StateValueAtPath[]): S {
-        return proxyWrap(
-            this.path,
-            currentValue,
+        return proxyWrap(this.path, currentValue,
             () => currentValue,
             (target: object, key: PropertyKey) => {
                 if (key === 'length') {
@@ -1383,9 +1395,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
     }
 
     private valueObjectImpl(currentValue: object): S {
-        return proxyWrap(
-            this.path,
-            currentValue,
+        return proxyWrap(this.path, currentValue,
             () => currentValue,
             (target: object, key: PropertyKey) => {
                 if (key === SelfMethodsID) {
@@ -1410,78 +1420,81 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
     }
 
     get [self](): State<S> {
-        return proxyWrap(this.path, 
-            this.valueSource,
+        if (this.selfCache) {
+            return this.selfCache
+        }
+        this.selfCache = proxyWrap(this.path, this.valueSource,
             () => {
                 this.get() // get latest & mark used
                 return this.valueSource
             },
-        (_, key) => {
-            if (typeof key === 'symbol') {
-                if (key === self) {
-                    return this
+            (_, key) => {
+                if (typeof key === 'symbol') {
+                    if (key === self) {
+                        return this
+                    } else {
+                        return undefined
+                    }
                 } else {
-                    return undefined
-                }
-            } else {
-                if (key === 'toJSON') {
-                    throw new StateInvalidUsageError(this.path, ErrorId.ToJson_State);
-                }
-                
-                const currentValue = this.getUntracked(true);
-                if (// if currentValue is primitive type
-                    (typeof currentValue !== 'object' || currentValue === null) &&
-                    // if promised, it will be none
-                    currentValue !== none) {
-                    switch (key) {
-                        case 'path':
-                            return this.path
-                        case 'keys':
-                            return this.keys
-                        case 'value':
-                            return this.value
-                        case 'get':
-                            return () => this.get()
-                        case 'set':
-                            return (p: SetStateAction<S>) => this.set(p)
-                        case 'merge':
-                            return (p: SetPartialStateAction<S>) => this.merge(p)
-                        case 'map':
-                            // tslint:disable-next-line: no-any
-                            return (...args: any[]) => this.map(args[0], args[1], args[2], args[3])
-                        case 'attach':
-                            return (p: symbol) => this.attach(p)
-                        default:
-                            this.get() // mark used
-                            throw new StateInvalidUsageError(this.path, ErrorId.GetStatePropertyWhenPrimitive)
+                    if (key === 'toJSON') {
+                        throw new StateInvalidUsageError(this.path, ErrorId.ToJson_State);
                     }
-                }
+                    
+                    const currentValue = this.getUntracked(true);
+                    if (// if currentValue is primitive type
+                        (typeof currentValue !== 'object' || currentValue === null) &&
+                        // if promised, it will be none
+                        currentValue !== none) {
+                        switch (key) {
+                            case 'path':
+                                return this.path
+                            case 'keys':
+                                return this.keys
+                            case 'value':
+                                return this.value
+                            case 'get':
+                                return () => this.get()
+                            case 'set':
+                                return (p: SetStateAction<S>) => this.set(p)
+                            case 'merge':
+                                return (p: SetPartialStateAction<S>) => this.merge(p)
+                            case 'map':
+                                // tslint:disable-next-line: no-any
+                                return (...args: any[]) => this.map(args[0], args[1], args[2], args[3])
+                            case 'attach':
+                                return (p: symbol) => this.attach(p)
+                            default:
+                                this.get() // mark used
+                                throw new StateInvalidUsageError(this.path, ErrorId.GetStatePropertyWhenPrimitive)
+                        }
+                    }
 
-                // TODO if this is promised state
-                // it will throw, better to add new error code
-                // and explain that state.map(...) should be replaced by state[self].map(...)
-                // which is the most common oversight with promised states.
-                this.get() // mark used
-                if (Array.isArray(currentValue)) {
-                    if (key === 'length') {
-                        return currentValue.length;
+                    // TODO if this is promised state
+                    // it will throw, better to add new error code
+                    // and explain that state.map(...) should be replaced by state[self].map(...)
+                    // which is the most common oversight with promised states.
+                    this.get() // mark used
+                    if (Array.isArray(currentValue)) {
+                        if (key === 'length') {
+                            return currentValue.length;
+                        }
+                        if (key in Array.prototype) {
+                            return Array.prototype[key];
+                        }
+                        const index = Number(key);
+                        if (!Number.isInteger(index)) {
+                            return undefined;
+                        }
+                        return this.child(index)[self]
                     }
-                    if (key in Array.prototype) {
-                        return Array.prototype[key];
-                    }
-                    const index = Number(key);
-                    if (!Number.isInteger(index)) {
-                        return undefined;
-                    }
-                    return this.child(index)[self]
+                    return this.child(key.toString())[self]
                 }
-                return this.child(key.toString())[self]
-            }
-        },
-        (_, key, value) => {
-            throw new StateInvalidUsageError(this.path, ErrorId.SetProperty_State)
-        },
-        false) as unknown as State<S>;
+            },
+            (_, key, value) => {
+                throw new StateInvalidUsageError(this.path, ErrorId.SetProperty_State)
+            },
+            false) as unknown as State<S>;
+        return this.selfCache
     }
     
     map<R, RL, RE, C>(
@@ -1658,7 +1671,7 @@ function proxyWrap(
             return origin && {
                 configurable: true, // JSON.stringify() does not work for an object without it
                 enumerable: origin.enumerable,
-                get: () => propertyGetter(undefined, p),
+                get: () => propertyGetter(targetReal, p),
                 set: undefined
             };
         },
