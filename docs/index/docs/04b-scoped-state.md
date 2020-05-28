@@ -36,6 +36,8 @@ You can see what effect the scoped state makes in the following interactive exam
 
 <iframe src="https://hookstate.js.org/demo-todolist" width="100%" height="700px"></iframe>
 
+More detailed comparison of rerendering differences for various types of states is documented in the [performance overview](./performance-intro) page.
+
 ### It is efficient
 
 The scoped state makes a form with thousands of fields as responsive as with one field (yes, it is true: we measured the performance): here is the [huge form performance demo](./performance-large-state).

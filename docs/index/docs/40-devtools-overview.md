@@ -11,6 +11,10 @@ sidebar_label: Overview
 
 There is no impact on performance in production. Development tools are activated only when the browser's extension is opened.
 
+## Demo
+
+[Demo application](https://hookstate.js.org/demo-todolist) has got DevTools intergrated. Try it out!
+
 ## Configuring monitored states
 
 When the browser's extension is opened, all global and all explicitly labelled states are monitored, by default.
