@@ -1,6 +1,6 @@
 {
     "name": "@hookstate/persistence",
-    "version": "1.8.0",
+    "version": "2.0.0",
     "description": "Plugin for @hookstate/core to enable persistence of managed data states to browser's local storage.",
     "license": "MIT",
     "author": {
@@ -40,7 +40,7 @@
     "devDependencies": {
         "@babel/core": "7.10.1",
         "@babel/runtime": "7.10.1",
-        "@hookstate/core": "1.8.3",
+        "@hookstate/core": "2.0.0",
         "@rollup/plugin-babel": "5.0.2",
         "@rollup/plugin-commonjs": "12.0.0",
         "@rollup/plugin-node-resolve": "8.0.0",

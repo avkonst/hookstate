@@ -2015,10 +2015,10 @@
   dependencies:
     "@hapi/hoek" "8.x.x"
 
-"@hookstate/core@1.8.3":
-  version "1.8.3"
-  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-1.8.3.tgz#61c437ca94c68188274d10afea0597ba9abf8d29"
-  integrity sha512-CostFVqa99Wld9DBvD3MtcUP9p3mijNG8+vEyzvcM+bNFXJY0m0Z+ctGbkyu02apumHYkxizSl55A5pizlSYzw==
+"@hookstate/core@2.0.0":
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-2.0.0.tgz#499fe4075aa84c500c425601cd94e1293bc63c06"
+  integrity sha512-j1IlXrx7+gN5vX07L0Lb56JD/R5wZpBnGEnb7tALtQanYo5m7/Cdf+1YUD7sJZqcNscyvmcERZAr1ajW+bD7lg==
 
 "@jest/console@^24.7.1":
   version "24.7.1"
