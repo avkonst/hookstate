@@ -1,4 +1,4 @@
-import { Plugin, StateValueAtPath, PluginCallbacks, State, StateMarkerID, self, StateMethods } from '@hookstate/core';
+import { Plugin, PluginCallbacks, State, self } from '@hookstate/core';
 
 const LabelledID = Symbol('Labelled');
 
