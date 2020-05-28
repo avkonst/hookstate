@@ -1,8 +1,7 @@
-import { useState, none, self, State } from '../../';
+import { useState, none, self, State, postpone } from '../../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import React from 'react';
-import { postpone } from '../../UseStateLink';
 
 test('object: should rerender used via nested batch update', async () => {
     let renderTimes = 0
