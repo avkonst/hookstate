@@ -54,7 +54,7 @@ title: API @hookstate/core
 
 *Defined in [index.d.ts:55](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L55)*
 
-Return type of [StateMethods.keys](#keys).
+Return type of [StateMethods.keys](#readonly-keys).
 
 ___
 
@@ -75,7 +75,7 @@ ___
 *Defined in [index.d.ts:17](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L17)*
 
 'JSON path' from root of a state object to a nested property.
-Return type of [StateMethod.path](#path).
+Return type of [StateMethod.path](#readonly-path).
 
 For example, an object `{ a: [{ b: 1 }, { 1000: 'value' }, '3rd'] }`,
 has got the following paths pointing to existing properties:
@@ -122,7 +122,7 @@ ___
 
 ###  State
 
-Ƭ **State**: *[StateMixin](#interfacesstatemixinmd) & `S extends object` ? `{ readonly [K in keyof Required<S>]: State<S[K]>` : [StateMethods](#interfacesstatemethodsmd)*
+Ƭ **State**: *[StateMixin](#interfacesstatemixinmd) & `S extends object` ? `{ readonly [K in keyof Required<S>]: State<S[K]> }` : [StateMethods](#interfacesstatemethodsmd)*
 
 *Defined in [index.d.ts:288](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L288)*
 
@@ -876,7 +876,7 @@ ___
 *Defined in [index.d.ts:147](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L147)*
 
 Unwraps and returns the underlying state value referred by
-[path](#path) of this state instance.
+[path](#readonly-path) of this state instance.
 
 It returns the same result as [StateMethods.get](#get) method.
 
@@ -940,9 +940,9 @@ ___
 *Defined in [index.d.ts:154](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L154)*
 
 Unwraps and returns the underlying state value referred by
-[path](#path) of this state instance.
+[path](#readonly-path) of this state instance.
 
-It returns the same result as [StateMethods.value](#value) method.
+It returns the same result as [StateMethods.value](#readonly-value) method.
 
 **Returns:** *S*
 
@@ -1156,7 +1156,7 @@ Partial updates can be also done by walking the nested states and setting those.
 
 Name | Type | Description |
 ------ | ------ | ------ |
-`newValue` | [SetStateAction](#setstateaction)‹S› | new value to set to a state. It can be a value, a promise resolving to a value (only if [this.path](#path) is `[]`), or a function returning one of these. The function receives the current state value as an argument.  |
+`newValue` | [SetStateAction](#setstateaction)‹S› | new value to set to a state. It can be a value, a promise resolving to a value (only if [this.path](#readonly-path) is `[]`), or a function returning one of these. The function receives the current state value as an argument.  |
 
 **Returns:** *void*
 

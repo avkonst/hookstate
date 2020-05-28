@@ -1,7 +1,7 @@
 import React from 'react';
 /**
  * 'JSON path' from root of a state object to a nested property.
- * Return type of [StateMethod.path](#path).
+ * Return type of [StateMethod.path](#readonly-path).
  *
  * For example, an object `{ a: [{ b: 1 }, { 1000: 'value' }, '3rd'] }`,
  * has got the following paths pointing to existing properties:
@@ -48,7 +48,7 @@ export declare const postpone: unique symbol;
  */
 export declare const none: any;
 /**
- * Return type of [StateMethods.keys](#keys).
+ * Return type of [StateMethods.keys](#readonly-keys).
  *
  * @typeparam S Type of a value of a state
  */
@@ -125,7 +125,7 @@ export interface StateMethods<S> {
     readonly keys: InferredStateKeysType<S>;
     /**
      * Unwraps and returns the underlying state value referred by
-     * [path](#path) of this state instance.
+     * [path](#readonly-path) of this state instance.
      *
      * It returns the same result as [StateMethods.get](#get) method.
      *
@@ -147,9 +147,9 @@ export interface StateMethods<S> {
     readonly value: S;
     /**
      * Unwraps and returns the underlying state value referred by
-     * [path](#path) of this state instance.
+     * [path](#readonly-path) of this state instance.
      *
-     * It returns the same result as [StateMethods.value](#value) method.
+     * It returns the same result as [StateMethods.value](#readonly-value) method.
      */
     get(): S;
     /**
@@ -162,7 +162,7 @@ export interface StateMethods<S> {
      *
      * @param newValue new value to set to a state.
      * It can be a value, a promise resolving to a value
-     * (only if [this.path](#path) is `[]`),
+     * (only if [this.path](#readonly-path) is `[]`),
      * or a function returning one of these.
      * The function receives the current state value as an argument.
      */
