@@ -683,18 +683,7 @@ function useStateMethods<S>(
         source as StateMethodsImpl<S> :
         undefined
     if (parentLink) {
-        if (!parentLink.onUpdateUsed) {
-            // Global state mount or destroyed link
-            // eslint-disable-next-line react-hooks/rules-of-hooks
-            const [value, setValue] = React.useState({ state: parentLink.state });
-            const link = useSubscribedStateMethods<S>(
-                value.state,
-                parentLink.path,
-                () => setValue({ state: value.state }),
-                value.state,
-                undefined);
-            return link;
-        } else {
+        if (parentLink.onUpdateUsed) {
             // Scoped state mount
             // eslint-disable-next-line react-hooks/rules-of-hooks
             const [, setValue] = React.useState({});
@@ -704,6 +693,17 @@ function useStateMethods<S>(
                 () => setValue({}),
                 parentLink,
                 parentLink.isDowngraded);
+            return link;
+        } else {
+            // Global state mount or destroyed link
+            // eslint-disable-next-line react-hooks/rules-of-hooks
+            const [value, setValue] = React.useState({ state: parentLink.state });
+            const link = useSubscribedStateMethods<S>(
+                value.state,
+                parentLink.path,
+                () => setValue({ state: value.state }),
+                value.state,
+                undefined);
             return link;
         }
     } else {
@@ -1129,13 +1129,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
             this.valueSource = this.state.get(this.path)
             this.valueEdition = this.state.edition
 
-            if (!this.onUpdateUsed) {
-                // this link is not mounted to a component
-                // for example, it might be global link or
-                // a link which has been discarded after rerender
-                // but still captured by some callback or an effect
-                delete this[ValueCache]
-            } else {
+            if (this.onUpdateUsed) {
                 // this link is still mounted to a component
                 // populate cache again to ensure correct tracking of usage
                 // when React scans which states to rerender on update
@@ -1143,6 +1137,12 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                     delete this[ValueCache]
                     this.get(true)
                 }
+            } else {
+                // this link is not mounted to a component
+                // for example, it might be global link or
+                // a link which has been discarded after rerender
+                // but still captured by some callback or an effect
+                delete this[ValueCache]
             }
         }
         if (this.valueSource === none && !allowPromised) {
