@@ -372,55 +372,6 @@ export interface Plugin {
     readonly init?: (state: State<StateValueAtRoot>) => PluginCallbacks;
 }
 /**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export declare function createStateLink<S>(initial: SetInitialStateAction<S>): StateLink<S> & StateMethodsDestroy;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export declare function createStateLink<S, R>(initial: SetInitialStateAction<S>, transform: (state: StateLink<S>, prev: R | undefined) => R): WrappedStateLink<R> & StateMethodsDestroy;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export declare function useStateLink<S>(source: StateLink<S>): StateLink<S>;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export declare function useStateLink<S, R>(source: StateLink<S>, transform: (state: StateLink<S>, prev: R | undefined) => R): R;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export declare function useStateLink<R>(source: WrappedStateLink<R>): R;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export declare function useStateLink<S>(source: SetInitialStateAction<S>): StateLink<S>;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export declare function useStateLink<S, R>(source: SetInitialStateAction<S>, transform: (state: StateLink<S>, prev: R | undefined) => R): R;
-/**
  * Creates new state and returns it.
  *
  * You can create as many global states as you need.
@@ -520,71 +471,15 @@ export declare function StateFragment<S>(props: {
     children: (state: State<S>) => React.ReactElement;
 }): React.ReactElement;
 /**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export declare function StateFragment<S>(props: {
-    state: StateLink<S>;
-    children: (state: StateLink<S>) => React.ReactElement;
-}): React.ReactElement;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated use StateFragment(state={state.wrap(transform)}) instead
- */
-export declare function StateFragment<S, E extends {}, R>(props: {
-    state: StateLink<S>;
-    transform: (state: StateLink<S>, prev: R | undefined) => R;
-    children: (state: R) => React.ReactElement;
-}): React.ReactElement;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export declare function StateFragment<R>(props: {
-    state: WrappedStateLink<R>;
-    children: (state: R) => React.ReactElement;
-}): React.ReactElement;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export declare function StateFragment<S>(props: {
-    state: SetInitialStateAction<S>;
-    children: (state: StateLink<S>) => React.ReactElement;
-}): React.ReactElement;
-/**
  * Allows to use a state without defining a functional react component.
  * See more at [StateFragment](#statefragment)
  *
  * @typeparam S Type of a value of a state
- * // TODO uncomment once moved to version 2
  */
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export declare function StateFragment<S, R>(props: {
+export declare function StateFragment<S>(props: {
     state: SetInitialStateAction<S>;
-    transform: (state: StateLink<S>, prev: R | undefined) => R;
-    children: (state: R) => React.ReactElement;
+    children: (state: State<S>) => React.ReactElement;
 }): React.ReactElement;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export declare function StateMemo<S, R>(transform: (state: StateLink<S>, prev: R | undefined) => R, equals?: (next: R, prev: R) => boolean): (link: StateLink<S>, prev: R | undefined) => R;
 /**
  * A plugin which allows to opt-out from usage of Javascript proxies for
  * state usage tracking. It is useful for performance tuning. For example:
@@ -613,7 +508,14 @@ export declare const DevToolsID: unique symbol;
  * Return type of [DevTools](#devtools).
  */
 export interface DevToolsExtensions {
+    /**
+     * Assigns custom label to identify the state in the development tools
+     * @param name label for development tools
+     */
     label(name: string): void;
+    /**
+     * Logs to the development tools
+     */
     log(str: string, data?: any): void;
 }
 /**
@@ -629,192 +531,4 @@ export interface DevToolsExtensions {
  *
  * @typeparam S Type of a value of a state
  */
-export declare function DevTools<S>(state: StateLink<S> | State<S>): DevToolsExtensions;
-/**
- * @hidden
- * @ignore
- * @internal
- * remove export when plugins are migrated to version 2
- */
-export declare const StateMarkerID: unique symbol;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated use source directly instead
- */
-export declare function useStateLinkUnmounted<S>(source: DestroyableStateLink<S>): StateLink<S>;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated use source.wrap(transform).access() instead
- */
-export declare function useStateLinkUnmounted<S, R>(source: DestroyableStateLink<S>, transform: (state: StateLink<S>) => R): R;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated use source.access() instead
- */
-export declare function useStateLinkUnmounted<R>(source: DestroyableWrappedStateLink<R>): R;
-/**
- * @hidden
- * @ignore
- * @internal
- * @depracated default export is deprecated
- */
-export default useStateLink;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export declare type NestedInferredLink<S> = InferredStateLinkNestedType<S>;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export declare type NestedInferredKeys<S> = InferredStateLinkKeysType<S>;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export declare type DestroyableStateLink<S> = StateLink<S> & StateMethodsDestroy;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export declare type DestroyableWrappedStateLink<R> = WrappedStateLink<R> & StateMethodsDestroy;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export declare type StateRef<S> = StateInf<StateLink<S>>;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export declare type StateInf<S> = S extends StateLink<infer U> ? DestroyableStateLink<U> : DestroyableWrappedStateLink<S>;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export declare type StateLinkPlugable<S> = ExtendedStateLinkMixin<S>;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export declare type InitialValueAtRoot<S> = SetInitialStateAction<S>;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export declare type InferredStateLinkNestedType<S> = S extends ReadonlyArray<(infer U)> ? ReadonlyArray<StateLink<U>> : S extends null ? undefined : S extends object ? {
-    readonly [K in keyof Required<S>]: StateLink<S[K]>;
-} : undefined;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export declare type InferredStateLinkKeysType<S> = InferredStateKeysType<S>;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export declare type InferredStateLinkDenullType<S> = S extends undefined ? undefined : S extends null ? null : StateLink<S>;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export interface BatchOptions {
-    ifPromised?: 'postpone' | 'discard' | 'reject' | 'execute';
-    context?: AnyContext;
-}
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export declare const None: any;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export interface StateLink<S> extends StateMethods<S> {
-    readonly promised: boolean;
-    readonly error: StateErrorAtRoot | undefined;
-    readonly nested: InferredStateLinkNestedType<S>;
-    denull(): InferredStateLinkDenullType<S>;
-    batch(action: (s: StateLink<S>) => void, options?: BatchOptions): void;
-    wrap<R>(transform: (state: StateLink<S>, prev: R | undefined) => R): WrappedStateLink<R>;
-    with(plugin: () => Plugin): this;
-    with<R = never>(pluginId: symbol, alt?: () => R): [StateLink<S> & ExtendedStateLinkMixin<S>, PluginCallbacks] | R;
-    access(): StateLink<S>;
-}
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export declare type DestroyMixin = StateMethodsDestroy;
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export interface WrappedStateLink<R> {
-    __synteticTypeInferenceMarkerInf: symbol;
-    access(): R;
-    with(plugin: () => Plugin): this;
-    wrap<R2>(transform: (state: R, prev: R2 | undefined) => R2): WrappedStateLink<R2>;
-}
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export interface ExtendedStateLinkMixin<S> {
-    getUntracked(): S;
-    setUntracked(newValue: SetStateAction<S>): Path;
-    mergeUntracked(mergeValue: SetPartialStateAction<S>): Path | Path[];
-    update(paths: Path[]): void;
-}
-/**
- * @hidden
- * @ignore
- * @internal
- * @deprecated declared for backward compatibility
- */
-export interface Plugin {
-    readonly create?: (state: StateLink<StateValueAtRoot>) => PluginCallbacks;
-}
+export declare function DevTools<S>(state: State<S>): DevToolsExtensions;
