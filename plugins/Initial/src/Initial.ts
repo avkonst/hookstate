@@ -7,7 +7,6 @@ import {
     StateValueAtRoot,
     State,
     self,
-    StateMarkerID,
     StateMethods
 } from '@hookstate/core';
 
