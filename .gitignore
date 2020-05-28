@@ -13,4 +13,4 @@ yarn-error.log*
 **/.firebase
 **/.vscode
 
-**/storybook-static
+**/build

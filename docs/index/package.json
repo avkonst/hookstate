@@ -13,13 +13,13 @@
   "dependencies": {
     "@docusaurus/core": "2.0.0-alpha.55",
     "@docusaurus/preset-classic": "2.0.0-alpha.55",
-    "@hookstate/core": "1.8.7",
-    "@hookstate/initial": "1.8.0",
-    "@hookstate/labelled": "^1.8.0",
-    "@hookstate/persistence": "1.8.0",
-    "@hookstate/touched": "1.8.0",
-    "@hookstate/untracked": "1.8.0",
-    "@hookstate/validation": "1.8.0",
+    "@hookstate/core": "2.0.0",
+    "@hookstate/initial": "2.0.0",
+    "@hookstate/labelled": "2.0.0",
+    "@hookstate/persistence": "2.0.0",
+    "@hookstate/touched": "2.0.0",
+    "@hookstate/untracked": "2.0.0",
+    "@hookstate/validation": "2.0.0",
     "@material-ui/core": "4.10.0",
     "@material-ui/icons": "4.9.1",
     "@types/lodash.clonedeep": "4.5.6",
@@ -44,7 +44,7 @@
     ]
   },
   "devDependencies": {
-    "@babel/preset-typescript": "^7.9.0",
+    "@babel/preset-typescript": "^7.10.1",
     "npm-check-updates": "^6.0.1"
   }
 }
