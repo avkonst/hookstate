@@ -1,5 +1,5 @@
 
-import { Plugin, Path, StateValueAtPath, State, StateMarkerID, self } from '@hookstate/core';
+import { Plugin, Path, StateValueAtPath, State, self } from '@hookstate/core';
 
 export type ValidationSeverity = 'error' | 'warning';
 
@@ -218,6 +218,6 @@ export function Validation<S>($this?: State<S>): Plugin | ValidationExtensions<S
     }
     return {
         id: PluginID,
-        create: () => new ValidationPluginInstance() as {}
+        init: () => new ValidationPluginInstance() as {}
     }
 }

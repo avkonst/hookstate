@@ -170,7 +170,7 @@ function Validation($this) {
     }
     return {
         id: PluginID,
-        create: function () { return new ValidationPluginInstance(); }
+        init: function () { return new ValidationPluginInstance(); }
     };
 }
 
