@@ -1,6 +1,6 @@
 {
     "name": "@hookstate/initial",
-    "version": "1.8.0",
+    "version": "2.0.0",
     "description": "Plugin for @hookstate/core to enable access to initial state value and to modified status.",
     "license": "MIT",
     "author": {
