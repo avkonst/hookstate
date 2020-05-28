@@ -36,15 +36,21 @@ export declare type SetInitialStateAction<S> = S | Promise<S> | (() => S | Promi
 /**
  * Special symbol which is used as a property to switch
  * between [StateMethods](#interfacesstatemethodsmd) and the corresponding [State](#state).
+ *
+ * [Learn more...](https://hookstate.js.org/docs/nested-state)
  */
 export declare const self: unique symbol;
 /**
  * Special symbol which might be returned by onPromised callback of [StateMethods.map](#map) function.
+ *
+ * [Learn more...](https://hookstate.js.org/docs/asynchronous-state#executing-an-action-when-state-is-loaded)
  */
 export declare const postpone: unique symbol;
 /**
  * Special symbol which might be used to delete properties
  * from an object calling [StateMethods.set](#set) or [StateMethods.merge](#merge).
+ *
+ * [Learn more...](https://hookstate.js.org/docs/nested-state#deleting-existing-element)
  */
 export declare const none: any;
 /**
@@ -64,6 +70,8 @@ export declare type InferredStateOrnullType<S> = S extends undefined ? undefined
  * An instance to manipulate the state in more controlled way.
  *
  * @typeparam S Type of a value of a state
+ *
+ * [Learn more...](https://hookstate.js.org/docs/writing-plugin)
  */
 export interface PluginStateControl<S> {
     /**
@@ -186,13 +194,16 @@ export interface StateMethods<S> {
      *
      * @param onPromised this will be invoked instead of the action function,
      * if a state value is unresolved promise.
+     * [Learn more about async states...](https://hookstate.js.org/docs/asynchronous-state)
      *
      * @param onError this will be invoked instead of the action function,
      * if a state value is a promise resolved to an error.
+     * [Learn more about async states...](https://hookstate.js.org/docs/asynchronous-state)
      *
      * @param context if specified, the callbacks will be invoked in a batch.
      * Updating state within a batch does not trigger immediate rerendering.
      * Instead, all required rerendering is done once once the batch is finished.
+     * [Learn more about batching...](https://hookstate.js.org/docs/performance-batched-updates
      */
     map<R, RL, RE, C>(action: (s: State<S>) => R, onPromised: (s: State<S>) => RL, onError: (e: StateErrorAtRoot, s: State<S>) => RE, context?: Exclude<C, Function>): R | RL | RE;
     /**
@@ -202,10 +213,12 @@ export interface StateMethods<S> {
      *
      * @param onPromised this will be invoked instead of the action function,
      * if a state value is unresolved promise.
+     * [Learn more about async states...](https://hookstate.js.org/docs/asynchronous-state)
      *
      * @param context if specified, the callbacks will be invoked in a batch.
      * Updating state within a batch does not trigger immediate rerendering.
      * Instead, all required rerendering is done once once the batch is finished.
+     * [Learn more about batching...](https://hookstate.js.org/docs/performance-batched-updates
      */
     map<R, RL, C>(action: (s: State<S>) => R, onPromised: (s: State<S>) => RL, context?: Exclude<C, Function>): R | RL;
     /**
@@ -216,6 +229,7 @@ export interface StateMethods<S> {
      * @param context if specified, the callbacks will be invoked in a batch.
      * Updating state within a batch does not trigger immediate rerendering.
      * Instead, all required rerendering is done once once the batch is finished.
+     * [Learn more about batching...](https://hookstate.js.org/docs/performance-batched-updates
      */
     map<R, C>(action: (s: State<S>) => R, context?: Exclude<C, Function>): R;
     /**
@@ -225,16 +239,21 @@ export interface StateMethods<S> {
      * The second element with be either undefined or a value of an error,
      * which the resolved promise rejected. The third element will be
      * either undefined or a value of a state, if promise is resolved.
+     * [Learn more about async states...](https://hookstate.js.org/docs/asynchronous-state)
      */
     map(): [boolean, StateErrorAtRoot | undefined, S | undefined];
     /**
      * If state value is null or undefined, returns state value.
      * Otherwise, it returns this state instance but
      * with null and undefined removed from the type parameter.
+     *
+     * [Learn more...](https://hookstate.js.org/docs/nullable-state)
      */
     ornull: InferredStateOrnullType<S>;
     /**
      * Adds plugin to the state.
+     *
+     * [Learn more...](https://hookstate.js.org/docs/extensions-overview)
      */
     attach(plugin: () => Plugin): State<S>;
     /**
@@ -243,6 +262,8 @@ export interface StateMethods<S> {
      * If a plugin has not been attached to a state,
      * it returns an Error as the first element.
      * A plugin may trhow an error to indicate that plugin has not been attached.
+     *
+     * [Learn more...](https://hookstate.js.org/docs/writing-plugin)
      */
     attach(pluginId: symbol): [PluginCallbacks | Error, PluginStateControl<S>];
 }
@@ -284,6 +305,10 @@ export interface StateMixinDestroy {
  * Type of a result of [createState](#createstate) and [useState](#usestate) functions
  *
  * @typeparam S Type of a value of a state
+ *
+ * [Learn more about global states...](https://hookstate.js.org/docs/global-state)
+ * [Learn more about local states...](https://hookstate.js.org/docs/local-state)
+ * [Learn more about nested states...](https://hookstate.js.org/docs/nested-state)
  */
 export declare type State<S> = StateMixin<S> & (S extends ReadonlyArray<(infer U)> ? ReadonlyArray<State<U>> : S extends (true | false) ? Omit<StateMethods<boolean>, keyof StateMixin<S>> : S extends (undefined | null | number | boolean | string | bigint) ? Omit<StateMethods<S>, keyof StateMixin<S>> : S extends object ? {
     readonly [K in keyof Required<S>]: State<S[K]>;
@@ -350,6 +375,8 @@ export interface PluginCallbacksOnBatchArgument {
 /**
  * For plugin developers only.
  * Set of callbacks, a plugin may subscribe to.
+ *
+ * [Learn more...](https://hookstate.js.org/docs/writing-plugin)
  */
 export interface PluginCallbacks {
     readonly onSet?: (arg: PluginCallbacksOnSetArgument) => void;
@@ -360,6 +387,8 @@ export interface PluginCallbacks {
 /**
  * For plugin developers only.
  * Hookstate plugin specification and factory method.
+ *
+ * [Learn more...](https://hookstate.js.org/docs/writing-plugin)
  */
 export interface Plugin {
     /**
@@ -464,6 +493,8 @@ export declare function useState<S>(source: SetInitialStateAction<S>): State<S>;
  * It can be also used in class-based React components. It is also
  * particularly usefull for creating *scoped* states.
  *
+ * [Learn more...](https://hookstate.js.org/docs/using-without-statehook)
+ *
  * @typeparam S Type of a value of a state
  */
 export declare function StateFragment<S>(props: {
@@ -474,6 +505,8 @@ export declare function StateFragment<S>(props: {
  * Allows to use a state without defining a functional react component.
  * See more at [StateFragment](#statefragment)
  *
+ * [Learn more...](https://hookstate.js.org/docs/using-without-statehook)
+ *
  * @typeparam S Type of a value of a state
  */
 export declare function StateFragment<S>(props: {
@@ -482,18 +515,9 @@ export declare function StateFragment<S>(props: {
 }): React.ReactElement;
 /**
  * A plugin which allows to opt-out from usage of Javascript proxies for
- * state usage tracking. It is useful for performance tuning. For example:
+ * state usage tracking. It is useful for performance tuning.
  *
- * ```tsx
- * const globalState = createState(someLargeObject as object)
- * const MyComponent = () => {
- *     const state = useState(globalState)
- *         .with(Downgraded); // the whole state will be used
- *                            // by this component, so no point
- *                            // to track usage of individual properties
- *     return <>{JSON.stringify(state[self].value)}</>
- * }
- * ```
+ * [Learn more...](https://hookstate.js.org/docs/performance-managed-rendering#downgraded-plugin)
  */
 export declare function Downgraded(): Plugin;
 /**
@@ -524,6 +548,8 @@ export interface DevToolsExtensions {
  * You can activate development tools from `@hookstate/devtools`package,
  * for example. If no development tools are activated,
  * it returns an instance of dummy tools, which do nothing, when called.
+ *
+ * [Learn more...](https://hookstate.js.org/docs/devtools)
  *
  * @param state A state to relate to the extension.
  *

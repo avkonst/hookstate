@@ -38,15 +38,21 @@ function __extends(d, b) {
 /**
  * Special symbol which is used as a property to switch
  * between [StateMethods](#interfacesstatemethodsmd) and the corresponding [State](#state).
+ *
+ * [Learn more...](https://hookstate.js.org/docs/nested-state)
  */
 var self = Symbol('self');
 /**
  * Special symbol which might be returned by onPromised callback of [StateMethods.map](#map) function.
+ *
+ * [Learn more...](https://hookstate.js.org/docs/asynchronous-state#executing-an-action-when-state-is-loaded)
  */
 var postpone = Symbol('postpone');
 /**
  * Special symbol which might be used to delete properties
  * from an object calling [StateMethods.set](#set) or [StateMethods.merge](#merge).
+ *
+ * [Learn more...](https://hookstate.js.org/docs/nested-state#deleting-existing-element)
  */
 var none = Symbol('none');
 /**
@@ -125,18 +131,9 @@ function StateFragment(props) {
 }
 /**
  * A plugin which allows to opt-out from usage of Javascript proxies for
- * state usage tracking. It is useful for performance tuning. For example:
+ * state usage tracking. It is useful for performance tuning.
  *
- * ```tsx
- * const globalState = createState(someLargeObject as object)
- * const MyComponent = () => {
- *     const state = useState(globalState)
- *         .with(Downgraded); // the whole state will be used
- *                            // by this component, so no point
- *                            // to track usage of individual properties
- *     return <>{JSON.stringify(state[self].value)}</>
- * }
- * ```
+ * [Learn more...](https://hookstate.js.org/docs/performance-managed-rendering#downgraded-plugin)
  */
 function Downgraded() {
     return {
@@ -157,6 +154,8 @@ var DevToolsID = Symbol('DevTools');
  * You can activate development tools from `@hookstate/devtools`package,
  * for example. If no development tools are activated,
  * it returns an instance of dummy tools, which do nothing, when called.
+ *
+ * [Learn more...](https://hookstate.js.org/docs/devtools)
  *
  * @param state A state to relate to the extension.
  *
