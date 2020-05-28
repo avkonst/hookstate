@@ -90,13 +90,11 @@ function DevToolsInitializeInternal() {
             return `${isGlobal ? 'global' : 'local'}-state-${lastUnlabelledId += 1}`
         }
 
-        // The intention was to get the label fast under production
-        // but it is unclear if it actually improves anything
-        // It seems like if the browser's extension is enabled,
-        // it is far more conventient to get proper names for states
-        // if (!IsDevelopment) {
-        //     return defaultLabel()
-        // }
+        if (!IsDevelopment) {
+            // if not a development, names are minified,
+            // so return more readable default labels
+            return defaultLabel()
+        }
         
         let dummyError: { stack?: string } = {}
         if ('stackTraceLimit' in Error && 'captureStackTrace' in Error) {
@@ -209,7 +207,7 @@ function DevToolsInitializeInternal() {
     }
     
     function isMonitored(assignedId: string, globalOrLabeled?: boolean) {
-        return SettingsState[self].value.monitored.includes(assignedId) || (IsDevelopment && globalOrLabeled)
+        return SettingsState[self].value.monitored.includes(assignedId) || globalOrLabeled
     }
     
     function DevToolsInternal(isGlobal?: boolean): Plugin {

@@ -838,13 +838,11 @@ function DevToolsInitializeInternal() {
         function defaultLabel() {
             return (isGlobal ? 'global' : 'local') + "-state-" + (lastUnlabelledId += 1);
         }
-        // The intention was to get the label fast under production
-        // but it is unclear if it actually improves anything
-        // It seems like if the browser's extension is enabled,
-        // it is far more conventient to get proper names for states
-        // if (!IsDevelopment) {
-        //     return defaultLabel()
-        // }
+        if (!IsDevelopment) {
+            // if not a development, names are minified,
+            // so return more readable default labels
+            return defaultLabel();
+        }
         var dummyError = {};
         if ('stackTraceLimit' in Error && 'captureStackTrace' in Error) {
             var oldLimit = Error.stackTraceLimit;
@@ -958,7 +956,7 @@ function DevToolsInitializeInternal() {
         return dispatch;
     }
     function isMonitored(assignedId, globalOrLabeled) {
-        return SettingsState[self$1].value.monitored.includes(assignedId) || (IsDevelopment && globalOrLabeled);
+        return SettingsState[self$1].value.monitored.includes(assignedId) || globalOrLabeled;
     }
     function DevToolsInternal(isGlobal) {
         return {
