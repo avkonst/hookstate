@@ -35,12 +35,12 @@
     },
     "dependencies": {},
     "peerDependencies": {
-        "@hookstate/core": "^1.8.3",
+        "@hookstate/core": "^2.0.0",
         "@hookstate/initial": "^1.8.0"
     },
     "devDependencies": {
-        "@babel/core": "7.9.6",
-        "@babel/runtime": "7.9.6",
+        "@babel/core": "7.10.1",
+        "@babel/runtime": "7.10.1",
         "@hookstate/core": "1.8.3",
         "@hookstate/initial": "1.8.0",
         "@rollup/plugin-babel": "5.0.2",
@@ -61,7 +61,7 @@
         "react-scripts": "3.4.1",
         "react-test-renderer": "16.13.1",
         "rimraf": "3.0.2",
-        "rollup": "2.10.5",
+        "rollup": "2.11.0",
         "rollup-plugin-peer-deps-external": "2.2.2",
         "rollup-plugin-typescript2": "0.27.1",
         "tslint": "6.1.2",

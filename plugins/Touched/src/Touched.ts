@@ -1,4 +1,4 @@
-import { Path, Plugin, StateLink, Downgraded, StateValueAtPath, PluginCallbacks, PluginCallbacksOnSetArgument, State, StateMarkerID, self, StateMethods } from '@hookstate/core';
+import { Path, Plugin, Downgraded, StateValueAtPath, PluginCallbacks, PluginCallbacksOnSetArgument, State, StateMarkerID, self, StateMethods } from '@hookstate/core';
 
 import { Initial } from '@hookstate/initial';
 
@@ -69,28 +69,18 @@ class TouchedPluginInstance implements PluginCallbacks {
 
 // tslint:disable-next-line: function-name
 export function Touched(): Plugin;
-export function Touched<S>($this: StateLink<S>): TouchedExtensions;
 export function Touched<S>($this: State<S>): TouchedExtensions;
-export function Touched<S>($this?: State<S> | StateLink<S>): Plugin | TouchedExtensions {
+export function Touched<S>($this?: State<S>): Plugin | TouchedExtensions {
     if ($this) {
-        if ($this[StateMarkerID]) {
-            const th = $this as State<S>;
-            const [instance, controls] = th[self].attach(PluginID);
-            if (instance instanceof Error) {
-                throw instance
-            }
-            const inst = instance as TouchedPluginInstance;
-            return {
-                touched: () => inst.touched(th[self]),
-                untouched: () => !inst.touched(th[self])
-            }
-        } else {
-            const [link, instance] = ($this as StateLink<S>).with(PluginID);
-            const inst = instance as TouchedPluginInstance;
-            return {
-                touched: () => inst.touched(link),
-                untouched: () => !inst.touched(link)
-            }
+        const th = $this as State<S>;
+        const [instance, controls] = th[self].attach(PluginID);
+        if (instance instanceof Error) {
+            throw instance
+        }
+        const inst = instance as TouchedPluginInstance;
+        return {
+            touched: () => inst.touched(th[self]),
+            untouched: () => !inst.touched(th[self])
         }
     }
     return {

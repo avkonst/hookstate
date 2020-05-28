@@ -1,5 +1,5 @@
 
-import { Plugin, Path, StateLink, StateValueAtPath, State, StateMarkerID, self } from '@hookstate/core';
+import { Plugin, Path, StateValueAtPath, State, StateMarkerID, self } from '@hookstate/core';
 
 export type ValidationSeverity = 'error' | 'warning';
 
@@ -121,7 +121,7 @@ class ValidationPluginInstance<S> {
                 for (let i = 0; i < nestedInst.length; i += 1) {
                     const n = nestedInst[i];
                     result = result.concat(
-                        Validation(n as StateLink<StateValueAtPath>)
+                        Validation(n as State<StateValueAtPath>)
                             .errors(filter, depth - 1, first));
                     if (first && result.length > 0) {
                         return result;
@@ -139,7 +139,7 @@ class ValidationPluginInstance<S> {
             //     // A client can define per array level validation rule,
             //     // where existance of the index can be cheched.
             //     if (nestedInst[k] !== undefined) {
-            //         result = result.concat((nestedInst[k] as StateLink<StateValueAtPath, ValidationExtensions>)
+            //         result = result.concat((nestedInst[k] as State<StateValueAtPath, ValidationExtensions>)
             //             .extended.errors(filter, depth - 1, first));
             //         if (first && result.length > 0) {
             //             return result;
@@ -158,7 +158,7 @@ class ValidationPluginInstance<S> {
                 // where existance of the index can be cheched.
                 if (nestedInst[k] !== undefined) {
                     result = result.concat(
-                        Validation(nestedInst[k] as StateLink<StateValueAtPath>)
+                        Validation(nestedInst[k] as State<StateValueAtPath>)
                             .errors(filter, depth - 1, first));
                     if (first && result.length > 0) {
                         return result;
@@ -172,16 +172,10 @@ class ValidationPluginInstance<S> {
 
 // tslint:disable-next-line: function-name
 export function Validation(): Plugin;
-export function Validation<S>($this: StateLink<S>): ValidationExtensions<S>;
 export function Validation<S>($this: State<S>): ValidationExtensions<S>;
-export function Validation<S>($this?: State<S> | StateLink<S>): Plugin | ValidationExtensions<S> {
+export function Validation<S>($this?: State<S>): Plugin | ValidationExtensions<S> {
     if ($this) {
-        let state: State<S>;
-        if ($this[StateMarkerID]) {
-            state = ($this as State<S>);
-        } else {
-            state = ($this as StateLink<S>)[self];
-        }
+        let state = $this;
 
         const [plugin] = state[self].attach(PluginID);
         if (plugin instanceof Error) {

@@ -5,13 +5,12 @@ import {
     StateValueAtRoot,
     StateValueAtPath,
     PluginCallbacks,
-    StateLink,
-    StateLinkPlugable,
     PluginCallbacksOnSetArgument,
     StateMethods,
     State,
     StateMarkerID,
-    self
+    self,
+    PluginStateControl
 } from '@hookstate/core';
 
 export interface LoggerExtensions {
@@ -36,7 +35,7 @@ class LoggerPluginInstance implements PluginCallbacks {
             p);
     }
 
-    log(path: Path, l: Pick<StateLinkPlugable<StateValueAtPath>, 'getUntracked'>) {
+    log(path: Path, l: Pick<PluginStateControl<StateValueAtPath>, 'getUntracked'>) {
         // tslint:disable-next-line: no-console
         return console.log(
             `[hookstate]: current value at path '/${path.join('/')}: ` +
@@ -52,28 +51,19 @@ const PluginID = Symbol('Logger');
 
 // tslint:disable-next-line: function-name
 export function Logger(): Plugin;
-export function Logger<S>($this: StateLink<S>): LoggerExtensions;
 export function Logger<S>($this: State<S>): LoggerExtensions;
-export function Logger<S>($this?: StateLink<S> | State<S>): Plugin | LoggerExtensions {
+export function Logger<S>($this?: State<S>): Plugin | LoggerExtensions {
     if ($this) {
-        if ($this[StateMarkerID]) {
-            const th = $this as State<S>
-            let [instance, controls] = th[self].attach(PluginID);
-            if (instance instanceof Error) {
-                // auto attach instead of throwing
-                Logger(th)
-                instance = th[self].attach(PluginID)[0];
-            }
-            const inst = instance as LoggerPluginInstance;
-            return {
-                log: () => inst.log(th[self].path, controls)
-            }
-        } else {
-            const [link, instance] = ($this as StateLink<S>).with(PluginID);
-            const inst = instance as LoggerPluginInstance;
-            return {
-                log: () => inst.log(link.path, link)
-            }
+        const th = $this as State<S>
+        let [instance, controls] = th[self].attach(PluginID);
+        if (instance instanceof Error) {
+            // auto attach instead of throwing
+            Logger(th)
+            instance = th[self].attach(PluginID)[0];
+        }
+        const inst = instance as LoggerPluginInstance;
+        return {
+            log: () => inst.log(th[self].path, controls)
         }
     }
     return {
