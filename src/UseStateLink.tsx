@@ -683,7 +683,7 @@ function useStateMethods<S>(
         source as StateMethodsImpl<S> :
         undefined
     if (parentLink) {
-        if (parentLink.onUpdateUsed) {
+        if (parentLink.isMounted) {
             // Scoped state mount
             // eslint-disable-next-line react-hooks/rules-of-hooks
             const [, setValue] = React.useState({});
@@ -691,8 +691,7 @@ function useStateMethods<S>(
                 parentLink.state,
                 parentLink.path,
                 () => setValue({}),
-                parentLink,
-                parentLink.isDowngraded);
+                parentLink);
             return link;
         } else {
             // Global state mount or destroyed link
@@ -702,8 +701,7 @@ function useStateMethods<S>(
                 value.state,
                 parentLink.path,
                 () => setValue({ state: value.state }),
-                value.state,
-                undefined);
+                value.state);
             return link;
         }
     } else {
@@ -714,8 +712,7 @@ function useStateMethods<S>(
             value.state,
             RootPath,
             () => setValue({ state: value.state }),
-            value.state,
-            undefined);
+            value.state);
         React.useEffect(() => () => value.state.destroy(), []);
         return link;
     }
@@ -1054,7 +1051,6 @@ class Store implements Subscribable {
         return new StateMethodsImpl<StateValueAtRoot>(
             this,
             RootPath,
-            undefined,
             this.get(RootPath),
             this.edition
         )[self]
@@ -1111,25 +1107,30 @@ class Promised {
 }
 
 class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subscribable, Subscriber {
-    public isDowngraded: boolean | undefined;
     private subscribers: Set<Subscriber> | undefined;
 
-    private nestedLinksCache: Record<string | number, StateMethodsImpl<S[keyof S]>> | undefined;
+    private isDowngraded: boolean | undefined;
+    private childrenCache: Record<string | number, StateMethodsImpl<S[keyof S]>> | undefined;
+    private onSetUsed: (() => void) | undefined;
 
     constructor(
         public readonly state: Store,
         public readonly path: Path,
-        public onUpdateUsed: (() => void) | undefined,
-        public valueSource: S,
-        public valueEdition: number
-    ) { }
+        private valueSource: S,
+        private valueEdition: number,
+        onSetUsed?: () => void
+    ) {
+        if (onSetUsed) {
+            this.onSetUsed = onSetUsed
+        }
+    }
 
     getUntracked(allowPromised?: boolean) {
         if (this.valueEdition !== this.state.edition) {
             this.valueSource = this.state.get(this.path)
             this.valueEdition = this.state.edition
 
-            if (this.onUpdateUsed) {
+            if (this.onSetUsed) {
                 // this link is still mounted to a component
                 // populate cache again to ensure correct tracking of usage
                 // when React scans which states to rerender on update
@@ -1268,27 +1269,31 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
     unsubscribe(l: Subscriber) {
         this.subscribers!.delete(l);
     }
-
-    onSet(paths: Path[], actions: (() => void)[]) {
-        this.updateIfUsed(paths, actions)
+    
+    get isMounted(): boolean {
+        return !!this.onSetUsed
     }
 
-    private updateIfUsed(paths: Path[], actions: (() => void)[]): boolean {
+    onUnmount() {
+        delete this.onSetUsed
+    }
+
+    onSet(paths: Path[], actions: (() => void)[]): boolean {
         const update = () => {
-            if (this.isDowngraded && (ValueCache in this) && this.onUpdateUsed) {
-                actions.push(this.onUpdateUsed);
+            if (this.isDowngraded && (ValueCache in this) && this.onSetUsed) {
+                actions.push(this.onSetUsed);
                 return true;
             }
             for (let path of paths) {
                 const firstChildKey = path[this.path.length];
                 if (firstChildKey === undefined) {
-                    if (ValueCache in this && this.onUpdateUsed) {
-                        actions.push(this.onUpdateUsed);
+                    if (ValueCache in this && this.onSetUsed) {
+                        actions.push(this.onSetUsed);
                         return true;
                     }
                 } else {
-                    const firstChildValue = this.nestedLinksCache && this.nestedLinksCache[firstChildKey];
-                    if (firstChildValue && firstChildValue.updateIfUsed(paths, actions)) {
+                    const firstChildValue = this.childrenCache && this.childrenCache[firstChildKey];
+                    if (firstChildValue && firstChildValue.onSet(paths, actions)) {
                         return true;
                     }
                 }
@@ -1318,22 +1323,22 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
     }
 
     child(key: number | string) {
-        this.nestedLinksCache = this.nestedLinksCache || {};
-        const cachehit = this.nestedLinksCache[key];
+        this.childrenCache = this.childrenCache || {};
+        const cachehit = this.childrenCache[key];
         if (cachehit) {
             return cachehit;
         }
         const r = new StateMethodsImpl(
             this.state,
             this.path.slice().concat(key),
-            this.onUpdateUsed,
             this.valueSource[key],
-            this.valueEdition
+            this.valueEdition,
+            this.onSetUsed,
         )
         if (this.isDowngraded) {
             r.isDowngraded = true;
         }
-        this.nestedLinksCache[key] = r;
+        this.childrenCache[key] = r;
         return r;
     }
     
@@ -1724,23 +1729,19 @@ function useSubscribedStateMethods<S>(
     state: Store,
     path: Path,
     update: () => void,
-    subscribeTarget: Subscribable,
-    disabledTracking: boolean | undefined
+    subscribeTarget: Subscribable
 ) {
     const link = new StateMethodsImpl<S>(
         state,
         path,
-        update,
         state.get(path),
-        state.edition
+        state.edition,
+        update,
     );
-    if (disabledTracking) {
-        link.attach(Downgraded)
-    }
     React.useEffect(() => {
         subscribeTarget.subscribe(link);
         return () => {
-            link.onUpdateUsed = undefined
+            link.onUnmount()
             subscribeTarget.unsubscribe(link);
         }
     });
