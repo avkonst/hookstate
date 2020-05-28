@@ -2,13 +2,10 @@
 import {
     Plugin,
     Path,
-    StateValueAtRoot,
     StateValueAtPath,
     PluginCallbacks,
     PluginCallbacksOnSetArgument,
-    StateMethods,
     State,
-    StateMarkerID,
     self,
     PluginStateControl
 } from '@hookstate/core';
