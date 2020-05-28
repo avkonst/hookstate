@@ -548,21 +548,45 @@ export function useState<S>(
 export function useState<S>(
     source: SetInitialStateAction<S> | State<S>
 ): State<S> {
-    let sourceIsInitialValue = true
-    if (typeof source === 'object' && source !== null) {
-        const statemethodsSource = source[self]
-        if (statemethodsSource) {
-            // it is already state object
-            source = statemethodsSource; // get underlying StateMethods
-            sourceIsInitialValue = false
+    const parentMethods = typeof source === 'object' && source !== null ?
+        source[self] as StateMethodsImpl<S> | undefined :
+        undefined;
+    if (parentMethods) {
+        if (parentMethods.isMounted) {
+            // Scoped state mount
+            // eslint-disable-next-line react-hooks/rules-of-hooks
+            const [, setValue] = React.useState({});
+            return useSubscribedStateMethods<S>(
+                parentMethods.state,
+                parentMethods.path,
+                () => setValue({}),
+                parentMethods)[self];
+        } else {
+            // Global state mount or destroyed link
+            // eslint-disable-next-line react-hooks/rules-of-hooks
+            const [value, setValue] = React.useState({ state: parentMethods.state });
+            return useSubscribedStateMethods<S>(
+                value.state,
+                parentMethods.path,
+                () => setValue({ state: value.state }),
+                value.state)[self];
         }
+    } else {
+        // Local state mount
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const [value, setValue] = React.useState(() => ({ state: createStore(source) }));
+        const result = useSubscribedStateMethods<S>(
+            value.state,
+            RootPath,
+            () => setValue({ state: value.state }),
+            value.state);
+        React.useEffect(() => () => value.state.destroy(), []);
+        const devtools = useState[DevToolsID]
+        if (devtools) {
+            result.attach(devtools)
+        }
+        return result[self];
     }
-    const statemethods = useStateMethods(source as SetInitialStateAction<S>);
-    const devtools = useState[DevToolsID]
-    if (sourceIsInitialValue && devtools) {
-        statemethods.attach(devtools)
-    }
-    return statemethods[self];
 }
 
 /**
@@ -669,54 +693,6 @@ export function DevTools<S>(state: State<S>): DevToolsExtensions {
 ///
 /// INTERNAL SYMBOLS (LIBRARY IMPLEMENTATION)
 ///
-
-function useStateMethods<S>(
-    source: StateMethods<S>
-): StateMethodsImpl<S>;
-function useStateMethods<S>(
-    source: SetInitialStateAction<S>
-): StateMethodsImpl<S>;
-function useStateMethods<S>(
-    source: SetInitialStateAction<S> | StateMethods<S>
-): StateMethodsImpl<S> {
-    const parentLink = source instanceof StateMethodsImpl ?
-        source as StateMethodsImpl<S> :
-        undefined
-    if (parentLink) {
-        if (parentLink.isMounted) {
-            // Scoped state mount
-            // eslint-disable-next-line react-hooks/rules-of-hooks
-            const [, setValue] = React.useState({});
-            const link = useSubscribedStateMethods<S>(
-                parentLink.state,
-                parentLink.path,
-                () => setValue({}),
-                parentLink);
-            return link;
-        } else {
-            // Global state mount or destroyed link
-            // eslint-disable-next-line react-hooks/rules-of-hooks
-            const [value, setValue] = React.useState({ state: parentLink.state });
-            const link = useSubscribedStateMethods<S>(
-                value.state,
-                parentLink.path,
-                () => setValue({ state: value.state }),
-                value.state);
-            return link;
-        }
-    } else {
-        // Local state mount
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        const [value, setValue] = React.useState(() => ({ state: createStore(source) }));
-        const link = useSubscribedStateMethods<S>(
-            value.state,
-            RootPath,
-            () => setValue({ state: value.state }),
-            value.state);
-        React.useEffect(() => () => value.state.destroy(), []);
-        return link;
-    }
-}
 
 const EmptyDevToolsExtensions: DevToolsExtensions = {
     label() { /* */ },
