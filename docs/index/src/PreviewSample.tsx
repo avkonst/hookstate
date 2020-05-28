@@ -5,7 +5,7 @@ import { ExamplesRepo, ExampleCodeUrl } from './examples/Index';
 import Highlight, { PrismTheme, defaultProps } from 'prism-react-renderer';
 import theme from 'prism-react-renderer/themes/palenight';
 
-import { useStateLink } from '@hookstate/core';
+import { useState, self } from '@hookstate/core';
 
 const packageJson = require('../package.json');
 const packageDependencies = packageJson.dependencies
@@ -21,15 +21,16 @@ export const VersionInfo = () => {
 
 const PreviewWithAsyncSource = (props: React.PropsWithChildren<{ url: string, sampleFirst?: boolean }>) => {
     const [sampleVisible, toogleVisible] = React.useState(true);
-    const code = useStateLink(() => fetch(props.url).then(r => r.text()))
+    const code = useState(() => fetch(props.url).then(r => r.text()))
 
     let codeString = ''
-    if (code.promised) {
+    const [loading, error, value] = code[self].map()
+    if (loading) {
         codeString = `Loading code sample from: ${props.url}`;
-    } else if (code.error) {
-        codeString = `Failure to load code sample from: ${props.url} (${code.error.toString()})`;
+    } else if (error) {
+        codeString = `Failure to load code sample from: ${props.url} (${error.toString()})`;
     } else {
-        codeString = code.value.toString()
+        codeString = value.toString()
     }
 
     const sample = <>
