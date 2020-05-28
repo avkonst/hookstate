@@ -1,4 +1,4 @@
-import { StateMarkerID, self } from '@hookstate/core';
+import { self } from '@hookstate/core';
 
 var LoggerPluginInstance = /** @class */ (function () {
     function LoggerPluginInstance() {
@@ -29,26 +29,17 @@ var LoggerPluginInstance = /** @class */ (function () {
 var PluginID = Symbol('Logger');
 function Logger($this) {
     if ($this) {
-        if ($this[StateMarkerID]) {
-            var th_1 = $this;
-            var _a = th_1[self].attach(PluginID), instance = _a[0], controls_1 = _a[1];
-            if (instance instanceof Error) {
-                // auto attach instead of throwing
-                Logger(th_1);
-                instance = th_1[self].attach(PluginID)[0];
-            }
-            var inst_1 = instance;
-            return {
-                log: function () { return inst_1.log(th_1[self].path, controls_1); }
-            };
+        var th_1 = $this;
+        var _a = th_1[self].attach(PluginID), instance = _a[0], controls_1 = _a[1];
+        if (instance instanceof Error) {
+            // auto attach instead of throwing
+            Logger(th_1);
+            instance = th_1[self].attach(PluginID)[0];
         }
-        else {
-            var _b = $this.with(PluginID), link_1 = _b[0], instance = _b[1];
-            var inst_2 = instance;
-            return {
-                log: function () { return inst_2.log(link_1.path, link_1); }
-            };
-        }
+        var inst_1 = instance;
+        return {
+            log: function () { return inst_1.log(th_1[self].path, controls_1); }
+        };
     }
     return {
         id: PluginID,

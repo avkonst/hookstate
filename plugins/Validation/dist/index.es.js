@@ -1,4 +1,4 @@
-import { StateMarkerID, self } from '@hookstate/core';
+import { self } from '@hookstate/core';
 
 var PluginID = Symbol('Validate');
 var emptyErrors = [];
@@ -96,7 +96,7 @@ var ValidationPluginInstance = /** @class */ (function () {
             //     // A client can define per array level validation rule,
             //     // where existance of the index can be cheched.
             //     if (nestedInst[k] !== undefined) {
-            //         result = result.concat((nestedInst[k] as StateLink<StateValueAtPath, ValidationExtensions>)
+            //         result = result.concat((nestedInst[k] as State<StateValueAtPath, ValidationExtensions>)
             //             .extended.errors(filter, depth - 1, first));
             //         if (first && result.length > 0) {
             //             return result;
@@ -129,13 +129,7 @@ var ValidationPluginInstance = /** @class */ (function () {
 }());
 function Validation($this) {
     if ($this) {
-        var state_1;
-        if ($this[StateMarkerID]) {
-            state_1 = $this;
-        }
-        else {
-            state_1 = $this[self];
-        }
+        var state_1 = $this;
         var plugin = state_1[self].attach(PluginID)[0];
         if (plugin instanceof Error) {
             throw plugin;

@@ -67,26 +67,16 @@ var TouchedPluginInstance = /** @class */ (function () {
 }());
 function Touched($this) {
     if ($this) {
-        if ($this[core.StateMarkerID]) {
-            var th_1 = $this;
-            var _a = th_1[core.self].attach(PluginID), instance = _a[0], controls = _a[1];
-            if (instance instanceof Error) {
-                throw instance;
-            }
-            var inst_1 = instance;
-            return {
-                touched: function () { return inst_1.touched(th_1[core.self]); },
-                untouched: function () { return !inst_1.touched(th_1[core.self]); }
-            };
+        var th_1 = $this;
+        var _a = th_1[core.self].attach(PluginID), instance = _a[0], controls = _a[1];
+        if (instance instanceof Error) {
+            throw instance;
         }
-        else {
-            var _b = $this.with(PluginID), link_1 = _b[0], instance = _b[1];
-            var inst_2 = instance;
-            return {
-                touched: function () { return inst_2.touched(link_1); },
-                untouched: function () { return !inst_2.touched(link_1); }
-            };
-        }
+        var inst_1 = instance;
+        return {
+            touched: function () { return inst_1.touched(th_1[core.self]); },
+            untouched: function () { return !inst_1.touched(th_1[core.self]); }
+        };
     }
     return {
         id: PluginID,

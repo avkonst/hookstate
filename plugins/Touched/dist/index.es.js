@@ -1,4 +1,4 @@
-import { StateMarkerID, self, Downgraded } from '@hookstate/core';
+import { self, Downgraded } from '@hookstate/core';
 import { Initial } from '@hookstate/initial';
 
 var PluginID = Symbol('Touched');
@@ -63,26 +63,16 @@ var TouchedPluginInstance = /** @class */ (function () {
 }());
 function Touched($this) {
     if ($this) {
-        if ($this[StateMarkerID]) {
-            var th_1 = $this;
-            var _a = th_1[self].attach(PluginID), instance = _a[0], controls = _a[1];
-            if (instance instanceof Error) {
-                throw instance;
-            }
-            var inst_1 = instance;
-            return {
-                touched: function () { return inst_1.touched(th_1[self]); },
-                untouched: function () { return !inst_1.touched(th_1[self]); }
-            };
+        var th_1 = $this;
+        var _a = th_1[self].attach(PluginID), instance = _a[0], controls = _a[1];
+        if (instance instanceof Error) {
+            throw instance;
         }
-        else {
-            var _b = $this.with(PluginID), link_1 = _b[0], instance = _b[1];
-            var inst_2 = instance;
-            return {
-                touched: function () { return inst_2.touched(link_1); },
-                untouched: function () { return !inst_2.touched(link_1); }
-            };
-        }
+        var inst_1 = instance;
+        return {
+            touched: function () { return inst_1.touched(th_1[self]); },
+            untouched: function () { return !inst_1.touched(th_1[self]); }
+        };
     }
     return {
         id: PluginID,

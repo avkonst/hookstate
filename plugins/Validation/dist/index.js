@@ -100,7 +100,7 @@ var ValidationPluginInstance = /** @class */ (function () {
             //     // A client can define per array level validation rule,
             //     // where existance of the index can be cheched.
             //     if (nestedInst[k] !== undefined) {
-            //         result = result.concat((nestedInst[k] as StateLink<StateValueAtPath, ValidationExtensions>)
+            //         result = result.concat((nestedInst[k] as State<StateValueAtPath, ValidationExtensions>)
             //             .extended.errors(filter, depth - 1, first));
             //         if (first && result.length > 0) {
             //             return result;
@@ -133,13 +133,7 @@ var ValidationPluginInstance = /** @class */ (function () {
 }());
 function Validation($this) {
     if ($this) {
-        var state_1;
-        if ($this[core.StateMarkerID]) {
-            state_1 = $this;
-        }
-        else {
-            state_1 = $this[core.self];
-        }
+        var state_1 = $this;
         var plugin = state_1[core.self].attach(PluginID)[0];
         if (plugin instanceof Error) {
             throw plugin;

@@ -17,19 +17,12 @@ function Labelled(labelOrLink) {
             }
         }); };
     }
-    if (labelOrLink[core.StateMarkerID]) {
-        var th = labelOrLink;
-        var plugin = th[core.self].attach(LabelledID)[0];
-        if (plugin instanceof Error) {
-            return undefined;
-        }
-        return plugin.label;
+    var th = labelOrLink;
+    var plugin = th[core.self].attach(LabelledID)[0];
+    if (plugin instanceof Error) {
+        return undefined;
     }
-    else {
-        var th = labelOrLink;
-        var plugin = th.with(LabelledID, function () { return undefined; });
-        return plugin && plugin[1].label;
-    }
+    return plugin.label;
 }
 
 exports.Labelled = Labelled;

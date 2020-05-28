@@ -1,4 +1,4 @@
-import { StateMarkerID, self } from '@hookstate/core';
+import { self } from '@hookstate/core';
 
 var LabelledID = Symbol('Labelled');
 function Labelled(labelOrLink) {
@@ -13,19 +13,12 @@ function Labelled(labelOrLink) {
             }
         }); };
     }
-    if (labelOrLink[StateMarkerID]) {
-        var th = labelOrLink;
-        var plugin = th[self].attach(LabelledID)[0];
-        if (plugin instanceof Error) {
-            return undefined;
-        }
-        return plugin.label;
+    var th = labelOrLink;
+    var plugin = th[self].attach(LabelledID)[0];
+    if (plugin instanceof Error) {
+        return undefined;
     }
-    else {
-        var th = labelOrLink;
-        var plugin = th.with(LabelledID, function () { return undefined; });
-        return plugin && plugin[1].label;
-    }
+    return plugin.label;
 }
 
 export { Labelled };
