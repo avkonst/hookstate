@@ -659,7 +659,7 @@ export interface DevToolsExtensions {
  * @typeparam S Type of a value of a state
  */
 export function DevTools<S>(state: State<S>): DevToolsExtensions {
-    const plugin = (state as State<S>)[self].attach(DevToolsID);
+    const plugin = state[self].attach(DevToolsID);
     if (plugin[0] instanceof Error) {
         return EmptyDevToolsExtensions;
     }
@@ -684,7 +684,7 @@ function useStateMethods<S>(
         undefined
     if (parentLink) {
         if (!parentLink.onUpdateUsed) {
-            // Global state mount
+            // Global state mount or destroyed link
             // eslint-disable-next-line react-hooks/rules-of-hooks
             const [value, setValue] = React.useState({ state: parentLink.state });
             const link = useSubscribedStateMethods<S>(
@@ -1057,9 +1057,7 @@ class Store implements Subscribable {
             undefined,
             this.get(RootPath),
             this.edition
-            // TODO downgraded plugin should not be used here as it affects all inherited links (which is temporary fixed in the useStateMethods)
-            // instead optimisations are possible based on checks of onUpdateUsed === NoActionOnUpdate
-        ).attach(Downgraded) // it does not matter how it is used, it is not subscribed anyway
+        )[self]
     }
 
     subscribe(l: Subscriber) {
@@ -1176,25 +1174,6 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         return this.get()
     }
 
-    get promised() {
-        const currentValue = this.get(true) // marks used
-        if (currentValue === none && this.state.promised && !this.state.promised.fullfilled) {
-            return true;
-        }
-        return false;
-    }
-
-    get error() {
-        const currentValue = this.get(true) // marks used
-        if (currentValue === none) {
-            if (this.state.promised && this.state.promised.fullfilled) {
-                return this.state.promised.error;
-            }
-            this.get() // will throw 'read while promised' exception
-        }
-        return undefined;
-    }
-
     setUntracked(newValue: SetStateAction<S>, mergeValue?: Partial<StateValueAtPath>): [Path] {
         if (typeof newValue === 'function') {
             newValue = (newValue as ((prevValue: S) => S))(this.getUntracked());
@@ -1271,17 +1250,8 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         this.state.update(this.mergeUntracked(sourceValue));
     }
 
-    // remove in version 2, replace by rerender
-    update(paths: Path[]) {
-        this.state.update(paths)
-    }
-
     rerender(paths: Path[]) {
         this.state.update(paths)
-    }
-
-    access() {
-        return this;
     }
 
     destroy(): void {
@@ -1479,6 +1449,10 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                     }
                 }
 
+                // TODO if this is promised state
+                // it will throw, better to add new error code
+                // and explain that state.map(...) should be replaced by state[self].map(...)
+                // which is the most common oversight with promised states.
                 this.get() // mark used
                 if (Array.isArray(currentValue)) {
                     if (key === 'length') {
@@ -1524,12 +1498,31 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         onError?: ((e: StateErrorAtRoot, s: State<S>) => RE) | Exclude<C, Function>,
         context?: Exclude<C, Function>
     ): InferredStateOrnullType<S> | R | RL | RE | [boolean, StateErrorAtRoot | undefined, S | undefined] {
+        const promised = () => {
+            const currentValue = this.get(true) // marks used
+            if (currentValue === none && this.state.promised && !this.state.promised.fullfilled) {
+                return true;
+            }
+            return false;
+        }
+        
+        const error = () => {
+            const currentValue = this.get(true) // marks used
+            if (currentValue === none) {
+                if (this.state.promised && this.state.promised.fullfilled) {
+                    return this.state.promised.error;
+                }
+                this.get() // will throw 'read while promised' exception
+            }
+            return undefined;
+        }
+        
         if (!action) {
-            if (this.promised) {
+            if (promised()) {
                 return [true, undefined, undefined]
             }
-            if (this.error) {
-                return [false, this.error, undefined]
+            if (error()) {
+                return [false, error(), undefined]
             }
             return [false, undefined, this.value]
         }
@@ -1552,7 +1545,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
             }
         })
             
-        if (typeof onPromised === 'function' && this.promised) {
+        if (typeof onPromised === 'function' && promised()) {
             return runBatch(() => {
                 const r = (onPromised as ((s: State<S>) => RL))(this[self])
                 if (r as unknown as symbol === postpone) {
@@ -1564,8 +1557,8 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
             })
         }
         
-        if (typeof onError === 'function' && this.error) {
-            return runBatch(() => (onError as ((e: StateErrorAtRoot, s: State<S>) => RE))(this.error, this[self]))
+        if (typeof onError === 'function' && error()) {
+            return runBatch(() => (onError as ((e: StateErrorAtRoot, s: State<S>) => RE))(error(), this[self]))
         }
         
         return runBatch(() => action(this[self]))
