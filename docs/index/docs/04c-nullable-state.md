@@ -53,3 +53,12 @@ const MyInputField = (props: { state: State<string | null>}) => {
     return <input value={state.value} onChange={(v) => state.set(v.target.value)} />
 }
 ```
+
+[StateMethods.ornull](typedoc-hookstate-core.md#ornull) property is just a convenience. Traditional `||` may also work depending on a case. Here is the example of a component, which receives a state whose value might be `null`, but still proceeds with rendering 'state editor':
+
+```tsx
+const MyInputField = (props: { state: State<string | null>}) => {
+    // state value is an instance of string or null here:
+    return <input value={state.value || 'my default'} onChange={(v) => state.set(v.target.value)} />
+}
+```
