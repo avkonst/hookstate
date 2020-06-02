@@ -21,6 +21,7 @@ Version 1 | Version 2 | Description
 `createStateLink` | `createState` | New function with nearly the same functionality. The returned result of a new type `State` which has got different way of dealing with nested states.
 `StateLink` | `State` | New type of a state instance to access and manage a state. See below the details of changes.
 `nested` property of `StateLink` | deleted | Use properties of State directly to access [nested states](./nested-state).
+`access` property of `StateLink` | deleted | Use State directly to access instead. See [global state](./global-state) docs for more details.
 `promised`, `error`, `batch` members of `StateLink` | deleted | Replaced by `map` method. See how to deal with [asynchronous states](./asynchronous-state).
 `denull` method of `StateLink` | moved to `ornull` property of `State` / `StateMethods` | See how to deal with [nullable states](./nullable-state).
 `with` method of `StateLink` | moved to `attach` of `State` or `StateMethods` | See how to [attach plugins](./extensions-overview) to states.
