@@ -1,17 +1,22 @@
 import React from 'react';
-import { createState, useState, self } from '@hookstate/core';
+import { createState, useState, self, State } from '@hookstate/core';
 
-const globalState = createState(0).map(s => ({
-    use: () => useState(s)[self].value,
-    increment: () => s.set(p => p + 1)
-}));
+const globalState = createState(0);
 
-setInterval(() => globalState.increment(), 3000)
+const wrapState = (s: State<number>) => ({
+    get: () => s[self].value,
+    increment: () => s[self].set(p => p + 1)
+})
+
+const accessGlobalState = () => globalState[self].map(wrapState)
+const useGlobalState = () => useState(globalState)[self].map(wrapState)
+
+setInterval(() => accessGlobalState().increment(), 3000)
 
 export const ExampleComponent = () => {
-    const state = globalState.use();
+    const state = useGlobalState();
     return <p>
-        <span><b>Counter value: {state}</b> (watch +1 every 3 seconds) </span>
-        <button onClick={() => globalState.increment()}>Increment</button>
+        <span><b>Counter value: {state.get()}</b> (watch +1 every 3 seconds) </span>
+        <button onClick={() => state.increment()}>Increment</button>
     </p>
 }
