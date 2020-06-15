@@ -17,7 +17,7 @@ While a promise is not resolved or rejected almost any operation will result in 
 In addition to `map` without arguments as demonstrated in the above example, [StateMethods.map](typedoc-hookstate-core#map) method has got various other overloads. One of this allows to trap promissed state in a separate callback during mapping. For example:
 
 ```tsx
-const state = useState(new Promise(...));
+const state = useState(() => new Promise(...));
 state[self].map(
     (state) => { /* do something when promise is resolved or rejected */ },
     () => { /* do something when still promised */ },
@@ -27,7 +27,7 @@ state[self].map(
 You can also have a separate callback to handle the case when the promise is rejected:
 
 ```tsx
-const state = useState(new Promise(...));
+const state = useState(() => new Promise(...));
 state[self].map(
     (state) => { /* do something when promise is resolved */ },
     () => { /* do something when still promised */ },
