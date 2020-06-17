@@ -1,4 +1,4 @@
-import React from 'react';
+import { onUnmounted, customRef, computed } from 'vue';
 
 /*! *****************************************************************************
 Copyright (c) Microsoft Corporation.
@@ -29,6 +29,28 @@ function __extends(d, b) {
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 }
 
+// const logger = console
+var logger = {
+    log: function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+    },
+    warn: function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+    },
+    error: function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
+        logger.log.apply(logger, args);
+    }
+};
 /**
  * Special symbol which is used as a property to switch
  * between [StateMethods](#interfacesstatemethodsmd) and the corresponding [State](#state).
@@ -95,23 +117,21 @@ function useState(source) {
     if (parentMethods) {
         if (parentMethods.isMounted) {
             // Scoped state mount
-            // eslint-disable-next-line react-hooks/rules-of-hooks
-            var _a = React.useState({}), setValue_1 = _a[1];
-            return useSubscribedStateMethods(parentMethods.state, parentMethods.path, function () { return setValue_1({}); }, parentMethods)[self];
+            logger.log('%c create vue ref (scoped)', 'background: #222; color: #bada55');
+            return useSubscribedStateMethods(parentMethods.state, parentMethods.path, parentMethods, parentMethods.onGetUsed)[self];
         }
         else {
             // Global state mount or destroyed link
-            // eslint-disable-next-line react-hooks/rules-of-hooks
-            var _b = React.useState({ state: parentMethods.state }), value_1 = _b[0], setValue_2 = _b[1];
-            return useSubscribedStateMethods(value_1.state, parentMethods.path, function () { return setValue_2({ state: value_1.state }); }, value_1.state)[self];
+            logger.log('create vue ref (global)');
+            return useSubscribedStateMethods(parentMethods.state, parentMethods.path, parentMethods.state)[self];
         }
     }
     else {
         // Local state mount
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        var _c = React.useState(function () { return ({ state: createStore(source) }); }), value_2 = _c[0], setValue_3 = _c[1];
-        var result = useSubscribedStateMethods(value_2.state, RootPath, function () { return setValue_3({ state: value_2.state }); }, value_2.state);
-        React.useEffect(function () { return function () { return value_2.state.destroy(); }; }, []);
+        logger.log('create vue ref (local)');
+        var store_1 = createStore(source);
+        onUnmounted(function () { return store_1.destroy(); });
+        var result = useSubscribedStateMethods(store_1, RootPath, store_1);
         var devtools = useState[DevToolsID];
         if (devtools) {
             result.attach(devtools);
@@ -119,10 +139,45 @@ function useState(source) {
         return result[self];
     }
 }
-function StateFragment(props) {
-    var scoped = useState(props.state);
-    return props.children(scoped);
-}
+// TODO StateFragment is applicable in Vue3 too, it should go to it's own Vue component
+/**
+ * Allows to use a state without defining a functional react component.
+ * It can be also used in class-based React components. It is also
+ * particularly usefull for creating *scoped* states.
+ *
+ * [Learn more...](https://hookstate.js.org/docs/using-without-statehook)
+ *
+ * @typeparam S Type of a value of a state
+ */
+// export function StateFragment<S>(
+//     props: {
+//         state: State<S>,
+//         children: (state: State<S>) => React.ReactElement,
+//     }
+// ): React.ReactElement;
+/**
+ * Allows to use a state without defining a functional react component.
+ * See more at [StateFragment](#statefragment)
+ *
+ * [Learn more...](https://hookstate.js.org/docs/using-without-statehook)
+ *
+ * @typeparam S Type of a value of a state
+ */
+// export function StateFragment<S>(
+//     props: {
+//         state: SetInitialStateAction<S>,
+//         children: (state: State<S>) => React.ReactElement,
+//     }
+// ): React.ReactElement;
+// export function StateFragment<S>(
+//     props: {
+//         state: State<S> | SetInitialStateAction<S>,
+//         children: (state: State<S>) => React.ReactElement,
+//     }
+// ): React.ReactElement {
+//     const scoped = useState(props.state as State<S>);
+//     return props.children(scoped);
+// }
 /**
  * A plugin which allows to opt-out from usage of Javascript proxies for
  * state usage tracking. It is useful for performance tuning.
@@ -130,6 +185,11 @@ function StateFragment(props) {
  * [Learn more...](https://hookstate.js.org/docs/performance-managed-rendering#downgraded-plugin)
  */
 function Downgraded() {
+    // TODO Vue specific makes Downgrade affecting behaviour
+    // In React Downgrade does not change the results of rendering
+    // In Vue Downgrade effectively converts customRef to shallowRef Vue hook,
+    // which might result in missed rendering for nested components
+    // This is likely a documentation issue only
     return {
         id: DowngradedID
     };
@@ -379,6 +439,7 @@ var Store = /** @class */ (function () {
         return path;
     };
     Store.prototype.update = function (paths) {
+        logger.log('update paths', paths);
         if (this._batches) {
             this._batchesPendingPaths = this._batchesPendingPaths || [];
             this._batchesPendingPaths = this._batchesPendingPaths.concat(paths);
@@ -455,7 +516,7 @@ var Store = /** @class */ (function () {
         }
     };
     Store.prototype.toMethods = function () {
-        return new StateMethodsImpl(this, RootPath, this.get(RootPath), this.edition, OnSetUsedNoAction);
+        return new StateMethodsImpl(this, RootPath, this.get(RootPath), this.edition, OnGetUsedNoAction, OnSetUsedNoAction);
     };
     Store.prototype.subscribe = function (l) {
         this._subscribers.add(l);
@@ -500,19 +561,28 @@ var Promised = /** @class */ (function () {
 }());
 // use symbol property to allow for easier reference finding
 var ValueCacheProperty = Symbol('ValueCache');
+function OnGetUsedNoAction() { }
 function OnSetUsedNoAction() { }
 // use symbol to mark that a function has no effect anymore
 var UnmountedMarker = Symbol('UnmountedMarker');
+OnGetUsedNoAction[UnmountedMarker] = true;
 OnSetUsedNoAction[UnmountedMarker] = true;
 var StateMethodsImpl = /** @class */ (function () {
-    function StateMethodsImpl(state, path, valueSource, valueEdition, onSetUsed) {
+    function StateMethodsImpl(state, path, valueSource, valueEdition, onGetUsed, onSetUsed) {
         this.state = state;
         this.path = path;
         this.valueSource = valueSource;
         this.valueEdition = valueEdition;
+        this.onGetUsed = onGetUsed;
         this.onSetUsed = onSetUsed;
     }
+    StateMethodsImpl.prototype.resetTracesBeforeRerender = function () {
+        delete this[ValueCacheProperty];
+        delete this.childrenCache;
+        delete this.selfCache;
+    };
     StateMethodsImpl.prototype.getUntracked = function (allowPromised) {
+        this.onGetUsed();
         if (this.valueEdition !== this.state.edition) {
             this.valueSource = this.state.get(this.path);
             this.valueEdition = this.state.edition;
@@ -730,7 +800,7 @@ var StateMethodsImpl = /** @class */ (function () {
                 return cachehit;
             }
         }
-        var r = new StateMethodsImpl(this.state, this.path.slice().concat(key), this.valueSource[key], this.valueEdition, this.onSetUsed);
+        var r = new StateMethodsImpl(this.state, this.path.slice().concat(key), this.valueSource[key], this.valueEdition, this.onGetUsed, this.onSetUsed);
         if (this.isDowngraded) {
             r.isDowngraded = true;
         }
@@ -809,7 +879,21 @@ var StateMethodsImpl = /** @class */ (function () {
                 }
                 else {
                     if (key === 'toJSON') {
-                        throw new StateInvalidUsageError(_this.path, ErrorId.ToJson_State);
+                        // TODO in React it is explicitly forbidden to serialize state to JSON;
+                        // A client is required to serialize state values instead
+                        // In Vue, enabling custom toJSON returning a value (not a string as required by spec)
+                        // allows to replace {{ state.value }} by {{ state }} in Vue html templates
+                        // This enables nice syntax sugar, but are there negative side effects
+                        // from violating the expeciations of return type from toJSON?
+                        // Note: Returning undefined here, makes Vue thinking that states of primitive values
+                        // are objects without properties, so it renders '{}' instead of an action primitive state.value
+                        return function () { return _this.value; };
+                        // throw new StateInvalidUsageError(this.path, ErrorId.ToJson_State);
+                    }
+                    // TODO this allows to unwrap state from props proxy,
+                    // but what other negative side effects it might have?
+                    if (key === "__v_raw") {
+                        return _this;
                     }
                     var currentValue = _this.getUntracked(true);
                     if ( // if currentValue is primitive type
@@ -840,7 +924,32 @@ var StateMethodsImpl = /** @class */ (function () {
                                 };
                             case 'attach':
                                 return function (p) { return _this.attach(p); };
+                            // TODO for consistency, it is possible to enable
+                            // Symbol.toPrimitive with similar behavior.
+                            // But it is only minor performance enhancement for Vue
+                            // when state is used in expressions like {{ state + 1 }}
+                            // Also, it is unclear if such constructions should be allowed.
+                            // Currently it is allowed for consistency with enabled toJSON for a state
+                            case 'valueOf':
+                                return function () { return _this.value; };
+                            // TODO same questions as for valueOf above
+                            // Currently it is allowed for consistency with enabled toJSON for a state
+                            case 'toString':
+                                // toString for a number can come with an argument
+                                return function (arg) {
+                                    if (arg !== undefined && _this.value) {
+                                        return _this.value.toString(arg);
+                                    }
+                                    return String(_this.value);
+                                };
                             default:
+                                // Overall it is an error that users asks props of a primitive state,
+                                // but we need to enable Vue rendering:
+                                // when Vue encounters and object in template,
+                                // it asks for 2 known properties:
+                                if (key === '__v_isRef' || key === '__v_isReadonly') {
+                                    return undefined;
+                                }
                                 _this.get(); // mark used
                                 throw new StateInvalidUsageError(_this.path, ErrorId.GetStatePropertyWhenPrimitive);
                         }
@@ -852,17 +961,22 @@ var StateMethodsImpl = /** @class */ (function () {
                     _this.get(); // mark used
                     if (Array.isArray(currentValue)) {
                         if (key === 'length') {
+                            // logger.log('called get for array length', key)
                             return currentValue.length;
                         }
                         if (key in Array.prototype) {
+                            // logger.log('called get for array prototype', key)
                             return Array.prototype[key];
                         }
                         var index = Number(key);
                         if (!Number.isInteger(index)) {
+                            // logger.log('called get for array named prop', key)
                             return undefined;
                         }
+                        // logger.log('called get for array index', key)
                         return _this.child(index)[self];
                     }
+                    // logger.log('called get return child', key)
                     return _this.child(key.toString())[self];
                 }
             }, function (_, key, value) {
@@ -982,6 +1096,7 @@ propertySetter, isValueProxy) {
     }
     return new Proxy(targetBootstrap, {
         getPrototypeOf: function (target) {
+            logger.log('called getPrototypeOf');
             // should satisfy the invariants:
             // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy/handler/getPrototypeOf#Invariants
             var targetReal = targetGetter();
@@ -991,22 +1106,26 @@ propertySetter, isValueProxy) {
             return Object.getPrototypeOf(targetReal);
         },
         setPrototypeOf: function (target, v) {
+            logger.log('called setPrototypeOf');
             return onInvalidUsage(isValueProxy ?
                 ErrorId.SetPrototypeOf_State :
                 ErrorId.SetPrototypeOf_Value);
         },
         isExtensible: function (target) {
+            logger.log('called isExtensible');
             // should satisfy the invariants:
             // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy/handler/isExtensible#Invariants
             return true; // required to satisfy the invariants of the getPrototypeOf
             // return Object.isExtensible(target);
         },
         preventExtensions: function (target) {
+            logger.log('called preventExtensions');
             return onInvalidUsage(isValueProxy ?
                 ErrorId.PreventExtensions_State :
                 ErrorId.PreventExtensions_Value);
         },
         getOwnPropertyDescriptor: function (target, p) {
+            logger.log('called getOwnPropertyDescriptor', p);
             var targetReal = targetGetter();
             if (targetReal === undefined || targetReal === null) {
                 return undefined;
@@ -1023,6 +1142,7 @@ propertySetter, isValueProxy) {
             };
         },
         has: function (target, p) {
+            logger.log('called has', p);
             if (typeof p === 'symbol') {
                 return false;
             }
@@ -1032,19 +1152,35 @@ propertySetter, isValueProxy) {
             }
             return false;
         },
-        get: propertyGetter,
-        set: propertySetter,
+        get: function (target, p) {
+            logger.log('called get', p);
+            return propertyGetter(target, p);
+        },
+        set: function (target, p, v, r) {
+            logger.log('called set', p, v);
+            return propertySetter(target, p, v, r);
+        },
         deleteProperty: function (target, p) {
+            logger.log('called deleteProperty');
             return onInvalidUsage(isValueProxy ?
                 ErrorId.DeleteProperty_State :
                 ErrorId.DeleteProperty_Value);
         },
         defineProperty: function (target, p, attributes) {
+            logger.log('called defineProperty', p, attributes);
+            // TODO temporary allow to mark objects as Vue raw
+            if (p === "__v_skip") {
+                return Object.defineProperty(target, p, attributes);
+            }
+            if (p === "__v_reactive") {
+                return Object.defineProperty(target, p, attributes);
+            }
             return onInvalidUsage(isValueProxy ?
                 ErrorId.DefineProperty_State :
                 ErrorId.DefineProperty_Value);
         },
         enumerate: function (target) {
+            logger.log('called enumerate');
             var targetReal = targetGetter();
             if (Array.isArray(targetReal)) {
                 return Object.keys(targetReal).concat('length');
@@ -1055,6 +1191,7 @@ propertySetter, isValueProxy) {
             return Object.keys(targetReal);
         },
         ownKeys: function (target) {
+            logger.log('called ownKeys');
             var targetReal = targetGetter();
             if (Array.isArray(targetReal)) {
                 return Object.keys(targetReal).concat('length');
@@ -1065,11 +1202,13 @@ propertySetter, isValueProxy) {
             return Object.keys(targetReal);
         },
         apply: function (target, thisArg, argArray) {
+            logger.log('called apply');
             return onInvalidUsage(isValueProxy ?
                 ErrorId.Apply_State :
                 ErrorId.Apply_Value);
         },
         construct: function (target, argArray, newTarget) {
+            logger.log('called construct');
             return onInvalidUsage(isValueProxy ?
                 ErrorId.Construct_State :
                 ErrorId.Construct_Value);
@@ -1086,17 +1225,51 @@ function createStore(initial) {
     }
     return new Store(initialValue);
 }
-function useSubscribedStateMethods(state, path, update, subscribeTarget) {
-    var link = new StateMethodsImpl(state, path, state.get(path), state.edition, update);
-    React.useEffect(function () {
-        subscribeTarget.subscribe(link);
-        return function () {
-            link.onUnmount();
-            subscribeTarget.unsubscribe(link);
-        };
+function useSubscribedStateMethods(state, path, subscribeTarget, parentOnGetUsed) {
+    var capturedTrack;
+    var capturedTrigger;
+    customRef(function (track, trigger) {
+        capturedTrack = track;
+        capturedTrigger = trigger;
+        return { get: function () { }, set: function () { } };
     });
+    var renderTimes = 0;
+    var renderWatcher = computed(function () {
+        renderTimes += 1;
+        capturedTrack();
+        logger.warn('called renderWatcher', renderTimes);
+        // TODO need to disable this and rethink cache clean up strategy
+        // because this leaves broken chain to nested states which are not
+        // "rebuilt" like in react during rerender from parent to child
+        // link.resetTracesBeforeRerender()
+        return renderTimes;
+    });
+    var link = new StateMethodsImpl(state, path, state.get(path), state.edition, function () {
+        // TODO not sure how efficient it will be for Vue
+        // but it is the only way to force rerender for nested components
+        // when parent is rerendered
+        // (effectively this line ensures that the customRef from parent
+        // is also tracked when child's scoped state is used,
+        // which is correct - child's state is a substate of a parent's state)
+        parentOnGetUsed && parentOnGetUsed();
+        // TODO if link.resetTracesBeforeRerender is not used above
+        // it is possible to use here
+        // capturedTrack(),
+        // instead of renderWatcher.value below
+        // but keep the current scheme until things get 100% clear
+        // regarding cache clean up strategy
+        // TODO call to value has got a side effect, although it is a property
+        // need to make sure this is not deleted by an optimizer,
+        // which might decide the return value is not used.
+        // but how?
+        renderWatcher.value;
+    }, capturedTrigger);
+    // in vue this is executed only once during setup
+    subscribeTarget.subscribe(link);
+    // and this will be executed when unmounted, which also happens only once
+    onUnmounted(function () { return subscribeTarget.unsubscribe(link); });
     return link;
 }
 
-export { DevTools, DevToolsID, Downgraded, StateFragment, createState, none, postpone, self, useState };
+export { DevTools, DevToolsID, Downgraded, createState, none, postpone, self, useState };
 //# sourceMappingURL=index.es.js.map

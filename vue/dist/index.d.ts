@@ -1,4 +1,3 @@
-import React from 'react';
 /**
  * 'JSON path' from root of a state object to a nested property.
  * Return type of [StateMethod.path](#readonly-path).
@@ -26,7 +25,7 @@ export declare type SetStateAction<S> = (S | Promise<S>) | ((prevState: S) => (S
  *
  * @typeparam S Type of a value of a state
  */
-export declare type SetPartialStateAction<S> = S extends ReadonlyArray<(infer U)> ? ReadonlyArray<U> | Record<number, U> | ((prevValue: S) => (ReadonlyArray<U> | Record<number, U>)) : S extends object | string ? Partial<S> | ((prevValue: S) => Partial<S>) : React.SetStateAction<S>;
+export declare type SetPartialStateAction<S> = S extends ReadonlyArray<(infer U)> ? ReadonlyArray<U> | Record<number, U> | ((prevValue: S) => (ReadonlyArray<U> | Record<number, U>)) : S extends object | string ? Partial<S> | ((prevValue: S) => Partial<S>) : S | ((prevState: S) => S);
 /**
  * Type of an argument of [createState](#createstate) and [useState](#usestate).
  *
@@ -497,10 +496,6 @@ export declare function useState<S>(source: SetInitialStateAction<S>): State<S>;
  *
  * @typeparam S Type of a value of a state
  */
-export declare function StateFragment<S>(props: {
-    state: State<S>;
-    children: (state: State<S>) => React.ReactElement;
-}): React.ReactElement;
 /**
  * Allows to use a state without defining a functional react component.
  * See more at [StateFragment](#statefragment)
@@ -509,10 +504,6 @@ export declare function StateFragment<S>(props: {
  *
  * @typeparam S Type of a value of a state
  */
-export declare function StateFragment<S>(props: {
-    state: SetInitialStateAction<S>;
-    children: (state: State<S>) => React.ReactElement;
-}): React.ReactElement;
 /**
  * A plugin which allows to opt-out from usage of Javascript proxies for
  * state usage tracking. It is useful for performance tuning.
