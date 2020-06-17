@@ -1,4 +1,4 @@
-import { onUnmounted, customRef, computed } from 'vue';
+import { onUnmounted, customRef, computed, defineComponent, Component } from 'vue';
 
 // const logger = console
 const logger = {
@@ -659,6 +659,14 @@ export function useState<S>(
 //     const scoped = useState(props.state as State<S>);
 //     return props.children(scoped);
 // }
+export function StateFragment<S>(props: {
+    state: State<S> | SetInitialStateAction<S>,
+    children:  (state: State<S>) => Component
+}): Component {
+    const scoped = useState(props.state as State<S>);
+    return props.children(scoped)
+}
+
 
 /**
  * A plugin which allows to opt-out from usage of Javascript proxies for
