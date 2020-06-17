@@ -1098,5 +1098,19 @@ function useSubscribedStateMethods(state, path, update, subscribeTarget) {
     return link;
 }
 
+var Hookstate = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    self: self,
+    postpone: postpone,
+    none: none,
+    createState: createState,
+    useState: useState,
+    StateFragment: StateFragment,
+    Downgraded: Downgraded,
+    DevToolsID: DevToolsID,
+    DevTools: DevTools
+});
+
+export default Hookstate;
 export { DevTools, DevToolsID, Downgraded, StateFragment, createState, none, postpone, self, useState };
 //# sourceMappingURL=index.es.js.map

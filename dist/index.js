@@ -1104,11 +1104,25 @@ function useSubscribedStateMethods(state, path, update, subscribeTarget) {
     return link;
 }
 
+var Hookstate = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    self: self,
+    postpone: postpone,
+    none: none,
+    createState: createState,
+    useState: useState,
+    StateFragment: StateFragment,
+    Downgraded: Downgraded,
+    DevToolsID: DevToolsID,
+    DevTools: DevTools
+});
+
 exports.DevTools = DevTools;
 exports.DevToolsID = DevToolsID;
 exports.Downgraded = Downgraded;
 exports.StateFragment = StateFragment;
 exports.createState = createState;
+exports.default = Hookstate;
 exports.none = none;
 exports.postpone = postpone;
 exports.self = self;
