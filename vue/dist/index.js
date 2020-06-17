@@ -182,6 +182,10 @@ function useState(source) {
 //     const scoped = useState(props.state as State<S>);
 //     return props.children(scoped);
 // }
+function StateFragment(props) {
+    var scoped = useState(props.state);
+    return props.children(scoped);
+}
 /**
  * A plugin which allows to opt-out from usage of Javascript proxies for
  * state usage tracking. It is useful for performance tuning.
@@ -1278,6 +1282,7 @@ function useSubscribedStateMethods(state, path, subscribeTarget, parentOnGetUsed
 exports.DevTools = DevTools;
 exports.DevToolsID = DevToolsID;
 exports.Downgraded = Downgraded;
+exports.StateFragment = StateFragment;
 exports.createState = createState;
 exports.none = none;
 exports.postpone = postpone;

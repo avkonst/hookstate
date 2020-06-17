@@ -1,6 +1,6 @@
 {
     "name": "@hookstate/vue",
-    "version": "3.0.0-rc.2",
+    "version": "3.0.0-rc.3",
     "description": "The flexible, fast and extendable state management for Vue that is based on hooks and state usage tracking.",
     "license": "MIT",
     "author": {

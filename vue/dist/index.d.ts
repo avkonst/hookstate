@@ -1,3 +1,4 @@
+import { Component } from 'vue';
 /**
  * 'JSON path' from root of a state object to a nested property.
  * Return type of [StateMethod.path](#readonly-path).
@@ -504,6 +505,10 @@ export declare function useState<S>(source: SetInitialStateAction<S>): State<S>;
  *
  * @typeparam S Type of a value of a state
  */
+export declare function StateFragment<S>(props: {
+    state: State<S> | SetInitialStateAction<S>;
+    children: (state: State<S>) => Component;
+}): Component;
 /**
  * A plugin which allows to opt-out from usage of Javascript proxies for
  * state usage tracking. It is useful for performance tuning.
