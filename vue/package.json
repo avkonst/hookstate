@@ -1,6 +1,6 @@
 {
     "name": "@hookstate/vue",
-    "version": "3.0.0-alpha1",
+    "version": "3.0.0-rc.2",
     "description": "The flexible, fast and extendable state management for Vue that is based on hooks and state usage tracking.",
     "license": "MIT",
     "author": {
@@ -49,7 +49,6 @@
         "concat-md": "0.3.5",
         "cross-env": "7.0.2",
         "npm-check-updates": "6.0.1",
-        "vue": "3.0.0-beta.14",
         "replace": "1.2.0",
         "rimraf": "3.0.2",
         "rollup": "2.10.5",
@@ -59,7 +58,8 @@
         "tslint": "6.1.2",
         "typedoc": "0.17.7",
         "typedoc-plugin-markdown": "2.2.17",
-        "typescript": "3.9.3"
+        "typescript": "3.9.3",
+        "vue": "3.0.0-beta.14"
     },
     "files": [
         "dist"
