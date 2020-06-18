@@ -2,11 +2,13 @@ import { Plugin, PluginCallbacks, State, self, PluginCallbacksOnSetArgument } fr
 
 const PluginID = Symbol('Previous');
 
-type PreviousInstanceType<T = unknown> = () => (PluginCallbacks & {
-    get(): T | undefined
-  } & {
-  previous: T | undefined
-})
+type PreviousInstanceType<T = unknown> = () => (
+    PluginCallbacks
+    & {
+        get(): T | undefined
+        previous: T | undefined
+    }
+)
 
 const PreviousInstance: PreviousInstanceType = () => ({
   previous: undefined,
