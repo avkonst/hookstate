@@ -1382,6 +1382,8 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                         return (p: SetStateAction<S>) => this.set(p)
                     case 'merge':
                         return (p: SetPartialStateAction<S>) => this.merge(p)
+                    case 'nested':
+                        return (p: keyof S) => this.nested(p)
                     case 'batch':
                         // tslint:disable-next-line: no-any
                         return <R, C>(action: () => R, context: Exclude<C, Function>) => this.batch(action, context)

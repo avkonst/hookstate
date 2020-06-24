@@ -351,3 +351,20 @@ test('object: should denull', async () => {
     expect(renderTimes).toStrictEqual(2);
     expect(result.current.ornull).toEqual(null)
 });
+
+test('object: should return nested state with conflict name', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useState<{ value: number }>({ value: 0 })
+    });
+
+    expect(result.current.nested('value').value).toEqual(0)
+    expect(result.current.value.value).toEqual(0)
+    act(() => {
+        result.current.nested('value').set(p => p + 1);
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(result.current.nested('value').value).toEqual(1)
+    expect(result.current.value.value).toEqual(1)
+});
