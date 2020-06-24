@@ -687,6 +687,16 @@ interface Subscribable {
     unsubscribe(l: Subscriber): void;
 }
 
+function isNoProxyInititializer() {
+    try {
+        new Proxy({}, {});
+        return false;
+    } catch (e) {
+        return true;
+    }
+};
+const IsNoProxy = isNoProxyInititializer()
+
 const DowngradedID = Symbol('Downgraded');
 const SelfMethodsID = Symbol('ProxyMarker');
 
@@ -1284,6 +1294,10 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
     }
     
     private valueArrayImpl(currentValue: StateValueAtPath[]): S {
+        if (IsNoProxy) {
+            this.isDowngraded = true
+            return currentValue as unknown as S;
+        }
         return proxyWrap(this.path, currentValue,
             () => currentValue,
             (target: object, key: PropertyKey) => {
@@ -1319,6 +1333,10 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
     }
 
     private valueObjectImpl(currentValue: object): S {
+        if (IsNoProxy) {
+            this.isDowngraded = true
+            return currentValue as unknown as S;
+        }
         return proxyWrap(this.path, currentValue,
             () => currentValue,
             (target: object, key: PropertyKey) => {
@@ -1347,78 +1365,104 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         if (this.selfCache) {
             return this.selfCache
         }
+        
+        const getter = (_: object, key: PropertyKey) => {
+            if (key === self) {
+                return this
+            }
+            if (typeof key === 'symbol') {
+                return undefined
+            }
+            if (key === 'toJSON') {
+                throw new StateInvalidUsageError(this.path, ErrorId.ToJson_State);
+            }
+            
+            switch (key) {
+                case 'path':
+                    return this.path
+                case 'keys':
+                    return this.keys
+                case 'value':
+                    return this.value
+                case 'ornull':
+                    return this.ornull
+                case 'promised':
+                    return this.promised
+                case 'error':
+                    return this.error
+                case 'get':
+                    return () => this.get()
+                case 'set':
+                    return (p: SetStateAction<S>) => this.set(p)
+                case 'merge':
+                    return (p: SetPartialStateAction<S>) => this.merge(p)
+                case 'nested':
+                    return (p: keyof S) => this.nested(p)
+                case 'batch':
+                    // tslint:disable-next-line: no-any
+                    return <R, C>(action: () => R, context: Exclude<C, Function>) => this.batch(action, context)
+                case 'attach':
+                    return (p: symbol) => this.attach(p)
+                case 'destroy': {
+                    return () => this.destroy()
+                }
+                default:
+                    // fall down
+            }
+            
+            const currentValue = this.get();
+            if (// if currentValue is primitive type
+                (typeof currentValue !== 'object' || currentValue === null) &&
+                // if promised, it will be none
+                currentValue !== none) {
+                throw new StateInvalidUsageError(this.path, ErrorId.GetStatePropertyWhenPrimitive)
+            }
+
+            if (Array.isArray(currentValue)) {
+                if (key === 'length') {
+                    return currentValue.length;
+                }
+                if (key in Array.prototype) {
+                    return Array.prototype[key];
+                }
+                const index = Number(key);
+                if (!Number.isInteger(index)) {
+                    return undefined;
+                }
+                return this.nested(index as keyof S)
+            }
+            return this.nested(key.toString() as keyof S)
+        }
+        
+        if (IsNoProxy) {
+            // minimal support for IE11
+            const result = (Array.isArray(this.valueSource) ? [] : {}) as State<S>;
+            [self, 'toJSON', 'path', 'keys', 'value', 'ornull',
+                'promised', 'error', 'get', 'set', 'merge',
+                'nested', 'batch', 'attach', 'destroy']
+            .forEach(key => {
+                Object.defineProperty(result, key, {
+                    get: () => getter(result, key)
+                })
+            })
+            if (typeof this.valueSource === 'object' && this.valueSource !== null) {
+                Object.keys(this.valueSource).forEach(key => {
+                    Object.defineProperty(result, key, {
+                        enumerable: true,
+                        get: () => getter(result, key)
+                    })
+                })
+            }
+            this.selfCache = result;
+            return this.selfCache
+        }
+        
         this.selfCache = proxyWrap(this.path, this.valueSource,
             () => {
                 this.get() // get latest & mark used
                 return this.valueSource
             },
-            (_, key) => {
-                if (key === self) {
-                    return this
-                }
-                if (typeof key === 'symbol') {
-                    return undefined
-                }
-                if (key === 'toJSON') {
-                    throw new StateInvalidUsageError(this.path, ErrorId.ToJson_State);
-                }
-                
-                switch (key) {
-                    case 'path':
-                        return this.path
-                    case 'keys':
-                        return this.keys
-                    case 'value':
-                        return this.value
-                    case 'ornull':
-                        return this.ornull
-                    case 'promised':
-                        return this.promised
-                    case 'error':
-                        return this.error
-                    case 'get':
-                        return () => this.get()
-                    case 'set':
-                        return (p: SetStateAction<S>) => this.set(p)
-                    case 'merge':
-                        return (p: SetPartialStateAction<S>) => this.merge(p)
-                    case 'nested':
-                        return (p: keyof S) => this.nested(p)
-                    case 'batch':
-                        // tslint:disable-next-line: no-any
-                        return <R, C>(action: () => R, context: Exclude<C, Function>) => this.batch(action, context)
-                    case 'attach':
-                        return (p: symbol) => this.attach(p)
-                    case 'destroy': {
-                        return () => this.destroy()
-                    }
-                    default:
-                        // fall down
-                }
-                
-                const currentValue = this.get();
-                if (// if currentValue is primitive type
-                    (typeof currentValue !== 'object' || currentValue === null) &&
-                    // if promised, it will be none
-                    currentValue !== none) {
-                    throw new StateInvalidUsageError(this.path, ErrorId.GetStatePropertyWhenPrimitive)
-                }
-
-                if (Array.isArray(currentValue)) {
-                    if (key === 'length') {
-                        return currentValue.length;
-                    }
-                    if (key in Array.prototype) {
-                        return Array.prototype[key];
-                    }
-                    const index = Number(key);
-                    if (!Number.isInteger(index)) {
-                        return undefined;
-                    }
-                    return this.nested(index as keyof S)
-                }
-                return this.nested(key.toString() as keyof S)
-            },
+            getter,
             (_, key, value) => {
                 throw new StateInvalidUsageError(this.path, ErrorId.SetProperty_State)
             },
