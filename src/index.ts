@@ -224,6 +224,9 @@ export interface StateMethods<S> {
      */
     merge(newValue: SetPartialStateAction<S>): void;
     
+    // TODO docs
+    nested<K extends keyof S>(key: K): State<S[K]>;
+    
     /**
      * Maps this state to the result via the provided action.
      * 
@@ -1222,6 +1225,10 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         this.state.update(this.mergeUntracked(sourceValue));
     }
 
+    nested<K extends keyof S>(key: K): State<S[K]> {
+        return this.child(key as string | number)[self]
+    }
+    
     rerender(paths: Path[]) {
         this.state.update(paths)
     }
@@ -1445,9 +1452,9 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                         if (!Number.isInteger(index)) {
                             return undefined;
                         }
-                        return this.child(index)[self]
+                        return this.nested(index as keyof S)
                     }
-                    return this.child(key.toString())[self]
+                    return this.nested(key.toString() as keyof S)
                 }
             },
             (_, key, value) => {
