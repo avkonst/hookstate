@@ -43,6 +43,25 @@ test('object: should rerender used null', async () => {
     expect(Object.keys(result.current)).toEqual(['field']);
 });
 
+test('object: should rerender used property-hiphen', async () => {
+    let renderTimes = 0
+    
+    const state = createState<{ 'hiphen-property': string }>({ 'hiphen-property': 'value' })
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useState(state)
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(result.current[self].value['hiphen-property']).toStrictEqual('value');
+
+    act(() => {
+        state['hiphen-property'].set('updated');
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(result.current['hiphen-property'].get()).toStrictEqual('updated');
+    expect(Object.keys(result.current)).toEqual(['hiphen-property']);
+});
+
 test('object: should rerender used (boolean-direct)', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
