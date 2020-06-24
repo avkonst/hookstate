@@ -294,7 +294,7 @@ test('object: should delete property when set to none', async () => {
     act(() => {
         result.current[self].set(none)
     })
-    expect(result.current[self].map(() => false, () => true)).toEqual(true)
+    expect(result.current[self].promised).toEqual(true)
     expect(renderTimes).toStrictEqual(5);
 });
 

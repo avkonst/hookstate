@@ -182,6 +182,11 @@ export interface StateMethods<S> {
      */
     readonly value: S;
 
+    // TODO docs
+    readonly promised: boolean;
+    // TODO docs
+    readonly error: StateErrorAtRoot | undefined;
+    
     /**
      * Unwraps and returns the underlying state value referred by
      * [path](#readonly-path) of this state instance.
@@ -237,58 +242,11 @@ export interface StateMethods<S> {
      * Instead, all required rerendering is done once once the batch is finished.
      * [Learn more about batching...](https://hookstate.js.org/docs/performance-batched-updates
      */
-    map<R, RL, RE, C>(
-        action: (s: State<S>) => R,
-        onPromised: (s: State<S>) => RL,
-        onError: (e: StateErrorAtRoot, s: State<S>) => RE,
-        context?: Exclude<C, Function>
-    ): R | RL | RE;
-
-    /**
-     * Maps this state to the result via the provided action.
-     * 
-     * @param action mapper function
-     * 
-     * @param onPromised this will be invoked instead of the action function,
-     * if a state value is unresolved promise.
-     * [Learn more about async states...](https://hookstate.js.org/docs/asynchronous-state)
-     * 
-     * @param context if specified, the callbacks will be invoked in a batch.
-     * Updating state within a batch does not trigger immediate rerendering.
-     * Instead, all required rerendering is done once once the batch is finished.
-     * [Learn more about batching...](https://hookstate.js.org/docs/performance-batched-updates
-     */
-    map<R, RL, C>(
-        action: (s: State<S>) => R,
-        onPromised: (s: State<S>) => RL,
-        context?: Exclude<C, Function>
-    ): R | RL;
-
-    /**
-     * Maps this state to the result via the provided action.
-     * 
-     * @param action mapper function
-     * 
-     * @param context if specified, the callbacks will be invoked in a batch.
-     * Updating state within a batch does not trigger immediate rerendering.
-     * Instead, all required rerendering is done once once the batch is finished.
-     * [Learn more about batching...](https://hookstate.js.org/docs/performance-batched-updates
-     */
-    map<R, C>(
+    // TODO docs
+    batch<R, C>(
         action: (s: State<S>) => R,
         context?: Exclude<C, Function>
     ): R;
-    
-    /**
-     * Unfolds this state to an array representing promise state.
-     * The first element of the array result indicates if promise is loading
-     * (true - loading: promise is not resolved, false - not loading: promise is resolved).
-     * The second element with be either undefined or a value of an error,
-     * which the resolved promise rejected. The third element will be
-     * either undefined or a value of a state, if promise is resolved.
-     * [Learn more about async states...](https://hookstate.js.org/docs/asynchronous-state)
-     */
-    map(): [boolean, StateErrorAtRoot | undefined, S | undefined];
 
     /**
      * If state value is null or undefined, returns state value.
@@ -876,7 +834,7 @@ class Store implements Subscribable {
                 value = none
                 delete onSetArg.value
                 delete onSetArg.state
-            } else if (this._promised && !this._promised.resolver) {
+            } else if (this._promised && (!this._promised.resolver && !this._promised.fullfilled)) {
                 throw new StateInvalidUsageError(path, ErrorId.SetStateWhenPromised)
             }
 
@@ -1460,9 +1418,9 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                                 return (p: SetStateAction<S>) => this.set(p)
                             case 'merge':
                                 return (p: SetPartialStateAction<S>) => this.merge(p)
-                            case 'map':
+                            case 'batch':
                                 // tslint:disable-next-line: no-any
-                                return (...args: any[]) => this.map(args[0], args[1], args[2], args[3])
+                                return (action: () => any, context: any) => this.batch(action, context)
                             case 'attach':
                                 return (p: symbol) => this.attach(p)
                             default:
@@ -1499,92 +1457,40 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         return this.selfCache
     }
     
-    map<R, RL, RE, C>(
-        action: (s: State<S>) => R,
-        onPromised: (s: State<S>) => RL,
-        onError: (e: StateErrorAtRoot, s: State<S>) => RE,
-        context?: Exclude<C, Function>
-    ): R | RL | RE;
-    map<R, RL, C>(
-        action: (s: State<S>) => R,
-        onPromised: (s: State<S>) => RL,
-        context?: Exclude<C, Function>
-    ): R | RL;
-    map<R, C>(
-        action: (s: State<S>) => R,
-        context?: Exclude<C, Function>
-    ): R;
-    map(): [boolean, StateErrorAtRoot | undefined, S | undefined];
-    map<R, RL, RE, C>(
-        action?: (s: State<S>) => R,
-        onPromised?: ((s: State<S>) => RL) | Exclude<C, Function>,
-        onError?: ((e: StateErrorAtRoot, s: State<S>) => RE) | Exclude<C, Function>,
-        context?: Exclude<C, Function>
-    ): InferredStateOrnullType<S> | R | RL | RE | [boolean, StateErrorAtRoot | undefined, S | undefined] {
-        const promised = () => {
-            const currentValue = this.get(true) // marks used
-            if (currentValue === none && this.state.promised && !this.state.promised.fullfilled) {
-                return true;
-            }
-            return false;
+    get promised(): boolean {
+        const currentValue = this.get(true) // marks used
+        if (currentValue === none && this.state.promised && !this.state.promised.fullfilled) {
+            return true;
         }
-        
-        const error = () => {
-            const currentValue = this.get(true) // marks used
-            if (currentValue === none) {
-                if (this.state.promised && this.state.promised.fullfilled) {
-                    return this.state.promised.error;
-                }
-                this.get() // will throw 'read while promised' exception
-            }
-            return undefined;
-        }
-        
-        if (!action) {
-            if (promised()) {
-                return [true, undefined, undefined]
-            }
-            if (error()) {
-                return [false, error(), undefined]
-            }
-            return [false, undefined, this.value]
-        }
-        
-        const contextArg = typeof onPromised === 'function'
-            ? (typeof onError === 'function' ? context : onError)
-            : onPromised;
+        return false;
+    }
 
-        const runBatch = ((actionArg: () => (R | RL | RE)) => {
-            if (contextArg !== undefined) {
-                const opts = { context: contextArg }
-                try {
-                    this.state.startBatch(this.path, opts)
-                    return actionArg()
-                } finally {
-                    this.state.finishBatch(this.path, opts)
-                }
-            } else {
-                return actionArg()
+    get error(): StateErrorAtRoot | undefined {
+        const currentValue = this.get(true) // marks used
+        if (currentValue === none) {
+            if (this.state.promised && this.state.promised.fullfilled) {
+                return this.state.promised.error;
             }
-        })
-            
-        if (typeof onPromised === 'function' && promised()) {
-            return runBatch(() => {
-                const r = (onPromised as ((s: State<S>) => RL))(this[self])
-                if (r as unknown as symbol === postpone) {
-                    // tslint:disable-next-line: no-any
-                    this.state.postponeBatch(
-                        () => this.map(action, onPromised as any, onError as any, context as any))
-                }
-                return r;
-            })
+            this.get() // will throw 'read while promised' exception
         }
-        
-        if (typeof onError === 'function' && error()) {
-            return runBatch(() => (onError as ((e: StateErrorAtRoot, s: State<S>) => RE))(error(), this[self]))
+        return undefined;
+    }
+
+    batch<R, C>(
+        action: (s: State<S>) => R,
+        context?: Exclude<C, Function>
+    ): R {
+        const opts = { context: context }
+        try {
+            this.state.startBatch(this.path, opts)
+            const result = action(this[self]) as R
+            if (result as unknown as Symbol === postpone) {
+                this.state.postponeBatch(() => this.batch(action, context))
+            }
+            return result
+        } finally {
+            this.state.finishBatch(this.path, opts)
         }
-        
-        return runBatch(() => action(this[self]))
     }
 
     get ornull(): InferredStateOrnullType<S> {

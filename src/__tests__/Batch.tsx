@@ -17,7 +17,7 @@ test('object: should rerender used via nested batch update', async () => {
     expect(result.current.field2[self].get()).toStrictEqual('str');
 
     act(() => {
-        result.current[self].map(() => {
+        result.current[self].batch(() => {
             result.current.field1[self].set(p => p + 1);
             result.current.field2[self].set(p => p + 'str');
         }, null)
@@ -43,7 +43,7 @@ test('object: should rerender used via nested batch merge', async () => {
     expect(result.current.field2[self].get()).toStrictEqual('str');
 
     act(() => {
-        result.current[self].map(() => {
+        result.current[self].batch(() => {
             result.current[self].merge(p => ({
                 field1: p.field1 + 1,
                 field2: p.field2 + 'str',
@@ -71,17 +71,17 @@ test('object: should rerender used via nested batch double', async () => {
     expect(result.current.field2[self].get()).toStrictEqual('str');
 
     act(() => {
-        result.current[self].map(() => {
+        result.current[self].batch(() => {
             // nested batch
             result.current.field2[self].set(p => p + '-before-')
-            result.current[self].map((s) => {
+            result.current[self].batch((s) => {
                 s[self].merge(p => ({
                     field1: p.field1 + 1,
                     field2: p.field2 + 'str',
                 }))
-            }, null)
+            })
             result.current.field2[self].set(p => p + '-after-')
-        }, null)
+        })
     });
     expect(renderTimes).toStrictEqual(2);
     expect(result.current.field1[self].get()).toStrictEqual(1);
@@ -106,8 +106,8 @@ test('object: should rerender used via nested batch promised', async () => {
         result.current[self].set(promise);
     });
     expect(renderTimes).toStrictEqual(2);
-    expect(result.current[self].map(() => false, () => true)).toStrictEqual(true);
-    expect(() => result.current[self].map((s) => false, (s: State<number>) => s[self].keys))
+    expect(result.current[self].promised).toStrictEqual(true);
+    expect(() => result.current[self].keys)
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
     expect(() => result.current[self].get())
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
@@ -117,28 +117,29 @@ test('object: should rerender used via nested batch promised', async () => {
 
     let executed = false;
     act(() => {
-        expect(() => result.current[self].map(() => {
+        expect(() => result.current[self].batch(() => {
             executed = true;
+            result.current[self].get()
             expect(renderTimes).toStrictEqual(2);
             result.current[self].set(10000)
             expect(renderTimes).toStrictEqual(2);
-        }, (s) => s[self].value)).toThrow(`Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103`)
+        })).toThrow(`Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103`)
     })
-    expect(executed).toBeFalsy()
+    expect(executed).toBeTruthy()
 
     act(() => {
-        expect(() => result.current[self].map(() => {
+        expect(() => result.current[self].batch(() => {
             executed = true;
             expect(renderTimes).toStrictEqual(2);
             result.current[self].set(10000)
             expect(renderTimes).toStrictEqual(2);
-        }, (s) => s[self].value)).toThrow(`Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103`)
+        })).toThrow(`Error: HOOKSTATE-104 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-104`)
     })
-    expect(executed).toBeFalsy()
+    expect(executed).toBeTruthy()
 
     executed = false;
     act(() => {
-        expect(() => result.current[self].map(() => {
+        expect(() => result.current[self].batch(() => {
             executed = true;
             expect(renderTimes).toStrictEqual(2);
             result.current[self].set(10000)
@@ -148,21 +149,27 @@ test('object: should rerender used via nested batch promised', async () => {
 
     executed = false;
     act(() => {
-        result.current[self].map(() => {
+        result.current[self].batch((v) => {
+            if (v[self].promised) {
+                return;
+            }
             executed = true;
             expect(renderTimes).toStrictEqual(2);
             result.current[self].set(p => p + 100)
             expect(renderTimes).toStrictEqual(2);
             result.current[self].set(p => p + 100)
             expect(renderTimes).toStrictEqual(2);
-        }, () => undefined);
+        });
     })
     expect(executed).toBeFalsy()
 
     executed = false;
     act(() => {
-        result.current[self].map(() => {
-            act(() => {
+        result.current[self].batch((v) => {
+            if (v[self].promised) {
+                return postpone
+            }
+            return act(() => {
                 executed = true
                 expect(renderTimes).toStrictEqual(3);
                 result.current[self].set(p => p + 100)
@@ -170,24 +177,24 @@ test('object: should rerender used via nested batch promised', async () => {
                 result.current[self].set(p => p + 100)
                 expect(renderTimes).toStrictEqual(3);
             })
-        }, () => postpone);
+        });
     })
     expect(executed).toBeFalsy()
 
-    expect(result.current[self].map(() => false, () => true)).toStrictEqual(true);
+    expect(result.current[self].promised).toStrictEqual(true);
     await act(async () => {
         await promise;
         expect(executed).toBeFalsy()
         expect(renderTimes).toStrictEqual(3);
-        expect(result.current[self].map(() => false, () => true)).toStrictEqual(false);
-        expect(result.current[self].map(() => undefined, () => undefined, () => true)).toEqual(undefined);
+        expect(result.current[self].promised).toStrictEqual(false);
+        expect(result.current[self].error).toEqual(undefined);
         expect(result.current[self].get()).toEqual(100);
     })
 
     expect(executed).toBeTruthy()
     expect(renderTimes).toStrictEqual(4);
-    expect(result.current[self].map(() => false, () => true)).toStrictEqual(false);
-    expect(result.current[self].map(() => undefined, () => undefined, () => true)).toEqual(undefined);
+    expect(result.current[self].promised).toStrictEqual(false);
+    expect(result.current[self].error).toEqual(undefined);
     expect(result.current[self].get()).toEqual(300);
 });
 
@@ -198,22 +205,25 @@ test('object: should rerender used via nested batch promised manual', async () =
         return useState<number>(none)
     });
     expect(renderTimes).toStrictEqual(1);
-    expect(result.current[self].map(() => false, () => true)).toStrictEqual(true);
-    expect(() => result.current[self].map(() => undefined, (s) => s[self].keys))
+    expect(result.current[self].promised).toStrictEqual(true);
+    expect(() => result.current[self].keys)
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
     expect(() => result.current[self].get())
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
 
     act(() => {
-        result.current[self].map(() => {
-            act(() => {
+        result.current[self].batch((v) => {
+            if (v[self].promised) {
+                return postpone
+            }
+            return act(() => {
                 expect(renderTimes).toStrictEqual(2);
                 result.current[self].set(p => p + 100)
                 expect(renderTimes).toStrictEqual(2);
                 result.current[self].set(p => p + 100)
                 expect(renderTimes).toStrictEqual(2);
             })
-        }, () => postpone);
+        });
     })
 
     expect(renderTimes).toStrictEqual(1);
@@ -226,8 +236,8 @@ test('object: should rerender used via nested batch promised manual', async () =
     await act(async () => new Promise(resolve => setTimeout(() => resolve(), 100)))
 
     expect(renderTimes).toStrictEqual(3);
-    expect(result.current[self].map(() => false, () => true)).toStrictEqual(false);
-    expect(result.current[self].map(() => undefined, () => undefined, () => true)).toEqual(undefined);
+    expect(result.current[self].promised).toStrictEqual(false);
+    expect(result.current[self].error).toEqual(undefined);
     expect(result.current[self].get()).toEqual(300);
 });
 
@@ -254,7 +264,7 @@ test('object: should rerender used via scoped batched updates', async () => {
     expect(childRenderTimes).toStrictEqual(1);
 
     act(() => {
-        child.result.current[self].map(() => {
+        child.result.current[self].batch(() => {
             child.result.current.fieldUsedByChild[self].set(p => p + 1);
             child.result.current.fieldUsedByChild[self].set(p => p + 1);
         }, 'batched')
@@ -267,7 +277,7 @@ test('object: should rerender used via scoped batched updates', async () => {
     expect(childRenderTimes).toStrictEqual(2);
 
     act(() => {
-        child.result.current[self].map(() => {
+        child.result.current[self].batch(() => {
             child.result.current.fieldUsedByChild[self].set(p => p + 1);
             child.result.current.fieldUsedByChild[self].set(p => p + 1);
             child.result.current.fieldUsedByParent[self].set(p => p + 1);

@@ -85,7 +85,7 @@ test('plugin: common flow callbacks', async () => {
     (result.current[self].attach(TestPlugin)[0] as { onExtension(): void; }).onExtension();
     expect(messages.slice(4)).toEqual(['onExtension called']);
 
-    result.current[self].map((s) => {
+    result.current[self].batch((s) => {
         messages.push(`batch executed, state: ${JSON.stringify(s[self].get())}`)
     }, 'custom context')
     expect(messages.slice(5)).toEqual(['onBatchStart called, []: [{\"f1\":2,\"f2\":\"str2\"}], context: \"custom context\"', 'batch executed, state: [{\"f1\":2,\"f2\":\"str2\"}]', 'onBatchFinish called, []: [{\"f1\":2,\"f2\":\"str2\"}], context: \"custom context\"'])
