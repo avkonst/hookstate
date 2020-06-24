@@ -1,4 +1,4 @@
-import { useState, createState, none, self } from '../';
+import { useState, createState, none } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import React from 'react';
@@ -10,31 +10,31 @@ test('primitive: should rerender used on promise resolve', async () => {
         return useState(0)
     });
     expect(renderTimes).toStrictEqual(1);
-    expect(result.current[self].get()).toStrictEqual(0);
+    expect(result.current.get()).toStrictEqual(0);
 
     const promise = new Promise<number>(resolve => setTimeout(() => {
         act(() => resolve(100))
     }, 500))
     act(() => {
-        result.current[self].set(promise);
+        result.current.set(promise);
     });
     expect(renderTimes).toStrictEqual(2);
-    expect(result.current[self].promised).toStrictEqual(true);
-    expect(() => result.current[self].keys)
+    expect(result.current.promised).toStrictEqual(true);
+    expect(() => result.current.keys)
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
-    expect(() => result.current[self].get())
+    expect(() => result.current.get())
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
 
-    expect(() => result.current[self].set(200))
+    expect(() => result.current.set(200))
         .toThrow('Error: HOOKSTATE-104 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-104')
         
     await act(async () => {
         await promise;
     })
     expect(renderTimes).toStrictEqual(3);
-    expect(result.current[self].promised).toStrictEqual(false);
-    expect(result.current[self].error).toEqual(undefined);
-    expect(result.current[self].get()).toEqual(100);
+    expect(result.current.promised).toStrictEqual(false);
+    expect(result.current.error).toEqual(undefined);
+    expect(result.current.get()).toEqual(100);
 });
 
 test('array: should rerender used on promise resolve', async () => {
@@ -50,24 +50,24 @@ test('array: should rerender used on promise resolve', async () => {
         act(() => resolve([100]))
     }, 500))
     act(() => {
-        result.current[self].set(promise);
+        result.current.set(promise);
     });
     expect(renderTimes).toStrictEqual(2);
-    expect(result.current[self].promised).toStrictEqual(true);
-    expect(() => result.current[self].keys)
+    expect(result.current.promised).toStrictEqual(true);
+    expect(() => result.current.keys)
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
-    expect(() => result.current[self].get())
+    expect(() => result.current.get())
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
 
-    expect(() => result.current[self].set([200]))
+    expect(() => result.current.set([200]))
         .toThrow('Error: HOOKSTATE-104 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-104')
         
     await act(async () => {
         await promise;
     })
     expect(renderTimes).toStrictEqual(3);
-    expect(result.current[self].promised).toStrictEqual(false);
-    expect(result.current[self].get()).toEqual([100]);
+    expect(result.current.promised).toStrictEqual(false);
+    expect(result.current.get()).toEqual([100]);
 });
 
 test('array: should rerender used on promise resolve (global)', async () => {
@@ -84,24 +84,24 @@ test('array: should rerender used on promise resolve (global)', async () => {
         act(() => resolve([100]))
     }, 500))
     act(() => {
-        result.current[self].set(promise);
+        result.current.set(promise);
     });
     expect(renderTimes).toStrictEqual(2);
-    expect(result.current[self].promised).toStrictEqual(true);
-    expect(() => result.current[self].keys)
+    expect(result.current.promised).toStrictEqual(true);
+    expect(() => result.current.keys)
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
-    expect(() => result.current[self].get())
+    expect(() => result.current.get())
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
 
-    expect(() => result.current[self].set([200]))
+    expect(() => result.current.set([200]))
         .toThrow('Error: HOOKSTATE-104 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-104')
         
     await act(async () => {
         await promise;
     })
     expect(renderTimes).toStrictEqual(3);
-    expect(result.current[self].promised).toStrictEqual(false);
-    expect(result.current[self].get()).toEqual([100]);
+    expect(result.current.promised).toStrictEqual(false);
+    expect(result.current.get()).toEqual([100]);
 });
 
 test('array: should rerender used on promise resolve (global promise)', async () => {
@@ -115,13 +115,13 @@ test('array: should rerender used on promise resolve (global promise)', async ()
     });
     expect(renderTimes).toStrictEqual(1);
 
-    expect(result.current[self].promised).toStrictEqual(true);
-    expect(() => result.current[self].keys)
+    expect(result.current.promised).toStrictEqual(true);
+    expect(() => result.current.keys)
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
-    expect(() => result.current[self].get())
+    expect(() => result.current.get())
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
 
-    expect(() => result.current[self].set([200]))
+    expect(() => result.current.set([200]))
         .toThrow('Error: HOOKSTATE-104 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-104')
 });
 
@@ -132,20 +132,20 @@ test('primitive: should rerender used on promise resolve manual', async () => {
         return useState(none)
     });
     expect(renderTimes).toStrictEqual(1);
-    expect(result.current[self].promised).toStrictEqual(true);
-    expect(() => result.current[self].value)
+    expect(result.current.promised).toStrictEqual(true);
+    expect(() => result.current.value)
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
-    expect(() => result.current[self].get())
+    expect(() => result.current.get())
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
 
     act(() => {
-        result.current[self].set(100);
+        result.current.set(100);
     });
 
     expect(renderTimes).toStrictEqual(2);
-    expect(result.current[self].promised).toStrictEqual(false);
-    expect(result.current[self].value).toEqual(100);
-    expect(result.current[self].get()).toEqual(100);
+    expect(result.current.promised).toStrictEqual(false);
+    expect(result.current.value).toEqual(100);
+    expect(result.current.get()).toEqual(100);
 });
 
 test('primitive: should rerender used on promise resolve second', async () => {
@@ -157,32 +157,32 @@ test('primitive: should rerender used on promise resolve second', async () => {
         }, 500)))
     });
     expect(renderTimes).toStrictEqual(1);
-    expect(result.current[self].promised).toStrictEqual(true);
-    expect(() => result.current[self].value)
+    expect(result.current.promised).toStrictEqual(true);
+    expect(() => result.current.value)
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
-    expect(() => result.current[self].get())
+    expect(() => result.current.get())
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
 
     const promise = new Promise<number>(resolve => setTimeout(() => {
         act(() => resolve(200))
     }, 500))
     act(() => {
-        result.current[self].set(promise);
+        result.current.set(promise);
     });
     expect(renderTimes).toStrictEqual(2);
-    expect(result.current[self].promised).toStrictEqual(true);
-    expect(() => result.current[self].value)
+    expect(result.current.promised).toStrictEqual(true);
+    expect(() => result.current.value)
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
-    expect(() => result.current[self].get())
+    expect(() => result.current.get())
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
 
     await act(async () => {
         await promise;
     })
     expect(renderTimes).toStrictEqual(3);
-    expect(result.current[self].promised).toStrictEqual(false);
-    expect(result.current[self].value).toEqual(200);
-    expect(result.current[self].get()).toEqual(200);
+    expect(result.current.promised).toStrictEqual(false);
+    expect(result.current.value).toEqual(200);
+    expect(result.current.get()).toEqual(200);
 });
 
 test('primitive: should rerender used on promise resolved', async () => {
@@ -192,26 +192,26 @@ test('primitive: should rerender used on promise resolved', async () => {
         return useState(0)
     });
     expect(renderTimes).toStrictEqual(1);
-    expect(result.current[self].get()).toStrictEqual(0);
+    expect(result.current.get()).toStrictEqual(0);
 
     const promise = Promise.resolve(100)
     act(() => {
-        result.current[self].set(promise);
+        result.current.set(promise);
     });
     expect(renderTimes).toStrictEqual(2);
-    expect(result.current[self].promised).toStrictEqual(true);
-    expect(() => result.current[self].value)
+    expect(result.current.promised).toStrictEqual(true);
+    expect(() => result.current.value)
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
-    expect(() => result.current[self].get())
+    expect(() => result.current.get())
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
 
     await act(async () => {
         await promise;
     })
     expect(renderTimes).toStrictEqual(3);
-    expect(result.current[self].promised).toStrictEqual(false);
-    expect(result.current[self].value).toEqual(100);
-    expect(result.current[self].get()).toEqual(100);
+    expect(result.current.promised).toStrictEqual(false);
+    expect(result.current.value).toEqual(100);
+    expect(result.current.get()).toEqual(100);
 });
 
 test('primitive: should rerender used on promise reject', async () => {
@@ -221,19 +221,19 @@ test('primitive: should rerender used on promise reject', async () => {
         return useState(0)
     });
     expect(renderTimes).toStrictEqual(1);
-    expect(result.current[self].get()).toStrictEqual(0);
+    expect(result.current.get()).toStrictEqual(0);
 
     const promise = new Promise<number>((resolve, reject) => setTimeout(() => {
         act(() => reject('some error promise'))
     }, 500))
     act(() => {
-        result.current[self].set(promise);
+        result.current.set(promise);
     });
     expect(renderTimes).toStrictEqual(2);
-    expect(result.current[self].promised).toStrictEqual(true);
-    expect(() => result.current[self].value)
+    expect(result.current.promised).toStrictEqual(true);
+    expect(() => result.current.value)
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
-    expect(() => result.current[self].get())
+    expect(() => result.current.get())
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
 
     try {
@@ -245,9 +245,9 @@ test('primitive: should rerender used on promise reject', async () => {
         // ignore
     }
     expect(renderTimes).toStrictEqual(3);
-    expect(result.current[self].promised).toStrictEqual(false);
-    expect(result.current[self].error).toEqual('some error promise');
-    expect(() => result.current[self].get()).toThrow('some error promise');
+    expect(result.current.promised).toStrictEqual(false);
+    expect(result.current.error).toEqual('some error promise');
+    expect(() => result.current.get()).toThrow('some error promise');
 });
 
 test('primitive: should rerender used on promise rejected', async () => {
@@ -257,17 +257,17 @@ test('primitive: should rerender used on promise rejected', async () => {
         return useState(0)
     });
     expect(renderTimes).toStrictEqual(1);
-    expect(result.current[self].get()).toStrictEqual(0);
+    expect(result.current.get()).toStrictEqual(0);
 
     const promise = Promise.reject('some error rejected')
     act(() => {
-        result.current[self].set(promise);
+        result.current.set(promise);
     });
     expect(renderTimes).toStrictEqual(2);
-    expect(result.current[self].promised).toStrictEqual(true);
-    expect(() => result.current[self].value)
+    expect(result.current.promised).toStrictEqual(true);
+    expect(() => result.current.value)
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
-    expect(() => result.current[self].get())
+    expect(() => result.current.get())
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
 
     await act(async () => {
@@ -278,9 +278,9 @@ test('primitive: should rerender used on promise rejected', async () => {
         }
     })
     expect(renderTimes).toStrictEqual(3);
-    expect(result.current[self].promised).toStrictEqual(false);
-    expect(result.current[self].error).toEqual('some error rejected');
-    expect(() => result.current[self].get()).toThrow('some error rejected');
+    expect(result.current.promised).toStrictEqual(false);
+    expect(result.current.error).toEqual('some error rejected');
+    expect(() => result.current.get()).toThrow('some error rejected');
 });
 
 test('primitive: should rerender used on promise resolve init', async () => {
@@ -292,18 +292,18 @@ test('primitive: should rerender used on promise resolve init', async () => {
         }, 500)))
     });
     expect(renderTimes).toStrictEqual(1);
-    expect(result.current[self].promised).toStrictEqual(true);
-    expect(() => result.current[self].value)
+    expect(result.current.promised).toStrictEqual(true);
+    expect(() => result.current.value)
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
-    expect(() => result.current[self].get())
+    expect(() => result.current.get())
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
 
     await act(async () => {
         await new Promise(resolve => setTimeout(() => act(() => resolve()), 600));
     })
     expect(renderTimes).toStrictEqual(2);
-    expect(result.current[self].promised).toStrictEqual(false);
-    expect(result.current[self].get()).toEqual(100);
+    expect(result.current.promised).toStrictEqual(false);
+    expect(result.current.get()).toEqual(100);
 });
 
 test('primitive: should rerender used on promise resolve init global', async () => {
@@ -318,18 +318,18 @@ test('primitive: should rerender used on promise resolve init global', async () 
         return useState(stateInf)
     });
     expect(renderTimes).toStrictEqual(1);
-    expect(result.current[self].promised).toStrictEqual(true);
-    expect(() => result.current[self].value)
+    expect(result.current.promised).toStrictEqual(true);
+    expect(() => result.current.value)
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
-    expect(() => result.current[self].get())
+    expect(() => result.current.get())
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
 
     await act(async () => {
         await new Promise(resolve => setTimeout(() => act(() => resolve()), 600));
     })
     expect(renderTimes).toStrictEqual(2);
-    expect(result.current[self].promised).toStrictEqual(false);
-    expect(result.current[self].get()).toEqual(100);
+    expect(result.current.promised).toStrictEqual(false);
+    expect(result.current.get()).toEqual(100);
 });
 
 test('primitive: should rerender used on promise reject init global', async () => {
@@ -344,10 +344,10 @@ test('primitive: should rerender used on promise reject init global', async () =
         return useState(stateInf)
     });
     expect(renderTimes).toStrictEqual(1);
-    expect(result.current[self].promised).toStrictEqual(true);
-    expect(() => result.current[self].value)
+    expect(result.current.promised).toStrictEqual(true);
+    expect(() => result.current.value)
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
-    expect(() => result.current[self].get())
+    expect(() => result.current.get())
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
 
     try {
@@ -358,9 +358,9 @@ test('primitive: should rerender used on promise reject init global', async () =
         //
     }
     expect(renderTimes).toStrictEqual(2);
-    expect(result.current[self].promised).toStrictEqual(false);
-    expect(result.current[self].error).toEqual('some error init global');
-    expect(() => result.current[self].get()).toThrow('some error init global');
+    expect(result.current.promised).toStrictEqual(false);
+    expect(result.current.error).toEqual('some error init global');
+    expect(() => result.current.get()).toThrow('some error init global');
 });
 
 test('primitive: should set after promise reject', async () => {
@@ -375,10 +375,10 @@ test('primitive: should set after promise reject', async () => {
         return useState(stateInf)
     });
     expect(renderTimes).toStrictEqual(1);
-    expect(result.current[self].promised).toStrictEqual(true);
-    expect(() => result.current[self].value)
+    expect(result.current.promised).toStrictEqual(true);
+    expect(() => result.current.value)
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
-    expect(() => result.current[self].get())
+    expect(() => result.current.get())
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
 
     try {
@@ -389,15 +389,15 @@ test('primitive: should set after promise reject', async () => {
         //
     }
     expect(renderTimes).toStrictEqual(2);
-    expect(result.current[self].promised).toStrictEqual(false);
-    expect(result.current[self].error).toEqual('some error init global');
-    expect(() => result.current[self].get()).toThrow('some error init global');
+    expect(result.current.promised).toStrictEqual(false);
+    expect(result.current.error).toEqual('some error init global');
+    expect(() => result.current.get()).toThrow('some error init global');
     
     act(() => {
-        result.current[self].set(5)
+        result.current.set(5)
     })
     expect(renderTimes).toStrictEqual(3);
-    expect(result.current[self].promised).toStrictEqual(false);
-    expect(result.current[self].error).toEqual(undefined);
-    expect(result.current[self].get()).toEqual(5);
+    expect(result.current.promised).toStrictEqual(false);
+    expect(result.current.error).toEqual(undefined);
+    expect(result.current.get()).toEqual(5);
 });
