@@ -129,9 +129,9 @@ export interface StateMethods<S> {
      *
      * ```tsx
      * const state = useState([{ name: 'First Task' }])
-     * state[self].path IS []
-     * state[0][self].path IS [0]
-     * state.[0].name[self].path IS [0, 'name']
+     * state.path IS []
+     * state[0].path IS [0]
+     * state.[0].name.path IS [0, 'name']
      * ```
      */
     readonly path: Path;
@@ -139,11 +139,11 @@ export interface StateMethods<S> {
     /**
      * Return the keys of nested states.
      * For a given state of [State](#state) type,
-     * `state[self].keys` will be structurally equal to Object.keys(state),
+     * `state.keys` will be structurally equal to Object.keys(state),
      * with two minor difference:
-     * 1. if `state[self].value` is an array, the returned result will be
+     * 1. if `state.value` is an array, the returned result will be
      * an array of numbers, not strings like with `Object.keys`.
-     * 2. if `state[self].value` is not an object, the returned result will be undefined.
+     * 2. if `state.value` is not an object, the returned result will be undefined.
      */
     readonly keys: InferredStateKeysType<S>;
 
@@ -160,11 +160,11 @@ export interface StateMethods<S> {
      *
      * ```tsx
      * const state = useState<number | undefined>(0)
-     * const myvalue: number = state[self].value
-     *      ? state[self].value + 1
+     * const myvalue: number = state.value
+     *      ? state.value + 1
      *      : 0; // <-- compiles
-     * const myvalue: number = state[self].get()
-     *      ? state[self].get() + 1
+     * const myvalue: number = state.get()
+     *      ? state.get() + 1
      *      : 0; // <-- does not compile
      * ```
      */
