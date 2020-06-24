@@ -24,6 +24,25 @@ test('object: should rerender used', async () => {
     expect(Object.keys(result.current[self].get())).toEqual(['field1', 'field2']);
 });
 
+test('object: should rerender used null', async () => {
+    let renderTimes = 0
+    
+    const state = createState<{ field: string } | null>(null)
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useState(state)
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(result.current[self].value?.field).toStrictEqual(undefined);
+
+    act(() => {
+        state[self].set({ field: 'a' });
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(result.current[self].get()?.field).toStrictEqual('a');
+    expect(Object.keys(result.current)).toEqual(['field']);
+});
+
 test('object: should rerender used (boolean-direct)', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
