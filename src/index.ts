@@ -689,7 +689,7 @@ interface Subscribable {
 
 function isNoProxyInititializer() {
     try {
-        new Proxy({}, {});
+        const used = new Proxy({}, {});
         return false;
     } catch (e) {
         return true;
