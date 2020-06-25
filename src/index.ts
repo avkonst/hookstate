@@ -421,12 +421,17 @@ export interface Plugin {
  * pass the created state to [useState](#usestate) function and
  * use the returned result in the component's logic.
  */
+// TODO docs
 export function createState<S>(
-    initial: SetInitialStateAction<S>
+    initial: SetInitialStateAction<S>,
+    ...plugins: (() => Plugin)[]
 ): State<S> & StateMethodsDestroy {
     const methods = createStore(initial).toMethods();
-    const devtools = createState[DevToolsID]
-    if (devtools) {
+    for (let plugin of plugins) {
+        methods.attach(plugin)
+    }
+    const devtools = DevTools()
+    if (devtools !== DummyDevTools) {
         methods.attach(devtools)
     }
     return methods.self as State<S> & StateMethodsDestroy;
@@ -490,10 +495,12 @@ export function useState<S>(
  * or in effects) or it's children.
  */
 export function useState<S>(
-    source: SetInitialStateAction<S>
+    source: SetInitialStateAction<S>,
+    ...plugins: (() => Plugin)[]
 ): State<S>;
 export function useState<S>(
-    source: SetInitialStateAction<S> | State<S>
+    source: SetInitialStateAction<S> | State<S>,
+    ...plugins: (() => Plugin)[]
 ): State<S> {
     const parentMethods = typeof source === 'object' && source !== null ?
         source[self] as StateMethodsImpl<S> | undefined :
@@ -528,8 +535,11 @@ export function useState<S>(
             () => setValue({ state: value.state }),
             value.state);
         React.useEffect(() => () => value.state.destroy(), []);
-        const devtools = useState[DevToolsID]
-        if (devtools) {
+        for (let plugin of plugins) {
+            result.attach(plugin)
+        }    
+        const devtools = DevTools()
+        if (devtools !== DummyDevTools) {
             result.attach(devtools)
         }
         return result.self;
@@ -601,11 +611,6 @@ export const DevToolsID = Symbol('DevTools');
  */
 export interface DevToolsExtensions {
     /**
-     * Assigns custom label to identify the state in the development tools
-     * @param name label for development tools
-     */
-    label(name: string): void;
-    /**
      * Logs to the development tools
      */
     log(str: string, data?: any): void;    // tslint:disable-line: no-any
@@ -626,10 +631,22 @@ export interface DevToolsExtensions {
  * 
  * @typeparam S Type of a value of a state
  */
-export function DevTools<S>(state: State<S>): DevToolsExtensions {
-    const plugin = state.attach(DevToolsID);
+// TODO docs
+export function DevTools(label?: string): () => Plugin;
+export function DevTools<S>(state: State<S>): DevToolsExtensions;
+export function DevTools<S>(stateOrLabel?: State<S> | string): DevToolsExtensions | (() => Plugin) {
+    if (stateOrLabel === undefined || typeof stateOrLabel === 'string') {
+        const devtools = DevTools[DevToolsID]
+        if (devtools) {
+            return devtools(stateOrLabel);
+        }
+        return DummyDevTools
+    }
+    let plugin = stateOrLabel.attach(DevToolsID);
     if (plugin[0] instanceof Error) {
-        return EmptyDevToolsExtensions;
+        // auto attach
+        stateOrLabel.attach(DummyDevTools)
+        plugin = stateOrLabel.attach(DevToolsID)
     }
     return plugin[0] as DevToolsExtensions;
 }
@@ -638,9 +655,13 @@ export function DevTools<S>(state: State<S>): DevToolsExtensions {
 /// INTERNAL SYMBOLS (LIBRARY IMPLEMENTATION)
 ///
 
-const EmptyDevToolsExtensions: DevToolsExtensions = {
-    label() { /* */ },
-    log() { /* */ }
+const DummyDevTools = () => { // tslint:disable-line: function-name
+    return {
+        id: DevToolsID,
+        init: () => ({
+            log() { /* */ }
+        } as DevToolsExtensions)
+    } as Plugin
 }
 
 enum ErrorId {
@@ -689,7 +710,7 @@ interface Subscribable {
 
 function isNoProxyInititializer() {
     try {
-        new Proxy({}, {});
+        const used = new Proxy({}, {});
         return false;
     } catch (e) {
         return true;
