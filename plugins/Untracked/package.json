@@ -1,6 +1,6 @@
 {
     "name": "@hookstate/untracked",
-    "version": "3.0.0-0",
+    "version": "3.0.0",
     "description": "Plugin for @hookstate/core to enable access to untracked State get/set operations.",
     "license": "MIT",
     "author": {
