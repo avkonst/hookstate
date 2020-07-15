@@ -2022,10 +2022,10 @@
   dependencies:
     "@hapi/hoek" "8.x.x"
 
-"@hookstate/core@3.0.0-0":
-  version "3.0.0-0"
-  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-3.0.0-0.tgz#f6e9da0a020beea112524d0f23c8ae27ab427bd5"
-  integrity sha512-nUcFUzDfNW8X+tCBJyLQdwkOuFiOK3ezJ6GJwlwwoRw4PhVKIDZhFVfM8YMKtZ7AnMuahJ9OBbgMSN0I2418Tg==
+"@hookstate/core@3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-3.0.0.tgz#cfe065016f7a23446c4e4525e1ab237759016cba"
+  integrity sha512-viLFap6xXm5fUjIvvmWTkzgRzEI9v6vnte0ObZsVokEs1280TZ4ODq1EPFcCzeY11IEW+oJ46S+Tu1J0cT6P0Q==
 
 "@jest/console@^24.7.1":
   version "24.7.1"

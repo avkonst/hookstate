@@ -35,16 +35,16 @@
     },
     "dependencies": {},
     "peerDependencies": {
-        "@hookstate/core": "^3.0.0-0",
-        "@hookstate/initial": "^3.0.0-0",
+        "@hookstate/core": "^3.0.0",
+        "@hookstate/initial": "^3.0.0",
         "lodash.clonedeep": "^4.5.0",
         "lodash.isequal": "^4.5.0"
     },
     "devDependencies": {
         "@babel/core": "7.10.5",
         "@babel/runtime": "7.10.5",
-        "@hookstate/core": "3.0.0-0",
-        "@hookstate/initial": "3.0.0-0",
+        "@hookstate/core": "3.0.0",
+        "@hookstate/initial": "3.0.0",
         "@rollup/plugin-babel": "5.1.0",
         "@rollup/plugin-commonjs": "14.0.0",
         "@rollup/plugin-node-resolve": "8.4.0",

@@ -2,8 +2,6 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
-var core = require('@hookstate/core');
-
 var LoggerPluginInstance = /** @class */ (function () {
     function LoggerPluginInstance() {
     }
@@ -34,15 +32,15 @@ var PluginID = Symbol('Logger');
 function Logger($this) {
     if ($this) {
         var th_1 = $this;
-        var _a = th_1[core.self].attach(PluginID), instance = _a[0], controls_1 = _a[1];
+        var _a = th_1.attach(PluginID), instance = _a[0], controls_1 = _a[1];
         if (instance instanceof Error) {
             // auto attach instead of throwing
             Logger(th_1);
-            instance = th_1[core.self].attach(PluginID)[0];
+            instance = th_1.attach(PluginID)[0];
         }
         var inst_1 = instance;
         return {
-            log: function () { return inst_1.log(th_1[core.self].path, controls_1); }
+            log: function () { return inst_1.log(th_1.path, controls_1); }
         };
     }
     return {

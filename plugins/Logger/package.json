@@ -35,10 +35,10 @@
     },
     "dependencies": {},
     "peerDependencies": {
-        "@hookstate/core": "^3.0.0-0"
+        "@hookstate/core": "^3.0.0"
     },
     "devDependencies": {
-        "@hookstate/core": "3.0.0-0",
+        "@hookstate/core": "3.0.0",
         "@testing-library/react": "10.4.6",
         "@testing-library/react-hooks": "3.3.0",
         "@types/jest": "26.0.4",
