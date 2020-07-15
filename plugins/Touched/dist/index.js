@@ -54,10 +54,10 @@ var TouchedPluginInstance = /** @class */ (function () {
                 // when the source value is updated.
                 // We do the trick to fix it, we mark the value being 'deeply used',
                 // so any changes for this value or any nested will trigger rerender.
-                var _1 = l.attach(core.Downgraded)[core.self].value;
+                var _1 = l.attach(core.Downgraded).value;
                 return t;
             }
-            return initial.Initial(l[core.self]).modified();
+            return initial.Initial(l).modified();
         };
     }
     TouchedPluginInstance.prototype.onSet = function (p) {
@@ -68,14 +68,14 @@ var TouchedPluginInstance = /** @class */ (function () {
 function Touched($this) {
     if ($this) {
         var th_1 = $this;
-        var _a = th_1[core.self].attach(PluginID), instance = _a[0], controls = _a[1];
+        var _a = th_1.attach(PluginID), instance = _a[0], controls = _a[1];
         if (instance instanceof Error) {
             throw instance;
         }
         var inst_1 = instance;
         return {
-            touched: function () { return inst_1.touched(th_1[core.self]); },
-            untouched: function () { return !inst_1.touched(th_1[core.self]); }
+            touched: function () { return inst_1.touched(th_1); },
+            untouched: function () { return !inst_1.touched(th_1); }
         };
     }
     return {
