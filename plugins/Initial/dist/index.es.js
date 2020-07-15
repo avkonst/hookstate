@@ -1,4 +1,4 @@
-import { self, Downgraded } from '@hookstate/core';
+import { Downgraded } from '@hookstate/core';
 import isEqual from 'lodash.isequal';
 import cloneDeep from 'lodash.clonedeep';
 
@@ -24,21 +24,21 @@ var PluginID = Symbol('Initial');
 function Initial($this) {
     if ($this) {
         var $th_1 = $this;
-        var instance = $th_1[self].attach(PluginID)[0];
+        var instance = $th_1.attach(PluginID)[0];
         if (instance instanceof Error) {
             throw instance;
         }
         var inst_1 = instance;
         return {
-            get: function () { return inst_1.getInitial($th_1[self].path); },
-            modified: function () { return inst_1.getModified($th_1[self]); },
-            unmodified: function () { return !inst_1.getModified($th_1[self]); }
+            get: function () { return inst_1.getInitial($th_1.path); },
+            modified: function () { return inst_1.getModified($th_1); },
+            unmodified: function () { return !inst_1.getModified($th_1); }
         };
     }
     return {
         id: PluginID,
         init: function (state) {
-            return new InitialPluginInstance(state[self].value);
+            return new InitialPluginInstance(state.value);
         }
     };
 }
