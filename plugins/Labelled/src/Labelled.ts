@@ -1,4 +1,4 @@
-import { Plugin, PluginCallbacks, State, self } from '@hookstate/core';
+import { Plugin, PluginCallbacks, State } from '@hookstate/core';
 
 const LabelledID = Symbol('Labelled');
 
@@ -29,7 +29,7 @@ export function Labelled<S>(labelOrLink: string | State<S>):
         })
     }
     const th = labelOrLink as State<S>;
-    const [plugin] = th[self].attach(LabelledID);
+    const [plugin] = th.attach(LabelledID);
     if (plugin instanceof Error) {
         return undefined;
     }

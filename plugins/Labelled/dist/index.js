@@ -2,8 +2,6 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
-var core = require('@hookstate/core');
-
 var LabelledID = Symbol('Labelled');
 function Labelled(labelOrLink) {
     if (typeof labelOrLink === 'string') {
@@ -18,7 +16,7 @@ function Labelled(labelOrLink) {
         }); };
     }
     var th = labelOrLink;
-    var plugin = th[core.self].attach(LabelledID)[0];
+    var plugin = th.attach(LabelledID)[0];
     if (plugin instanceof Error) {
         return undefined;
     }
