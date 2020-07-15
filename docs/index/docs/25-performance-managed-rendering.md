@@ -14,8 +14,8 @@ This plugin allows to opt out from usage tracking. [Performance overview section
 const state = useState({ data: some_very_large_object, otherDate: ... })
 // disable state usage tracking only for 'data' property
 // and it's children
-state.data[self].attach(Downgraded)
-return <>{JSON.stringify(state.data[self].value)}</>
+state.data.attach(Downgraded)
+return <>{JSON.stringify(state.data.value)}</>
 ```
 
 ## Untracked plugin

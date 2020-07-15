@@ -12,7 +12,7 @@ Happens when new state is created with an initial value, which is a value of ano
 
 ```tsx
 const state1 = useState(...)
-const state2 = useState(state1[self].value) // <== Error!
+const state2 = useState(state1.value) // <== Error!
 ```
 
 If you would like to create a state from a clone of a state, you may do something along this line:
@@ -21,7 +21,7 @@ If you would like to create a state from a clone of a state, you may do somethin
 const state1 = useState(...)
 const state2 = useState(
     // simplest way to clone an object
-    JSON.parse(JSON.stringify(state1[self].value)))
+    JSON.parse(JSON.stringify(state1.value)))
 ```
 
 ## HOOKSTATE-102
@@ -31,7 +31,7 @@ Happens when state is set to a new value, which is a value of another state.
 ```tsx
 const state1 = useState(...)
 const state2 = useState(...)
-state2[self].set(state1[self].value) // <== Error!
+state2.set(state1.value) // <== Error!
 ```
 
 If you would like to set state value from a clone of a state, you may do something along this line:
@@ -39,9 +39,9 @@ If you would like to set state value from a clone of a state, you may do somethi
 ```tsx
 const state1 = useState(...)
 const state2 = useState(...)
-state2[self].set(
+state2.set(
     // simplest way to clone an object
-    JSON.parse(JSON.stringify(state1[self].value)))
+    JSON.parse(JSON.stringify(state1.value)))
 ```
 
 ## HOOKSTATE-103
@@ -50,10 +50,10 @@ Happens when state is read (used) when its underlying promise has not been resol
 
 ```tsx
 const state = useState(new Promise(...))
-state[self].value // <== Error!
-state[self].keys // <== Error!
+state.value // <== Error!
+state.keys // <== Error!
 state.map(...) // <== Error!
-state[self].map(...) // <== OK
+state.map(...) // <== OK
 ```
 
 More information about [asynchronous states](./asynchronous-state).
@@ -64,8 +64,8 @@ Happens when state is written (set or merged) when its underlying promise has no
 
 ```tsx
 const state = useState(new Promise(...))
-state[self].set(...) // <== Error!
-state[self].merge(...) // <== Error!
+state.set(...) // <== Error!
+state.merge(...) // <== Error!
 ```
 
 More information about [asynchronous states](./asynchronous-state).
@@ -76,7 +76,7 @@ Happens when nested state is set to a promise. Nested state does not support asy
 
 ```tsx
 const state = useState({ prop: ... })
-state.prop[self].set(new Promise(...)) // <== Error!
+state.prop.set(new Promise(...)) // <== Error!
 ```
 
 More information about [asynchronous states](./asynchronous-state).
@@ -87,15 +87,15 @@ Happens when state is set after destroy. Typically it may happen when a componen
 
 ```tsx
 const state = createState(...)
-state[self].destroy()
-state[self].set(...) // <== Error!
+state.destroy()
+state.set(...) // <== Error!
 ```
 
 ```tsx
 const state = useState(...)
 React.useEffect(() => {
     setTimeout(() => {
-        state[self].set(...)
+        state.set(...)
     }, 5000)
     // <== Error is not cancelling the timeout when a component is unmounted!
 })
@@ -126,7 +126,7 @@ You likely intended to serialize state value instead:
 
 ```tsx
 const state = useState(...)
-JSON.stringify(state[self].value)
+JSON.stringify(state.value)
 ```
 
 ## HOOKSTATE-109
@@ -135,14 +135,14 @@ Happens when state methods instance is serialized to JSON.
 
 ```tsx
 const state = useState(...)
-JSON.stringify(state[self]) // <== Error!
+JSON.stringify(state) // <== Error!
 ```
 
 You likely intended to serialize state value instead:
 
 ```tsx
 const state = useState(...)
-JSON.stringify(state[self].value)
+JSON.stringify(state.value)
 ```
 
 ## HOOKSTATE-120
@@ -160,7 +160,7 @@ Correct way:
 
 ```tsx
 const state = useState(...)
-state[self].attach(Initial)
+state.attach(Initial)
 Initial(state)
 ```
 
@@ -177,7 +177,7 @@ Correct way:
 
 ```tsx
 const state = useState(...)
-state.prop[self].set('some value')
+state.prop.set('some value')
 ```
 
 ## HOOKSTATE-202
@@ -186,14 +186,14 @@ Happens when state value property is set via direct assignment.
 
 ```tsx
 const state = useState(...)
-state[self].value.prop = 'some value' // <== Error!
+state.value.prop = 'some value' // <== Error!
 ```
 
 Correct way:
 
 ```tsx
 const state = useState(...)
-state.prop[self].set('some value')
+state.prop.set('some value')
 ```
 
 ## HOOKSTATE-203
@@ -211,7 +211,7 @@ Setting prototype for a state value is not supported.
 
 ```tsx
 const state = useState(...)
-Object.setPrototypeOf(state[self].value, ...) // <== Error!
+Object.setPrototypeOf(state.value, ...) // <== Error!
 ```
 
 ## HOOKSTATE-205
@@ -230,7 +230,7 @@ Preventing extensions for a state value is not supported.
 
 ```tsx
 const state = useState(...)
-Object.preventExtensions(state[self].value) // <== Error!
+Object.preventExtensions(state.value) // <== Error!
 ```
 
 ## HOOKSTATE-207
@@ -246,7 +246,7 @@ You likely intended the following instead:
 
 ```tsx
 const state = useState(...)
-state.prop[self].set(...)
+state.prop.set(...)
 ```
 
 ## HOOKSTATE-208
@@ -255,14 +255,14 @@ Defining new property directly on a state value is not supported.
 
 ```tsx
 const state = useState(...)
-Object.defineProperty(state[self].value, 'prop', ...) // <== Error!
+Object.defineProperty(state.value, 'prop', ...) // <== Error!
 ```
 
 You likely intended the following instead:
 
 ```tsx
 const state = useState(...)
-state.prop[self].set(...)
+state.prop.set(...)
 ```
 
 ## HOOKSTATE-209
@@ -279,7 +279,7 @@ You likely intended the following instead:
 ```tsx
 import { none, useState } from '@hookstate/core'
 const state = useState(...)
-state.prop[self].set(none)
+state.prop.set(none)
 ```
 
 ## HOOKSTATE-210
@@ -296,7 +296,7 @@ You likely intended the following instead:
 ```tsx
 import { none, useState } from '@hookstate/core'
 const state = useState(...)
-state.prop[self].set(none)
+state.prop.set(none)
 ```
 
 ## HOOKSTATE-211
@@ -314,7 +314,7 @@ New operator is not supported for a state value object.
 
 ```tsx
 const state = useState(...)
-new state[self].value.prop // <== Error!
+new state.value.prop // <== Error!
 ```
 
 ## HOOKSTATE-213
@@ -333,6 +333,6 @@ State value object is not callable.
 
 ```tsx
 const state = useState(...)
-state[self].value() // <== Error!
-state[self].value.prop() // <== Error!
+state.value() // <== Error!
+state.value.prop() // <== Error!
 ```

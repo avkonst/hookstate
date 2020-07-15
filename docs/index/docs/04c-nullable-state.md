@@ -19,9 +19,9 @@ const MyComponent = () => {
     const state = useState<Task | null>(null)
     
     // JS - runtime error, TS - compilation error
-    state.name[self].value
+    state.name.value
     // JS - runtime error, TS - compilation error
-    state[self].value.name
+    state.value.name
 }
 ```
 
@@ -29,13 +29,13 @@ Here is the recommended way to check for `null`/`undefined` before unfolding nes
 
 ```tsx
 // type is for clarity, it is inferred by the compiler
-const stateOrNull: State<Task> | null = state[self].ornull
+const stateOrNull: State<Task> | null = state.ornull
 if (stateOrNull) {
     // neither compilation nor runtime errors
-    stateOrNull.name[self].value
+    stateOrNull.name.value
 
     // neither compilation nor runtime errors
-    stateOrNull[self].value.name
+    stateOrNull.value.name
 }
 ```
 
