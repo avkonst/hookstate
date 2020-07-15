@@ -29,8 +29,6 @@ function __extends(d, b) {
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 }
 
-// TODO move to internal
-var self = Symbol('self');
 /**
  * Special symbol which might be returned by onPromised callback of [StateMethods.map](#map) function.
  *
@@ -162,6 +160,7 @@ function DevTools(state) {
 ///
 /// INTERNAL SYMBOLS (LIBRARY IMPLEMENTATION)
 ///
+var self = Symbol('self');
 var EmptyDevToolsExtensions = {
     label: function () { },
     log: function () { }
