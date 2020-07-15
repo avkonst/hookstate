@@ -6,7 +6,6 @@ import {
     PluginCallbacks,
     PluginCallbacksOnSetArgument,
     State,
-    self,
     PluginStateControl
 } from '@hookstate/core';
 
@@ -52,15 +51,15 @@ export function Logger<S>($this: State<S>): LoggerExtensions;
 export function Logger<S>($this?: State<S>): Plugin | LoggerExtensions {
     if ($this) {
         const th = $this as State<S>
-        let [instance, controls] = th[self].attach(PluginID);
+        let [instance, controls] = th.attach(PluginID);
         if (instance instanceof Error) {
             // auto attach instead of throwing
             Logger(th)
-            instance = th[self].attach(PluginID)[0];
+            instance = th.attach(PluginID)[0];
         }
         const inst = instance as LoggerPluginInstance;
         return {
-            log: () => inst.log(th[self].path, controls)
+            log: () => inst.log(th.path, controls)
         }
     }
     return {
