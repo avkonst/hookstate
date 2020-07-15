@@ -1,12 +1,12 @@
 import React from 'react';
-import { useState, self } from '@hookstate/core';
+import { useState } from '@hookstate/core';
 import { Validation } from '@hookstate/validation';
 
 interface Task { name: string }
 
 export const ExampleComponent = () => {
     const state = useState([{ name: 'First Task' }, { name: 'Second Task' }] as Task[])
-    state[self].attach(Validation) // enable the plugin
+    state.attach(Validation) // enable the plugin
 
     // configure rules
     Validation(state).validate(tasks => tasks.length >= 3,
@@ -40,7 +40,7 @@ export const ExampleComponent = () => {
                 />
             </p>
         })}
-        <p><button onClick={() => state[self].merge([{ name: '' }])}>
+        <p><button onClick={() => state.merge([{ name: '' }])}>
             Add task
         </button></p>
     </>

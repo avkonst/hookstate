@@ -1,5 +1,5 @@
 import React from 'react';
-import { useState, State, self } from '@hookstate/core';
+import { useState, State } from '@hookstate/core';
 
 interface Task { name: string; priority?: number }
 
@@ -9,7 +9,7 @@ export const ExampleComponent = () => {
         {state.map((taskState: State<Task>, taskIndex) =>
             <TaskEditor key={taskIndex} taskState={taskState} />
         )}
-        <button onClick={() => state[self].merge([{ name: 'Untitled' }])}>Add task</button>
+        <button onClick={() => state.merge([{ name: 'Untitled' }])}>Add task</button>
     </>
 }
 
