@@ -46,9 +46,6 @@ export type SetPartialStateAction<S> =
  */
 export type SetInitialStateAction<S> = S | Promise<S> | (() => S | Promise<S>)
 
-// TODO move to internal
-const self = Symbol('self')
-
 /**
  * Special symbol which might be returned by onPromised callback of [StateMethods.map](#map) function.
  * 
@@ -170,9 +167,15 @@ export interface StateMethods<S> {
      */
     readonly value: S;
 
-    // TODO docs
+    /**
+     * True if state value is not yet available (eg. equal to a promise)
+     */
     readonly promised: boolean;
-    // TODO docs
+    
+    /**
+     * If a state was set to a promise and the promise was rejected,
+     * this property will return the error captured from the promise rejection
+     */
     readonly error: StateErrorAtRoot | undefined;
     
     /**
@@ -212,28 +215,28 @@ export interface StateMethods<S> {
      */
     merge(newValue: SetPartialStateAction<S>): void;
     
-    // TODO docs
+    /**
+     * Returns nested state by key.
+     * `state.nested('myprop')` returns the same as `state.myprop` or `state['myprop']`,
+     * but also works for properties, which names collide with names of state methods.
+     * 
+     * [Learn more about nested states...](https://hookstate.js.org/docs/nested-state)
+     * 
+     * @param key child property name or index
+     */
     nested<K extends keyof S>(key: K): State<S[K]>;
     
     /**
-     * Maps this state to the result via the provided action.
+     * Runs the provided action callback with optimised re-rendering.
+     * Updating state within a batch action does not trigger immediate rerendering.
+     * Instead, all required rerendering is done once the batch is finished.
      * 
-     * @param action mapper function
-     * 
-     * @param onPromised this will be invoked instead of the action function,
-     * if a state value is unresolved promise.
-     * [Learn more about async states...](https://hookstate.js.org/docs/asynchronous-state)
-     * 
-     * @param onError this will be invoked instead of the action function,
-     * if a state value is a promise resolved to an error.
-     * [Learn more about async states...](https://hookstate.js.org/docs/asynchronous-state)
-     * 
-     * @param context if specified, the callbacks will be invoked in a batch.
-     * Updating state within a batch does not trigger immediate rerendering.
-     * Instead, all required rerendering is done once once the batch is finished.
      * [Learn more about batching...](https://hookstate.js.org/docs/performance-batched-updates
+     * 
+     * @param action callback function to execute in a batch
+     * 
+     * @param context custom user's value, which is passed to plugins
      */
-    // TODO docs
     batch<R, C>(
         action: (s: State<S>) => R,
         context?: Exclude<C, Function>
@@ -637,6 +640,8 @@ export function DevTools<S>(state: State<S>): DevToolsExtensions {
 ///
 /// INTERNAL SYMBOLS (LIBRARY IMPLEMENTATION)
 ///
+
+const self = Symbol('self')
 
 const EmptyDevToolsExtensions: DevToolsExtensions = {
     label() { /* */ },
