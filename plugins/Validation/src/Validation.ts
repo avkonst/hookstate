@@ -1,5 +1,5 @@
 
-import { Plugin, Path, StateValueAtPath, State, self } from '@hookstate/core';
+import { Plugin, Path, StateValueAtPath, State } from '@hookstate/core';
 
 export type ValidationSeverity = 'error' | 'warning';
 
@@ -87,13 +87,13 @@ class ValidationPluginInstance<S> {
             return consistentResult();
         }
 
-        const [existingRules, nestedRulesKeys] = this.getRulesAndNested(l[self].path);
+        const [existingRules, nestedRulesKeys] = this.getRulesAndNested(l.path);
         for (let i = 0; i < existingRules.length; i += 1) {
             const r = existingRules[i];
-            if (!r.rule(l[self].value)) {
+            if (!r.rule(l.value)) {
                 const err = {
-                    path: l[self].path,
-                    message: typeof r.message === 'function' ? r.message(l[self].value) : r.message,
+                    path: l.path,
+                    message: typeof r.message === 'function' ? r.message(l.value) : r.message,
                     severity: r.severity
                 };
                 if (!filter || filter(err)) {
@@ -112,7 +112,7 @@ class ValidationPluginInstance<S> {
             return consistentResult();
         }
         const nestedInst = l;
-        if (nestedInst[self].keys === undefined) {
+        if (nestedInst.keys === undefined) {
             // console.log('getResults no nested inst', result)
             return consistentResult();
         }
@@ -177,7 +177,7 @@ export function Validation<S>($this?: State<S>): Plugin | ValidationExtensions<S
     if ($this) {
         let state = $this;
 
-        const [plugin] = state[self].attach(PluginID);
+        const [plugin] = state.attach(PluginID);
         if (plugin instanceof Error) {
             throw plugin
         }
@@ -186,7 +186,7 @@ export function Validation<S>($this?: State<S>): Plugin | ValidationExtensions<S
         const inst = instance;
         return {
             validate: (r, m, s) => {
-                inst.addRule(state[self].path, {
+                inst.addRule(state.path, {
                     rule: r,
                     message: m,
                     severity: s || 'error'
