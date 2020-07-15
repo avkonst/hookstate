@@ -13,14 +13,14 @@
   "dependencies": {
     "@docusaurus/core": "2.0.0-alpha.55",
     "@docusaurus/preset-classic": "2.0.0-alpha.55",
-    "@hookstate/core": "2.0.0",
-    "@hookstate/initial": "2.0.0",
-    "@hookstate/labelled": "2.0.0",
-    "@hookstate/persistence": "2.0.0",
-    "@hookstate/touched": "2.0.0",
-    "@hookstate/untracked": "2.0.0",
-    "@hookstate/validation": "2.0.0",
-    "@material-ui/core": "4.10.0",
+    "@hookstate/core": "3.0.0",
+    "@hookstate/initial": "3.0.0",
+    "@hookstate/labelled": "3.0.0",
+    "@hookstate/persistence": "3.0.0",
+    "@hookstate/touched": "3.0.0",
+    "@hookstate/untracked": "3.0.0",
+    "@hookstate/validation": "3.0.0",
+    "@material-ui/core": "4.11.0",
     "@material-ui/icons": "4.9.1",
     "@types/lodash.clonedeep": "4.5.6",
     "@types/lodash.isequal": "4.5.5",
@@ -30,7 +30,7 @@
     "prism-react-renderer": "1.1.1",
     "react": "16.13.1",
     "react-dom": "16.13.1",
-    "react-player": "2.1.0"
+    "react-player": "2.5.0"
   },
   "browserslist": {
     "production": [
@@ -45,7 +45,7 @@
     ]
   },
   "devDependencies": {
-    "@babel/preset-typescript": "^7.10.1",
-    "npm-check-updates": "^6.0.1"
+    "@babel/preset-typescript": "^7.10.4",
+    "npm-check-updates": "^7.0.1"
   }
 }

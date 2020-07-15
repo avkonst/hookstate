@@ -27,10 +27,10 @@ Actions:
 ```tsx
 const setA = () => globalState.A.set(p => p + 1)
 const setB = () => globalState.B.set(p => p + 1)
-const mergeA = () => globalState[self].merge(p => ({ A: p.A + 1 }))
-const mergeB = () => globalState[self].merge(p => ({ B: p.B + 1 }))
-const mergeAB = () => globalState[self].merge(p => ({ A: p.A + 1, B: p.B + 1 }))
-const setObj = () => globalState[self].set(p => ({ ...p, A: p.A + 1 }))
+const mergeA = () => globalState.merge(p => ({ A: p.A + 1 }))
+const mergeB = () => globalState.merge(p => ({ B: p.B + 1 }))
+const mergeAB = () => globalState.merge(p => ({ A: p.A + 1, B: p.B + 1 }))
+const setObj = () => globalState.set(p => ({ ...p, A: p.A + 1 }))
 ```
 
 rerender on actions: | setA<br />mergeA | setB<br/>mergeB | mergeAB | setObj
@@ -71,7 +71,7 @@ function Ex1_Child_GlobalStateHooked_AUsed() {
 }
 function Ex1_Child_GlobalStateHooked_BUsed_Downgraded() {
     const state = useState(globalState)
-    state[self].attach(Downgraded)
+    state.attach(Downgraded)
     return <p>{state.B.value}</p>
 }
 ```
@@ -155,7 +155,7 @@ A component hooks the state and uses only an object without reading it's propert
 ```tsx
 function Ex6_Component_GlobalStateHooked_ObjUsed() {
     const state = useState(globalState)
-    const unused = state[self].value
+    const unused = state.value
     return <></>
 }
 ```
@@ -165,7 +165,7 @@ A component hooks the state and uses object's keys.
 ```tsx
 function Ex7_Component_GlobalStateHooked_KeysUsed() {
     const state = useState(globalState)
-    const unused = state[self].keys
+    const unused = state.keys
     return <></>
 }
 ```

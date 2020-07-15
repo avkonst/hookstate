@@ -1,10 +1,10 @@
 import React from 'react';
-import { useState, self } from '@hookstate/core';
+import { useState } from '@hookstate/core';
 import { Persistence } from '@hookstate/persistence';
 
 export const ExampleComponent = () => {
     const state = useState([{ name: 'First Task' }])
-    state[self].attach(Persistence('plugin-persisted-data-key'))
+    state.attach(Persistence('plugin-persisted-data-key'))
     return <>
         {state.map((taskState, taskIndex) => {
             return <p key={taskIndex}>
@@ -14,7 +14,7 @@ export const ExampleComponent = () => {
                 />
             </p>
         })}
-        <p><button onClick={() => state[self].merge([{ name: 'Untitled' }])}>
+        <p><button onClick={() => state.merge([{ name: 'Untitled' }])}>
             Add task
         </button></p>
     </>

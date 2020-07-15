@@ -1,10 +1,10 @@
 import React from 'react';
-import { useState, self } from '@hookstate/core';
+import { useState } from '@hookstate/core';
 import { Untracked } from '@hookstate/untracked';
 
 export const ExampleComponent = () => {
     const state = useState({ renders: 0, counter1: 0, counter2: 0 })
-    state[self].attach(Untracked); // enable the plugin
+    state.attach(Untracked); // enable the plugin
 
     // this one will not trigger rerender,
     // so it is OK to call within the render
@@ -24,7 +24,7 @@ export const ExampleComponent = () => {
                 // this will cause rerendering,
                 // because renderCount and counter2 are used and tracked
                 // and this update is tracked
-                onClick={() => state[self].set(p => p)}
+                onClick={() => state.set(p => p)}
             >Force entire state update</button>
             <button
                 // this will not cause rerendering, but will update the state:

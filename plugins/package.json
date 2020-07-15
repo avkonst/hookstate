@@ -14,8 +14,8 @@
         "apply-updates": "ncu -u && lerna exec yarn apply-updates"
     },
     "devDependencies": {
-        "lerna": "3.22.0",
-        "npm-check-updates": "6.0.1",
+        "lerna": "3.22.1",
+        "npm-check-updates": "7.0.1",
         "rimraf": "3.0.2",
         "yarn": "1.22.4"
     }

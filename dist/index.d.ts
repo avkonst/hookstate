@@ -34,13 +34,6 @@ export declare type SetPartialStateAction<S> = S extends ReadonlyArray<(infer U)
  */
 export declare type SetInitialStateAction<S> = S | Promise<S> | (() => S | Promise<S>);
 /**
- * Special symbol which is used as a property to switch
- * between [StateMethods](#interfacesstatemethodsmd) and the corresponding [State](#state).
- *
- * [Learn more...](https://hookstate.js.org/docs/nested-state)
- */
-export declare const self: unique symbol;
-/**
  * Special symbol which might be returned by onPromised callback of [StateMethods.map](#map) function.
  *
  * [Learn more...](https://hookstate.js.org/docs/asynchronous-state#executing-an-action-when-state-is-loaded)
@@ -104,31 +97,25 @@ export interface PluginStateControl<S> {
  */
 export interface StateMethods<S> {
     /**
-     * Returns the state instance managed by these methods.
-     *
-     *
-     */
-    [self]: State<S>;
-    /**
      * 'Javascript' object 'path' to an element relative to the root object
      * in the state. For example:
      *
      * ```tsx
      * const state = useState([{ name: 'First Task' }])
-     * state[self].path IS []
-     * state[0][self].path IS [0]
-     * state.[0].name[self].path IS [0, 'name']
+     * state.path IS []
+     * state[0].path IS [0]
+     * state.[0].name.path IS [0, 'name']
      * ```
      */
     readonly path: Path;
     /**
      * Return the keys of nested states.
      * For a given state of [State](#state) type,
-     * `state[self].keys` will be structurally equal to Object.keys(state),
+     * `state.keys` will be structurally equal to Object.keys(state),
      * with two minor difference:
-     * 1. if `state[self].value` is an array, the returned result will be
+     * 1. if `state.value` is an array, the returned result will be
      * an array of numbers, not strings like with `Object.keys`.
-     * 2. if `state[self].value` is not an object, the returned result will be undefined.
+     * 2. if `state.value` is not an object, the returned result will be undefined.
      */
     readonly keys: InferredStateKeysType<S>;
     /**
@@ -144,15 +131,24 @@ export interface StateMethods<S> {
      *
      * ```tsx
      * const state = useState<number | undefined>(0)
-     * const myvalue: number = state[self].value
-     *      ? state[self].value + 1
+     * const myvalue: number = state.value
+     *      ? state.value + 1
      *      : 0; // <-- compiles
-     * const myvalue: number = state[self].get()
-     *      ? state[self].get() + 1
+     * const myvalue: number = state.get()
+     *      ? state.get() + 1
      *      : 0; // <-- does not compile
      * ```
      */
     readonly value: S;
+    /**
+     * True if state value is not yet available (eg. equal to a promise)
+     */
+    readonly promised: boolean;
+    /**
+     * If a state was set to a promise and the promise was rejected,
+     * this property will return the error captured from the promise rejection
+     */
+    readonly error: StateErrorAtRoot | undefined;
     /**
      * Unwraps and returns the underlying state value referred by
      * [path](#readonly-path) of this state instance.
@@ -188,60 +184,27 @@ export interface StateMethods<S> {
      */
     merge(newValue: SetPartialStateAction<S>): void;
     /**
-     * Maps this state to the result via the provided action.
+     * Returns nested state by key.
+     * `state.nested('myprop')` returns the same as `state.myprop` or `state['myprop']`,
+     * but also works for properties, which names collide with names of state methods.
      *
-     * @param action mapper function
+     * [Learn more about nested states...](https://hookstate.js.org/docs/nested-state)
      *
-     * @param onPromised this will be invoked instead of the action function,
-     * if a state value is unresolved promise.
-     * [Learn more about async states...](https://hookstate.js.org/docs/asynchronous-state)
-     *
-     * @param onError this will be invoked instead of the action function,
-     * if a state value is a promise resolved to an error.
-     * [Learn more about async states...](https://hookstate.js.org/docs/asynchronous-state)
-     *
-     * @param context if specified, the callbacks will be invoked in a batch.
-     * Updating state within a batch does not trigger immediate rerendering.
-     * Instead, all required rerendering is done once once the batch is finished.
-     * [Learn more about batching...](https://hookstate.js.org/docs/performance-batched-updates
+     * @param key child property name or index
      */
-    map<R, RL, RE, C>(action: (s: State<S>) => R, onPromised: (s: State<S>) => RL, onError: (e: StateErrorAtRoot, s: State<S>) => RE, context?: Exclude<C, Function>): R | RL | RE;
+    nested<K extends keyof S>(key: K): State<S[K]>;
     /**
-     * Maps this state to the result via the provided action.
+     * Runs the provided action callback with optimised re-rendering.
+     * Updating state within a batch action does not trigger immediate rerendering.
+     * Instead, all required rerendering is done once the batch is finished.
      *
-     * @param action mapper function
-     *
-     * @param onPromised this will be invoked instead of the action function,
-     * if a state value is unresolved promise.
-     * [Learn more about async states...](https://hookstate.js.org/docs/asynchronous-state)
-     *
-     * @param context if specified, the callbacks will be invoked in a batch.
-     * Updating state within a batch does not trigger immediate rerendering.
-     * Instead, all required rerendering is done once once the batch is finished.
      * [Learn more about batching...](https://hookstate.js.org/docs/performance-batched-updates
-     */
-    map<R, RL, C>(action: (s: State<S>) => R, onPromised: (s: State<S>) => RL, context?: Exclude<C, Function>): R | RL;
-    /**
-     * Maps this state to the result via the provided action.
      *
-     * @param action mapper function
+     * @param action callback function to execute in a batch
      *
-     * @param context if specified, the callbacks will be invoked in a batch.
-     * Updating state within a batch does not trigger immediate rerendering.
-     * Instead, all required rerendering is done once once the batch is finished.
-     * [Learn more about batching...](https://hookstate.js.org/docs/performance-batched-updates
+     * @param context custom user's value, which is passed to plugins
      */
-    map<R, C>(action: (s: State<S>) => R, context?: Exclude<C, Function>): R;
-    /**
-     * Unfolds this state to an array representing promise state.
-     * The first element of the array result indicates if promise is loading
-     * (true - loading: promise is not resolved, false - not loading: promise is resolved).
-     * The second element with be either undefined or a value of an error,
-     * which the resolved promise rejected. The third element will be
-     * either undefined or a value of a state, if promise is resolved.
-     * [Learn more about async states...](https://hookstate.js.org/docs/asynchronous-state)
-     */
-    map(): [boolean, StateErrorAtRoot | undefined, S | undefined];
+    batch<R, C>(action: (s: State<S>) => R, context?: Exclude<C, Function>): R;
     /**
      * If state value is null or undefined, returns state value.
      * Otherwise, it returns this state instance but
@@ -280,28 +243,6 @@ export interface StateMethodsDestroy {
     destroy(): void;
 }
 /**
- * User's state mixin with the special `self`-symbol property,
- * which allows to get [StateMethods](#interfacesstatemethodsmd) for a [State](#state).
- *
- * @typeparam S Type of a value of a state
- */
-export interface StateMixin<S> {
-    /**
-     * Returns [StateMethods](#interfacesstatemethodsmd) for a [State](#state)
-     */
-    [self]: StateMethods<S>;
-}
-/**
- * User's state mixin with the special `self`-symbol property,
- * which allows to get [StateMethodsDestroy](#interfacesstatemethodsdestroymd) for a [State](#state).
- */
-export interface StateMixinDestroy {
-    /**
-     * Returns [StateMethodsDestroy](#interfacesstatemethodsdestroymd) for a [State](#state)
-     */
-    [self]: StateMethodsDestroy;
-}
-/**
  * Type of a result of [createState](#createstate) and [useState](#usestate) functions
  *
  * @typeparam S Type of a value of a state
@@ -310,9 +251,9 @@ export interface StateMixinDestroy {
  * [Learn more about local states...](https://hookstate.js.org/docs/local-state)
  * [Learn more about nested states...](https://hookstate.js.org/docs/nested-state)
  */
-export declare type State<S> = StateMixin<S> & (S extends ReadonlyArray<(infer U)> ? ReadonlyArray<State<U>> : S extends (true | false) ? Omit<StateMethods<boolean>, keyof StateMixin<S>> : S extends (undefined | null | number | boolean | string | bigint) ? Omit<StateMethods<S>, keyof StateMixin<S>> : S extends object ? {
+export declare type State<S> = StateMethods<S> & (S extends ReadonlyArray<(infer U)> ? ReadonlyArray<State<U>> : S extends object ? Omit<{
     readonly [K in keyof Required<S>]: State<S[K]>;
-} : {});
+}, keyof StateMethods<S> | keyof StateMethodsDestroy> : {});
 /**
  * For plugin developers only.
  * Type alias to highlight the places where we are dealing with root state value.
@@ -431,7 +372,7 @@ export interface Plugin {
  * pass the created state to [useState](#usestate) function and
  * use the returned result in the component's logic.
  */
-export declare function createState<S>(initial: SetInitialStateAction<S>): State<S> & StateMixinDestroy;
+export declare function createState<S>(initial: SetInitialStateAction<S>): State<S> & StateMethodsDestroy;
 /**
  * Enables a functional React component to use a state,
  * either created by [createState](#createstate) (*global* state) or

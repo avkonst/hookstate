@@ -1,5 +1,5 @@
 import React from 'react';
-import { useState, State, self } from '@hookstate/core';
+import { useState, State } from '@hookstate/core';
 
 export const ExampleComponent = () => {
     // we use local per component state,
@@ -28,6 +28,6 @@ function JsonDump(props: { state: State<string[]> }) {
     const state = useState(props.state);
     return <p>
         Last render at: {(new Date()).toISOString()} (<b>JSON dump of the first 10 fields</b>)
-        :<br />{JSON.stringify(state[self].get().slice(0, 10), undefined, 4)}
+        :<br />{JSON.stringify(state.get().slice(0, 10), undefined, 4)}
     </p>
 }

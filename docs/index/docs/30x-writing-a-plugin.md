@@ -47,7 +47,7 @@ Now it can be attached to a state:
 
 ```tsx
 const state = createState(...);
-state[self].attach(MyStateWatchPlugin)
+state.attach(MyStateWatchPlugin)
 ```
 
 When the methods from [StateMethods](typedoc-hookstate-core#interfacesstatemethodsmd) are invoked for a state,
@@ -79,7 +79,7 @@ function MyStateWatchPlugin() {
 A plugin instance can be retrieved from a state using [StateMethods.attach](typedoc-hookstate-core#attach) method called by plugin ID:
 
 ```tsx
-const [plugin, controls] = state[self].attach(MyStateWatchPluginId)
+const [plugin, controls] = state.attach(MyStateWatchPluginId)
 ```
 
 The `controls` variable is a set of extended control methods, which allow to update the state without triggering rerendering and to rerender when a state has not been updated. This is used by the [Untracked](./performance-managed-rendering#untracked-plugin) plugin, for example.

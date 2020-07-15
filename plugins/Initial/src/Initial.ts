@@ -6,7 +6,6 @@ import {
     StateValueAtPath,
     StateValueAtRoot,
     State,
-    self,
     StateMethods
 } from '@hookstate/core';
 
@@ -45,21 +44,21 @@ export function Initial<S>($this: State<S>): InitialExtensions<S>;
 export function Initial<S>($this?: State<S>): Plugin | InitialExtensions<S> {
     if ($this) {
         const $th = $this as State<S>
-        const [instance] = $th[self].attach(PluginID);
+        const [instance] = $th.attach(PluginID);
         if (instance instanceof Error) {
             throw instance;
         }
         const inst = instance as InitialPluginInstance;
         return {
-            get: () => inst.getInitial($th[self].path),
-            modified: () => inst.getModified($th[self]),
-            unmodified: () => !inst.getModified($th[self])
+            get: () => inst.getInitial($th.path),
+            modified: () => inst.getModified($th),
+            unmodified: () => !inst.getModified($th)
         }
     }
     return {
         id: PluginID,
         init: (state: State<StateValueAtRoot>) => {
-            return new InitialPluginInstance(state[self].value) as {}
+            return new InitialPluginInstance(state.value) as {}
         }
     }
 }

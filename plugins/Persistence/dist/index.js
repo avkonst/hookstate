@@ -2,8 +2,6 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
-var core = require('@hookstate/core');
-
 var PluginID = Symbol('LocalPersistence');
 // tslint:disable-next-line: function-name
 function Persistence(localStorageKey) {
@@ -13,10 +11,10 @@ function Persistence(localStorageKey) {
             var persisted = localStorage.getItem(localStorageKey);
             if (persisted !== null) {
                 var result = JSON.parse(persisted);
-                state[core.self].set(result);
+                state.set(result);
             }
-            else {
-                state[core.self].map(function (l) { return localStorage.setItem(localStorageKey, JSON.stringify(l[core.self].value)); }, function () { }, function () { });
+            else if (!state.promised && !!!state.error) {
+                localStorage.setItem(localStorageKey, JSON.stringify(state.value));
             }
             return {
                 onSet: function (p) {

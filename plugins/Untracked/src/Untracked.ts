@@ -1,5 +1,5 @@
 
-import { Plugin, SetPartialStateAction, State, self } from '@hookstate/core';
+import { Plugin, SetPartialStateAction, State } from '@hookstate/core';
 
 export interface UntrackedExtensions<S> {
     get(): S;
@@ -13,7 +13,7 @@ export function Untracked<S>($this: State<S>): UntrackedExtensions<S>;
 export function Untracked<S>($this?: State<S>): Plugin | UntrackedExtensions<S> {
     if ($this) {
         const th = $this as State<S>;
-        const [_, controls] = th[self].attach(PluginID);
+        const [_, controls] = th.attach(PluginID);
         return {
             get: () => controls.getUntracked(),
             set: (v) => controls.setUntracked(v),

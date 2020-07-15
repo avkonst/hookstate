@@ -736,10 +736,6 @@ var redux = /*#__PURE__*/Object.freeze({
     createStore: createStore
 });
 
-function unwrapExports (x) {
-	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
-}
-
 function createCommonjsModule(fn, basedir, module) {
 	return module = {
 	  path: basedir,
@@ -776,15 +772,11 @@ exports.devToolsEnhancer = (
 );
 });
 
-unwrapExports(reduxDevtoolsExtension);
-var reduxDevtoolsExtension_1 = reduxDevtoolsExtension.composeWithDevTools;
-var reduxDevtoolsExtension_2 = reduxDevtoolsExtension.devToolsEnhancer;
-
 var SettingsState;
 function DevToolsInitialize(settings) {
     // make sure it is used, otherwise it is stripped out by the compiler
     DevToolsInitializeInternal();
-    SettingsState[core.self].set(settings);
+    SettingsState.set(settings);
 }
 function DevToolsInitializeInternal() {
     if ( // already initialized
@@ -812,7 +804,7 @@ function DevToolsInitializeInternal() {
             };
         }
         return JSON.parse(p);
-    })[core.self].attach(function () { return ({
+    }).attach(function () { return ({
         id: PluginIdPersistedSettings,
         init: function () { return ({
             onSet: function (p) {
@@ -832,7 +824,7 @@ function DevToolsInitializeInternal() {
                     window.localStorage.setItem(MonitoredStatesLabel, JSON.stringify(v));
                 }
                 if (v !== p.state) {
-                    SettingsState[core.self].set(v);
+                    SettingsState.set(v);
                 }
             }
         }); }
@@ -851,7 +843,7 @@ function DevToolsInitializeInternal() {
         if ('stackTraceLimit' in Error && 'captureStackTrace' in Error) {
             var oldLimit = Error.stackTraceLimit;
             Error.stackTraceLimit = 6;
-            Error.captureStackTrace(dummyError, SettingsState[core.self].attach);
+            Error.captureStackTrace(dummyError, SettingsState.attach);
             Error.stackTraceLimit = oldLimit;
         }
         var s = dummyError.stack;
@@ -878,10 +870,10 @@ function DevToolsInitializeInternal() {
                         try {
                             fromRemote = true;
                             if ('value' in action) {
-                                l[core.self].set(action.value);
+                                l.set(action.value);
                             }
                             else {
-                                l[core.self].set(core.none);
+                                l.set(core.none);
                             }
                         }
                         finally {
@@ -916,17 +908,20 @@ function DevToolsInitializeInternal() {
                 }
                 else if (action.type === 'RERENDER' && action.path && isValidPath(action.path)) {
                     // rerender request from development tools
-                    lnk[core.self].attach(core.DevToolsID)[1].rerender([action.path]);
+                    lnk.attach(core.DevToolsID)[1].rerender([action.path]);
                 }
                 else if (action.type === 'BREAKPOINT') {
                     onBreakpoint();
                 }
             }
-            return lnk[core.self].map(function (l) { return l[core.self].value; }, function () { return core.none; });
-        }, reduxDevtoolsExtension_2({
+            if (lnk.promised || lnk.error) {
+                return core.none;
+            }
+            return lnk.value;
+        }, reduxDevtoolsExtension.devToolsEnhancer({
             name: window.location.hostname + ": " + assignedId,
-            trace: SettingsState[core.self].value.callstacksDepth !== 0,
-            traceLimit: SettingsState[core.self].value.callstacksDepth,
+            trace: SettingsState.value.callstacksDepth !== 0,
+            traceLimit: SettingsState.value.callstacksDepth,
             autoPause: true,
             shouldHotReload: false,
             features: {
@@ -960,7 +955,7 @@ function DevToolsInitializeInternal() {
         return dispatch;
     }
     function isMonitored(assignedId, globalOrLabeled) {
-        return SettingsState[core.self].value.monitored.includes(assignedId) || globalOrLabeled;
+        return SettingsState.value.monitored.includes(assignedId) || globalOrLabeled;
     }
     function DevToolsInternal(isGlobal) {
         return {
@@ -996,7 +991,7 @@ function DevToolsInitializeInternal() {
                                 breakpoint = !breakpoint;
                             });
                             // inject on set listener
-                            lnk[core.self].attach(function () { return ({
+                            lnk.attach(function () { return ({
                                 id: PluginIdMonitored,
                                 init: function () { return ({
                                     onSet: function (p) {
@@ -1036,7 +1031,7 @@ function DevToolsInitializeInternal() {
             }
         };
     }
-    SettingsState[core.self].attach(DevToolsInternal);
+    SettingsState.attach(DevToolsInternal);
     core.DevTools(SettingsState).label(MonitoredStatesLabel);
     MonitoredStatesLogger = function (str) { return core.DevTools(SettingsState).log(str); };
     core.useState[core.DevToolsID] = DevToolsInternal;

@@ -1,4 +1,4 @@
-import { Path, Plugin, Downgraded, StateValueAtPath, PluginCallbacks, PluginCallbacksOnSetArgument, State, self, StateMethods } from '@hookstate/core';
+import { Path, Plugin, Downgraded, StateValueAtPath, PluginCallbacks, PluginCallbacksOnSetArgument, State, StateMethods } from '@hookstate/core';
 
 import { Initial } from '@hookstate/initial';
 
@@ -60,10 +60,10 @@ class TouchedPluginInstance implements PluginCallbacks {
             // when the source value is updated.
             // We do the trick to fix it, we mark the value being 'deeply used',
             // so any changes for this value or any nested will trigger rerender.
-            const _ = l.attach(Downgraded)[self].value;
+            const _ = l.attach(Downgraded).value;
             return t;
         }
-        return Initial(l[self]).modified();
+        return Initial(l).modified();
     }
 }
 
@@ -73,14 +73,14 @@ export function Touched<S>($this: State<S>): TouchedExtensions;
 export function Touched<S>($this?: State<S>): Plugin | TouchedExtensions {
     if ($this) {
         const th = $this as State<S>;
-        const [instance, controls] = th[self].attach(PluginID);
+        const [instance, controls] = th.attach(PluginID);
         if (instance instanceof Error) {
             throw instance
         }
         const inst = instance as TouchedPluginInstance;
         return {
-            touched: () => inst.touched(th[self]),
-            untouched: () => !inst.touched(th[self])
+            touched: () => inst.touched(th),
+            untouched: () => !inst.touched(th)
         }
     }
     return {

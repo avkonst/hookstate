@@ -1,5 +1,5 @@
 import React from 'react';
-import { useState, State, self } from '@hookstate/core';
+import { useState, State } from '@hookstate/core';
 
 interface Node { name: string; children?: Node[] }
 
@@ -41,13 +41,13 @@ function NodeListEditor(props: { nodes: State<Node[] | undefined> }) {
     // could have used props.nodes everywhere instead
     const state = useState(props.nodes);
     return <div style={{ paddingLeft: 20 }}>
-        {state[self].ornull && state[self].ornull.map((nodeState: State<Node>, i) =>
+        {state.ornull && state.ornull.map((nodeState: State<Node>, i) =>
             <div key={i}>
                 <NodeNameEditor nameState={nodeState.name} />
                 <NodeListEditor nodes={nodeState.children} />
             </div>
         )}
-        <p><button onClick={() => state[self].set(nodes => (nodes || []).concat([{ name: 'Untitled' }]))}>
+        <p><button onClick={() => state.set(nodes => (nodes || []).concat([{ name: 'Untitled' }]))}>
             Add Node
         </button></p>
     </div>
@@ -58,7 +58,7 @@ function JsonDump(props: { state: State<Node[] | undefined> }) {
     // could have used props.state everywhere instead
     const state = useState(props.state);
     return <p>
-        Current state: {JSON.stringify(state[self].value)} <br/>
+        Current state: {JSON.stringify(state.value)} <br/>
         Last render at: {(new Date()).toISOString()} 
     </p>
 }

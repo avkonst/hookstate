@@ -47,14 +47,6 @@ export type SetPartialStateAction<S> =
 export type SetInitialStateAction<S> = S | Promise<S> | (() => S | Promise<S>)
 
 /**
- * Special symbol which is used as a property to switch
- * between [StateMethods](#interfacesstatemethodsmd) and the corresponding [State](#state).
- * 
- * [Learn more...](https://hookstate.js.org/docs/nested-state)
- */
-export const self = Symbol('self')
-
-/**
  * Special symbol which might be returned by onPromised callback of [StateMethods.map](#map) function.
  * 
  * [Learn more...](https://hookstate.js.org/docs/asynchronous-state#executing-an-action-when-state-is-loaded)
@@ -129,21 +121,14 @@ export interface PluginStateControl<S> {
  */
 export interface StateMethods<S> {
     /**
-     * Returns the state instance managed by these methods.
-     * 
-     * 
-     */
-    [self]: State<S>;
-
-    /**
      * 'Javascript' object 'path' to an element relative to the root object
      * in the state. For example:
      *
      * ```tsx
      * const state = useState([{ name: 'First Task' }])
-     * state[self].path IS []
-     * state[0][self].path IS [0]
-     * state.[0].name[self].path IS [0, 'name']
+     * state.path IS []
+     * state[0].path IS [0]
+     * state.[0].name.path IS [0, 'name']
      * ```
      */
     readonly path: Path;
@@ -151,11 +136,11 @@ export interface StateMethods<S> {
     /**
      * Return the keys of nested states.
      * For a given state of [State](#state) type,
-     * `state[self].keys` will be structurally equal to Object.keys(state),
+     * `state.keys` will be structurally equal to Object.keys(state),
      * with two minor difference:
-     * 1. if `state[self].value` is an array, the returned result will be
+     * 1. if `state.value` is an array, the returned result will be
      * an array of numbers, not strings like with `Object.keys`.
-     * 2. if `state[self].value` is not an object, the returned result will be undefined.
+     * 2. if `state.value` is not an object, the returned result will be undefined.
      */
     readonly keys: InferredStateKeysType<S>;
 
@@ -172,16 +157,27 @@ export interface StateMethods<S> {
      *
      * ```tsx
      * const state = useState<number | undefined>(0)
-     * const myvalue: number = state[self].value
-     *      ? state[self].value + 1
+     * const myvalue: number = state.value
+     *      ? state.value + 1
      *      : 0; // <-- compiles
-     * const myvalue: number = state[self].get()
-     *      ? state[self].get() + 1
+     * const myvalue: number = state.get()
+     *      ? state.get() + 1
      *      : 0; // <-- does not compile
      * ```
      */
     readonly value: S;
 
+    /**
+     * True if state value is not yet available (eg. equal to a promise)
+     */
+    readonly promised: boolean;
+    
+    /**
+     * If a state was set to a promise and the promise was rejected,
+     * this property will return the error captured from the promise rejection
+     */
+    readonly error: StateErrorAtRoot | undefined;
+    
     /**
      * Unwraps and returns the underlying state value referred by
      * [path](#readonly-path) of this state instance.
@@ -220,75 +216,31 @@ export interface StateMethods<S> {
     merge(newValue: SetPartialStateAction<S>): void;
     
     /**
-     * Maps this state to the result via the provided action.
+     * Returns nested state by key.
+     * `state.nested('myprop')` returns the same as `state.myprop` or `state['myprop']`,
+     * but also works for properties, which names collide with names of state methods.
      * 
-     * @param action mapper function
+     * [Learn more about nested states...](https://hookstate.js.org/docs/nested-state)
      * 
-     * @param onPromised this will be invoked instead of the action function,
-     * if a state value is unresolved promise.
-     * [Learn more about async states...](https://hookstate.js.org/docs/asynchronous-state)
-     * 
-     * @param onError this will be invoked instead of the action function,
-     * if a state value is a promise resolved to an error.
-     * [Learn more about async states...](https://hookstate.js.org/docs/asynchronous-state)
-     * 
-     * @param context if specified, the callbacks will be invoked in a batch.
-     * Updating state within a batch does not trigger immediate rerendering.
-     * Instead, all required rerendering is done once once the batch is finished.
-     * [Learn more about batching...](https://hookstate.js.org/docs/performance-batched-updates
+     * @param key child property name or index
      */
-    map<R, RL, RE, C>(
-        action: (s: State<S>) => R,
-        onPromised: (s: State<S>) => RL,
-        onError: (e: StateErrorAtRoot, s: State<S>) => RE,
-        context?: Exclude<C, Function>
-    ): R | RL | RE;
-
+    nested<K extends keyof S>(key: K): State<S[K]>;
+    
     /**
-     * Maps this state to the result via the provided action.
+     * Runs the provided action callback with optimised re-rendering.
+     * Updating state within a batch action does not trigger immediate rerendering.
+     * Instead, all required rerendering is done once the batch is finished.
      * 
-     * @param action mapper function
-     * 
-     * @param onPromised this will be invoked instead of the action function,
-     * if a state value is unresolved promise.
-     * [Learn more about async states...](https://hookstate.js.org/docs/asynchronous-state)
-     * 
-     * @param context if specified, the callbacks will be invoked in a batch.
-     * Updating state within a batch does not trigger immediate rerendering.
-     * Instead, all required rerendering is done once once the batch is finished.
      * [Learn more about batching...](https://hookstate.js.org/docs/performance-batched-updates
-     */
-    map<R, RL, C>(
-        action: (s: State<S>) => R,
-        onPromised: (s: State<S>) => RL,
-        context?: Exclude<C, Function>
-    ): R | RL;
-
-    /**
-     * Maps this state to the result via the provided action.
      * 
-     * @param action mapper function
+     * @param action callback function to execute in a batch
      * 
-     * @param context if specified, the callbacks will be invoked in a batch.
-     * Updating state within a batch does not trigger immediate rerendering.
-     * Instead, all required rerendering is done once once the batch is finished.
-     * [Learn more about batching...](https://hookstate.js.org/docs/performance-batched-updates
+     * @param context custom user's value, which is passed to plugins
      */
-    map<R, C>(
+    batch<R, C>(
         action: (s: State<S>) => R,
         context?: Exclude<C, Function>
     ): R;
-    
-    /**
-     * Unfolds this state to an array representing promise state.
-     * The first element of the array result indicates if promise is loading
-     * (true - loading: promise is not resolved, false - not loading: promise is resolved).
-     * The second element with be either undefined or a value of an error,
-     * which the resolved promise rejected. The third element will be
-     * either undefined or a value of a state, if promise is resolved.
-     * [Learn more about async states...](https://hookstate.js.org/docs/asynchronous-state)
-     */
-    map(): [boolean, StateErrorAtRoot | undefined, S | undefined];
 
     /**
      * If state value is null or undefined, returns state value.
@@ -332,30 +284,6 @@ export interface StateMethodsDestroy {
 }
 
 /**
- * User's state mixin with the special `self`-symbol property,
- * which allows to get [StateMethods](#interfacesstatemethodsmd) for a [State](#state).
- * 
- * @typeparam S Type of a value of a state
- */
-export interface StateMixin<S> {
-    /**
-     * Returns [StateMethods](#interfacesstatemethodsmd) for a [State](#state) 
-     */
-    [self]: StateMethods<S>;
-}
-
-/**
- * User's state mixin with the special `self`-symbol property,
- * which allows to get [StateMethodsDestroy](#interfacesstatemethodsdestroymd) for a [State](#state).
- */
-export interface StateMixinDestroy {
-    /**
-     * Returns [StateMethodsDestroy](#interfacesstatemethodsdestroymd) for a [State](#state) 
-     */
-    [self]: StateMethodsDestroy;
-}
-
-/**
  * Type of a result of [createState](#createstate) and [useState](#usestate) functions
  * 
  * @typeparam S Type of a value of a state
@@ -364,19 +292,12 @@ export interface StateMixinDestroy {
  * [Learn more about local states...](https://hookstate.js.org/docs/local-state)
  * [Learn more about nested states...](https://hookstate.js.org/docs/nested-state)
  */
-export type State<S> = StateMixin<S> & (
+export type State<S> = StateMethods<S> & (
     S extends ReadonlyArray<(infer U)> ? ReadonlyArray<State<U>> :
-    // workaround for typescript unfolding State<boolean> to 
-    // State<true> | State<false>, which results in broken type information
-    // for direct state methods.
-    // Note: this is covered by tests, so if you remove next 2 lines
-    // you will see where it breaks the compilation
-    S extends (true | false) ?
-        Omit<StateMethods<boolean>, keyof StateMixin<S>> :
-    S extends (undefined | null | number | boolean | string | bigint) ?
-        Omit<StateMethods<S>, keyof StateMixin<S>> :
-    S extends object ? { readonly [K in keyof Required<S>]: State<S[K]>; } :
-    {}
+    S extends object ? Omit<
+        { readonly [K in keyof Required<S>]: State<S[K]>; },
+        keyof StateMethods<S> | keyof StateMethodsDestroy
+    > : {}
 );
 
 /**
@@ -505,13 +426,13 @@ export interface Plugin {
  */
 export function createState<S>(
     initial: SetInitialStateAction<S>
-): State<S> & StateMixinDestroy {
+): State<S> & StateMethodsDestroy {
     const methods = createStore(initial).toMethods();
     const devtools = createState[DevToolsID]
     if (devtools) {
         methods.attach(devtools)
     }
-    return methods[self] as State<S> & StateMixinDestroy;
+    return methods.self as State<S> & StateMethodsDestroy;
 }
 
 /**
@@ -589,7 +510,7 @@ export function useState<S>(
                 parentMethods.state,
                 parentMethods.path,
                 () => setValue({}),
-                parentMethods)[self];
+                parentMethods).self;
         } else {
             // Global state mount or destroyed link
             // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -598,7 +519,7 @@ export function useState<S>(
                 value.state,
                 parentMethods.path,
                 () => setValue({ state: value.state }),
-                value.state)[self];
+                value.state).self;
         }
     } else {
         // Local state mount
@@ -614,7 +535,7 @@ export function useState<S>(
         if (devtools) {
             result.attach(devtools)
         }
-        return result[self];
+        return result.self;
     }
 }
 
@@ -709,7 +630,7 @@ export interface DevToolsExtensions {
  * @typeparam S Type of a value of a state
  */
 export function DevTools<S>(state: State<S>): DevToolsExtensions {
-    const plugin = state[self].attach(DevToolsID);
+    const plugin = state.attach(DevToolsID);
     if (plugin[0] instanceof Error) {
         return EmptyDevToolsExtensions;
     }
@@ -719,6 +640,8 @@ export function DevTools<S>(state: State<S>): DevToolsExtensions {
 ///
 /// INTERNAL SYMBOLS (LIBRARY IMPLEMENTATION)
 ///
+
+const self = Symbol('self')
 
 const EmptyDevToolsExtensions: DevToolsExtensions = {
     label() { /* */ },
@@ -768,6 +691,16 @@ interface Subscribable {
     subscribe(l: Subscriber): void;
     unsubscribe(l: Subscriber): void;
 }
+
+function isNoProxyInititializer() {
+    try {
+        const used = new Proxy({}, {});
+        return false;
+    } catch (e) {
+        return true;
+    }
+};
+const IsNoProxy = isNoProxyInititializer()
 
 const DowngradedID = Symbol('Downgraded');
 const SelfMethodsID = Symbol('ProxyMarker');
@@ -876,7 +809,7 @@ class Store implements Subscribable {
                 value = none
                 delete onSetArg.value
                 delete onSetArg.state
-            } else if (this._promised && !this._promised.resolver) {
+            } else if (this._promised && (!this._promised.resolver && !this._promised.fullfilled)) {
                 throw new StateInvalidUsageError(path, ErrorId.SetStateWhenPromised)
             }
 
@@ -1033,7 +966,7 @@ class Store implements Subscribable {
             return;
         }
 
-        const pluginCallbacks = plugin.init ? plugin.init(this.toMethods()[self]) : {};
+        const pluginCallbacks = plugin.init ? plugin.init(this.toMethods().self) : {};
         this._plugins.set(plugin.id, pluginCallbacks);
         if (pluginCallbacks.onSet) {
             this._setSubscribers.add((p) => pluginCallbacks.onSet!(p))
@@ -1108,7 +1041,7 @@ class Promised {
 }
 
 // use symbol property to allow for easier reference finding
-const ValueCacheProperty = Symbol('ValueCache');
+const ValueUnusedMarker = Symbol('ValueUnusedMarker');
 
 function OnSetUsedNoAction() { /** no action callback */ }
 
@@ -1120,8 +1053,9 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
     private subscribers: Set<Subscriber> | undefined;
 
     private isDowngraded: boolean | undefined;
-    private childrenCache: Record<string | number, StateMethodsImpl<S[keyof S]>> | undefined;
+    private childrenCache: Record<string | number, StateMethodsImpl<StateValueAtPath>> | undefined;
     private selfCache: State<S> | undefined;
+    private valueCache: StateValueAtPath = ValueUnusedMarker;
     
     constructor(
         public readonly state: Store,
@@ -1140,8 +1074,8 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                 // this link is still mounted to a component
                 // populate cache again to ensure correct tracking of usage
                 // when React scans which states to rerender on update
-                if (ValueCacheProperty in this) {
-                    delete this[ValueCacheProperty]
+                if (this.valueCache !== ValueUnusedMarker) {
+                    this.valueCache = ValueUnusedMarker
                     this.get(true) // renew cache to keep it marked used
                 }
             } else {
@@ -1154,7 +1088,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                 // when a component unmounted.
                 // We take this opportunity to clean up caches
                 // to avoid memory leaks via stale children states cache.
-                delete this[ValueCacheProperty]
+                this.valueCache = ValueUnusedMarker
                 delete this.childrenCache
                 delete this.selfCache
             }
@@ -1170,18 +1104,18 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
 
     get(allowPromised?: boolean) {
         const currentValue = this.getUntracked(allowPromised)
-        if (!(ValueCacheProperty in this)) {
+        if (this.valueCache === ValueUnusedMarker) {
             if (this.isDowngraded) {
-                this[ValueCacheProperty] = currentValue;
+                this.valueCache = currentValue;
             } else if (Array.isArray(currentValue)) {
-                this[ValueCacheProperty] = this.valueArrayImpl(currentValue);
+                this.valueCache = this.valueArrayImpl(currentValue);
             } else if (typeof currentValue === 'object' && currentValue !== null) {
-                this[ValueCacheProperty] = this.valueObjectImpl(currentValue as unknown as object);
+                this.valueCache = this.valueObjectImpl(currentValue as unknown as object);
             } else {
-                this[ValueCacheProperty] = currentValue;
+                this.valueCache = currentValue;
             }
         }
-        return this[ValueCacheProperty] as S;
+        return this.valueCache as S;
     }
 
     get value(): S {
@@ -1264,6 +1198,10 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         this.state.update(this.mergeUntracked(sourceValue));
     }
 
+    nested<K extends keyof S>(key: K): State<S[K]> {
+        return this.child(key as string | number).self as State<S[K]>
+    }
+    
     rerender(paths: Path[]) {
         this.state.update(paths)
     }
@@ -1293,14 +1231,14 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
 
     onSet(paths: Path[], actions: (() => void)[]): boolean {
         const update = () => {
-            if (this.isDowngraded && (ValueCacheProperty in this)) {
+            if (this.isDowngraded && this.valueCache !== ValueUnusedMarker) {
                 actions.push(this.onSetUsed);
                 return true;
             }
             for (let path of paths) {
                 const firstChildKey = path[this.path.length];
                 if (firstChildKey === undefined) {
-                    if (ValueCacheProperty in this) {
+                    if (this.valueCache !== ValueUnusedMarker) {
                         actions.push(this.onSetUsed);
                         return true;
                     }
@@ -1362,6 +1300,10 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
     }
     
     private valueArrayImpl(currentValue: StateValueAtPath[]): S {
+        if (IsNoProxy) {
+            this.isDowngraded = true
+            return currentValue as unknown as S;
+        }
         return proxyWrap(this.path, currentValue,
             () => currentValue,
             (target: object, key: PropertyKey) => {
@@ -1397,6 +1339,10 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
     }
 
     private valueObjectImpl(currentValue: object): S {
+        if (IsNoProxy) {
+            this.isDowngraded = true
+            return currentValue as unknown as S;
+        }
         return proxyWrap(this.path, currentValue,
             () => currentValue,
             (target: object, key: PropertyKey) => {
@@ -1421,77 +1367,110 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         ) as unknown as S;
     }
 
-    get [self](): State<S> {
+    get self(): State<S> {
         if (this.selfCache) {
             return this.selfCache
         }
+        
+        const getter = (_: object, key: PropertyKey) => {
+            if (key === self) {
+                return this
+            }
+            if (typeof key === 'symbol') {
+                return undefined
+            }
+            if (key === 'toJSON') {
+                throw new StateInvalidUsageError(this.path, ErrorId.ToJson_State);
+            }
+            
+            switch (key) {
+                case 'path':
+                    return this.path
+                case 'keys':
+                    return this.keys
+                case 'value':
+                    return this.value
+                case 'ornull':
+                    return this.ornull
+                case 'promised':
+                    return this.promised
+                case 'error':
+                    return this.error
+                case 'get':
+                    return () => this.get()
+                case 'set':
+                    return (p: SetStateAction<S>) => this.set(p)
+                case 'merge':
+                    return (p: SetPartialStateAction<S>) => this.merge(p)
+                case 'nested':
+                    return (p: keyof S) => this.nested(p)
+                case 'batch':
+                    // tslint:disable-next-line: no-any
+                    return <R, C>(action: () => R, context: Exclude<C, Function>) => this.batch(action, context)
+                case 'attach':
+                    return (p: symbol) => this.attach(p)
+                case 'destroy': {
+                    return () => this.destroy()
+                }
+                default:
+                    // fall down
+            }
+            
+            const currentDowngraded = this.isDowngraded; // relevant for IE11 only
+            const currentValue = this.get(); // IE11 marks this as downgraded
+            this.isDowngraded = currentDowngraded; // relevant for IE11 only
+            if (// if currentValue is primitive type
+                (typeof currentValue !== 'object' || currentValue === null) &&
+                // if promised, it will be none
+                currentValue !== none) {
+                throw new StateInvalidUsageError(this.path, ErrorId.GetStatePropertyWhenPrimitive)
+            }
+
+            if (Array.isArray(currentValue)) {
+                if (key === 'length') {
+                    return currentValue.length;
+                }
+                if (key in Array.prototype) {
+                    return Array.prototype[key];
+                }
+                const index = Number(key);
+                if (!Number.isInteger(index)) {
+                    return undefined;
+                }
+                return this.nested(index as keyof S)
+            }
+            return this.nested(key.toString() as keyof S)
+        }
+        
+        if (IsNoProxy) {
+            // minimal support for IE11
+            const result = (Array.isArray(this.valueSource) ? [] : {}) as State<S>;
+            [self, 'toJSON', 'path', 'keys', 'value', 'ornull',
+                'promised', 'error', 'get', 'set', 'merge',
+                'nested', 'batch', 'attach', 'destroy']
+            .forEach(key => {
+                Object.defineProperty(result, key, {
+                    get: () => getter(result, key)
+                })
+            })
+            if (typeof this.valueSource === 'object' && this.valueSource !== null) {
+                Object.keys(this.valueSource).forEach(key => {
+                    Object.defineProperty(result, key, {
+                        enumerable: true,
+                        get: () => getter(result, key)
+                    })
+                })
+            }
+            this.selfCache = result;
+            return this.selfCache
+        }
+        
         this.selfCache = proxyWrap(this.path, this.valueSource,
             () => {
                 this.get() // get latest & mark used
                 return this.valueSource
             },
-            (_, key) => {
-                if (typeof key === 'symbol') {
-                    if (key === self) {
-                        return this
-                    } else {
-                        return undefined
-                    }
-                } else {
-                    if (key === 'toJSON') {
-                        throw new StateInvalidUsageError(this.path, ErrorId.ToJson_State);
-                    }
-                    
-                    const currentValue = this.getUntracked(true);
-                    if (// if currentValue is primitive type
-                        (typeof currentValue !== 'object' || currentValue === null) &&
-                        // if promised, it will be none
-                        currentValue !== none) {
-                        switch (key) {
-                            case 'path':
-                                return this.path
-                            case 'keys':
-                                return this.keys
-                            case 'value':
-                                return this.value
-                            case 'get':
-                                return () => this.get()
-                            case 'set':
-                                return (p: SetStateAction<S>) => this.set(p)
-                            case 'merge':
-                                return (p: SetPartialStateAction<S>) => this.merge(p)
-                            case 'map':
-                                // tslint:disable-next-line: no-any
-                                return (...args: any[]) => this.map(args[0], args[1], args[2], args[3])
-                            case 'attach':
-                                return (p: symbol) => this.attach(p)
-                            default:
-                                this.get() // mark used
-                                throw new StateInvalidUsageError(this.path, ErrorId.GetStatePropertyWhenPrimitive)
-                        }
-                    }
-
-                    // TODO if this is promised state
-                    // it will throw, better to add new error code
-                    // and explain that state.map(...) should be replaced by state[self].map(...)
-                    // which is the most common oversight with promised states.
-                    this.get() // mark used
-                    if (Array.isArray(currentValue)) {
-                        if (key === 'length') {
-                            return currentValue.length;
-                        }
-                        if (key in Array.prototype) {
-                            return Array.prototype[key];
-                        }
-                        const index = Number(key);
-                        if (!Number.isInteger(index)) {
-                            return undefined;
-                        }
-                        return this.child(index)[self]
-                    }
-                    return this.child(key.toString())[self]
-                }
-            },
+            getter,
             (_, key, value) => {
                 throw new StateInvalidUsageError(this.path, ErrorId.SetProperty_State)
             },
@@ -1499,92 +1478,40 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         return this.selfCache
     }
     
-    map<R, RL, RE, C>(
-        action: (s: State<S>) => R,
-        onPromised: (s: State<S>) => RL,
-        onError: (e: StateErrorAtRoot, s: State<S>) => RE,
-        context?: Exclude<C, Function>
-    ): R | RL | RE;
-    map<R, RL, C>(
-        action: (s: State<S>) => R,
-        onPromised: (s: State<S>) => RL,
-        context?: Exclude<C, Function>
-    ): R | RL;
-    map<R, C>(
-        action: (s: State<S>) => R,
-        context?: Exclude<C, Function>
-    ): R;
-    map(): [boolean, StateErrorAtRoot | undefined, S | undefined];
-    map<R, RL, RE, C>(
-        action?: (s: State<S>) => R,
-        onPromised?: ((s: State<S>) => RL) | Exclude<C, Function>,
-        onError?: ((e: StateErrorAtRoot, s: State<S>) => RE) | Exclude<C, Function>,
-        context?: Exclude<C, Function>
-    ): InferredStateOrnullType<S> | R | RL | RE | [boolean, StateErrorAtRoot | undefined, S | undefined] {
-        const promised = () => {
-            const currentValue = this.get(true) // marks used
-            if (currentValue === none && this.state.promised && !this.state.promised.fullfilled) {
-                return true;
-            }
-            return false;
+    get promised(): boolean {
+        const currentValue = this.get(true) // marks used
+        if (currentValue === none && this.state.promised && !this.state.promised.fullfilled) {
+            return true;
         }
-        
-        const error = () => {
-            const currentValue = this.get(true) // marks used
-            if (currentValue === none) {
-                if (this.state.promised && this.state.promised.fullfilled) {
-                    return this.state.promised.error;
-                }
-                this.get() // will throw 'read while promised' exception
-            }
-            return undefined;
-        }
-        
-        if (!action) {
-            if (promised()) {
-                return [true, undefined, undefined]
-            }
-            if (error()) {
-                return [false, error(), undefined]
-            }
-            return [false, undefined, this.value]
-        }
-        
-        const contextArg = typeof onPromised === 'function'
-            ? (typeof onError === 'function' ? context : onError)
-            : onPromised;
+        return false;
+    }
 
-        const runBatch = ((actionArg: () => (R | RL | RE)) => {
-            if (contextArg !== undefined) {
-                const opts = { context: contextArg }
-                try {
-                    this.state.startBatch(this.path, opts)
-                    return actionArg()
-                } finally {
-                    this.state.finishBatch(this.path, opts)
-                }
-            } else {
-                return actionArg()
+    get error(): StateErrorAtRoot | undefined {
+        const currentValue = this.get(true) // marks used
+        if (currentValue === none) {
+            if (this.state.promised && this.state.promised.fullfilled) {
+                return this.state.promised.error;
             }
-        })
-            
-        if (typeof onPromised === 'function' && promised()) {
-            return runBatch(() => {
-                const r = (onPromised as ((s: State<S>) => RL))(this[self])
-                if (r as unknown as symbol === postpone) {
-                    // tslint:disable-next-line: no-any
-                    this.state.postponeBatch(
-                        () => this.map(action, onPromised as any, onError as any, context as any))
-                }
-                return r;
-            })
+            this.get() // will throw 'read while promised' exception
         }
-        
-        if (typeof onError === 'function' && error()) {
-            return runBatch(() => (onError as ((e: StateErrorAtRoot, s: State<S>) => RE))(error(), this[self]))
+        return undefined;
+    }
+
+    batch<R, C>(
+        action: (s: State<S>) => R,
+        context?: Exclude<C, Function>
+    ): R {
+        const opts = { context: context }
+        try {
+            this.state.startBatch(this.path, opts)
+            const result = action(this.self) as R
+            if (result as unknown as Symbol === postpone) {
+                this.state.postponeBatch(() => this.batch(action, context))
+            }
+            return result
+        } finally {
+            this.state.finishBatch(this.path, opts)
         }
-        
-        return runBatch(() => action(this[self]))
     }
 
     get ornull(): InferredStateOrnullType<S> {
@@ -1592,7 +1519,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         if (value === null || value === undefined) {
             return value as unknown as InferredStateOrnullType<S>;
         }
-        return this[self] as InferredStateOrnullType<S>;
+        return this.self as InferredStateOrnullType<S>;
     }
 
     attach(plugin: () => Plugin): State<S>
@@ -1603,10 +1530,10 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
             const pluginMeta = p();
             if (pluginMeta.id === DowngradedID) {
                 this.isDowngraded = true;
-                return this[self];
+                return this.self;
             }
             this.state.register(pluginMeta);
-            return this[self];
+            return this.self;
         } else {
             return [
                 this.state.getPlugin(p) ||

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useState, State, Downgraded, self } from '@hookstate/core';
+import { useState, State, Downgraded } from '@hookstate/core';
 
 const TableCell = (props: { cellState: State<number> }) => {
     const state = useState(props.cellState);
@@ -65,21 +65,22 @@ const MatrixView = (props: {
 }
 
 export const ExampleComponent = () => {
-    const settings = useState({
+    const settingsState = useState({
         totalRows: 50,
         totalColumns: 50,
         rate: 50,
         timer: 10
-    })[self].map((s) => ({
-        totalRows: s.totalRows.value,
-        totalColumns: s.totalColumns.value,
-        rate: s.rate.value,
-        timer: s.timer.value,
-        setRows: (f: (p: number) => number) => s.totalRows.set(f),
-        setColumns: (f: (p: number) => number) => s.totalColumns.set(f),
-        setRate: (f: (p: number) => number) => s.rate.set(f),
-        setTimer: (f: (p: number) => number) => s.timer.set(f),
-    }));
+    })
+    const settings = {
+        totalRows: settingsState.totalRows.value,
+        totalColumns: settingsState.totalColumns.value,
+        rate: settingsState.rate.value,
+        timer: settingsState.timer.value,
+        setRows: (f: (p: number) => number) => settingsState.totalRows.set(f),
+        setColumns: (f: (p: number) => number) => settingsState.totalColumns.set(f),
+        setRate: (f: (p: number) => number) => settingsState.rate.set(f),
+        setTimer: (f: (p: number) => number) => settingsState.timer.set(f),
+    };
 
     return <>
         <div>
@@ -136,7 +137,7 @@ function PerformanceMeter(props: { matrixState: State<number[][]> }) {
     const elapsed = () => Math.floor(elapsedMs() / 1000);
     const rate = Math.floor(stats.current.totalCalls / elapsedMs() * 1000);
     const scopedState = useState(props.matrixState)
-    scopedState[self].attach(() => ({
+    scopedState.attach(() => ({
             id: PerformanceViewPluginID,
             init: () => ({
                 onSet: (p) => {
@@ -150,8 +151,8 @@ function PerformanceMeter(props: { matrixState: State<number[][]> }) {
             })
         }))
     // mark the value of the whole matrix as 'used' by this component
-    scopedState[self].attach(Downgraded);
-    scopedState[self].get();
+    scopedState.attach(Downgraded);
+    scopedState.get();
 
     return <>
         <p><span>Elapsed: {elapsed()}s</span></p>

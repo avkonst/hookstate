@@ -1,4 +1,4 @@
-import { useState, createState, self } from '../';
+import { useState, createState } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import React from 'react';
@@ -45,7 +45,7 @@ test('primitive: should rerender used (null)', async () => {
     expect(result.current.get()).toStrictEqual(null);
 
     act(() => {
-        result.current[self].set(2);
+        result.current.set(2);
     });
     expect(renderTimes).toStrictEqual(2);
     expect(result.current.get()).toStrictEqual(2);
@@ -61,7 +61,7 @@ test('primitive: should rerender used (undefined)', async () => {
     expect(result.current.get()).toStrictEqual(undefined);
 
     act(() => {
-        result.current[self].set(2);
+        result.current.set(2);
     });
     expect(renderTimes).toStrictEqual(2);
     expect(result.current.get()).toStrictEqual(2);
@@ -78,7 +78,7 @@ test('primitive: should rerender used (global null)', async () => {
     expect(result.current.get()).toStrictEqual(null);
 
     act(() => {
-        result.current[self].set(2);
+        result.current.set(2);
     });
     expect(renderTimes).toStrictEqual(2);
     expect(result.current.get()).toStrictEqual(2);
@@ -95,7 +95,7 @@ test('primitive: should rerender used (global undefined)', async () => {
     expect(result.current.get()).toStrictEqual(undefined);
 
     act(() => {
-        result.current[self].set(2);
+        result.current.set(2);
     });
     expect(renderTimes).toStrictEqual(2);
     expect(result.current.get()).toStrictEqual(2);

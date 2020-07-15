@@ -1,5 +1,4 @@
-import { useState, createState, Plugin, self,
-    DevToolsID, DevTools, DevToolsExtensions, PluginCallbacks } from '../';
+import { useState, createState, Plugin, DevToolsID, DevTools, DevToolsExtensions, PluginCallbacks } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import React from 'react';
@@ -15,7 +14,7 @@ test('plugin: common flow callbacks', async () => {
         return useState([{
             f1: 0,
             f2: 'str'
-        }])[self].attach(() => ({
+        }]).attach(() => ({
             id: TestPlugin,
             init: () => {
                 messages.push('onInit called')
@@ -45,55 +44,55 @@ test('plugin: common flow callbacks', async () => {
 
     expect(renderTimes).toStrictEqual(1);
     expect(messages).toEqual(['onInit called'])
-    expect(result.current[0][self].get().f1).toStrictEqual(0);
+    expect(result.current[0].get().f1).toStrictEqual(0);
     expect(messages).toEqual(['onInit called'])
 
     act(() => {
-        result.current[self].set([{ f1: 0, f2: 'str2' }]);
+        result.current.set([{ f1: 0, f2: 'str2' }]);
     });
     expect(renderTimes).toStrictEqual(2);
     expect(messages.slice(1)).toEqual(['onSet called, []: [{\"f1\":0,\"f2\":\"str2\"}], [{\"f1\":0,\"f2\":\"str\"}] => [{\"f1\":0,\"f2\":\"str2\"}], undefined'])
 
-    expect(result.current[self].get()[0].f1).toStrictEqual(0);
-    expect(result.current[self].get()[0].f2).toStrictEqual('str2');
+    expect(result.current.get()[0].f1).toStrictEqual(0);
+    expect(result.current.get()[0].f2).toStrictEqual('str2');
     expect(Object.keys(result.current[0])).toEqual(['f1', 'f2']);
-    expect(Object.keys(result.current[self].get()[0])).toEqual(['f1', 'f2']);
+    expect(Object.keys(result.current.get()[0])).toEqual(['f1', 'f2']);
     expect(messages.slice(2)).toEqual([])
 
     act(() => {
-        result.current[0].f1[self].set(p => p + 1);
+        result.current[0].f1.set(p => p + 1);
     });
     expect(renderTimes).toStrictEqual(3);
     expect(messages.slice(2)).toEqual(['onSet called, [0,f1]: [{\"f1\":1,\"f2\":\"str2\"}], 0 => 1, undefined'])
 
-    expect(result.current[self].get()[0].f1).toStrictEqual(1);
+    expect(result.current.get()[0].f1).toStrictEqual(1);
     expect(Object.keys(result.current[0])).toEqual(['f1', 'f2']);
-    expect(Object.keys(result.current[self].get()[0])).toEqual(['f1', 'f2']);
+    expect(Object.keys(result.current.get()[0])).toEqual(['f1', 'f2']);
     expect(messages.slice(3)).toEqual([])
 
     act(() => {
-        result.current[0][self].merge(p => ({ f1 : p.f1 + 1 }));
+        result.current[0].merge(p => ({ f1 : p.f1 + 1 }));
     });
     expect(renderTimes).toStrictEqual(4);
     expect(messages.slice(3)).toEqual(['onSet called, [0]: [{\"f1\":2,\"f2\":\"str2\"}], {\"f1\":2,\"f2\":\"str2\"} => {\"f1\":2,\"f2\":\"str2\"}, {\"f1\":2}'])
 
-    expect(result.current[self].get()[0].f1).toStrictEqual(2);
+    expect(result.current.get()[0].f1).toStrictEqual(2);
     expect(Object.keys(result.current[0])).toEqual(['f1', 'f2']);
-    expect(Object.keys(result.current[self].get()[0])).toEqual(['f1', 'f2']);
+    expect(Object.keys(result.current.get()[0])).toEqual(['f1', 'f2']);
     expect(messages.slice(4)).toEqual([]);
 
-    (result.current[self].attach(TestPlugin)[0] as { onExtension(): void; }).onExtension();
+    (result.current.attach(TestPlugin)[0] as { onExtension(): void; }).onExtension();
     expect(messages.slice(4)).toEqual(['onExtension called']);
 
-    result.current[self].map((s) => {
-        messages.push(`batch executed, state: ${JSON.stringify(s[self].get())}`)
+    result.current.batch((s) => {
+        messages.push(`batch executed, state: ${JSON.stringify(s.get())}`)
     }, 'custom context')
     expect(messages.slice(5)).toEqual(['onBatchStart called, []: [{\"f1\":2,\"f2\":\"str2\"}], context: \"custom context\"', 'batch executed, state: [{\"f1\":2,\"f2\":\"str2\"}]', 'onBatchFinish called, []: [{\"f1\":2,\"f2\":\"str2\"}], context: \"custom context\"'])
-    expect(result.current[self].attach(TestPluginUnknown)[0] instanceof Error).toEqual(true)
+    expect(result.current.attach(TestPluginUnknown)[0] instanceof Error).toEqual(true)
 
-    expect(result.current[self].get()[0].f1).toStrictEqual(2);
-    expect(result.current[self].get()[0].f2).toStrictEqual('str2');
-    const controls = result.current[self].attach(TestPlugin)[1];
+    expect(result.current.get()[0].f1).toStrictEqual(2);
+    expect(result.current.get()[0].f2).toStrictEqual('str2');
+    const controls = result.current.attach(TestPlugin)[1];
     expect(renderTimes).toStrictEqual(4);
     act(() => {
         controls.setUntracked([{ f1: 0, f2: 'str3' }])
@@ -101,10 +100,10 @@ test('plugin: common flow callbacks', async () => {
     expect(renderTimes).toStrictEqual(4);
     expect(messages.slice(8)).toEqual(['onSet called, []: [{\"f1\":0,\"f2\":\"str3\"}], [{\"f1\":2,\"f2\":\"str2\"}] => [{\"f1\":0,\"f2\":\"str3\"}], undefined']);
 
-    expect(result.current[self].get()[0].f1).toStrictEqual(0);
-    expect(result.current[self].get()[0].f2).toStrictEqual('str3');
+    expect(result.current.get()[0].f1).toStrictEqual(0);
+    expect(result.current.get()[0].f2).toStrictEqual('str3');
     expect(renderTimes).toStrictEqual(4);
-    const controlsNested = result.current[0].f2[self].attach(TestPlugin)[1];
+    const controlsNested = result.current[0].f2.attach(TestPlugin)[1];
     act(() => {
         controlsNested.mergeUntracked('str2')
     })
@@ -112,40 +111,40 @@ test('plugin: common flow callbacks', async () => {
     expect(messages.slice(9)).toEqual(
         ['onSet called, [0,f2]: [{"f1":0,"f2":"str3str2"}], "str3" => "str3str2", "str2"']);
 
-    expect(result.current[self].get()[0].f1).toStrictEqual(0);
-    expect(result.current[self].get()[0].f2).toStrictEqual('str3str2');
+    expect(result.current.get()[0].f1).toStrictEqual(0);
+    expect(result.current.get()[0].f2).toStrictEqual('str3str2');
     act(() => {
         controlsNested.rerender([[0, 'f1'], [0, 'f2']])
     })
     expect(renderTimes).toStrictEqual(5);
     expect(messages.slice(10)).toEqual([]);
 
-    expect(result.current[self].get()[0].f1).toStrictEqual(0);
-    expect(result.current[self].get()[0].f2).toStrictEqual('str3str2');
+    expect(result.current.get()[0].f1).toStrictEqual(0);
+    expect(result.current.get()[0].f2).toStrictEqual('str3str2');
     act(() => {
         controlsNested.rerender([[0, 'unknown'], [0, 'f2']])
     })
     expect(renderTimes).toStrictEqual(6);
     expect(messages.slice(10)).toEqual([]);
 
-    expect(result.current[self].get()[0].f1).toStrictEqual(0);
-    expect(result.current[self].get()[0].f2).toStrictEqual('str3str2');
+    expect(result.current.get()[0].f1).toStrictEqual(0);
+    expect(result.current.get()[0].f2).toStrictEqual('str3str2');
     act(() => {
         controlsNested.rerender([[0, 'unknown'], [1]])
     })
     expect(renderTimes).toStrictEqual(7);
     expect(messages.slice(10)).toEqual([]);
 
-    expect(result.current[self].get()[0].f1).toStrictEqual(0);
-    expect(result.current[self].get()[0].f2).toStrictEqual('str3str2');
+    expect(result.current.get()[0].f1).toStrictEqual(0);
+    expect(result.current.get()[0].f2).toStrictEqual('str3str2');
     act(() => {
         controlsNested.rerender([[0, 'unknown']])
     })
     expect(renderTimes).toStrictEqual(7);
     expect(messages.slice(10)).toEqual([]);
 
-    expect(result.current[self].get()[0].f1).toStrictEqual(0);
-    expect(result.current[self].get()[0].f2).toStrictEqual('str3str2');
+    expect(result.current.get()[0].f1).toStrictEqual(0);
+    expect(result.current.get()[0].f2).toStrictEqual('str3str2');
     act(() => {
         controlsNested.rerender([[0]])
     })
@@ -155,11 +154,11 @@ test('plugin: common flow callbacks', async () => {
     unmount()
     expect(messages.slice(10)).toEqual(['onDestroy called, [{\"f1\":0,\"f2\":\"str3str2\"}]'])
 
-    expect(result.current[self].get()[0].f1).toStrictEqual(0);
+    expect(result.current.get()[0].f1).toStrictEqual(0);
     expect(messages.slice(11)).toEqual([])
 
     act(() => {
-        expect(() => result.current[0].f1[self].set(p => p + 1)).toThrow(
+        expect(() => result.current[0].f1.set(p => p + 1)).toThrow(
             'Error: HOOKSTATE-106 [path: /0/f1]. See https://hookstate.js.org/docs/exceptions#hookstate-106'
         );
     });
@@ -174,10 +173,10 @@ const stateInf = createState([{
 
 test('plugin: common flow callbacks global state', async () => {
     const messages: string[] = []
-    stateInf[self].attach(() => ({
+    stateInf.attach(() => ({
         id: TestPlugin,
         init: (state) => {
-            messages.push(`onInit called, initial: ${JSON.stringify(state[self].get())}`)
+            messages.push(`onInit called, initial: ${JSON.stringify(state.get())}`)
             return {
                 onSet: (p) => {
                     messages.push(`onSet called, [${p.path}]: ${JSON.stringify(p.state)}, ${JSON.stringify(p.previous)} => ${JSON.stringify(p.value)}, ${JSON.stringify(p.merged)}`)
@@ -204,54 +203,54 @@ test('plugin: common flow callbacks global state', async () => {
     expect(renderTimes).toStrictEqual(1);
     expect(messages).toEqual(
         ['onInit called, initial: [{\"f1\":0,\"f2\":\"str\"}]'])
-    expect(result.current[0][self].get().f1).toStrictEqual(0);
+    expect(result.current[0].get().f1).toStrictEqual(0);
     expect(messages).toEqual(
         ['onInit called, initial: [{\"f1\":0,\"f2\":\"str\"}]'])
 
     act(() => {
-        result.current[0].f1[self].set(p => p + 1);
+        result.current[0].f1.set(p => p + 1);
     });
     expect(renderTimes).toStrictEqual(2);
     expect(messages.slice(1)).toEqual(['onSet called, [0,f1]: [{\"f1\":1,\"f2\":\"str\"}], 0 => 1, undefined'])
 
-    expect(result.current[self].get()[0].f1).toStrictEqual(1);
+    expect(result.current.get()[0].f1).toStrictEqual(1);
     expect(Object.keys(result.current[0])).toEqual(['f1', 'f2']);
-    expect(Object.keys(result.current[self].get()[0])).toEqual(['f1', 'f2']);
+    expect(Object.keys(result.current.get()[0])).toEqual(['f1', 'f2']);
     expect(messages.slice(2)).toEqual([])
 
     act(() => {
-        result.current[0][self].merge(p => ({ f1 : p.f1 + 1 }));
+        result.current[0].merge(p => ({ f1 : p.f1 + 1 }));
     });
     expect(renderTimes).toStrictEqual(3);
     expect(messages.slice(2)).toEqual(['onSet called, [0]: [{\"f1\":2,\"f2\":\"str\"}], {\"f1\":2,\"f2\":\"str\"} => {\"f1\":2,\"f2\":\"str\"}, {\"f1\":2}'])
 
-    expect(result.current[self].get()[0].f1).toStrictEqual(2);
+    expect(result.current.get()[0].f1).toStrictEqual(2);
     expect(Object.keys(result.current[0])).toEqual(['f1', 'f2']);
-    expect(Object.keys(result.current[self].get()[0])).toEqual(['f1', 'f2']);
+    expect(Object.keys(result.current.get()[0])).toEqual(['f1', 'f2']);
     expect(messages.slice(3)).toEqual([]);
 
-    (result.current[self].attach(TestPlugin)[0] as { onExtension(): void; }).onExtension();
+    (result.current.attach(TestPlugin)[0] as { onExtension(): void; }).onExtension();
     expect(messages.slice(3)).toEqual(['onExtension called']);
 
-    expect(result.current[self].attach(TestPluginUnknown)[0] instanceof Error).toEqual(true)
+    expect(result.current.attach(TestPluginUnknown)[0] instanceof Error).toEqual(true)
 
     unmount()
     expect(messages.slice(4)).toEqual([])
 
-    expect(result.current[self].get()[0].f1).toStrictEqual(2);
+    expect(result.current.get()[0].f1).toStrictEqual(2);
     expect(messages.slice(4)).toEqual([])
 
     act(() => {
-        result.current[0].f1[self].set(p => p + 1)
+        result.current[0].f1.set(p => p + 1)
     });
     expect(renderTimes).toStrictEqual(3);
     expect(messages.slice(4)).toEqual(['onSet called, [0,f1]: [{\"f1\":3,\"f2\":\"str\"}], 2 => 3, undefined'])
 
-    stateInf[self].destroy()
+    stateInf.destroy()
     expect(messages.slice(5)).toEqual(['onDestroy called, [{\"f1\":3,\"f2\":\"str\"}]'])
 
     act(() => {
-        expect(() => result.current[0].f1[self].set(p => p + 1)).toThrow(
+        expect(() => result.current[0].f1.set(p => p + 1)).toThrow(
             'Error: HOOKSTATE-106 [path: /0/f1]. See https://hookstate.js.org/docs/exceptions#hookstate-106'
         );
     });
@@ -296,44 +295,44 @@ test('plugin: common flow callbacks devtools', async () => {
         
         expect(renderTimes).toStrictEqual(1);
         expect(messages).toEqual(['undefined onInit called'])
-        expect(result.current[0][self].get().f1).toStrictEqual(0);
+        expect(result.current[0].get().f1).toStrictEqual(0);
         expect(messages).toEqual(['undefined onInit called'])
         
         act(() => {
-            result.current[0].f1[self].set(p => p + 1);
+            result.current[0].f1.set(p => p + 1);
         });
         expect(renderTimes).toStrictEqual(2);
         expect(messages.slice(1)).toEqual(['LABELLED onSet called, [0,f1]: [{\"f1\":1,\"f2\":\"str\"}], 0 => 1, undefined'])
 
-        expect(result.current[self].get()[0].f1).toStrictEqual(1);
+        expect(result.current.get()[0].f1).toStrictEqual(1);
         expect(Object.keys(result.current[0])).toEqual(['f1', 'f2']);
-        expect(Object.keys(result.current[self].get()[0])).toEqual(['f1', 'f2']);
+        expect(Object.keys(result.current.get()[0])).toEqual(['f1', 'f2']);
         expect(messages.slice(2)).toEqual([])
 
         act(() => {
-            result.current[0][self].merge(p => ({ f1 : p.f1 + 1 }));
+            result.current[0].merge(p => ({ f1 : p.f1 + 1 }));
         });
         expect(renderTimes).toStrictEqual(3);
         expect(messages.slice(2)).toEqual(['LABELLED onSet called, [0]: [{\"f1\":2,\"f2\":\"str\"}], {\"f1\":2,\"f2\":\"str\"} => {\"f1\":2,\"f2\":\"str\"}, {\"f1\":2}'])
 
-        expect(result.current[self].get()[0].f1).toStrictEqual(2);
+        expect(result.current.get()[0].f1).toStrictEqual(2);
         expect(Object.keys(result.current[0])).toEqual(['f1', 'f2']);
-        expect(Object.keys(result.current[self].get()[0])).toEqual(['f1', 'f2']);
+        expect(Object.keys(result.current.get()[0])).toEqual(['f1', 'f2']);
         expect(messages.slice(3)).toEqual([]);
 
         DevTools(result.current).log('onExtension called');
         expect(messages.slice(3)).toEqual(['LABELLED onExtension called']);
 
-        expect(result.current[self].attach(TestPluginUnknown)[0] instanceof Error).toEqual(true)
+        expect(result.current.attach(TestPluginUnknown)[0] instanceof Error).toEqual(true)
 
         unmount()
         expect(messages.slice(4)).toEqual(['LABELLED onDestroy called, [{\"f1\":2,\"f2\":\"str\"}]'])
 
-        expect(result.current[self].get()[0].f1).toStrictEqual(2);
+        expect(result.current.get()[0].f1).toStrictEqual(2);
         expect(messages.slice(5)).toEqual([])
 
         act(() => {
-            expect(() => result.current[0].f1[self].set(p => p + 1)).toThrow(
+            expect(() => result.current[0].f1.set(p => p + 1)).toThrow(
                 'Error: HOOKSTATE-106 [path: /0/f1]. See https://hookstate.js.org/docs/exceptions#hookstate-106'
             );
         });
@@ -351,7 +350,7 @@ test('plugin: common flow callbacks global state devtools', async () => {
         id: DevToolsID,
         init: (state) => {
             let label: string | undefined = undefined;
-            messages.push(`${label} onInit called, initial: ${JSON.stringify(state[self].get())}`)
+            messages.push(`${label} onInit called, initial: ${JSON.stringify(state.get())}`)
             return {
                 log: (m, d) => {
                     messages.push(`${label} ${m}`)
@@ -383,30 +382,30 @@ test('plugin: common flow callbacks global state devtools', async () => {
         expect(renderTimes).toStrictEqual(1);
         expect(messages).toEqual(
             ['undefined onInit called, initial: [{\"f1\":0,\"f2\":\"str\"}]'])
-        expect(result.current[0][self].get().f1).toStrictEqual(0);
+        expect(result.current[0].get().f1).toStrictEqual(0);
         expect(messages).toEqual(
             ['undefined onInit called, initial: [{\"f1\":0,\"f2\":\"str\"}]'])
 
         act(() => {
-            result.current[0].f1[self].set(p => p + 1);
+            result.current[0].f1.set(p => p + 1);
         });
         expect(renderTimes).toStrictEqual(2);
         expect(messages.slice(1)).toEqual(['onSet called, [0,f1]: [{\"f1\":1,\"f2\":\"str\"}], 0 => 1, undefined'])
 
-        expect(result.current[self].get()[0].f1).toStrictEqual(1);
+        expect(result.current.get()[0].f1).toStrictEqual(1);
         expect(Object.keys(result.current[0])).toEqual(['f1', 'f2']);
-        expect(Object.keys(result.current[self].get()[0])).toEqual(['f1', 'f2']);
+        expect(Object.keys(result.current.get()[0])).toEqual(['f1', 'f2']);
         expect(messages.slice(2)).toEqual([])
 
         act(() => {
-            result.current[0][self].merge(p => ({ f1 : p.f1 + 1 }));
+            result.current[0].merge(p => ({ f1 : p.f1 + 1 }));
         });
         expect(renderTimes).toStrictEqual(3);
         expect(messages.slice(2)).toEqual(['onSet called, [0]: [{\"f1\":2,\"f2\":\"str\"}], {\"f1\":2,\"f2\":\"str\"} => {\"f1\":2,\"f2\":\"str\"}, {\"f1\":2}'])
 
-        expect(result.current[self].get()[0].f1).toStrictEqual(2);
+        expect(result.current.get()[0].f1).toStrictEqual(2);
         expect(Object.keys(result.current[0])).toEqual(['f1', 'f2']);
-        expect(Object.keys(result.current[self].get()[0])).toEqual(['f1', 'f2']);
+        expect(Object.keys(result.current.get()[0])).toEqual(['f1', 'f2']);
         expect(messages.slice(3)).toEqual([]);
 
         DevTools(result.current).log('onExtension called');
@@ -416,25 +415,25 @@ test('plugin: common flow callbacks global state devtools', async () => {
         DevTools(result.current).log('onExtension called');
         expect(messages.slice(4)).toEqual(['LABELLED2 onExtension called']);
 
-        expect(result.current[self].attach(TestPluginUnknown)[0] instanceof Error).toEqual(true)
+        expect(result.current.attach(TestPluginUnknown)[0] instanceof Error).toEqual(true)
 
         unmount()
         expect(messages.slice(5)).toEqual([])
 
-        expect(result.current[self].get()[0].f1).toStrictEqual(2);
+        expect(result.current.get()[0].f1).toStrictEqual(2);
         expect(messages.slice(5)).toEqual([])
 
         act(() => {
-            result.current[0].f1[self].set(p => p + 1)
+            result.current[0].f1.set(p => p + 1)
         });
         expect(renderTimes).toStrictEqual(3);
         expect(messages.slice(5)).toEqual(['onSet called, [0,f1]: [{\"f1\":3,\"f2\":\"str\"}], 2 => 3, undefined'])
 
-        stateRef[self].destroy()
+        stateRef.destroy()
         expect(messages.slice(6)).toEqual(['onDestroy called, [{\"f1\":3,\"f2\":\"str\"}]'])
 
         act(() => {
-            expect(() => result.current[0].f1[self].set(p => p + 1)).toThrow(
+            expect(() => result.current[0].f1.set(p => p + 1)).toThrow(
                 'Error: HOOKSTATE-106 [path: /0/f1]. See https://hookstate.js.org/docs/exceptions#hookstate-106'
             );
         });

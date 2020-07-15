@@ -22,8 +22,8 @@ const globalState = createState('');
 
 const MyComponent = () => {
     const state = useState(globalState);
-    return <input value={state[self].value}
-        onChange={e => state[self].set(e.target.value)} />;
+    return <input value={state.value}
+        onChange={e => state.set(e.target.value)} />;
 }
 ```
 
@@ -33,8 +33,8 @@ Functional component without a hook:
 const globalState = createState('');
 
 const MyComponent = () => <StateFragment state={globalState}>{
-    state => <input value={state[self].value}
-        onChange={e => state[self].set(e.target.value)}>
+    state => <input value={state.value}
+        onChange={e => state.set(e.target.value)}>
 }</StateFragment>
 ```
 
@@ -46,8 +46,8 @@ const globalState = createState('');
 class MyComponent extends React.Component {
     render() {
         return <StateFragment state={globalState}>{
-            state => <input value={state[self].value}
-                onChange={e => state[self].set(e.target.value)}>
+            state => <input value={state.value}
+                onChange={e => state.set(e.target.value)}>
         }</StateFragment>
     }
 }
