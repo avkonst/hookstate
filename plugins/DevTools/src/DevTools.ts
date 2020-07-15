@@ -11,8 +11,7 @@ import {
     PluginCallbacksOnSetArgument,
     DevTools,
     DevToolsID,
-    DevToolsExtensions,
-    self
+    DevToolsExtensions
 } from '@hookstate/core'
 
 import { createStore } from 'redux';
@@ -28,7 +27,7 @@ let SettingsState: State<Settings>;
 export function DevToolsInitialize(settings: Settings) {
     // make sure it is used, otherwise it is stripped out by the compiler
     DevToolsInitializeInternal()
-    SettingsState[self].set(settings)
+    SettingsState.set(settings)
 }
 
 function DevToolsInitializeInternal() {
@@ -59,7 +58,7 @@ function DevToolsInitializeInternal() {
                 }
             }
             return JSON.parse(p) as Settings
-        })[self].attach(() => ({
+        }).attach(() => ({
             id: PluginIdPersistedSettings,
             init: () => ({
                 onSet: p => {
@@ -78,7 +77,7 @@ function DevToolsInitializeInternal() {
                         window.localStorage.setItem(MonitoredStatesLabel, JSON.stringify(v))
                     }
                     if (v !== p.state) {
-                        SettingsState[self].set(v)
+                        SettingsState.set(v)
                     }
                 }
             })
@@ -100,7 +99,7 @@ function DevToolsInitializeInternal() {
         if ('stackTraceLimit' in Error && 'captureStackTrace' in Error) {
             const oldLimit = Error.stackTraceLimit
             Error.stackTraceLimit = 6;
-            Error.captureStackTrace(dummyError, SettingsState[self].attach)
+            Error.captureStackTrace(dummyError, SettingsState.attach)
             Error.stackTraceLimit = oldLimit;
         }
         const s = dummyError.stack;
@@ -130,9 +129,9 @@ function DevToolsInitializeInternal() {
                             try {
                                 fromRemote = true;
                                 if ('value' in action) {
-                                    l[self].set(action.value)
+                                    l.set(action.value)
                                 } else {
-                                    l[self].set(none)
+                                    l.set(none)
                                 }
                             } finally {
                                 fromRemote = false;
@@ -162,17 +161,20 @@ function DevToolsInitializeInternal() {
                         }
                     } else if (action.type === 'RERENDER' && action.path && isValidPath(action.path)) {
                         // rerender request from development tools
-                        lnk[self].attach(DevToolsID)[1].rerender([action.path!])
+                        lnk.attach(DevToolsID)[1].rerender([action.path!])
                     } else if (action.type === 'BREAKPOINT') {
                         onBreakpoint()
                     }
                 }
-                return lnk[self].map(l => l[self].value, () => none)
+                if (lnk.promised || lnk.error) {
+                    return none
+                }
+                return lnk.value
             },
             devToolsEnhancer({
                 name: `${window.location.hostname}: ${assignedId}`,
-                trace: SettingsState[self].value.callstacksDepth !== 0,
-                traceLimit: SettingsState[self].value.callstacksDepth,
+                trace: SettingsState.value.callstacksDepth !== 0,
+                traceLimit: SettingsState.value.callstacksDepth,
                 autoPause: true,
                 shouldHotReload: false,
                 features: {
@@ -207,7 +209,7 @@ function DevToolsInitializeInternal() {
     }
     
     function isMonitored(assignedId: string, globalOrLabeled?: boolean) {
-        return SettingsState[self].value.monitored.includes(assignedId) || globalOrLabeled
+        return SettingsState.value.monitored.includes(assignedId) || globalOrLabeled
     }
     
     function DevToolsInternal(isGlobal?: boolean): Plugin {
@@ -244,7 +246,7 @@ function DevToolsInitializeInternal() {
                                 breakpoint = !breakpoint;
                             });
                             // inject on set listener
-                            lnk[self].attach(() => ({
+                            lnk.attach(() => ({
                                 id: PluginIdMonitored,
                                 init: () => ({
                                     onSet: (p: PluginCallbacksOnSetArgument) => {
@@ -283,7 +285,7 @@ function DevToolsInitializeInternal() {
         } as Plugin)
     }
     
-    SettingsState[self].attach(DevToolsInternal)
+    SettingsState.attach(DevToolsInternal)
     DevTools(SettingsState).label(MonitoredStatesLabel)
     MonitoredStatesLogger = (str) => DevTools(SettingsState).log(str)
     
