@@ -1855,10 +1855,10 @@
   dependencies:
     "@hapi/hoek" "8.x.x"
 
-"@hookstate/core@3.0.0-0":
-  version "3.0.0-0"
-  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-3.0.0-0.tgz#f6e9da0a020beea112524d0f23c8ae27ab427bd5"
-  integrity sha512-nUcFUzDfNW8X+tCBJyLQdwkOuFiOK3ezJ6GJwlwwoRw4PhVKIDZhFVfM8YMKtZ7AnMuahJ9OBbgMSN0I2418Tg==
+"@hookstate/core@3.0.0-1":
+  version "3.0.0-1"
+  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-3.0.0-1.tgz#ec15f0d199b4d27323e4891b3ee149d04beb1ae9"
+  integrity sha512-E7cV7kM88PIrdKw0k2lZE0kIX+Fmzn7bhWcoL+elX0gv27jFgk8CIok2mpTbaubtLucsDHO/oGQAFBp9409PaA==
 
 "@jest/console@^24.7.1":
   version "24.7.1"
