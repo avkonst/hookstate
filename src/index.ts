@@ -1036,7 +1036,7 @@ class Promised {
 }
 
 // use symbol property to allow for easier reference finding
-const ValueCacheProperty = Symbol('ValueCache');
+const ValueUnusedMarker = Symbol('ValueUnusedMarker');
 
 function OnSetUsedNoAction() { /** no action callback */ }
 
@@ -1050,6 +1050,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
     private isDowngraded: boolean | undefined;
     private childrenCache: Record<string | number, StateMethodsImpl<StateValueAtPath>> | undefined;
     private selfCache: State<S> | undefined;
+    private valueCache: StateValueAtPath = ValueUnusedMarker;
     
     constructor(
         public readonly state: Store,
@@ -1068,8 +1069,8 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                 // this link is still mounted to a component
                 // populate cache again to ensure correct tracking of usage
                 // when React scans which states to rerender on update
-                if (ValueCacheProperty in this) {
-                    delete this[ValueCacheProperty]
+                if (this.valueCache !== ValueUnusedMarker) {
+                    this.valueCache = ValueUnusedMarker
                     this.get(true) // renew cache to keep it marked used
                 }
             } else {
@@ -1082,7 +1083,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                 // when a component unmounted.
                 // We take this opportunity to clean up caches
                 // to avoid memory leaks via stale children states cache.
-                delete this[ValueCacheProperty]
+                this.valueCache = ValueUnusedMarker
                 delete this.childrenCache
                 delete this.selfCache
             }
@@ -1098,18 +1099,18 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
 
     get(allowPromised?: boolean) {
         const currentValue = this.getUntracked(allowPromised)
-        if (!(ValueCacheProperty in this)) {
+        if (this.valueCache === ValueUnusedMarker) {
             if (this.isDowngraded) {
-                this[ValueCacheProperty] = currentValue;
+                this.valueCache = currentValue;
             } else if (Array.isArray(currentValue)) {
-                this[ValueCacheProperty] = this.valueArrayImpl(currentValue);
+                this.valueCache = this.valueArrayImpl(currentValue);
             } else if (typeof currentValue === 'object' && currentValue !== null) {
-                this[ValueCacheProperty] = this.valueObjectImpl(currentValue as unknown as object);
+                this.valueCache = this.valueObjectImpl(currentValue as unknown as object);
             } else {
-                this[ValueCacheProperty] = currentValue;
+                this.valueCache = currentValue;
             }
         }
-        return this[ValueCacheProperty] as S;
+        return this.valueCache as S;
     }
 
     get value(): S {
@@ -1225,14 +1226,14 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
 
     onSet(paths: Path[], actions: (() => void)[]): boolean {
         const update = () => {
-            if (this.isDowngraded && (ValueCacheProperty in this)) {
+            if (this.isDowngraded && this.valueCache !== ValueUnusedMarker) {
                 actions.push(this.onSetUsed);
                 return true;
             }
             for (let path of paths) {
                 const firstChildKey = path[this.path.length];
                 if (firstChildKey === undefined) {
-                    if (ValueCacheProperty in this) {
+                    if (this.valueCache !== ValueUnusedMarker) {
                         actions.push(this.onSetUsed);
                         return true;
                     }
@@ -1410,7 +1411,9 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                     // fall down
             }
             
-            const currentValue = this.get();
+            const currentDowngraded = this.isDowngraded; // relevant for IE11 only
+            const currentValue = this.get(); // IE11 marks this as downgraded
+            this.isDowngraded = currentDowngraded; // relevant for IE11 only
             if (// if currentValue is primitive type
                 (typeof currentValue !== 'object' || currentValue === null) &&
                 // if promised, it will be none
