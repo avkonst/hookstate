@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTasksState, Task } from './TasksState';
-import { State, useState, none, self } from '@hookstate/core';
+import { State, useState, none } from '@hookstate/core';
 import { useSettingsState } from './SettingsState';
 
 function TaskEditor(props: { task: State<Task> }) {
@@ -141,7 +141,7 @@ function TaskEditor(props: { task: State<Task> }) {
                 borderColor="red"
                 onClick={() => {
                     isEditing.set(false)
-                    taskState[self].set(none)
+                    taskState.set(none)
                 }}
                 text="Delete"
             />
@@ -151,9 +151,8 @@ function TaskEditor(props: { task: State<Task> }) {
 
 export function TasksViewer() {
     const tasksState = useTasksState()
-    const [loading] = tasksState[self].map();
     
-    if (loading) {
+    if (tasksState.promised) {
         return <div style={{ textAlign: 'center' }}>
             Loading initial state asynchronously...
         </div>
@@ -170,7 +169,7 @@ export function TasksViewer() {
                 style={{ marginTop: 20, minWidth: 300 }}
                 borderColor="lightgreen"
                 onClick={() => {
-                    tasksState[tasksState.length][self].set({
+                    tasksState[tasksState.length].set({
                         id: Math.random().toString() + tasksState.length,
                         name: 'Untitled Task #' + (tasksState.length + 1),
                         done: false

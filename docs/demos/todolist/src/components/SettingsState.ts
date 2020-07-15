@@ -1,11 +1,13 @@
-import { createState, useState, self } from '@hookstate/core';
+import { createState, useState } from '@hookstate/core';
 
-export const useSettingsState = createState({
+const settingsState = createState({
     isEditableInline: true,
     isScopedUpdateEnabled: true,
     isHighlightUpdatesEnabled: true
-})[self].map(s => () => {
-    const state = useState(s)
+})
+
+export function useSettingsState() {
+    const state = useState(settingsState)
 
     // This function wraps the state by an interface,
     // i.e. the state link is not accessible directly outside of this module.
@@ -34,4 +36,4 @@ export const useSettingsState = createState({
             state.isHighlightUpdatesEnabled.set(p => !p)
         }
     })   
-})
+}
