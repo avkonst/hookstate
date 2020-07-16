@@ -7,6 +7,12 @@ module.exports = {
   projectName: 'avkonst/hookstate', // Usually your repo name.
   themeConfig: {
     disableDarkMode: true,
+    algolia: {
+      apiKey: 'dcdff324d429abfd7d47357fc6919625',
+      indexName: 'hookstate_js',
+      // appId: 'app-id', // Optional, if you run the DocSearch crawler on your own
+      // algoliaOptions: {}, // Optional, if provided by Algolia
+    },
     navbar: {
       title: 'Hookstate',
       logo: {
