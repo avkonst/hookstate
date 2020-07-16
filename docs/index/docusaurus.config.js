@@ -8,6 +8,8 @@ module.exports = {
   themeConfig: {
     disableDarkMode: true,
     algolia: {
+      // analytics overview
+      // https://www.algolia.com/apps/BH4D9OD16A/analytics/overview
       apiKey: 'dcdff324d429abfd7d47357fc6919625',
       indexName: 'hookstate_js',
       // appId: 'app-id', // Optional, if you run the DocSearch crawler on your own
