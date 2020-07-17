@@ -10,4 +10,4 @@ tags: [hookstate, news, algolia]
 
 Thank you to Algolia for providing search functionality for Hookstate documentation. Free for open source! Very much appreciated and works well.
 
-![Hookstate Search Bar](2020-07-17-picture.png 'Hookstate Search Bar')
+![Hookstate Search Bar](/img/blog/2020-07-17-picture.png 'Hookstate Search Bar')
