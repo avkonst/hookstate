@@ -8,6 +8,6 @@ author_url: https://github.com/avkonst
 tags: [hookstate, news, algolia]
 ---
 
-Thank you to Algolia for providing search functionality for Hookstate documentation. Free for open source! Very much appreciated and works well.
+Thanks to Algolia for providing search functionality for Hookstate documentation. Free for open source projects! Very much appreciated. Works well!
 
 ![Hookstate Search Bar](/img/blog/2020-07-17-picture.png 'Hookstate Search Bar')
