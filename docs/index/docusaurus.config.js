@@ -15,6 +15,11 @@ module.exports = {
       // appId: 'app-id', // Optional, if you run the DocSearch crawler on your own
       // algoliaOptions: {}, // Optional, if provided by Algolia
     },
+    googleAnalytics: {
+      trackingID: 'UA-146415947-1',
+      // Optional fields.
+      anonymizeIP: true, // Should IPs be anonymized?
+    },
     navbar: {
       title: 'Hookstate',
       logo: {
@@ -95,5 +100,16 @@ module.exports = {
         },
       },
     ],
-  ]
+  ],
+  plugins: [
+    '@docusaurus/plugin-google-analytics',
+    [
+      '@docusaurus/plugin-sitemap',
+      {
+        cacheTime: 600 * 1000, // 600 sec - cache purge period
+        changefreq: 'weekly',
+        priority: 0.5,
+      },
+    ],
+  ],
 };
