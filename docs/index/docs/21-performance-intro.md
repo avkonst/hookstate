@@ -89,12 +89,12 @@ function Ex2_Parent_GlobalStateHooked() {
 }
 function Ex2_Child_PropsState_AUsed(props: { state: State<number> }) {
     const state = props.state
-    return <p>{state.A.value}</p>
+    return <p>{state.value}</p>
 }
 function Ex2_Child_PropsState_BUsed_Downgraded(props: { state: State<number> }) {
     const state = props.state
     state.attach(Downgraded)
-    return <p>{state.B.value}</p>
+    return <p>{state.value}</p>
 }
 ```
 
@@ -111,12 +111,12 @@ function Ex3_Parent_GlobalStateHooked() {
 }
 function Ex3_Child_PropsState_AUsed_Scoped(props: { state: State<number> }) {
     const state = useState(props.state)
-    return <p>{state.A.value}</p>
+    return <p>{state.value}</p>
 }
 function Ex3_Child_PropsState_BUsed_Scoped_Downgraded(props: { state: State<number> }) {
     const state = useState(props.state)
     state.attach(Downgraded)
-    return <p>{state.B.value}</p>
+    return <p>{state.value}</p>
 }
 ```
 
@@ -133,11 +133,11 @@ function Ex4_Parent_GlobalStateHooked() {
 }
 function Ex4_Child_PropsState_AUsed_Scoped(props: { state: State<number> }) {
     const state = useState(props.state)
-    return <p>{state.A.value}</p>
+    return <p>{state.value}</p>
 }
 function Ex4_Child_PropsState_BUsed(props: { state: State<number> }) {
     const state = props.state
-    return <p>{state.B.value}</p>
+    return <p>{state.value}</p>
 }
 ```
 
