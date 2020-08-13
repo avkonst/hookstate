@@ -9,10 +9,14 @@ export interface ValidationError {
     readonly severity: ValidationSeverity;
 }
 
+type ValidationExtensionValidate<S> = {
+    (attachRule: (value: S) => boolean,
+     message: string | ((value: S) => string),
+     severity?: ValidationSeverity): void
+}
+
 export interface ValidationExtensions<S> {
-    validate(attachRule: (value: S) => boolean,
-        message: string | ((value: S) => string),
-        severity?: ValidationSeverity): void,
+    validate: ValidationExtensionValidate<S>,
     validShallow(): boolean,
     valid(): boolean,
     invalidShallow(): boolean,
@@ -26,6 +30,10 @@ export interface ValidationExtensions<S> {
         depth?: number,
         first?: boolean
     ): ReadonlyArray<ValidationError>,
+}
+
+export interface ValidationExtensionsArray<S, U> extends ValidationExtensions<S> {
+    forEach: ValidationExtensionValidate<U>
 }
 
 const PluginID = Symbol('Validate');
@@ -170,10 +178,17 @@ class ValidationPluginInstance<S> {
     }
 }
 
+type ValidationExtensionsSubtype<S> = (S extends ReadonlyArray<(infer U)> ? ValidationExtensionsArray<S, U> : ValidationExtensions<S>);
+
+// tslint:disable-next-line: no-any
+function isArray<U>(state: any): state is ReadonlyArray<U> {
+    return state.keys && typeof state.keys[0] === 'number';
+}
+
 // tslint:disable-next-line: function-name
 export function Validation(): Plugin;
-export function Validation<S>($this: State<S>): ValidationExtensions<S>;
-export function Validation<S>($this?: State<S>): Plugin | ValidationExtensions<S> {
+export function Validation<S>($this: State<S>): ValidationExtensionsSubtype<S>;
+export function Validation<S>($this?: State<S>): Plugin | ValidationExtensionsSubtype<S> {
     if ($this) {
         let state = $this;
 
@@ -185,6 +200,13 @@ export function Validation<S>($this?: State<S>): Plugin | ValidationExtensions<S
 
         const inst = instance;
         return {
+            forEach: (r, m, s) => {
+                inst.addRule(state[0], {
+                    rule: r,
+                    message: m,
+                    severity: s || 'error'
+                })
+            },
             validate: (r, m, s) => {
                 inst.addRule(state.path, {
                     rule: r,
@@ -213,7 +235,7 @@ export function Validation<S>($this?: State<S>): Plugin | ValidationExtensions<S
                     return {};
                 }
                 return r[0];
-            },
+            }
         }
     }
     return {
