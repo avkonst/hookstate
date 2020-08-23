@@ -1,6 +1,6 @@
 /* tslint:disable:no-any */
 import { Plugin, State } from '@hookstate/core';
-import { Downgraded, PluginCallbacks, useState, } from '@hookstate/core/dist';
+import { Downgraded, PluginCallbacks, useState } from '@hookstate/core/dist';
 
 export const ValidationId = Symbol('Validation');
 
@@ -184,13 +184,13 @@ function isArrayState<T>(state: any): state is ReadonlyArray<State<T>> {
     return !isPrimitiveState(state) && !isObjectState(state, state.keys);
 }
 
-function buildInnerProxy(
+function buildProxy(
     target: any,
     instance: ValidatorInstance<any>,
     path: Path,
     state: State<any>,
     downgraded: State<any>,
-    condition?: Condition
+    condition?: Condition,
 ): any {
     return new Proxy(target, {
         apply(t: (fieldValidator: ValidateFn<any>) => void, thisArg: any, argArray?: any): any {
@@ -210,7 +210,7 @@ function buildInnerProxy(
             }
 
             if (nestedProp === 'isRequired') {
-                return instance.isRequired(state, downgraded);
+                return () => instance.isRequired(state, downgraded);
             }
 
             if (nestedProp === 'required') {
@@ -226,7 +226,17 @@ function buildInnerProxy(
             }
 
             if (nestedProp === 'valid') {
-                return () => instance.valid(state, downgraded);
+                return (fields?: any[]) => {
+                    if (fields === undefined) {
+                        return instance.valid(state, downgraded);
+                    }
+
+                    for (const field of fields) {
+                        return instance.valid(state.nested(field), downgraded.nested(field));
+                    }
+
+                    return true;
+                };
             }
 
             if (nestedProp === 'validate') {
@@ -241,107 +251,15 @@ function buildInnerProxy(
             }
 
             if (nestedProp === 'forEach') {
-                return forEach(instance, state, downgraded, path);
-            }
-
-            // user is chaining down properties
-            return buildInnerProxy(target, instance, [...path, nestedProp], state, downgraded, condition);
-        },
-    });
-}
-
-function buildProxy(instance: ValidatorInstance<any>, path: Path, state: State<any>, downgraded: State<any>) {
-    let condition: Condition;
-
-    return new Proxy({}, {
-        get(target: any, prop: PropertyKey, receiver: any) {
-            if (prop === 'when') {
-                return (when: ValidateFn<any>) => {
-                    condition = {
-                        fn: when,
-                        state: downgraded,
-                        path,
-                    };
-
-                    return receiver;
+                return (fn: (validator: any) => void) => {
+                    fn(buildProxy({}, instance, path, state, downgraded));
                 };
             }
 
-            const getter = (fieldValidator: ValidateFn<any>, message?: string) => {
-                instance.validators.push({
-                    fn: fieldValidator,
-                    path: [...path, prop],
-                    message,
-                    condition,
-                });
-            };
-
-            return buildInnerProxy(getter, instance, path, state, downgraded, condition);
+            // user is chaining down properties
+            return buildProxy(target, instance, [...path, nestedProp], state, downgraded, condition);
         },
     });
-}
-
-function forEach(instance: ValidatorInstance<any>, state: State<any>, downgraded: State<any>, path?: Path) {
-    return (fn: (validator: any) => void) => {
-        fn(buildProxy(instance, path || state.path, state, downgraded));
-    };
-}
-
-function stateToApi<T>(
-    instance: ValidatorInstance<any>,
-    state: State<any>,
-    downgraded: State<any>,
-    condition?: (value: T) => boolean
-): ReturnType<any, T> {
-    if (isPrimitiveState(state)) {
-        return {
-            validate: (fn: ValidateFn<any>, message?: string) => {
-                instance.validators.push({
-                    fn,
-                    path: state.path,
-                    message,
-                });
-            },
-            valid: () => instance.valid(state, downgraded),
-            isRequired: () => instance.isRequired(state, downgraded),
-            required(message?: string) {
-                instance.validators.push({
-                    fn: (value => Array.isArray(value) ? value.length > 0 : !!value),
-                    path: state.path,
-                    message,
-                    required: true,
-                });
-            },
-        } as SingleValidator<any>;
-    }
-
-    if (isObjectState(state, state.keys)) {
-        // object field type
-        const api = {
-            valid: (fields: (keyof T)[]) => {
-                if (fields === undefined) {
-                    return instance.valid(state, downgraded);
-                }
-
-                for (const field of fields) {
-                    return instance.valid(state.nested(field), downgraded.nested(field));
-                }
-
-                return true;
-            },
-            when(fn: (value: T) => boolean) {
-                return stateToApi<T>(instance, state, downgraded, fn);
-            },
-        } as ObjectValidator<any, T>;
-
-        for (const field of state.keys) {
-            api[field] = stateToApi(instance, state.nested(field), downgraded.nested(field));
-        }
-
-        return api;
-    }
-
-    return buildInnerProxy({}, instance, state.path, state, downgraded);
 }
 
 export function Validation(): Plugin;
@@ -372,5 +290,5 @@ export function Validation<T>(input?: State<T>): Plugin | ReturnType<T, T> {
     const downgraded: State<T> = useState(input);
     downgraded.attach(Downgraded);
 
-    return stateToApi<T>(instance, input, downgraded);
+    return buildProxy({}, instance, input.path, input, downgraded);
 }
