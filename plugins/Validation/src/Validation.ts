@@ -1,223 +1,259 @@
+import { Plugin, State } from '@hookstate/core';
+import {
+  Downgraded,
+  PluginCallbacks,
+  PluginCallbacksOnBatchArgument,
+  PluginCallbacksOnDestroyArgument,
+  PluginCallbacksOnSetArgument, useState,
+} from '@hookstate/core/dist';
 
-import { Plugin, Path, StateValueAtPath, State } from '@hookstate/core';
+export const ValidationId = Symbol('Validation');
 
-export type ValidationSeverity = 'error' | 'warning';
+type ValidateFn<T> = (value: T) => boolean;
+type Path = readonly (string | number | symbol)[];
 
-export interface ValidationError {
-    readonly message: string;
-    readonly path: Path;
-    readonly severity: ValidationSeverity;
+interface CommonValidator {
+  isValid(): boolean;
 }
 
-export interface ValidationExtensions<S> {
-    validate(attachRule: (value: S) => boolean,
-        message: string | ((value: S) => string),
-        severity?: ValidationSeverity): void,
-    validShallow(): boolean,
-    valid(): boolean,
-    invalidShallow(): boolean,
-    invalid(): boolean,
-    firstError(
-        filter?: (e: ValidationError) => boolean,
-        depth?: number
-    ): Partial<ValidationError>,
-    errors(
-        filter?: (e: ValidationError) => boolean,
-        depth?: number,
-        first?: boolean
-    ): ReadonlyArray<ValidationError>,
+interface SingleValidator<T> extends CommonValidator {
+  validate: (validator: ValidateFn<T>, message?: string) => void;
 }
 
-const PluginID = Symbol('Validate');
+type NestedValidator<T> = T extends string ? SingleValidator<T> : T extends any[] ? ArrayValidator<T[0]> : ObjectValidator<T>;
 
-const emptyErrors: ValidationError[] = []
+type ObjectValidator<T> = {
+  [Key in keyof T]: NestedValidator<T[Key]>
+} & CommonValidator;
 
-interface ValidationRule {
-    readonly message: string | ((value: StateValueAtPath) => string)
-    readonly rule: (v: StateValueAtPath) => boolean
-    readonly severity: ValidationSeverity;
+type ArrayValidator<T> = CommonValidator & ObjectValidator<T> & {
+  validate(validator: ValidateFn<T[]>, message?: string): void;
+
+  forEach(fn: (validator: NestedValidator<T>) => void): void;
+};
+
+interface Validator {
+  fn: ValidateFn<any>;
+  path: Path;
+  message?: string;
 }
 
-class ValidationPluginInstance<S> {
-    private storeRules = {};
+type ReturnType<T> = ObjectValidator<T> | ArrayValidator<T> | SingleValidator<T>;
 
-    getRulesAndNested(path: Path): [ValidationRule[], string[]] {
-        let result = this.storeRules;
-        path.forEach(p => {
-            if (typeof p === 'number') {
-                p = '*' // limitation: support only validation for each element of array
-            }
-            result = result && (result[p])
-        });
-        return [result && result[PluginID] ? Array.from(result[PluginID].values()) : [],
-            result ? Object.keys(result) : []];
-    }
-    addRule(path: Path, r: ValidationRule) {
-        let result = this.storeRules;
-        path.forEach((p, i) => {
-            if (typeof p === 'number') {
-                p = '*' // limitation: support only validation for each element of array
-            }
-            result[p] = result[p] || {}
-            result = result[p]
-        });
-        const existingRules: Map<string, ValidationRule> | undefined = result[PluginID];
-        const newRuleFunction = r.rule.toString();
-        if (existingRules) {
-            if (existingRules.has(newRuleFunction)) {
-                return;
-            }
-            existingRules.set(newRuleFunction, r);
-            return;
+class ValidatorInstance<T> implements PluginCallbacks {
+  validators: Validator[] = [];
+
+  onBatchFinish(_: PluginCallbacksOnBatchArgument): void {
+  }
+
+  onBatchStart(_: PluginCallbacksOnBatchArgument): void {
+  }
+
+  onDestroy(_: PluginCallbacksOnDestroyArgument): void {
+  }
+
+  onSet(_: PluginCallbacksOnSetArgument): void {
+  }
+
+  isValid(state: State<T>, downgraded: State<T>) {
+    for (const validator of this.validators) {
+      const paths = [...validator.path];
+
+      let match = true;
+
+      for (const path of state.path) {
+        if (typeof path === 'string') {
+          if (paths.length === 0) {
+            break;
+          }
+
+          if (paths.shift() !== path) {
+            match = false;
+            break;
+          }
+
+          //data = data.nested(path as keyof T);
+          //target = target.nested(path as keyof T);
+        } else if (typeof path === 'number') {
+          if (paths.length === 0) {
+            match = false;
+
+            break;
+          }
+
+          //const nextPath = paths.shift();
+
+          //data = data.nested(nextPath as keyof T);
+          //target = target.nested(nextPath as keyof T);
         }
-        const newMap: Map<string, ValidationRule> = new Map();
-        newMap.set(newRuleFunction, r);
-        result[PluginID] = newMap;
+      }
+
+      if (!match) {
+        continue;
+      }
+
+      if (paths.length && isArrayState(state)) {
+        // if an array, run validation through each
+        if (!state.every((item, index) => this.isValidNested(paths, item, downgraded[index], validator))) {
+          return false;
+        }
+      } else if (!this.isValidNested(paths, state, downgraded, validator)) {
+        return false;
+      }
     }
 
-    getErrors(l: State<StateValueAtPath>,
-        depth: number,
-        filter?: (e: ValidationError) => boolean,
-        first?: boolean): ReadonlyArray<ValidationError> {
+    return true;
+  }
 
-        let result: ValidationError[] = [];
-        const consistentResult = () => result.length === 0 ? emptyErrors : result;
+  private isValidNested<T>(paths: Path, state: State<T>, downgrade: State<T>, validator: Validator) {
+    let data: State<any> = downgrade;
+    let target: State<any> = state;
 
-        if (depth === 0) {
-            return consistentResult();
-        }
+    // drill down any unmatched paths
+    for (const path of paths) {
+      data = data.nested(path as keyof T);
+      target = target.nested(path as keyof T);
+    }
 
-        const [existingRules, nestedRulesKeys] = this.getRulesAndNested(l.path);
-        for (let i = 0; i < existingRules.length; i += 1) {
-            const r = existingRules[i];
-            if (!r.rule(l.value)) {
-                const err = {
-                    path: l.path,
-                    message: typeof r.message === 'function' ? r.message(l.value) : r.message,
-                    severity: r.severity
+    if (isPrimitiveState(target)) {
+      if (!validator.fn(target.get())) {
+        return false;
+      }
+    } else if (!validator.fn(data.get())) {
+      return false;
+    }
+
+    return true;
+  }
+}
+
+function isPrimitiveState<T>(state: any): state is State<T> {
+  return state.keys === undefined;
+}
+
+function isObjectState<T>(state: any): state is State<T> {
+  return Array.isArray(state.keys) && state.keys.every(k => typeof k === 'string');
+}
+
+function isArrayState<T>(state: any): state is ReadonlyArray<State<T>> {
+  return !isPrimitiveState(state) && !isObjectState(state);
+}
+
+function forEach(instance: ValidatorInstance<any>, state: State<any>, downgraded: State<any>, path?: (string | number | symbol)[]) {
+  const realPath = path || state.path;
+
+  return (fn: (validator: any) => void) => {
+    fn(
+      new Proxy({}, {
+        get(target, prop) {
+          const getter = (fieldValidator: ValidateFn<any>, message?: string) => {
+            instance.validators.push({
+              fn: fieldValidator,
+              path: [...realPath, prop],
+              message,
+            });
+          };
+
+          return new Proxy(getter, {
+            apply(t: (fieldValidator: ValidateFn<any>) => void, thisArg: any, argArray?: any): any {
+              t.apply(thisArg, argArray);
+            },
+            get(_, nestedProp) {
+              const nestedPath = [...realPath, prop];
+
+              if (nestedProp === 'isValid') {
+                return instance.isValid(state, downgraded);
+              }
+
+              if (nestedProp === 'validate') {
+                return (nestedValidator: ValidateFn<any>, message?: string) => {
+                  instance.validators.push({
+                    fn: nestedValidator,
+                    path: nestedPath,
+                    message,
+                  });
                 };
-                if (!filter || filter(err)) {
-                    result.push(err)
-                    if (first) {
-                        return result;
-                    }
-                }
-            }
-        }
-        if (depth === 1) {
-            return consistentResult();
-        }
-        if (nestedRulesKeys.length === 0) {
-            // console.log('getResults nested rules 0 length', result)
-            return consistentResult();
-        }
-        const nestedInst = l;
-        if (nestedInst.keys === undefined) {
-            // console.log('getResults no nested inst', result)
-            return consistentResult();
-        }
-        if (Array.isArray(nestedInst)) {
-            if (nestedRulesKeys.includes('*')) {
-                for (let i = 0; i < nestedInst.length; i += 1) {
-                    const n = nestedInst[i];
-                    result = result.concat(
-                        Validation(n as State<StateValueAtPath>)
-                            .errors(filter, depth - 1, first));
-                    if (first && result.length > 0) {
-                        return result;
-                    }
-                }
-            }
-            // validation for individual array elements is not supported, it is covered by foreach above
-            // for (let i = 0; i < nestedRulesKeys.length; i += 1) {
-            //     const k = nestedRulesKeys[i];
-            //     // Validation rule exists,
-            //     // but the corresponding nested link may not be created,
-            //     // (because it may not be inferred automatically)
-            //     // because the original array value cas miss the corresponding index
-            //     // The design choice is to skip validation in this case.
-            //     // A client can define per array level validation rule,
-            //     // where existance of the index can be cheched.
-            //     if (nestedInst[k] !== undefined) {
-            //         result = result.concat((nestedInst[k] as State<StateValueAtPath, ValidationExtensions>)
-            //             .extended.errors(filter, depth - 1, first));
-            //         if (first && result.length > 0) {
-            //             return result;
-            //         }
-            //     }
-            // }
-        } else {
-            for (let i = 0; i < nestedRulesKeys.length; i += 1) {
-                const k = nestedRulesKeys[i];
-                // Validation rule exists,
-                // but the corresponding nested link may not be created,
-                // (because it may not be inferred automatically)
-                // because the original array value cas miss the corresponding index
-                // The design choice is to skip validation in this case.
-                // A client can define per array level validation rule,
-                // where existance of the index can be cheched.
-                if (nestedInst[k] !== undefined) {
-                    result = result.concat(
-                        Validation(nestedInst[k] as State<StateValueAtPath>)
-                            .errors(filter, depth - 1, first));
-                    if (first && result.length > 0) {
-                        return result;
-                    }
-                }
-            }
-        }
-        return consistentResult();
-    }
+              }
+
+              if (nestedProp === 'forEach') {
+                return forEach(instance, state, downgraded, nestedPath);
+              }
+
+              throw new Error(`Unsupported property.`);
+            },
+          });
+        },
+      }),
+    );
+  };
 }
 
-// tslint:disable-next-line: function-name
-export function Validation(): Plugin;
-export function Validation<S>($this: State<S>): ValidationExtensions<S>;
-export function Validation<S>($this?: State<S>): Plugin | ValidationExtensions<S> {
-    if ($this) {
-        let state = $this;
-
-        const [plugin] = state.attach(PluginID);
-        if (plugin instanceof Error) {
-            throw plugin
-        }
-        const instance = plugin as ValidationPluginInstance<S>;
-
-        const inst = instance;
-        return {
-            validate: (r, m, s) => {
-                inst.addRule(state.path, {
-                    rule: r,
-                    message: m,
-                    severity: s || 'error'
-                })
-            },
-            validShallow(): boolean {
-                return inst.getErrors(state, 1, undefined, true).length === 0
-            },
-            valid(): boolean {
-                return inst.getErrors(state, Number.MAX_SAFE_INTEGER, undefined, true).length === 0
-            },
-            invalidShallow(): boolean {
-                return inst.getErrors(state, 1, undefined, true).length !== 0
-            },
-            invalid(): boolean {
-                return inst.getErrors(state, Number.MAX_SAFE_INTEGER, undefined, true).length !== 0
-            },
-            errors: (filter, depth, first) => {
-                return inst.getErrors(state, depth === undefined ? Number.MAX_SAFE_INTEGER : depth, filter, first);
-            },
-            firstError: (filter, depth) => {
-                const r = inst.getErrors(state, depth === undefined ? Number.MAX_SAFE_INTEGER : depth, filter, true);
-                if (r.length === 0) {
-                    return {};
-                }
-                return r[0];
-            },
-        }
-    }
+function stateToApi<T>(instance: ValidatorInstance<any>, state: State<any>, downgraded: State<any>): ReturnType<T> {
+  if (isPrimitiveState(state)) {
     return {
-        id: PluginID,
-        init: () => new ValidationPluginInstance() as {}
+      validate: (fn: ValidateFn<any>, message?: string) => {
+        instance.validators.push({
+          fn,
+          path: state.path,
+          message,
+        });
+      },
+      isValid: () => instance.isValid(state, downgraded),
+    } as SingleValidator<any>;
+  }
+
+  if (isObjectState(state)) {
+    // object field type
+    const api = { isValid: () => instance.isValid(state, downgraded) } as ObjectValidator<T>;
+
+    for (const field of state.keys) {
+      api[field] = stateToApi(instance, state.nested(field), downgraded.nested(field));
     }
+
+    return api;
+  }
+
+  // array field type
+  return {
+    isValid: () => instance.isValid(state, downgraded),
+    forEach: forEach(instance, state, downgraded),
+    validate(fn: (value: any, message?: string) => boolean, message: string | undefined): void {
+      instance.validators.push({
+        fn,
+        path: state.path,
+        message,
+      });
+    },
+  } as ArrayValidator<T>;
+}
+
+export function Validation(): Plugin;
+export function Validation(input: State<string>): SingleValidator<string>;
+export function Validation(input: State<number>): SingleValidator<number>;
+export function Validation<T>(input: State<T[]>): ArrayValidator<T>;
+export function Validation<T>(input: State<T>): ObjectValidator<T>;
+export function Validation<T>(input?: State<T>): Plugin | ReturnType<T> {
+  if (input === undefined) {
+    return {
+      id: ValidationId,
+      init: () => {
+        return new ValidatorInstance();
+      },
+    };
+  }
+
+  const [instance] = input.attach(ValidationId);
+
+  if (instance instanceof Error) {
+    throw new Error(`Forgot to run state.attach(Validation())`);
+  }
+
+  if (!(instance instanceof ValidatorInstance)) {
+    throw new Error('Expected plugin to be of ValidatorInstance');
+  }
+
+  const downgraded: State<T> = useState(input);
+  downgraded.attach(Downgraded);
+
+  return stateToApi(instance, input, downgraded);
 }
