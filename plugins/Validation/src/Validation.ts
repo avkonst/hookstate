@@ -10,6 +10,8 @@ type Path = readonly (string | number | symbol)[];
 interface CommonValidator<T> {
     valid(): boolean;
 
+    errors(): string[];
+
     required(message?: string): void;
 
     isRequired(): boolean;
@@ -60,61 +62,90 @@ class ValidatorInstance<T> {
     }
 
     valid(state: State<T>, downgraded: State<T>) {
+        return this.errors(state, downgraded).length === 0;
+    }
+
+    errors(state: State<T>, downgraded: State<T>) {
         const validators = this.matchValidators(state, downgraded);
+
+        let errors: string[] = [];
 
         for (const { paths, validator } of validators) {
             if (paths.length && isArrayState(state)) {
-                const allValid = state.every((item, index) => {
-                    if (validator.condition) {
-                        const value = downgraded[index].get();
-                        const root = validator.condition.state.get();
-
-                        if (!validator.condition.fn(value, root)) {
-                            return true;
-                        }
+                state.forEach((item, index) => {
+                    if (!this.conditionalValid(validator, downgraded[index])) {
+                        return;
                     }
 
-                    return this.validNested(paths, item, downgraded[index], validator);
+                    errors = [...errors, ...this.validNested(paths, item, downgraded[index], validator)];
                 });
-
-                // if an array, run validation through each
-                if (!allValid) {
-                    return false;
-                }
             } else {
-                if (validator.condition) {
-                    let target = validator.condition.state;
-
-                    // always skip first, they are the same as target state
-                    const statePaths = [...state.path.slice(1)];
-                    const conditionPaths = [...validator.condition.path.slice(1)];
-
-                    for (const path of statePaths) {
-                        if (typeof path === 'string') {
-                            if (conditionPaths.length === 0) {
-                                break;
-                            }
-
-                            target = target.nested(path);
-
-                            conditionPaths.shift();
-                        } else if (typeof path === 'number') {
-                            target = target[path];
-                        }
-                    }
-
-                    if (!validator.condition.fn(target.get(), validator.condition.state.get())) {
-                        continue;
-                    }
+                if (!this.conditionalValid(validator, downgraded)) {
+                    continue;
                 }
 
-                if (!this.validNested(paths, state, downgraded, validator)) {
-                    return false;
-                }
+                errors = [...errors, ...this.validNested(paths, state, downgraded, validator)];
             }
         }
 
-        return true;
+        return errors;
+    }
+
+    private conditionalValid(validator: Validator, downgraded: State<any>): boolean {
+        if (!validator.condition) {
+            return true;
+        }
+
+        if (isArrayState(downgraded)) {
+            return downgraded.every(t => this.conditionalValid(validator, t));
+        }
+
+        if (downgraded.path.filter(p => typeof p !== 'number').length > validator.condition.path.length) {
+            // the property getting validated is too deep, need to use validator state
+            return this.conditionalValid(validator, validator.condition.state);
+        }
+
+        // always skip first, they are the same as target state
+        const statePaths = downgraded.path.slice(0);
+        const conditionPath = validator.condition.path.slice(0);
+
+        // normalize paths
+        while (statePaths.length) {
+            if (typeof statePaths[0] === 'string') {
+                if (!conditionPath.length) {
+                    break;
+                }
+
+                if (statePaths[0] === conditionPath[0]) {
+                    conditionPath.shift();
+                    statePaths.shift();
+
+                    continue;
+                }
+
+                // paths do not match, ignore conditional validator
+                return true;
+            }
+
+            // assume it is an index and continue
+            statePaths.shift();
+        }
+
+        if (conditionPath.length > 1) {
+            return this.conditionalValid(validator, downgraded.nested(conditionPath[0]));
+        }
+
+        let target = downgraded;
+
+        if (conditionPath.length === 1) {
+            target = downgraded.nested(conditionPath[0]);
+
+            if (isArrayState(target)) {
+                return target.every(t => this.conditionalValid(validator, t));
+            }
+        }
+
+        return validator.condition.fn(target.get(), validator.condition.state.get());
     }
 
     private matchValidators(state: State<any>, downgraded: State<T>) {
@@ -150,25 +181,34 @@ class ValidatorInstance<T> {
         }).filter(v => !!v.match);
     }
 
-    private validNested(paths: Path, state: State<any>, downgrade: State<any>, validator: Validator) {
-        let data: State<any> = downgrade;
-        let target: State<any> = state;
-
-        // drill down any unmatched paths
-        for (const path of paths) {
-            data = data.nested(path);
-            target = target.nested(path);
+    private validNested(paths: Path, state: State<any>, downgrade: State<any>, validator: Validator): string[] {
+        if (isArrayState(state)) {
+            return state.map((item, index) => {
+                return this.validNested(paths, state[index], downgrade[index], validator);
+            }).flat();
         }
 
-        if (isPrimitiveState(target)) {
-            if (!validator.fn(target.get())) {
-                return false;
+        if (paths.length) {
+            // drill down any unmatched paths
+            const nested = paths.slice(0);
+            const path = nested.shift();
+
+            if (!path) {
+                throw new Error('Should not happen.');
             }
-        } else if (!validator.fn(data.get())) {
-            return false;
+
+            return this.validNested(nested, state.nested(path), downgrade.nested(path), validator);
         }
 
-        return true;
+        if (isPrimitiveState(state)) {
+            if (!validator.fn(state.get())) {
+                return [validator.message || 'This field is not valid.'];
+            }
+        } else if (!validator.fn(state.get())) {
+            return [validator.message || 'This field is not valid.'];
+        }
+
+        return [];
     }
 }
 
@@ -181,18 +221,17 @@ function isObjectState<T>(state: State<T>, keys: any): keys is ReadonlyArray<key
 }
 
 function isArrayState<T>(state: any): state is ReadonlyArray<State<T>> {
-    return !isPrimitiveState(state) && !isObjectState(state, state.keys);
+    return !isPrimitiveState(state) && !isObjectState(state, state.keys) && typeof state.map === 'function';
 }
 
 function buildProxy(
-    target: any,
     instance: ValidatorInstance<any>,
     path: Path,
     state: State<any>,
     downgraded: State<any>,
     condition?: Condition,
 ): any {
-    return new Proxy(target, {
+    return new Proxy({}, {
         apply(t: (fieldValidator: ValidateFn<any>) => void, thisArg: any, argArray?: any): any {
             t.apply(thisArg, argArray);
         },
@@ -219,9 +258,25 @@ function buildProxy(
                         fn: (value => Array.isArray(value) ? value.length > 0 : !!value),
                         path,
                         required: true,
-                        message,
+                        message: message || 'This field is required',
                         condition,
                     });
+                };
+            }
+
+            if (nestedProp === 'errors') {
+                return (fields?: any[]) => {
+                    if (fields === undefined) {
+                        return instance.errors(state, downgraded);
+                    }
+
+                    let errors: string[] = [];
+
+                    for (const field of fields) {
+                        errors = [...errors, ...instance.errors(state.nested(field), downgraded.nested(field))];
+                    }
+
+                    return errors;
                 };
             }
 
@@ -252,12 +307,12 @@ function buildProxy(
 
             if (nestedProp === 'forEach') {
                 return (fn: (validator: any) => void) => {
-                    fn(buildProxy({}, instance, path, state, downgraded));
+                    fn(buildProxy(instance, path, state, downgraded));
                 };
             }
 
             // user is chaining down properties
-            return buildProxy(target, instance, [...path, nestedProp], state, downgraded, condition);
+            return buildProxy(instance, [...path, nestedProp], state, downgraded, condition);
         },
     });
 }
@@ -290,5 +345,5 @@ export function Validation<T>(input?: State<T>): Plugin | ReturnType<T, T> {
     const downgraded: State<T> = useState(input);
     downgraded.attach(Downgraded);
 
-    return buildProxy({}, instance, input.path, input, downgraded);
+    return buildProxy(instance, input.path, input, downgraded);
 }
