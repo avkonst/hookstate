@@ -284,7 +284,7 @@ export function Validation<T>(input: State<T>) {
     }
 
     return {
-        valid(fields?: any[]): boolean {
+        valid(fields?: (keyof T)[]): boolean {
             return this.errors(fields).length === 0;
         },
         required(): boolean {
