@@ -4,7 +4,7 @@ import { PluginCallbacks, StateValueAtRoot } from '@hookstate/core/dist';
 
 export const ValidationId = Symbol('Validation');
 
-type ValidateFn<T> = (value: T) => boolean;
+type ValidateFn<T> = (value: T, ...depends: State<any>[]) => boolean;
 type Path = readonly (string | number | symbol)[];
 
 interface NestedState {
@@ -15,31 +15,33 @@ interface NestedState {
 interface SingleValidator<T> {
     required(message?: string): void;
 
-    when(fn: (value: State<T>) => boolean): this;
-
     validate(validator: ValidateFn<T>, message?: string): void;
 }
 
-type NestedValidator<Root, T> = T extends string ? SingleValidator<T> :
-    T extends any[] ? ArrayValidator<Root, T[0]> : ObjectValidator<Root, T>;
+type DetectValidator<T> = T extends string ? SingleValidator<T> :
+    T extends any[] ? ArrayValidator<T> : ObjectValidator<T>;
 
-type ObjectNestedValidator<Root, T> = {
-    [Key in keyof T]: NestedValidator<Root, T[Key]>
+type FieldValidator<T> = {
+    [Key in keyof T]: DetectValidator<T[Key]>
 };
 
-interface ObjectRootValidator<Root, T> extends SingleValidator<T> {
-    when(fn: (value: State<T>, root: Root) => boolean): this;
-}
+type Depends<T> = { [P in keyof T]: DetectValidator<T[P]> };
 
-type ObjectValidator<Root, T> = ObjectNestedValidator<Root, T> & ObjectRootValidator<Root, T> & {
+type Dependency<T> = { [P in keyof T]: T[P] extends any[] ? ReadonlyArray<State<T[P][0]>> : State<T[P]> };
+
+type ObjectValidator<T> = SingleValidator<T> & FieldValidator<T> & {
     whenType<K extends keyof T, V extends T[K]>(key: K, value: V):
-        ObjectValidator<Root, T & { [Key in keyof Pick<T, K>]: V }>;
+        ObjectValidator<T & { [Key in keyof Pick<T, K>]: V }>;
 };
 
-type ArrayValidator<Root, T> = ObjectValidator<Root, T> & {
-    validate(validator: ValidateFn<T[]>, message?: string): void;
+type ArrayValidator<T extends any[]> = SingleValidator<T> & FieldValidator<T[0]> & {
+    whenType<K extends keyof T[0], V extends T[0][K]>(key: K, value: V):
+        ArrayValidator<(T[0] & { [Key in keyof Pick<T[0], K>]: V })[]>;
 
-    forEach(fn: (validator: NestedValidator<Root, T>) => void): void;
+    when<D extends unknown[]>(
+        fn: (value: State<T[0]>, ...dependencies: Dependency<D>) => boolean,
+        ...depends: Depends<D>
+    ): ArrayValidator<T>;
 };
 
 interface Condition {
@@ -107,18 +109,10 @@ class ValidatorInstance<T> {
                 return [target];
             }
 
-            const items: NestedState[] = [];
+            let items: NestedState[] = [];
 
             state.forEach((item, index) => {
-                const nested = this.pathToTargets(path, item, iterate, target);
-
-                if (nested.length > 1) {
-                    throw new Error('nested arrays not supported.');
-                }
-
-                if (nested.length === 1) {
-                    items.push({ state: nested[0].state, parent: nested[0].parent });
-                }
+                items = [...items, ...this.pathToTargets(path, item, iterate, target)];
             });
 
             return items;
@@ -223,6 +217,10 @@ function buildProxy(
         get(_: any, nestedProp: PropertyKey) {
             const cleanPath = path.filter(p => typeof p !== 'number');
 
+            if (nestedProp === 'path') {
+                return cleanPath;
+            }
+
             if (nestedProp === 'whenType') {
                 return (key: any, value: any) => buildProxy(instance, path, state, [
                     ...conditions,
@@ -235,11 +233,17 @@ function buildProxy(
             }
 
             if (nestedProp === 'when') {
-                return (when: ValidateFn<any>) => {
+                return (when: ValidateFn<any>, ...depends: any[]) => {
+                    const dependStates = depends.map(d => {
+                        return instance.pathToTargets(d.path, instance.root, false)[0].state;
+                    });
+
                     return buildProxy(instance, path, state, [
                         ...conditions,
                         {
-                            fn: when,
+                            fn: (value) => {
+                                return when(value, ...dependStates);
+                            },
                             path: cleanPath,
                             root: instance.pathToTargets(cleanPath, instance.root, false)[0],
                         },
@@ -330,7 +334,7 @@ export function Validation<T>(input: State<T>): PathValidator<T> {
     };
 }
 
-export function ValidationAttach<T>(state: State<T>, config: ((validator: NestedValidator<T, T>) => void)) {
+export function ValidationAttach<T>(state: State<T>, config: ((validator: DetectValidator<T>) => void)) {
     state.attach(() => ({
         id: ValidationId,
         init: (root) => {
