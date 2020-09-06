@@ -38,8 +38,6 @@ type ObjectValidator<Root, T> = ObjectNestedValidator<Root, T> & ObjectRootValid
 
 type ArrayValidator<Root, T> = ObjectValidator<Root, T> & {
     validate(validator: ValidateFn<T[]>, message?: string): void;
-
-    forEach(fn: (validator: NestedValidator<Root, T>) => void): void;
 };
 
 interface Condition {
@@ -266,12 +264,6 @@ function buildProxy(
                         message,
                         conditions,
                     });
-                };
-            }
-
-            if (nestedProp === 'forEach') {
-                return (fn: (validator: any) => void) => {
-                    fn(buildProxy(instance, path, state, conditions.slice(0)));
                 };
             }
 
