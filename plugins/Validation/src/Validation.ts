@@ -1,11 +1,9 @@
 /* tslint:disable:no-any */
-import { State } from '@hookstate/core';
-import { PluginCallbacks, StateValueAtRoot } from '@hookstate/core/dist';
+import { Path, PluginCallbacks, StateValueAtRoot, State } from '@hookstate/core';
 
-export const ValidationId = Symbol('Validation');
+const ValidationId = Symbol('Validation');
 
 type ValidateFn<T> = (value: T, ...depends: State<any>[]) => boolean;
-type Path = readonly (string | number | symbol)[];
 
 interface NestedState {
     state: State<any>;
@@ -18,7 +16,7 @@ interface SingleValidator<T> {
     validate(validator: ValidateFn<T>, message?: string): void;
 }
 
-type DetectValidator<T> = T extends string ? SingleValidator<T> :
+type DetectValidator<T> = T extends string | number | boolean ? SingleValidator<T> :
     T extends any[] ? ArrayValidator<T> : ObjectValidator<T>;
 
 type FieldValidator<T> = {
@@ -47,7 +45,7 @@ type ArrayValidator<T extends any[]> = SingleValidator<T> & FieldValidator<T[0]>
 interface Condition {
     fn: (value: any, root: any) => boolean;
     path: Path;
-    root: NestedState;
+    root: State<any>;
 }
 
 interface Validator {
@@ -104,7 +102,7 @@ class ValidatorInstance<T> {
     public pathToTargets(path: Path, state: State<any>, iterate: boolean = true, parent?: NestedState): NestedState[] {
         const target = { state, parent };
 
-        if (isArrayState(state)) {
+        if (Array.isArray(state)) {
             if (!iterate) {
                 return [target];
             }
@@ -151,7 +149,7 @@ class ValidatorInstance<T> {
     }
 
     private conditionalValid(path: Path, condition: Condition, nested: NestedState): boolean {
-        if (isArrayState(nested.state)) {
+        if (Array.isArray(nested.state)) {
             return nested.state.every((t) => this.conditionalValid(path, condition, { state: t, parent: nested }));
         }
 
@@ -161,9 +159,9 @@ class ValidatorInstance<T> {
             target = this.root;
 
             const paths = nested.state.path.slice(0);
-            let stop = condition.root.state.path.length;
+            let stop = condition.root.path.length;
 
-            if (isArrayState(condition.root.state)) {
+            if (Array.isArray(condition.root)) {
                 stop += 1;
             }
 
@@ -188,20 +186,8 @@ class ValidatorInstance<T> {
             target = target.state;
         }
 
-        return condition.fn(target, condition.root.state);
+        return condition.fn(target, condition.root);
     }
-}
-
-function isPrimitiveState<T>(state: any): state is State<T> {
-    return state.keys === undefined;
-}
-
-function isObjectState<T>(state: State<T>, keys: any): keys is ReadonlyArray<keyof T> {
-    return Array.isArray(state.keys) && state.keys.length > 0 && state.keys.every(k => typeof k === 'string');
-}
-
-function isArrayState<T>(state: any): state is ReadonlyArray<State<T>> {
-    return !isPrimitiveState(state) && !isObjectState(state, state.keys) && typeof state.map === 'function';
 }
 
 function buildProxy(
@@ -215,6 +201,10 @@ function buildProxy(
             t.apply(thisArg, argArray);
         },
         get(_: any, nestedProp: PropertyKey) {
+            if (typeof nestedProp === 'symbol') {
+                throw new Error('Symbols are not supported.');
+            }
+
             const cleanPath = path.filter(p => typeof p !== 'number');
 
             if (nestedProp === 'path') {
@@ -227,7 +217,7 @@ function buildProxy(
                     {
                         fn: (s) => s[key].get() === value,
                         path: cleanPath,
-                        root: instance.pathToTargets(cleanPath, instance.root, false)[0],
+                        root: instance.pathToTargets(cleanPath, instance.root, false)[0].state,
                     },
                 ]);
             }
@@ -245,7 +235,7 @@ function buildProxy(
                                 return when(value, ...dependStates);
                             },
                             path: cleanPath,
-                            root: instance.pathToTargets(cleanPath, instance.root, false)[0],
+                            root: instance.pathToTargets(cleanPath, instance.root, false)[0].state,
                         },
                     ]);
                 };
@@ -315,7 +305,7 @@ export function Validation<T>(input: State<T>): PathValidator<T> {
             let errors: string[] = [];
 
             if (typeof fields === 'function') {
-                if (isArrayState(input)) {
+                if (Array.isArray(input)) {
                     input.forEach(item => {
                         // @ts-ignore
                         if (fields(item)) {
