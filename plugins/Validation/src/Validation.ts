@@ -38,11 +38,14 @@ type ObjectValidator<Root, T> = ObjectNestedValidator<Root, T> & ObjectRootValid
 
 type ArrayValidator<Root, T> = ObjectValidator<Root, T> & {
     validate(validator: ValidateFn<T[]>, message?: string): void;
+
+    forEach(fn: (validator: NestedValidator<Root, T>) => void): void;
 };
 
 interface Condition {
     fn: (value: any, root: any) => boolean;
     path: Path;
+    root: NestedState;
 }
 
 interface Validator {
@@ -56,7 +59,7 @@ interface Validator {
 class ValidatorInstance<T> {
     validators: Validator[] = [];
 
-    constructor(private root: State<StateValueAtRoot>) {
+    constructor(public root: State<StateValueAtRoot>) {
     }
 
     isRequired(state: State<T>) {
@@ -77,8 +80,8 @@ class ValidatorInstance<T> {
                 let valid = true;
 
                 // use traditional loop to ensure all subscriptions occur in when functions
-                for (const conditions of validator.conditions) {
-                    if (!this.conditionalValid(validator.path, conditions, target)) {
+                for (const condition of validator.conditions) {
+                    if (!this.conditionalValid(validator.path, condition, target)) {
                         valid = false;
                     }
                 }
@@ -96,14 +99,18 @@ class ValidatorInstance<T> {
         return errors;
     }
 
-    private pathToTargets(path: Path, state: State<any>, parent?: NestedState): NestedState[] {
+    public pathToTargets(path: Path, state: State<any>, iterate: boolean = true, parent?: NestedState): NestedState[] {
         const target = { state, parent };
 
         if (isArrayState(state)) {
+            if (!iterate) {
+                return [target];
+            }
+
             const items: NestedState[] = [];
 
             state.forEach((item, index) => {
-                const nested = this.pathToTargets(path, item, target);
+                const nested = this.pathToTargets(path, item, iterate, target);
 
                 if (nested.length > 1) {
                     throw new Error('nested arrays not supported.');
@@ -128,7 +135,7 @@ class ValidatorInstance<T> {
                     throw new Error('should not happen');
                 }
 
-                return this.pathToTargets(path, state.nested(next), target);
+                return this.pathToTargets(path, state.nested(next), iterate, target);
             }
 
             if (typeof statePaths[0] === 'string') {
@@ -154,18 +161,15 @@ class ValidatorInstance<T> {
             return nested.state.every((t) => this.conditionalValid(path, condition, { state: t, parent: nested }));
         }
 
-        let conditionRoot;
         let target;
 
         if (!nested.parent) {
-            conditionRoot = this.pathToTargets(condition.path, this.root)[0];
-
             target = this.root;
 
             const paths = nested.state.path.slice(0);
-            let stop = conditionRoot.state.path.length;
+            let stop = condition.root.state.path.length;
 
-            if (isArrayState(conditionRoot.state)) {
+            if (isArrayState(condition.root.state)) {
                 stop += 1;
             }
 
@@ -178,24 +182,19 @@ class ValidatorInstance<T> {
             }
         } else {
             target = nested.parent;
-            conditionRoot = nested.parent;
-
-            while (conditionRoot.state.path.toString() !== condition.path.toString()) {
-                if (conditionRoot.parent) {
-                    conditionRoot = conditionRoot.parent;
-                }
-            }
 
             while (target.state.path.filter(f => typeof f !== 'number').toString() !== condition.path.toString()) {
                 if (target.parent) {
                     target = target.parent;
+                } else {
+                    throw new Error('not sure how to handle');
                 }
             }
 
             target = target.state;
         }
 
-        return condition.fn(target, conditionRoot.state);
+        return condition.fn(target, condition.root.state);
     }
 }
 
@@ -230,18 +229,22 @@ function buildProxy(
                     {
                         fn: (s) => s[key].get() === value,
                         path: cleanPath,
+                        root: instance.pathToTargets(cleanPath, instance.root, false)[0],
                     },
                 ]);
             }
 
             if (nestedProp === 'when') {
-                return (when: ValidateFn<any>) => buildProxy(instance, path, state, [
-                    ...conditions,
-                    {
-                        fn: when,
-                        path: cleanPath,
-                    },
-                ]);
+                return (when: ValidateFn<any>) => {
+                    return buildProxy(instance, path, state, [
+                        ...conditions,
+                        {
+                            fn: when,
+                            path: cleanPath,
+                            root: instance.pathToTargets(cleanPath, instance.root, false)[0],
+                        },
+                    ]);
+                };
             }
 
             if (nestedProp === 'required') {
@@ -272,7 +275,17 @@ function buildProxy(
     });
 }
 
-export function Validation<T>(input: State<T>) {
+type PathFields<S> = (keyof S)[] | ((s: State<S extends (infer T)[] ? T : S>) => boolean);
+
+interface PathValidator<S> {
+    valid(fields?: PathFields<S>): boolean;
+
+    required(): boolean;
+
+    errors(fields?: PathFields<S>): string[];
+}
+
+export function Validation<T>(input: State<T>): PathValidator<T> {
     const [instance] = input.attach(ValidationId);
 
     if (instance instanceof Error) {
@@ -284,21 +297,32 @@ export function Validation<T>(input: State<T>) {
     }
 
     return {
-        valid(fields?: (keyof T)[]): boolean {
+        valid(fields: PathFields<T>): boolean {
             return this.errors(fields).length === 0;
         },
         required(): boolean {
             return instance.isRequired(input);
         },
-        errors(fields?: any[]): string[] {
+        errors(fields: PathFields<T>): string[] {
             if (fields === undefined) {
                 return instance.errors(input);
             }
 
             let errors: string[] = [];
 
-            for (const field of fields) {
-                errors = [...errors, ...instance.errors(input.nested(field))];
+            if (typeof fields === 'function') {
+                if (isArrayState(input)) {
+                    input.forEach(item => {
+                        // @ts-ignore
+                        if (fields(item)) {
+                            errors = [...errors, ...instance.errors(item)];
+                        }
+                    });
+                }
+            } else {
+                for (const field of fields) {
+                    errors = [...errors, ...instance.errors(input.nested(field))];
+                }
             }
 
             return errors;
