@@ -478,7 +478,7 @@ The recommended method to append another string is the following:
 ```tsx
 state.merge(" World") // state.value will be "Hello World"
 // or the same
-state.merge(" World")
+state.set(p => p + " World")
 ```
 
 Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) and [StateMethods.merge](typedoc-hookstate-core.md#merge) in the API reference.
