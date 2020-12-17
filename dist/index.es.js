@@ -1,18 +1,18 @@
 import React from 'react';
 
 /*! *****************************************************************************
-Copyright (c) Microsoft Corporation.
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this file except in compliance with the License. You may obtain a copy of the
+License at http://www.apache.org/licenses/LICENSE-2.0
 
-Permission to use, copy, modify, and/or distribute this software for any
-purpose with or without fee is hereby granted.
+THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+MERCHANTABLITY OR NON-INFRINGEMENT.
 
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
-REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
-AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
-LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-PERFORMANCE OF THIS SOFTWARE.
+See the Apache Version 2.0 License for specific language governing permissions
+and limitations under the License.
 ***************************************************************************** */
 /* global Reflect, Promise */
 
@@ -104,20 +104,29 @@ function useState(source) {
         // eslint-disable-next-line react-hooks/rules-of-hooks
         var _c = React.useState(function () { return ({ state: createStore(source) }); }), value_2 = _c[0], setValue_3 = _c[1];
         var result = useSubscribedStateMethods(value_2.state, RootPath, function () { return setValue_3({ state: value_2.state }); }, value_2.state);
-        var renders_1 = React.useRef(0);
-        React.useMemo(function () {
-            return renders_1.current += 1;
-        }, [value_2.state]);
-        React.useEffect(function () {
-            var capture = renders_1.current;
-            return function () {
-                if (capture !== renders_1.current) {
-                    // do not destroy state if a third party (eg: react-fast-refresh) has restored it on re-render
-                    return;
-                }
-                value_2.state.destroy();
-            };
-        }, []);
+        if (isDevelopmentMode && false) {
+            // This is a workaround for the issue:
+            // https://github.com/avkonst/hookstate/issues/109
+            // See technical notes on React behavior here:
+            // https://github.com/apollographql/apollo-client/issues/5870#issuecomment-689098185
+            var renders_1 = React.useRef(0);
+            React.useMemo(function () { return renders_1.current += 1; }, 
+            // this will update the value when dependency changes
+            // (which never happens by design) OR
+            // when a third party does hot reload, eg: react-fast-refresh
+            // (which we use to detect such a case below)
+            [value_2.state]);
+            React.useEffect(function () {
+                var capture = renders_1.current;
+                return function () { capture === renders_1.current && value_2.state.destroy(); };
+            }, 
+            // this will invoke the effect callback when a component is unmounted OR
+            // when a third party does hot reload, eg: react-fast-refresh
+            []);
+        }
+        else {
+            React.useEffect(function () { return function () { return value_2.state.destroy(); }; }, []);
+        }
         var devtools = useState[DevToolsID];
         if (devtools) {
             result.attach(devtools);
@@ -173,6 +182,9 @@ function DevTools(state) {
 ///
 /// INTERNAL SYMBOLS (LIBRARY IMPLEMENTATION)
 ///
+var isDevelopmentMode = process !== undefined && process !== null && typeof process === 'object' &&
+    process.env !== undefined && process.env !== null && typeof process.env === 'object' &&
+    process.env.NODE_ENV === 'development';
 var self = Symbol('self');
 var EmptyDevToolsExtensions = {
     label: function () { },

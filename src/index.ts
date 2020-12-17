@@ -530,24 +530,34 @@ export function useState<S>(
             RootPath,
             () => setValue({ state: value.state }),
             value.state);
-        const renders = React.useRef(0);
 
-        React.useMemo(function () {
-            return renders.current += 1;
-        }, [value.state]);
-
-        React.useEffect(() => {
-            const capture = renders.current;
-
-            return () => {
-                if (capture !== renders.current) {
-                    // do not destroy state if a third party (eg: react-fast-refresh) has restored it on re-render
-                    return;
-                }
-
-                value.state.destroy();
-            }
-        }, []);
+        if (isDevelopmentMode) {
+            // This is a workaround for the issue:
+            // https://github.com/avkonst/hookstate/issues/109
+            // See technical notes on React behavior here:
+            // https://github.com/apollographql/apollo-client/issues/5870#issuecomment-689098185
+            const renders = React.useRef(0);
+            React.useMemo(
+                () => { return renders.current += 1 },
+                // this will update the value when dependency changes
+                // (which never happens by design) OR
+                // when a third party does hot reload, eg: react-fast-refresh
+                // (which we use to detect such a case below)
+                [value.state]
+            );
+            React.useEffect(
+                () => {
+                    const capture = renders.current;
+                    // The state is not destroyed intentionally
+                    // under hot reload case.
+                    return () => { capture === renders.current && value.state.destroy() }
+                },
+                // this will invoke the effect callback when a component is unmounted OR
+                // when a third party does hot reload, eg: react-fast-refresh
+                []);
+        } else {
+            React.useEffect(() => () => value.state.destroy(), []);
+        }
         const devtools = useState[DevToolsID]
         if (devtools) {
             result.attach(devtools)
@@ -657,6 +667,10 @@ export function DevTools<S>(state: State<S>): DevToolsExtensions {
 ///
 /// INTERNAL SYMBOLS (LIBRARY IMPLEMENTATION)
 ///
+
+const isDevelopmentMode = process !== undefined && process !== null && typeof process === 'object' &&
+    process.env !== undefined && process.env !== null && typeof process.env === 'object' &&
+    process.env.NODE_ENV === 'development'
 
 const self = Symbol('self')
 
