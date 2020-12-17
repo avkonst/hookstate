@@ -110,7 +110,7 @@ function useState(source) {
         // eslint-disable-next-line react-hooks/rules-of-hooks
         var _c = React.useState(function () { return ({ state: createStore(source) }); }), value_2 = _c[0], setValue_3 = _c[1];
         var result = useSubscribedStateMethods(value_2.state, RootPath, function () { return setValue_3({ state: value_2.state }); }, value_2.state);
-        if (isDevelopmentMode && false) {
+        if (isDevelopmentMode) {
             // This is a workaround for the issue:
             // https://github.com/avkonst/hookstate/issues/109
             // See technical notes on React behavior here:
@@ -124,6 +124,8 @@ function useState(source) {
             [value_2.state]);
             React.useEffect(function () {
                 var capture = renders_1.current;
+                // The state is not destroyed intentionally
+                // under hot reload case.
                 return function () { capture === renders_1.current && value_2.state.destroy(); };
             }, 
             // this will invoke the effect callback when a component is unmounted OR
