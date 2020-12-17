@@ -530,7 +530,24 @@ export function useState<S>(
             RootPath,
             () => setValue({ state: value.state }),
             value.state);
-        React.useEffect(() => () => value.state.destroy(), []);
+        const renders = React.useRef(0);
+
+        React.useMemo(function () {
+            return renders.current += 1;
+        }, [value.state]);
+
+        React.useEffect(() => {
+            const capture = renders.current;
+
+            return () => {
+                if (capture !== renders.current) {
+                    // do not destroy state if a third party (eg: react-fast-refresh) has restored it on re-render
+                    return;
+                }
+
+                value.state.destroy();
+            }
+        }, []);
         const devtools = useState[DevToolsID]
         if (devtools) {
             result.attach(devtools)
