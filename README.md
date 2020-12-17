@@ -49,9 +49,9 @@ Hookstate is a modern alternative to Redux, Mobx, Formik without boilerplate. It
 
 [hookstate.js.org](https://hookstate.js.org)
 
-## Migrating to version 2
+## Migrating to version 3
 
-[hookstate.js.org/docs/migrating-to-v2](https://hookstate.js.org/docs/migrating-to-v2)
+[hookstate.js.org/docs/migrating-to-v3](https://hookstate.js.org/docs/migrating-to-v3)
 
 ## Documentation / Code samples
 
