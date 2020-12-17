@@ -1383,40 +1383,40 @@
   dependencies:
     "@hapi/hoek" "^8.3.0"
 
-"@hookstate/core@3.0.0-0":
-  version "3.0.0-0"
-  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-3.0.0-0.tgz#f6e9da0a020beea112524d0f23c8ae27ab427bd5"
-  integrity sha512-nUcFUzDfNW8X+tCBJyLQdwkOuFiOK3ezJ6GJwlwwoRw4PhVKIDZhFVfM8YMKtZ7AnMuahJ9OBbgMSN0I2418Tg==
+"@hookstate/core@3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-3.0.0.tgz#cfe065016f7a23446c4e4525e1ab237759016cba"
+  integrity sha512-viLFap6xXm5fUjIvvmWTkzgRzEI9v6vnte0ObZsVokEs1280TZ4ODq1EPFcCzeY11IEW+oJ46S+Tu1J0cT6P0Q==
 
-"@hookstate/initial@3.0.0-0":
-  version "3.0.0-0"
-  resolved "https://registry.yarnpkg.com/@hookstate/initial/-/initial-3.0.0-0.tgz#8de28ba79aa6bac4cc28dc8581299c69aada6318"
-  integrity sha512-S4rrtxkcl1nWfUL369G9IlLceK8sPoKQfrYtgySCl6gldjTIFMWMmIkRFhOU8IbYtR/VPKDicgOvs+83yBhaQg==
+"@hookstate/initial@3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/initial/-/initial-3.0.0.tgz#5cec55eb8b57c866da576cf086721619f4d6bb9f"
+  integrity sha512-dApcFrN8ttTmnk3hYArqgHAmfCbf/RU7C4d2eLWwyGo8kUr6zTrJXv45mguihLz0B9OUegp72EOP5iPVQx66mQ==
 
-"@hookstate/labelled@3.0.0-0":
-  version "3.0.0-0"
-  resolved "https://registry.yarnpkg.com/@hookstate/labelled/-/labelled-3.0.0-0.tgz#732d93e6de37b21ef675dec9bc8b711a80bae02e"
-  integrity sha512-BLcGMtZxwSCgaUSF2blelkkPyZMhIvSlPPSVP6vrSMc/SACcLNzlS+28iJ+V2YTlbnpuUZaM465/fCGjskac8Q==
+"@hookstate/labelled@3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/labelled/-/labelled-3.0.0.tgz#e53e0a5f63675c8381dca45a10a31b71e8275be8"
+  integrity sha512-3M9hqKKjGgVcj2NgdBMT/1fT0I0VSu6Ih56sfbeqOO8VUGRqXKTVXRCSSschK6Oy1Hc4eMS2PzR+1i7HH1iCsw==
 
-"@hookstate/persistence@3.0.0-0":
-  version "3.0.0-0"
-  resolved "https://registry.yarnpkg.com/@hookstate/persistence/-/persistence-3.0.0-0.tgz#2672061012e267e41f62eb123a32836097fd579c"
-  integrity sha512-ygFEEAuitTrFFCHaRAe/SY6Yi+4V+penuU1HOpEqBI2KCItXNxXjYnQgOsr5BtEQRkHntrU5yBuNN/f/VdO6rg==
+"@hookstate/persistence@3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/persistence/-/persistence-3.0.0.tgz#973b30d3a3bb1b29f4f59b1afe0d914e71a23882"
+  integrity sha512-xiN22IW0Wjw/uTV1OEUpTtqB8DAJyRobYR3+iv1TyMf72o98KpaZqQrLPvXkfrjlZac5s052BypjpkttX/Cmhw==
 
-"@hookstate/touched@3.0.0-0":
-  version "3.0.0-0"
-  resolved "https://registry.yarnpkg.com/@hookstate/touched/-/touched-3.0.0-0.tgz#1bbe399623cf6b920e205594ddf88f763704c270"
-  integrity sha512-Hluth5IJz9sax8MUIXrUkqcK0ODn+dEf0xxF6hDEHeeE37GREsxIisipSJviT8J4emuqUUmmwkFRAt7jnjlXMw==
+"@hookstate/touched@3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/touched/-/touched-3.0.0.tgz#caae14430b74e79a5929985c4c25c237804e81fa"
+  integrity sha512-5/lN5wB4EEd80goUD953HE6t4Uy2ohrVZ30nkpQ5m2mTjCYJEKai9nUxMw23L4eFi6ZgB0w0UytAh3IUKOZ+1g==
 
-"@hookstate/untracked@3.0.0-0":
-  version "3.0.0-0"
-  resolved "https://registry.yarnpkg.com/@hookstate/untracked/-/untracked-3.0.0-0.tgz#95bdd638af1a66570c0e2ebbd1636387cd2f91bc"
-  integrity sha512-PseAViihiFFh/J9p9Fp2yQXkMnz91IMASMAcvBI9vryXjIfineJDGtTGACuTxcDaqIJXhWNhvQ67VLcKdL9CBg==
+"@hookstate/untracked@3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/untracked/-/untracked-3.0.0.tgz#fcf5005f89a68956c994ffb4b04cc3bd25d7cbf6"
+  integrity sha512-NctZVu0fEXc+komMmEpJ4OAD77P1P4uhXnU8e2Y1l+k0P+ZCE+enTDvgg9rp2WmViD7s8XA2+lS7wTkHGargmw==
 
-"@hookstate/validation@3.0.0-0":
-  version "3.0.0-0"
-  resolved "https://registry.yarnpkg.com/@hookstate/validation/-/validation-3.0.0-0.tgz#85a87d0c99259c52deee36533fa446afe9622266"
-  integrity sha512-LK59UV0fnxhbRZ1fauRdnqjERJZmg/FGlIjez7aQIBbY3/8L5/mHHte2DJ40jI8+D6ZfsOWN6MaykDJSC4/6Zg==
+"@hookstate/validation@3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/validation/-/validation-3.0.0.tgz#cf2c48a696b7b05a1280667a997cf51825862352"
+  integrity sha512-+TKcllnz2E/bB4aad8lnTx6sgT0Lo3ttJyAGUAwciniuUWrJjrpFMyev/15+kwhDTD5Y7JflwUnvm8iIxe0Bhg==
 
 "@material-ui/core@4.11.0":
   version "4.11.0"
@@ -3816,7 +3816,7 @@ debug@4, debug@^4.1.0, debug@^4.1.1:
   dependencies:
     ms "^2.1.1"
 
-debug@^3.0.0, debug@^3.1.1, debug@^3.2.5:
+debug@^3.1.1, debug@^3.2.5:
   version "3.2.6"
   resolved "https://registry.yarnpkg.com/debug/-/debug-3.2.6.tgz#e83d17de16d8a7efb7717edbe5fb10135eee629b"
   integrity sha512-mel+jf7nrtEl5Pn1Qx46zARXKDpBbvzezse7p7LqINmdoIk8PYP5SySaxEmYv6TZ0JyEKA1hsCId6DIhgITtWQ==
@@ -4410,9 +4410,9 @@ eval@^0.1.4:
     require-like ">= 0.1.1"
 
 eventemitter3@^4.0.0:
-  version "4.0.0"
-  resolved "https://registry.yarnpkg.com/eventemitter3/-/eventemitter3-4.0.0.tgz#d65176163887ee59f386d64c82610b696a4a74eb"
-  integrity sha512-qerSRB0p+UDEssxTtm6EDKcE7W4OaoisfIMl4CngyEhjpYglocpNg6UEqCvemdGhosAsg4sO2dXJOdyBifPGCg==
+  version "4.0.7"
+  resolved "https://registry.yarnpkg.com/eventemitter3/-/eventemitter3-4.0.7.tgz#2de9b68f6528d5644ef5c59526a1b4a07306169f"
+  integrity sha512-8guHBZCwKnFhYdHr2ysuRWErTwhoN2X8XELRlrRwpmfeY2jjuUN4taQMsULKUVo1K4DvZl+0pgfyoysHxvmvEw==
 
 events@^1.1.0, events@^1.1.1:
   version "1.1.1"
@@ -4752,11 +4752,9 @@ flush-write-stream@^1.0.0:
     readable-stream "^2.3.6"
 
 follow-redirects@^1.0.0:
-  version "1.10.0"
-  resolved "https://registry.yarnpkg.com/follow-redirects/-/follow-redirects-1.10.0.tgz#01f5263aee921c6a54fb91667f08f4155ce169eb"
-  integrity sha512-4eyLK6s6lH32nOvLLwlIOnr9zrL8Sm+OvW4pVTJNoXeGzYIkHVf+pADQi+OJ0E67hiuSLezPVPyBcIZO50TmmQ==
-  dependencies:
-    debug "^3.0.0"
+  version "1.13.1"
+  resolved "https://registry.yarnpkg.com/follow-redirects/-/follow-redirects-1.13.1.tgz#5f69b813376cee4fd0474a3aba835df04ab763b7"
+  integrity sha512-SSG5xmZh1mkPGyKzjZP8zLjltIfpW32Y5QpdNJyjcfGxK3qo3NDDkZOZSFiGn1A6SclQxY9GzEwAHQ3dmYRWpg==
 
 for-in@^0.1.3:
   version "0.1.8"
@@ -5516,9 +5514,9 @@ http-proxy-middleware@0.19.1:
     micromatch "^3.1.10"
 
 http-proxy@^1.17.0:
-  version "1.18.0"
-  resolved "https://registry.yarnpkg.com/http-proxy/-/http-proxy-1.18.0.tgz#dbe55f63e75a347db7f3d99974f2692a314a6a3a"
-  integrity sha512-84I2iJM/n1d4Hdgc6y2+qY5mDaz2PUVjlg9znE9byl+q0uC3DeByqBGReQu5tpLK0TAqTIXScRUV+dg7+bUPpQ==
+  version "1.18.1"
+  resolved "https://registry.yarnpkg.com/http-proxy/-/http-proxy-1.18.1.tgz#401541f0534884bbf95260334e72f88ee3976549"
+  integrity sha512-7mz/721AbnJwIVbnaSv1Cz3Am0ZLT/UBwkC92VlxhXv/k/BBQfM2fXElQNC27BVGr0uwUpplYPQM9LnaBMR5NQ==
   dependencies:
     eventemitter3 "^4.0.0"
     follow-redirects "^1.0.0"
