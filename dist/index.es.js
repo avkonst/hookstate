@@ -109,22 +109,14 @@ function useState(source) {
             // https://github.com/avkonst/hookstate/issues/109
             // See technical notes on React behavior here:
             // https://github.com/apollographql/apollo-client/issues/5870#issuecomment-689098185
-            var renders_1 = React.useRef(0);
-            React.useMemo(function () { return renders_1.current += 1; }, 
-            // this will update the value when dependency changes
-            // (which never happens by design) OR
-            // when a third party does hot reload, eg: react-fast-refresh
-            // (which we use to detect such a case below)
-            [value_2.state]);
+            var isEffectExecutedAfterRender_1 = React.useRef(false);
+            isEffectExecutedAfterRender_1.current = false; // not yet...
             React.useEffect(function () {
-                var capture = renders_1.current;
+                isEffectExecutedAfterRender_1.current = true; // ... and now, yes!
                 // The state is not destroyed intentionally
                 // under hot reload case.
-                return function () { capture === renders_1.current && value_2.state.destroy(); };
-            }, 
-            // this will invoke the effect callback when a component is unmounted OR
-            // when a third party does hot reload, eg: react-fast-refresh
-            []);
+                return function () { isEffectExecutedAfterRender_1.current && value_2.state.destroy(); };
+            });
         }
         else {
             React.useEffect(function () { return function () { return value_2.state.destroy(); }; }, []);
@@ -1086,16 +1078,6 @@ propertySetter, isValueProxy) {
                 ErrorId.DefineProperty_State :
                 ErrorId.DefineProperty_Value);
         },
-        // enumerate: (target) => {
-        //     const targetReal = targetGetter()
-        //     if (Array.isArray(targetReal)) {
-        //         return Object.keys(targetReal).concat('length');
-        //     }
-        //     if (targetReal === undefined || targetReal === null) {
-        //         return [];
-        //     }
-        //     return Object.keys(targetReal);
-        // },
         ownKeys: function (target) {
             var targetReal = targetGetter();
             if (Array.isArray(targetReal)) {
