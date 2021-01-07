@@ -536,25 +536,15 @@ export function useState<S>(
             // https://github.com/avkonst/hookstate/issues/109
             // See technical notes on React behavior here:
             // https://github.com/apollographql/apollo-client/issues/5870#issuecomment-689098185
-            const renders = React.useRef(0);
-            React.useMemo(
-                () => { return renders.current += 1 },
-                // this will update the value when dependency changes
-                // (which never happens by design) OR
-                // when a third party does hot reload, eg: react-fast-refresh
-                // (which we use to detect such a case below)
-                [value.state]
-            );
-            React.useEffect(
-                () => {
-                    const capture = renders.current;
-                    // The state is not destroyed intentionally
-                    // under hot reload case.
-                    return () => { capture === renders.current && value.state.destroy() }
-                },
-                // this will invoke the effect callback when a component is unmounted OR
-                // when a third party does hot reload, eg: react-fast-refresh
-                []);
+            const isEffectExecutedAfterRender = React.useRef(false);
+            isEffectExecutedAfterRender.current = false; // not yet...
+            
+            React.useEffect(() => {
+                isEffectExecutedAfterRender.current = true; // ... and now, yes!
+                // The state is not destroyed intentionally
+                // under hot reload case.
+                return () => { isEffectExecutedAfterRender.current && value.state.destroy() }
+            });
         } else {
             React.useEffect(() => () => value.state.destroy(), []);
         }
