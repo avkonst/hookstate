@@ -853,7 +853,7 @@ class Store implements Subscribable {
 
             if (prevValue === none && this._value !== none &&
                 this.promised && this.promised.resolver) {
-                this.promised.resolver()
+                this.promised.resolver(this._value)
             }
 
             return path;
@@ -1044,7 +1044,7 @@ class Store implements Subscribable {
 class Promised {
     public fullfilled?: true;
     public error?: StateErrorAtRoot;
-    public resolver?: () => void;
+    public resolver?: (_: StateValueAtRoot) => void;
 
     constructor(public promise: Promise<StateValueAtPath> | undefined,
         onResolve: (r: StateValueAtPath) => void,
@@ -1139,7 +1139,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
             if (this.isDowngraded) {
                 this.valueCache = currentValue;
             } else if (Array.isArray(currentValue)) {
-                this.valueCache = this.valueArrayImpl(currentValue);
+                this.valueCache = this.valueArrayImpl(currentValue as unknown as StateValueAtPath[]);
             } else if (typeof currentValue === 'object' && currentValue !== null) {
                 this.valueCache = this.valueObjectImpl(currentValue as unknown as object);
             } else {
@@ -1188,8 +1188,8 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                         deletedOrInsertedProps = true
                         deletedIndexes.push(index)
                     } else {
-                        deletedOrInsertedProps = deletedOrInsertedProps || !(index in currentValue)
-                        currentValue[index] = newPropValue
+                        deletedOrInsertedProps = deletedOrInsertedProps || !(index in currentValue);
+                        (currentValue as StateValueAtPath[])[index] = newPropValue
                     }
                 });
                 // indexes are ascending sorted as per above
@@ -1656,16 +1656,6 @@ function proxyWrap(
             return onInvalidUsage(isValueProxy ?
                 ErrorId.DefineProperty_State :
                 ErrorId.DefineProperty_Value)
-        },
-        enumerate: (target) => {
-            const targetReal = targetGetter()
-            if (Array.isArray(targetReal)) {
-                return Object.keys(targetReal).concat('length');
-            }
-            if (targetReal === undefined || targetReal === null) {
-                return [];
-            }
-            return Object.keys(targetReal);
         },
         ownKeys: (target) => {
             const targetReal = targetGetter()

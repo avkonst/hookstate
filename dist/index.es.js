@@ -344,7 +344,7 @@ var Store = /** @class */ (function () {
             this.afterSet(onSetArg);
             if (prevValue === none && this._value !== none &&
                 this.promised && this.promised.resolver) {
-                this.promised.resolver();
+                this.promised.resolver(this._value);
             }
             return path;
         }
@@ -1086,16 +1086,16 @@ propertySetter, isValueProxy) {
                 ErrorId.DefineProperty_State :
                 ErrorId.DefineProperty_Value);
         },
-        enumerate: function (target) {
-            var targetReal = targetGetter();
-            if (Array.isArray(targetReal)) {
-                return Object.keys(targetReal).concat('length');
-            }
-            if (targetReal === undefined || targetReal === null) {
-                return [];
-            }
-            return Object.keys(targetReal);
-        },
+        // enumerate: (target) => {
+        //     const targetReal = targetGetter()
+        //     if (Array.isArray(targetReal)) {
+        //         return Object.keys(targetReal).concat('length');
+        //     }
+        //     if (targetReal === undefined || targetReal === null) {
+        //         return [];
+        //     }
+        //     return Object.keys(targetReal);
+        // },
         ownKeys: function (target) {
             var targetReal = targetGetter();
             if (Array.isArray(targetReal)) {
