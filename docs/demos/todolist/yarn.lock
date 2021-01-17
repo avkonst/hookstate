@@ -1159,15 +1159,15 @@
   dependencies:
     "@hapi/hoek" "^8.3.0"
 
-"@hookstate/core@3.0.0-0":
-  version "3.0.0-0"
-  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-3.0.0-0.tgz#f6e9da0a020beea112524d0f23c8ae27ab427bd5"
-  integrity sha512-nUcFUzDfNW8X+tCBJyLQdwkOuFiOK3ezJ6GJwlwwoRw4PhVKIDZhFVfM8YMKtZ7AnMuahJ9OBbgMSN0I2418Tg==
+"@hookstate/core@3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/core/-/core-3.0.0.tgz#cfe065016f7a23446c4e4525e1ab237759016cba"
+  integrity sha512-viLFap6xXm5fUjIvvmWTkzgRzEI9v6vnte0ObZsVokEs1280TZ4ODq1EPFcCzeY11IEW+oJ46S+Tu1J0cT6P0Q==
 
-"@hookstate/devtools@3.0.0-0":
-  version "3.0.0-0"
-  resolved "https://registry.yarnpkg.com/@hookstate/devtools/-/devtools-3.0.0-0.tgz#253a3ac9a784977276f8fe7fa70334705d30e360"
-  integrity sha512-eea2XNz4p+HA+reA+Jvc4vKIwAUtTBlMFppWfm4QqvKnenwZzU2gANpSbz3Nl8JJb5MqjhY/6yPLbXtxL1dvGQ==
+"@hookstate/devtools@3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@hookstate/devtools/-/devtools-3.0.0.tgz#9b289503112f0f95221d0c86e602ada7793bbd3a"
+  integrity sha512-jXI9e+4+dr0FbdtHhQPa0/SmRwLM7twMU0Qf87AgM3DqqFDV9dRPD56jPXaTh8xD1Bt2R72TmGmqdkDhdKG8AQ==
   dependencies:
     redux "4.0.5"
     redux-devtools-extension "2.13.8"
