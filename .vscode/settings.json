@@ -19,6 +19,9 @@
     "peacock.remoteColor": "#42b883",
     "cSpell.words": [
         "core",
-        "hookstate"
+        "fullfilled",
+        "hookstate",
+        "unmount",
+        "untracked"
     ]
 }

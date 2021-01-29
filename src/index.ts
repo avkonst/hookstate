@@ -676,7 +676,6 @@ enum ErrorId {
     SetStateWhenPromised = 104,
     SetStateNestedToPromised = 105,
     SetStateWhenDestroyed = 106,
-    GetStatePropertyWhenPrimitive = 107,
     ToJson_Value = 108,
     ToJson_State = 109,
     GetUnknownPlugin = 120,
@@ -1444,7 +1443,14 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                 (typeof currentValue !== 'object' || currentValue === null) &&
                 // if promised, it will be none
                 currentValue !== none) {
-                throw new StateInvalidUsageError(this.path, ErrorId.GetStatePropertyWhenPrimitive)
+                // This was an error case, but various tools like webpack bundler
+                // and react dev tools attempt to get props out of non-null object,
+                // so this was changed to return just undefined for any property request
+                // as there is no way to fix 3rd party tools.
+                // Logging a warning to console is also not an option
+                // as it pollutes console for legitimate apps on app start app.
+                // Ref: https://github.com/avkonst/hookstate/issues/125
+                return undefined
             }
 
             if (Array.isArray(currentValue)) {
