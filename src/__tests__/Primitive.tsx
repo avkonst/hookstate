@@ -146,8 +146,8 @@ test('primitive: should not rerender unused', async () => {
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.get()).toStrictEqual(1);
-    expect(() => result.current['non-existing']).toThrow('Error: HOOKSTATE-107 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-107');
-    expect(() => result.current[0]).toThrow('Error: HOOKSTATE-107 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-107');
+    expect(result.current['non-existing']).toBeUndefined();
+    expect(result.current[0]).toBeUndefined();
 });
 
 test('primitive: global state', async () => {
