@@ -198,7 +198,6 @@ var ErrorId;
     ErrorId[ErrorId["SetStateWhenPromised"] = 104] = "SetStateWhenPromised";
     ErrorId[ErrorId["SetStateNestedToPromised"] = 105] = "SetStateNestedToPromised";
     ErrorId[ErrorId["SetStateWhenDestroyed"] = 106] = "SetStateWhenDestroyed";
-    ErrorId[ErrorId["GetStatePropertyWhenPrimitive"] = 107] = "GetStatePropertyWhenPrimitive";
     ErrorId[ErrorId["ToJson_Value"] = 108] = "ToJson_Value";
     ErrorId[ErrorId["ToJson_State"] = 109] = "ToJson_State";
     ErrorId[ErrorId["GetUnknownPlugin"] = 120] = "GetUnknownPlugin";
@@ -884,7 +883,14 @@ var StateMethodsImpl = /** @class */ (function () {
                 (typeof currentValue !== 'object' || currentValue === null) &&
                     // if promised, it will be none
                     currentValue !== none) {
-                    throw new StateInvalidUsageError(_this.path, ErrorId.GetStatePropertyWhenPrimitive);
+                    // This was an error case, but various tools like webpack bundler
+                    // and react dev tools attempt to get props out of non-null object,
+                    // so this was changed to return just undefined for any property request
+                    // as there is no way to fix 3rd party tools.
+                    // Logging a warning to console is also not an option
+                    // as it pollutes console for legitimate apps on app start app.
+                    // Ref: https://github.com/avkonst/hookstate/issues/125
+                    return undefined;
                 }
                 if (Array.isArray(currentValue)) {
                     if (key === 'length') {
