@@ -6,7 +6,7 @@ sidebar_label: Overview
 
 import { PreviewSample } from '../src/PreviewSample'
 
-Preformance is one of the main goals of the Hookstate project alongside with simple and flexible API. Hookstate has got two technologies built-in, which make it stand out and deliver incredible performance for applications:
+Performance is one of the main goals of the Hookstate project alongside with simple and flexible API. Hookstate has got two technologies built-in, which make it stand out and deliver incredible performance for applications:
 
 1. Hookstate does usage tracking to identify what components require rerendering when a state is changed. It is possible to disable this with help of [Downgraded](./performance-managed-rendering) plugin on per component basis or per state.
 2. Hookstate has got [scoped state](./scoped-state) feature which multiplies the effect of the first, particularly for the cases involving [large states](./performance-large-state) and [frequent updates](./performance-frequent-updates).
