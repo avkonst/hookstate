@@ -498,6 +498,26 @@ export function useState<S>(
 export function useState<S>(
     source: SetInitialStateAction<S> | State<S>
 ): State<S> {
+    return useHookstate(source as State<S>);
+}
+
+/**
+ * Alias to [useState](#usestate) which provides a workaround
+ * for [React 20613 bug](https://github.com/facebook/react/issues/20613)
+ */
+export function useHookstate<S>(
+    source: State<S>
+): State<S>;
+/**
+ * Alias to [useState](#usestate) which provides a workaround
+ * for [React 20613 bug](https://github.com/facebook/react/issues/20613)
+ */
+export function useHookstate<S>(
+    source: SetInitialStateAction<S>
+): State<S>;
+export function useHookstate<S>(
+    source: SetInitialStateAction<S> | State<S>
+): State<S> {
     const parentMethods = typeof source === 'object' && source !== null ?
         source[self] as StateMethodsImpl<S> | undefined :
         undefined;
