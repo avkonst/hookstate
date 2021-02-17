@@ -1557,6 +1557,10 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
             const pluginMeta = p();
             if (pluginMeta.id === DowngradedID) {
                 this.isDowngraded = true;
+                if (this.valueCache !== ValueUnusedMarker) {
+                    const currentValue = this.getUntracked(true);
+                    this.valueCache = currentValue;
+                }
                 return this.self;
             }
             this.state.register(pluginMeta);

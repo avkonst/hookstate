@@ -996,6 +996,10 @@ var StateMethodsImpl = /** @class */ (function () {
             var pluginMeta = p();
             if (pluginMeta.id === DowngradedID) {
                 this.isDowngraded = true;
+                if (this.valueCache !== ValueUnusedMarker) {
+                    var currentValue = this.getUntracked(true);
+                    this.valueCache = currentValue;
+                }
                 return this.self;
             }
             this.state.register(pluginMeta);
