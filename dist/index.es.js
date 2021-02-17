@@ -82,6 +82,9 @@ function createState(initial) {
     return methods.self;
 }
 function useState(source) {
+    return useHookstate(source);
+}
+function useHookstate(source) {
     var parentMethods = typeof source === 'object' && source !== null ?
         source[self] :
         undefined;
@@ -1132,5 +1135,5 @@ function useSubscribedStateMethods(state, path, update, subscribeTarget) {
     return link;
 }
 
-export { DevTools, DevToolsID, Downgraded, StateFragment, createState, none, postpone, useState };
+export { DevTools, DevToolsID, Downgraded, StateFragment, createState, none, postpone, useHookstate, useState };
 //# sourceMappingURL=index.es.js.map

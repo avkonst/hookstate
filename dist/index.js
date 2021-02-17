@@ -88,6 +88,9 @@ function createState(initial) {
     return methods.self;
 }
 function useState(source) {
+    return useHookstate(source);
+}
+function useHookstate(source) {
     var parentMethods = typeof source === 'object' && source !== null ?
         source[self] :
         undefined;
@@ -1145,5 +1148,6 @@ exports.StateFragment = StateFragment;
 exports.createState = createState;
 exports.none = none;
 exports.postpone = postpone;
+exports.useHookstate = useHookstate;
 exports.useState = useState;
 //# sourceMappingURL=index.js.map

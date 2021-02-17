@@ -430,6 +430,16 @@ export declare function useState<S>(source: State<S>): State<S>;
  */
 export declare function useState<S>(source: SetInitialStateAction<S>): State<S>;
 /**
+ * Alias to [useState](#usestate) which provides a workaround
+ * for [React 20613 bug](https://github.com/facebook/react/issues/20613)
+ */
+export declare function useHookstate<S>(source: State<S>): State<S>;
+/**
+ * Alias to [useState](#usestate) which provides a workaround
+ * for [React 20613 bug](https://github.com/facebook/react/issues/20613)
+ */
+export declare function useHookstate<S>(source: SetInitialStateAction<S>): State<S>;
+/**
  * Allows to use a state without defining a functional react component.
  * It can be also used in class-based React components. It is also
  * particularly usefull for creating *scoped* states.
