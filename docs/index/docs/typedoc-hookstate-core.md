@@ -41,6 +41,7 @@ title: API @hookstate/core
 * [Downgraded](#downgraded)
 * [StateFragment](#statefragment)
 * [createState](#createstate)
+* [useHookstate](#usehookstate)
 * [useState](#usestate)
 
 ## Type aliases
@@ -156,7 +157,7 @@ Special symbol which might be returned by onPromised callback of [StateMethods.m
 
 ▸ **DevTools**<**S**>(`state`: [State](#state)‹S›): *[DevToolsExtensions](#interfacesdevtoolsextensionsmd)*
 
-*Defined in [index.d.ts:501](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L501)*
+*Defined in [index.d.ts:511](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L511)*
 
 Returns access to the development tools for a given state.
 Development tools are delivered as optional plugins.
@@ -188,7 +189,7 @@ ___
 
 ▸ **Downgraded**(): *[Plugin](#interfacespluginmd)*
 
-*Defined in [index.d.ts:463](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L463)*
+*Defined in [index.d.ts:473](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L473)*
 
 A plugin which allows to opt-out from usage of Javascript proxies for
 state usage tracking. It is useful for performance tuning.
@@ -203,7 +204,7 @@ ___
 
 ▸ **StateFragment**<**S**>(`props`: object): *ReactElement*
 
-*Defined in [index.d.ts:441](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L441)*
+*Defined in [index.d.ts:451](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L451)*
 
 Allows to use a state without defining a functional react component.
 It can be also used in class-based React components. It is also
@@ -230,7 +231,7 @@ Name | Type |
 
 ▸ **StateFragment**<**S**>(`props`: object): *ReactElement*
 
-*Defined in [index.d.ts:453](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L453)*
+*Defined in [index.d.ts:463](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L463)*
 
 Allows to use a state without defining a functional react component.
 See more at [StateFragment](#statefragment)
@@ -298,6 +299,48 @@ outside of React components.
 When you need to use the state in a functional `React` component,
 pass the created state to [useState](#usestate) function and
 use the returned result in the component's logic.
+
+___
+
+###  useHookstate
+
+▸ **useHookstate**<**S**>(`source`: [State](#state)‹S›): *[State](#state)‹S›*
+
+*Defined in [index.d.ts:436](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L436)*
+
+Alias to [useState](#usestate) which provides a workaround
+for [React 20613 bug](https://github.com/facebook/react/issues/20613)
+
+**Type parameters:**
+
+▪ **S**
+
+**Parameters:**
+
+Name | Type |
+------ | ------ |
+`source` | [State](#state)‹S› |
+
+**Returns:** *[State](#state)‹S›*
+
+▸ **useHookstate**<**S**>(`source`: [SetInitialStateAction](#setinitialstateaction)‹S›): *[State](#state)‹S›*
+
+*Defined in [index.d.ts:441](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L441)*
+
+Alias to [useState](#usestate) which provides a workaround
+for [React 20613 bug](https://github.com/facebook/react/issues/20613)
+
+**Type parameters:**
+
+▪ **S**
+
+**Parameters:**
+
+Name | Type |
+------ | ------ |
+`source` | [SetInitialStateAction](#setinitialstateaction)‹S› |
+
+**Returns:** *[State](#state)‹S›*
 
 ___
 
@@ -408,7 +451,7 @@ Return type of [DevTools](#devtools).
 
 ▸ **label**(`name`: string): *void*
 
-*Defined in [index.d.ts:480](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L480)*
+*Defined in [index.d.ts:490](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L490)*
 
 Assigns custom label to identify the state in the development tools
 
@@ -426,7 +469,7 @@ ___
 
 ▸ **log**(`str`: string, `data?`: any): *void*
 
-*Defined in [index.d.ts:484](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L484)*
+*Defined in [index.d.ts:494](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L494)*
 
 Logs to the development tools
 
