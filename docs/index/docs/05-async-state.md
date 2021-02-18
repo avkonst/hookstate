@@ -11,7 +11,7 @@ The root state can be set to a promise value, either as an initial value for [cr
 ## Checking if state is loading
 
 While a promise is not resolved or rejected almost any operation will result in an exception. To check, if underlying promise is resolved or rejected, use [StateMethods.promised](typedoc-hookstate-core#readonly-promised).
-To check, if underlying promise is rejected, , use [StateMethods.error](typedoc-hookstate-core#readonly-error). For example:
+To check, if underlying promise is rejected, use [StateMethods.error](typedoc-hookstate-core#readonly-error). For example:
 
 <PreviewSample example="local-async-state" />
 
