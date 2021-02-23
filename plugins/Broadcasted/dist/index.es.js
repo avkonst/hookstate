@@ -95,11 +95,6 @@ function activateLeaderElection() {
     };
 }
 var SystemLeaderSubscription = activateLeaderElection();
-SystemLeaderSubscription.subscribe(function () {
-    if (window) {
-        window.console.info('[@hookstate/broadcasted]: this tab is a leader');
-    }
-});
 function subscribeBroadcastChannel(topic, onMessage, onLeader) {
     var channel = new BroadcastChannel(topic);
     channel.onmessage = function (m) { return onMessage(m); };
@@ -159,13 +154,11 @@ var BroadcastedPluginInstance = /** @class */ (function () {
                 var targetState = state;
                 for (var i = 0; i < message.path.length; i += 1) {
                     var p = message.path[i];
-                    var nested = targetState.nested;
-                    if (nested) {
-                        targetState = nested[p];
+                    try {
+                        targetState = targetState.nested(p);
                     }
-                    else {
-                        // window.console.trace('[@hookstate/broadcasted]: broken tree at path:',
-                        //    message.path, targetState.get());
+                    catch (_a) {
+                        // window.console.trace('[@hookstate/broadcasted]: broken tree at path:', message.path);
                         _this.requestValue();
                         return;
                     }

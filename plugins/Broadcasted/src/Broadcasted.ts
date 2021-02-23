@@ -92,11 +92,11 @@ function activateLeaderElection() {
 }
 
 const SystemLeaderSubscription = activateLeaderElection()
-SystemLeaderSubscription.subscribe(() => {
-    if (window) {
-        window.console.info('[@hookstate/broadcasted]: this tab is a leader')
-    } 
-})
+// SystemLeaderSubscription.subscribe(() => {
+//     if (window) {
+//         window.console.info('[@hookstate/broadcasted]: this tab is a leader')
+//     } 
+// })
 
 interface BroadcastChannelHandle<T> {
     topic: string,
@@ -197,12 +197,10 @@ class BroadcastedPluginInstance implements PluginCallbacks {
                 let targetState = state;
                 for (let i = 0; i < message.path.length; i += 1) {
                     const p = message.path[i];
-                    const nested = targetState.nested
-                    if (nested) {
-                        targetState = nested[p]
-                    } else {
-                        // window.console.trace('[@hookstate/broadcasted]: broken tree at path:',
-                        //    message.path, targetState.get());
+                    try {
+                        targetState = targetState.nested(p)
+                    } catch {
+                        // window.console.trace('[@hookstate/broadcasted]: broken tree at path:', message.path);
                         this.requestValue()
                         return;
                     }
