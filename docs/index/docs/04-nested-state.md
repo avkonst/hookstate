@@ -455,7 +455,10 @@ Use `Array.prototype.splice` function to remove, replace or delete elements. In 
 
 ```tsx
 const state = useState([3000, 4000])
-state.set(p => p.splice(0, 0, 1000, 2000))
+state.set(p => {
+    p.splice(0, 0, 1000, 2000);
+    return p;
+})
 ```
 
 ### Partial updates and deletions
