@@ -1,6 +1,6 @@
 {
     "name": "@hookstate/broadcasted",
-    "version": "3.0.0",
+    "version": "3.0.1",
     "description": "Plugin for @hookstate/core to enable state synchronization across browser tabs.",
     "license": "MIT",
     "author": {
@@ -36,7 +36,7 @@
     "dependencies": {},
     "peerDependencies": {
         "@hookstate/core": "^3.0.0",
-        "broadcast-channel" : "^3.4.1"
+        "broadcast-channel": "^3.4.1"
     },
     "devDependencies": {
         "@babel/core": "7.10.5",
@@ -53,7 +53,7 @@
         "@types/lodash.isequal": "4.5.5",
         "@types/react": "16.9.43",
         "@types/react-dom": "16.9.8",
-        "broadcast-channel" : "3.4.1",
+        "broadcast-channel": "3.4.1",
         "cross-env": "7.0.2",
         "npm-check-updates": "7.0.1",
         "react": "16.13.1",
