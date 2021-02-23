@@ -163,7 +163,7 @@ class BroadcastedPluginInstance implements PluginCallbacks {
     
     constructor(
         readonly topic: string,
-        readonly stateLink: State<StateValueAtRoot>,
+        readonly state: State<StateValueAtRoot>,
         readonly onLeader?: (link: State<StateValueAtRoot>, wasFollower: boolean) => void
     ) {
         this.broadcastRef = subscribeBroadcastChannel(topic, (message: BroadcastMessage | ServiceMessage) => {
@@ -179,7 +179,7 @@ class BroadcastedPluginInstance implements PluginCallbacks {
                 return;
             }
             
-            if (message.path.length === 0 || !stateLink.promised) {
+            if (message.path.length === 0 || !state.promised) {
                 if (message.dstInstance && message.dstInstance !== this.instanceId) {
                     return;
                 }
@@ -194,7 +194,7 @@ class BroadcastedPluginInstance implements PluginCallbacks {
                     return;
                 }
                 
-                let targetState = stateLink;
+                let targetState = state;
                 for (let i = 0; i < message.path.length; i += 1) {
                     const p = message.path[i];
                     const nested = targetState.nested
@@ -222,7 +222,7 @@ class BroadcastedPluginInstance implements PluginCallbacks {
             this.isLeader = true;
             
             if (onLeader) {
-                onLeader(stateLink, wasFollower)
+                onLeader(state, wasFollower)
             } else if (!wasFollower) {
                 this.submitValueFromState()
             }
@@ -246,10 +246,11 @@ class BroadcastedPluginInstance implements PluginCallbacks {
     }
 
     submitValueFromState(dst?: string) {
+        let [_, controls] = this.state.attach(PluginID);
         this.submitValue(
-            this.stateLink.promised
+            this.state.promised
                 ? { path: [] }
-                : { path: [], value: this.stateLink.value },
+                : { path: [], value: controls.getUntracked() },
             undefined,
             dst)
     }

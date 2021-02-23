@@ -125,10 +125,10 @@ function generateUniqueId() {
 }
 var PluginID = Symbol('Broadcasted');
 var BroadcastedPluginInstance = /** @class */ (function () {
-    function BroadcastedPluginInstance(topic, stateLink, onLeader) {
+    function BroadcastedPluginInstance(topic, state, onLeader) {
         var _this = this;
         this.topic = topic;
-        this.stateLink = stateLink;
+        this.state = state;
         this.onLeader = onLeader;
         this.isDestroyed = false;
         this.isBroadcastEnabled = true;
@@ -146,7 +146,7 @@ var BroadcastedPluginInstance = /** @class */ (function () {
                 }
                 return;
             }
-            if (message.path.length === 0 || !stateLink.promised) {
+            if (message.path.length === 0 || !state.promised) {
                 if (message.dstInstance && message.dstInstance !== _this.instanceId) {
                     return;
                 }
@@ -160,7 +160,7 @@ var BroadcastedPluginInstance = /** @class */ (function () {
                     }
                     return;
                 }
-                var targetState = stateLink;
+                var targetState = state;
                 for (var i = 0; i < message.path.length; i += 1) {
                     var p = message.path[i];
                     var nested = targetState.nested;
@@ -186,7 +186,7 @@ var BroadcastedPluginInstance = /** @class */ (function () {
             var wasFollower = _this.isLeader === false;
             _this.isLeader = true;
             if (onLeader) {
-                onLeader(stateLink, wasFollower);
+                onLeader(state, wasFollower);
             }
             else if (!wasFollower) {
                 _this.submitValueFromState();
@@ -207,9 +207,10 @@ var BroadcastedPluginInstance = /** @class */ (function () {
         this.broadcastRef.channel.postMessage(message);
     };
     BroadcastedPluginInstance.prototype.submitValueFromState = function (dst) {
-        this.submitValue(this.stateLink.promised
+        var _a = this.state.attach(PluginID), _ = _a[0], controls = _a[1];
+        this.submitValue(this.state.promised
             ? { path: [] }
-            : { path: [], value: this.stateLink.value }, undefined, dst);
+            : { path: [], value: controls.getUntracked() }, undefined, dst);
     };
     BroadcastedPluginInstance.prototype.submitValue = function (source, newTag, dst) {
         if (this.isDestroyed) {
