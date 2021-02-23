@@ -57,6 +57,19 @@ the plugin's callbacks will be called. Learn more about the plugin interfaces in
 * [PluginCallbacksOnDestroyArgument](typedoc-hookstate-core#interfacesplugincallbacksondestroyargumentmd)
 * [PluginCallbacksOnBatchArgument](typedoc-hookstate-core#interfacesplugincallbacksonbatchargumentmd)
 
+Note: There is no distinction between attaching a plugin to the root of the state or
+to any of its child. This means that in the following example,
+calling `state.x.y.set(...)` will trigger the `onSet` callback of the plugin,
+even if it has been attached to `state.a.b`.
+If your plugin requires to react only on certain sub-state updates,
+you can use `path` field from the callback arguments to filter out events of no interest. 
+
+```tsx
+const state = createState(...);
+// behaves exactly the same as state.attach(MyStateWatchPlugin)
+state.a.b.attach(MyStateWatchPlugin)
+```
+
 A plugin may provide additional extension methods, like the [Initial](./extensions-initial) plugin, for example.
 The best place for extension methods is alongside with the callback functions:
 

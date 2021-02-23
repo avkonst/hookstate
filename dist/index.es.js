@@ -82,6 +82,9 @@ function createState(initial) {
     return methods.self;
 }
 function useState(source) {
+    return useHookstate(source);
+}
+function useHookstate(source) {
     var parentMethods = typeof source === 'object' && source !== null ?
         source[self] :
         undefined;
@@ -990,6 +993,10 @@ var StateMethodsImpl = /** @class */ (function () {
             var pluginMeta = p();
             if (pluginMeta.id === DowngradedID) {
                 this.isDowngraded = true;
+                if (this.valueCache !== ValueUnusedMarker) {
+                    var currentValue = this.getUntracked(true);
+                    this.valueCache = currentValue;
+                }
                 return this.self;
             }
             this.state.register(pluginMeta);
@@ -1128,5 +1135,5 @@ function useSubscribedStateMethods(state, path, update, subscribeTarget) {
     return link;
 }
 
-export { DevTools, DevToolsID, Downgraded, StateFragment, createState, none, postpone, useState };
+export { DevTools, DevToolsID, Downgraded, StateFragment, createState, none, postpone, useHookstate, useState };
 //# sourceMappingURL=index.es.js.map

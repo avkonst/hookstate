@@ -88,6 +88,9 @@ function createState(initial) {
     return methods.self;
 }
 function useState(source) {
+    return useHookstate(source);
+}
+function useHookstate(source) {
     var parentMethods = typeof source === 'object' && source !== null ?
         source[self] :
         undefined;
@@ -996,6 +999,10 @@ var StateMethodsImpl = /** @class */ (function () {
             var pluginMeta = p();
             if (pluginMeta.id === DowngradedID) {
                 this.isDowngraded = true;
+                if (this.valueCache !== ValueUnusedMarker) {
+                    var currentValue = this.getUntracked(true);
+                    this.valueCache = currentValue;
+                }
                 return this.self;
             }
             this.state.register(pluginMeta);
@@ -1141,5 +1148,6 @@ exports.StateFragment = StateFragment;
 exports.createState = createState;
 exports.none = none;
 exports.postpone = postpone;
+exports.useHookstate = useHookstate;
 exports.useState = useState;
 //# sourceMappingURL=index.js.map

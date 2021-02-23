@@ -1,6 +1,6 @@
 {
     "name": "@hookstate/core",
-    "version": "3.0.4",
+    "version": "3.0.6",
     "description": "The flexible, fast and extendable state management for React that is based on hooks and state usage tracking.",
     "license": "MIT",
     "author": {
