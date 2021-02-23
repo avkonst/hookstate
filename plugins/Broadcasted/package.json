@@ -1,6 +1,6 @@
 {
     "name": "@hookstate/broadcasted",
-    "version": "3.0.1",
+    "version": "3.0.2",
     "description": "Plugin for @hookstate/core to enable state synchronization across browser tabs.",
     "license": "MIT",
     "author": {
