@@ -1,0 +1,74 @@
+{
+    "name": "@hookstate/broadcasted",
+    "version": "3.0.0",
+    "description": "Plugin for @hookstate/core to enable state synchronization across browser tabs.",
+    "license": "MIT",
+    "author": {
+        "name": "Andrey Konstantinov"
+    },
+    "repository": {
+        "url": "https://github.com/avkonst/hookstate"
+    },
+    "bugs": {
+        "url": "https://github.com/avkonst/hookstate/issues"
+    },
+    "homepage": "https://github.com/avkonst/hookstate",
+    "main": "dist/index.js",
+    "module": "dist/index.es.js",
+    "jsnext:main": "dist/index.es.js",
+    "engines": {
+        "node": ">=8",
+        "npm": ">=5"
+    },
+    "scripts": {
+        "start": "rollup -c -w",
+        "build": "rollup -c",
+        "build:watch": "yarn run start",
+        "lint": "tslint --project .",
+        "clean": "rimraf dist",
+        "clean-deps": "rimraf node_modules",
+        "test": "cross-env CI=1 react-scripts test --env=jsdom",
+        "test:watch": "react-scripts test --env=jsdom",
+        "check-updates": "ncu",
+        "apply-updates": "ncu -u",
+        "prepare": "yarn build"
+    },
+    "dependencies": {},
+    "peerDependencies": {
+        "@hookstate/core": "^3.0.0",
+        "broadcast-channel" : "^3.4.1"
+    },
+    "devDependencies": {
+        "@babel/core": "7.10.5",
+        "@babel/runtime": "7.10.5",
+        "@hookstate/core": "3.0.0",
+        "@rollup/plugin-babel": "5.1.0",
+        "@rollup/plugin-commonjs": "14.0.0",
+        "@rollup/plugin-node-resolve": "8.4.0",
+        "@rollup/plugin-url": "5.0.1",
+        "@testing-library/react": "10.4.6",
+        "@testing-library/react-hooks": "3.3.0",
+        "@types/jest": "26.0.4",
+        "@types/lodash.clonedeep": "4.5.6",
+        "@types/lodash.isequal": "4.5.5",
+        "@types/react": "16.9.43",
+        "@types/react-dom": "16.9.8",
+        "broadcast-channel" : "3.4.1",
+        "cross-env": "7.0.2",
+        "npm-check-updates": "7.0.1",
+        "react": "16.13.1",
+        "react-dom": "16.13.1",
+        "react-scripts": "3.4.1",
+        "react-test-renderer": "16.13.1",
+        "rimraf": "3.0.2",
+        "rollup": "2.21.0",
+        "rollup-plugin-peer-deps-external": "2.2.3",
+        "rollup-plugin-typescript2": "0.27.1",
+        "tslint": "6.1.2",
+        "tslint-react": "5.0.0",
+        "typescript": "3.9.6"
+    },
+    "files": [
+        "dist"
+    ]
+}
