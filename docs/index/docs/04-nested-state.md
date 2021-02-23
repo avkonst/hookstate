@@ -449,6 +449,15 @@ state.set(p => {
 
 Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) and [StateMethods.merge](typedoc-hookstate-core.md#merge) in the API reference.
 
+### Splicing elements
+
+Use `Array.prototype.splice` function to remove, replace or delete elements. In particular, this can be used to prepend new elements to an array value:
+
+```tsx
+const state = useState([3000, 4000])
+state.set(p => p.splice(0, 0, 1000, 2000))
+```
+
 ### Partial updates and deletions
 
 You may noticed the usage of [StateMethods.merge](typedoc-hookstate-core.md#merge) above. This does partial update to the state and can insert, update and delete array elements all in one call:
