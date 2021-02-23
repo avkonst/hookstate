@@ -38,7 +38,7 @@ module.exports = {
             'extensions-touched',
             'extensions-validation',
             'extensions-labelled',
-            // 'extensions-broadcasted',
+            'extensions-broadcasted',
             'extensions-persistence',
             // 'extensions-offline',
             'writing-plugin'

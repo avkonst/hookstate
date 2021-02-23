@@ -2,12 +2,15 @@ import React from 'react';
 import { useState, createState } from '@hookstate/core';
 import { Broadcasted } from '@hookstate/broadcasted';
 
-const gstate = createState([{ name: 'First Task' }])
-gstate.attach(Broadcasted('my-sync-channel-topic'))
-
 export const ExampleComponent = () => {
-    const state = useState(gstate)
-    // state.attach(Broadcasted('my-sync-channel-topic'))
+    const state = useState([{ name: 'First Task' }])
+    state.attach(Broadcasted('my-sync-channel-topic', () => {
+        window.console.log('This tab is a leader now')
+        // attach persistence, remote synchronization plugins,
+        // or any other actions which needs to be done with a state
+        // only by one tab
+    }))
+    
     return <>
         {state.map((taskState, taskIndex) => {
             return <p key={taskIndex}>

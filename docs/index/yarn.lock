@@ -1390,10 +1390,10 @@
   dependencies:
     "@hapi/hoek" "^8.3.0"
 
-"@hookstate/broadcasted@3.0.0":
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/@hookstate/broadcasted/-/broadcasted-3.0.0.tgz#2b7576e8ea9dda1ef6c7da802a77d48e9184b07b"
-  integrity sha512-PIzyQw+xRt6N1PH3fdabUeFbEXscRmlrEt6ksM7ACBFxCAe3bcqAAsN7cKGoqJm07PqI78wsoEW+YpguFdFDXg==
+"@hookstate/broadcasted@3.0.2":
+  version "3.0.2"
+  resolved "https://registry.yarnpkg.com/@hookstate/broadcasted/-/broadcasted-3.0.2.tgz#179eab0224e114b6ae376fbbccdfb77d05ee0b79"
+  integrity sha512-xpk+tAR3BnSMbmshaexYZrruCMmn9pm25nMzYDLF/wGrTPihzVqWOIcsOWe7w27gruQCVCgw0Y5b9RLFUaKjYA==
 
 "@hookstate/core@3.0.0":
   version "3.0.0"

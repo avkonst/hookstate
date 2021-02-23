@@ -16,6 +16,7 @@ Initial | Enables access to an initial value of a [State](typedoc-hookstate-core
 Touched | Helps with tracking of *touched* form field(s). | [Demo](./extensions-touched) | `@hookstate/touched` | [![npm version](https://img.shields.io/npm/v/@hookstate/touched.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/touched)
 Validation | Enables validation and error / warning messages for a state. Usefull for validation of form fields and form states. | [Demo](./extensions-validation) | `@hookstate/validation` | [![npm version](https://img.shields.io/npm/v/@hookstate/validation.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/validation)
 Persistence | Enables persistence of managed states to browser's local storage. | [Demo](./extensions-persistence) | `@hookstate/persistence` | [![npm version](https://img.shields.io/npm/v/@hookstate/persistence.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/persistence)
+Broadcasted | Enables synchronization of a state across browser tabs. | [Demo](./extensions-broadcasted) | `@hookstate/broadcasted` | [![npm version](https://img.shields.io/npm/v/@hookstate/broadcasted.svg?maxAge=300&label=version&colorB=007ec6)](https://www.npmjs.com/package/@hookstate/broadcasted)
 
 ## Development tools
 
