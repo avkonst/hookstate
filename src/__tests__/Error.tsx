@@ -1,7 +1,6 @@
 import { useState } from '../';
 
-import { renderHook, act } from '@testing-library/react-hooks';
-import React from 'react';
+import { renderHook } from '@testing-library/react-hooks';
 
 test('error: should not allow set to another state value', async () => {
     const state1 = renderHook(() => {

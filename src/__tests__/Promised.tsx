@@ -1,7 +1,6 @@
 import { useState, createState, none } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
-import React from 'react';
 
 test('primitive: should rerender used on promise resolve', async () => {
     let renderTimes = 0

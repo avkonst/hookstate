@@ -751,7 +751,7 @@ const DestroyedEdition = -1
 type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 
 class Store implements Subscribable {
-    private _edition: number = 0;
+    private _edition = 0;
 
     private _subscribers: Set<Subscriber> = new Set();
     private _setSubscribers: Set<Required<PluginCallbacks>['onSet']> = new Set();
