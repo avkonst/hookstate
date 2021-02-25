@@ -1,7 +1,6 @@
 import { useState, createState, none } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
-import React from 'react';
 
 test('object: should rerender used', async () => {
     let renderTimes = 0

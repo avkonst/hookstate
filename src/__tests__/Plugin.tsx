@@ -1,7 +1,6 @@
 import { useState, createState, Plugin, DevToolsID, DevTools, DevToolsExtensions, PluginCallbacks } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
-import React from 'react';
 
 const TestPlugin = Symbol('TestPlugin')
 const TestPluginUnknown = Symbol('TestPluginUnknown')
@@ -51,7 +50,7 @@ test('plugin: common flow callbacks', async () => {
         result.current.set([{ f1: 0, f2: 'str2' }]);
     });
     expect(renderTimes).toStrictEqual(2);
-    expect(messages.slice(1)).toEqual(['onSet called, []: [{\"f1\":0,\"f2\":\"str2\"}], [{\"f1\":0,\"f2\":\"str\"}] => [{\"f1\":0,\"f2\":\"str2\"}], undefined'])
+    expect(messages.slice(1)).toEqual(['onSet called, []: [{"f1":0,"f2":"str2"}], [{"f1":0,"f2":"str"}] => [{"f1":0,"f2":"str2"}], undefined'])
 
     expect(result.current.get()[0].f1).toStrictEqual(0);
     expect(result.current.get()[0].f2).toStrictEqual('str2');
@@ -63,7 +62,7 @@ test('plugin: common flow callbacks', async () => {
         result.current[0].f1.set(p => p + 1);
     });
     expect(renderTimes).toStrictEqual(3);
-    expect(messages.slice(2)).toEqual(['onSet called, [0,f1]: [{\"f1\":1,\"f2\":\"str2\"}], 0 => 1, undefined'])
+    expect(messages.slice(2)).toEqual(['onSet called, [0,f1]: [{"f1":1,"f2":"str2"}], 0 => 1, undefined'])
 
     expect(result.current.get()[0].f1).toStrictEqual(1);
     expect(Object.keys(result.current[0])).toEqual(['f1', 'f2']);
@@ -74,7 +73,7 @@ test('plugin: common flow callbacks', async () => {
         result.current[0].merge(p => ({ f1 : p.f1 + 1 }));
     });
     expect(renderTimes).toStrictEqual(4);
-    expect(messages.slice(3)).toEqual(['onSet called, [0]: [{\"f1\":2,\"f2\":\"str2\"}], {\"f1\":2,\"f2\":\"str2\"} => {\"f1\":2,\"f2\":\"str2\"}, {\"f1\":2}'])
+    expect(messages.slice(3)).toEqual(['onSet called, [0]: [{"f1":2,"f2":"str2"}], {"f1":2,"f2":"str2"} => {"f1":2,"f2":"str2"}, {"f1":2}'])
 
     expect(result.current.get()[0].f1).toStrictEqual(2);
     expect(Object.keys(result.current[0])).toEqual(['f1', 'f2']);
@@ -87,7 +86,7 @@ test('plugin: common flow callbacks', async () => {
     result.current.batch((s) => {
         messages.push(`batch executed, state: ${JSON.stringify(s.get())}`)
     }, 'custom context')
-    expect(messages.slice(5)).toEqual(['onBatchStart called, []: [{\"f1\":2,\"f2\":\"str2\"}], context: \"custom context\"', 'batch executed, state: [{\"f1\":2,\"f2\":\"str2\"}]', 'onBatchFinish called, []: [{\"f1\":2,\"f2\":\"str2\"}], context: \"custom context\"'])
+    expect(messages.slice(5)).toEqual(['onBatchStart called, []: [{"f1":2,"f2":"str2"}], context: "custom context"', 'batch executed, state: [{"f1":2,"f2":"str2"}]', 'onBatchFinish called, []: [{"f1":2,"f2":"str2"}], context: "custom context"'])
     expect(result.current.attach(TestPluginUnknown)[0] instanceof Error).toEqual(true)
 
     expect(result.current.get()[0].f1).toStrictEqual(2);
@@ -98,7 +97,7 @@ test('plugin: common flow callbacks', async () => {
         controls.setUntracked([{ f1: 0, f2: 'str3' }])
     })
     expect(renderTimes).toStrictEqual(4);
-    expect(messages.slice(8)).toEqual(['onSet called, []: [{\"f1\":0,\"f2\":\"str3\"}], [{\"f1\":2,\"f2\":\"str2\"}] => [{\"f1\":0,\"f2\":\"str3\"}], undefined']);
+    expect(messages.slice(8)).toEqual(['onSet called, []: [{"f1":0,"f2":"str3"}], [{"f1":2,"f2":"str2"}] => [{"f1":0,"f2":"str3"}], undefined']);
 
     expect(result.current.get()[0].f1).toStrictEqual(0);
     expect(result.current.get()[0].f2).toStrictEqual('str3');
@@ -152,7 +151,7 @@ test('plugin: common flow callbacks', async () => {
     expect(messages.slice(10)).toEqual([]);
 
     unmount()
-    expect(messages.slice(10)).toEqual(['onDestroy called, [{\"f1\":0,\"f2\":\"str3str2\"}]'])
+    expect(messages.slice(10)).toEqual(['onDestroy called, [{"f1":0,"f2":"str3str2"}]'])
 
     expect(result.current.get()[0].f1).toStrictEqual(0);
     expect(messages.slice(11)).toEqual([])
@@ -202,16 +201,16 @@ test('plugin: common flow callbacks global state', async () => {
 
     expect(renderTimes).toStrictEqual(1);
     expect(messages).toEqual(
-        ['onInit called, initial: [{\"f1\":0,\"f2\":\"str\"}]'])
+        ['onInit called, initial: [{"f1":0,"f2":"str"}]'])
     expect(result.current[0].get().f1).toStrictEqual(0);
     expect(messages).toEqual(
-        ['onInit called, initial: [{\"f1\":0,\"f2\":\"str\"}]'])
+        ['onInit called, initial: [{"f1":0,"f2":"str"}]'])
 
     act(() => {
         result.current[0].f1.set(p => p + 1);
     });
     expect(renderTimes).toStrictEqual(2);
-    expect(messages.slice(1)).toEqual(['onSet called, [0,f1]: [{\"f1\":1,\"f2\":\"str\"}], 0 => 1, undefined'])
+    expect(messages.slice(1)).toEqual(['onSet called, [0,f1]: [{"f1":1,"f2":"str"}], 0 => 1, undefined'])
 
     expect(result.current.get()[0].f1).toStrictEqual(1);
     expect(Object.keys(result.current[0])).toEqual(['f1', 'f2']);
@@ -222,7 +221,7 @@ test('plugin: common flow callbacks global state', async () => {
         result.current[0].merge(p => ({ f1 : p.f1 + 1 }));
     });
     expect(renderTimes).toStrictEqual(3);
-    expect(messages.slice(2)).toEqual(['onSet called, [0]: [{\"f1\":2,\"f2\":\"str\"}], {\"f1\":2,\"f2\":\"str\"} => {\"f1\":2,\"f2\":\"str\"}, {\"f1\":2}'])
+    expect(messages.slice(2)).toEqual(['onSet called, [0]: [{"f1":2,"f2":"str"}], {"f1":2,"f2":"str"} => {"f1":2,"f2":"str"}, {"f1":2}'])
 
     expect(result.current.get()[0].f1).toStrictEqual(2);
     expect(Object.keys(result.current[0])).toEqual(['f1', 'f2']);
@@ -244,10 +243,10 @@ test('plugin: common flow callbacks global state', async () => {
         result.current[0].f1.set(p => p + 1)
     });
     expect(renderTimes).toStrictEqual(3);
-    expect(messages.slice(4)).toEqual(['onSet called, [0,f1]: [{\"f1\":3,\"f2\":\"str\"}], 2 => 3, undefined'])
+    expect(messages.slice(4)).toEqual(['onSet called, [0,f1]: [{"f1":3,"f2":"str"}], 2 => 3, undefined'])
 
     stateInf.destroy()
-    expect(messages.slice(5)).toEqual(['onDestroy called, [{\"f1\":3,\"f2\":\"str\"}]'])
+    expect(messages.slice(5)).toEqual(['onDestroy called, [{"f1":3,"f2":"str"}]'])
 
     act(() => {
         expect(() => result.current[0].f1.set(p => p + 1)).toThrow(
@@ -302,7 +301,7 @@ test('plugin: common flow callbacks devtools', async () => {
             result.current[0].f1.set(p => p + 1);
         });
         expect(renderTimes).toStrictEqual(2);
-        expect(messages.slice(1)).toEqual(['LABELLED onSet called, [0,f1]: [{\"f1\":1,\"f2\":\"str\"}], 0 => 1, undefined'])
+        expect(messages.slice(1)).toEqual(['LABELLED onSet called, [0,f1]: [{"f1":1,"f2":"str"}], 0 => 1, undefined'])
 
         expect(result.current.get()[0].f1).toStrictEqual(1);
         expect(Object.keys(result.current[0])).toEqual(['f1', 'f2']);
@@ -313,7 +312,7 @@ test('plugin: common flow callbacks devtools', async () => {
             result.current[0].merge(p => ({ f1 : p.f1 + 1 }));
         });
         expect(renderTimes).toStrictEqual(3);
-        expect(messages.slice(2)).toEqual(['LABELLED onSet called, [0]: [{\"f1\":2,\"f2\":\"str\"}], {\"f1\":2,\"f2\":\"str\"} => {\"f1\":2,\"f2\":\"str\"}, {\"f1\":2}'])
+        expect(messages.slice(2)).toEqual(['LABELLED onSet called, [0]: [{"f1":2,"f2":"str"}], {"f1":2,"f2":"str"} => {"f1":2,"f2":"str"}, {"f1":2}'])
 
         expect(result.current.get()[0].f1).toStrictEqual(2);
         expect(Object.keys(result.current[0])).toEqual(['f1', 'f2']);
@@ -326,7 +325,7 @@ test('plugin: common flow callbacks devtools', async () => {
         expect(result.current.attach(TestPluginUnknown)[0] instanceof Error).toEqual(true)
 
         unmount()
-        expect(messages.slice(4)).toEqual(['LABELLED onDestroy called, [{\"f1\":2,\"f2\":\"str\"}]'])
+        expect(messages.slice(4)).toEqual(['LABELLED onDestroy called, [{"f1":2,"f2":"str"}]'])
 
         expect(result.current.get()[0].f1).toStrictEqual(2);
         expect(messages.slice(5)).toEqual([])
@@ -381,16 +380,16 @@ test('plugin: common flow callbacks global state devtools', async () => {
         });
         expect(renderTimes).toStrictEqual(1);
         expect(messages).toEqual(
-            ['undefined onInit called, initial: [{\"f1\":0,\"f2\":\"str\"}]'])
+            ['undefined onInit called, initial: [{"f1":0,"f2":"str"}]'])
         expect(result.current[0].get().f1).toStrictEqual(0);
         expect(messages).toEqual(
-            ['undefined onInit called, initial: [{\"f1\":0,\"f2\":\"str\"}]'])
+            ['undefined onInit called, initial: [{"f1":0,"f2":"str"}]'])
 
         act(() => {
             result.current[0].f1.set(p => p + 1);
         });
         expect(renderTimes).toStrictEqual(2);
-        expect(messages.slice(1)).toEqual(['onSet called, [0,f1]: [{\"f1\":1,\"f2\":\"str\"}], 0 => 1, undefined'])
+        expect(messages.slice(1)).toEqual(['onSet called, [0,f1]: [{"f1":1,"f2":"str"}], 0 => 1, undefined'])
 
         expect(result.current.get()[0].f1).toStrictEqual(1);
         expect(Object.keys(result.current[0])).toEqual(['f1', 'f2']);
@@ -401,7 +400,7 @@ test('plugin: common flow callbacks global state devtools', async () => {
             result.current[0].merge(p => ({ f1 : p.f1 + 1 }));
         });
         expect(renderTimes).toStrictEqual(3);
-        expect(messages.slice(2)).toEqual(['onSet called, [0]: [{\"f1\":2,\"f2\":\"str\"}], {\"f1\":2,\"f2\":\"str\"} => {\"f1\":2,\"f2\":\"str\"}, {\"f1\":2}'])
+        expect(messages.slice(2)).toEqual(['onSet called, [0]: [{"f1":2,"f2":"str"}], {"f1":2,"f2":"str"} => {"f1":2,"f2":"str"}, {"f1":2}'])
 
         expect(result.current.get()[0].f1).toStrictEqual(2);
         expect(Object.keys(result.current[0])).toEqual(['f1', 'f2']);
@@ -427,10 +426,10 @@ test('plugin: common flow callbacks global state devtools', async () => {
             result.current[0].f1.set(p => p + 1)
         });
         expect(renderTimes).toStrictEqual(3);
-        expect(messages.slice(5)).toEqual(['onSet called, [0,f1]: [{\"f1\":3,\"f2\":\"str\"}], 2 => 3, undefined'])
+        expect(messages.slice(5)).toEqual(['onSet called, [0,f1]: [{"f1":3,"f2":"str"}], 2 => 3, undefined'])
 
         stateRef.destroy()
-        expect(messages.slice(6)).toEqual(['onDestroy called, [{\"f1\":3,\"f2\":\"str\"}]'])
+        expect(messages.slice(6)).toEqual(['onDestroy called, [{"f1":3,"f2":"str"}]'])
 
         act(() => {
             expect(() => result.current[0].f1.set(p => p + 1)).toThrow(
