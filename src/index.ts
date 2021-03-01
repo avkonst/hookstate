@@ -544,12 +544,37 @@ export function useHookstate<S>(
     } else {
         // Local state mount
         // eslint-disable-next-line react-hooks/rules-of-hooks
-        const [value, setValue] = React.useState(() => ({ state: createStore(source) }));
-        const result = useSubscribedStateMethods<S>(
-            value.state,
-            RootPath,
-            () => setValue({ state: value.state }),
-            value.state);
+        
+        const [value, setValue] = React.useState(() => {
+            let store = createStore(source);
+            let link: StateMethodsImpl<S> = new StateMethodsImpl<S>(
+                store,
+                RootPath,
+                store.get(RootPath),
+                store.edition,
+                () => {
+                    setValue({
+                        state: store,
+                        link: link
+                    })
+                },
+            );
+            return {
+                state: store,
+                link: link
+            }
+        });
+
+        value.link.reset(value.state.get(RootPath), value.state.edition);
+
+        React.useEffect(() => {
+            value.state.subscribe(value.link);
+            value.link.onMount();
+            return () => {
+                value.link.onUnmount()
+                value.state.unsubscribe(value.link);
+            }
+        });
 
         if (isDevelopmentMode) {
             // This is a workaround for the issue:
@@ -570,9 +595,9 @@ export function useHookstate<S>(
         }
         const devtools = useState[DevToolsID]
         if (devtools) {
-            result.attach(devtools)
+            value.link.attach(devtools)
         }
-        return result.self;
+        return value.link.self;
     }
 }
 
@@ -1094,6 +1119,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
 
     private isDowngraded: boolean | undefined;
     private childrenCache: Record<string | number, StateMethodsImpl<StateValueAtPath>> | undefined;
+    private childrenCachePrevious: Record<string | number, StateMethodsImpl<StateValueAtPath>> | undefined;
     private selfCache: State<S> | undefined;
     private valueCache: StateValueAtPath = ValueUnusedMarker;
     
@@ -1104,6 +1130,21 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         private valueEdition: number,
         private readonly onSetUsed: () => void
     ) { }
+    
+    reset(valueSource: S, valueEdition: number) {
+        // this.subscribers = undefined;
+        this.isDowngraded = undefined;
+        this.childrenCachePrevious = this.childrenCache;
+        delete this.childrenCache;
+        delete this.selfCache;
+        this.valueCache = ValueUnusedMarker;
+        this.valueSource = valueSource;
+        this.valueEdition = valueEdition;
+    }
+    
+    onMount() {
+        delete this.onSetUsed[UnmountedMarker];
+    }
 
     getUntracked(allowPromised?: boolean) {
         if (this.valueEdition !== this.state.edition) {
