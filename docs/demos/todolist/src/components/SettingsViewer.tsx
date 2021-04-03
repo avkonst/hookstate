@@ -12,7 +12,7 @@ export function SettingsViewer() {
         fontSize: '0.8em',
         display: 'flex'
     }}>
-        <div style={{ flexGrow: 2, display: 'flex' }}>
+        <div id="idEditInline" style={{ flexGrow: 2, display: 'flex' }}>
             <div>
                 <input
                     style={{ transform: 'scale(1.6)', marginLeft: 20 }}
@@ -25,7 +25,7 @@ export function SettingsViewer() {
                 edit inline
             </div>
         </div>
-        <div style={{ flexGrow: 2, display: 'flex' }}>
+        <div id="idUseScopedState" style={{ flexGrow: 2, display: 'flex' }}>
             <div>
                 <input
                     style={{ transform: 'scale(1.6)', marginLeft: 20 }}
@@ -38,7 +38,7 @@ export function SettingsViewer() {
                 use scoped state
             </div>
         </div>
-        <div style={{ flexGrow: 2, display: 'flex'}}>
+        <div id="idHighlightUpdates" style={{ flexGrow: 2, display: 'flex'}}>
             <div>
                 <input
                     style={{ transform: 'scale(1.6)', marginLeft: 20 }}
