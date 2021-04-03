@@ -13,3 +13,4 @@ yarn-error.log*
 **/.firebase
 
 **/build
+docs/demos/todolist/cypress/videos/**/*
