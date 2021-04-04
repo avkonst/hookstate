@@ -173,13 +173,10 @@ export function TasksViewer() {
                 borderColor="lightgreen"
                 onClick={() => {
                     let new_id = 1;
-                    do {
-                        if (tasksState.findIndex(i => i.id.get() === new_id.toString()) === -1) {
-                            break;
-                        } else {
-                            new_id += 1;
-                        }
-                    } while(true)
+                    // eslint-disable-next-line no-loop-func
+                    while (tasksState.findIndex(i => i.id.get() === new_id.toString()) !== -1) {
+                        new_id += 1;
+                    }
                     tasksState[tasksState.length].set({
                         id: new_id.toString(),
                         name: 'Untitled Task #' + (tasksState.length + 1),
