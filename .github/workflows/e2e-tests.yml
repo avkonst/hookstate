@@ -1,0 +1,24 @@
+name: End-to-end tests
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - '.github/workflows/e2e-tests.yml'
+      - 'docs/demos/todolist/**'
+jobs:
+  cypress-run:
+    runs-on: ubuntu-16.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      # Install NPM dependencies, cache them correctly
+      # and run all Cypress tests
+      - name: Cypress run
+        uses: cypress-io/github-action@v2
+        with: 
+          start: yarn start
+          # wait for all services to respond
+          wait-on: 'http://localhost:3000'
+          working-directory: docs/demos/todolist
+          install-command: yarn --frozen-lockfile
