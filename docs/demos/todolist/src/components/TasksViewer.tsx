@@ -43,6 +43,7 @@ function TaskEditor(props: { task: State<Task> }) {
     var nextColor = colors[color.current % colors.length];
     
     return <div
+        id={`task${taskState.id.get()}`}
         style={{
             display: 'flex',
             marginBottom: 10,
@@ -68,6 +69,7 @@ function TaskEditor(props: { task: State<Task> }) {
         >
             <div>
                 <input
+                    id={`taskCheckbox${taskState.id.get()}`}
                     style={{
                         transform: 'scale(2)',
                         margin: 20
@@ -79,6 +81,7 @@ function TaskEditor(props: { task: State<Task> }) {
             </div>
             <div style={{ flexGrow: 2 }}>
                 <input
+                    className={`taskInput${taskState.id.get()}`}
                     style={{
                         fontSize: '1em',
                         background: 'none',
@@ -164,13 +167,18 @@ export function TasksViewer() {
             task={task}
         />)
     }
-        <div style={{ textAlign: 'right' }} >
+        <div id="buttonAddTask" style={{ textAlign: 'right' }} >
             <Button
                 style={{ marginTop: 20, minWidth: 300 }}
                 borderColor="lightgreen"
                 onClick={() => {
+                    let new_id = 1;
+                    // eslint-disable-next-line no-loop-func
+                    while (tasksState.findIndex(i => i.id.get() === new_id.toString()) !== -1) {
+                        new_id += 1;
+                    }
                     tasksState[tasksState.length].set({
-                        id: Math.random().toString() + tasksState.length,
+                        id: new_id.toString(),
                         name: 'Untitled Task #' + (tasksState.length + 1),
                         done: false
                     })
