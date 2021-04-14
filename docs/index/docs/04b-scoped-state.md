@@ -12,11 +12,11 @@ The biggest challenge for all state management libraries for React is to deal wi
 
 While our form above is within 100 fields limit, which is the case for most of the forms in the wild, performance rendering is likely not a problem. However, if our form above is actually a large spreadsheet with 5000 fields, for example, it quickly becomes a problem as every keystroke would cause the entire form to rerender.
 
-Hookstate introduces new concept to solve this problem. We call call it **scoped state**.
+Hookstate introduces a new concept to solve this problem. We call it **scoped state**.
 
 ### It is simple
 
-Scoped state is elegant, one line solution for the problem of efficient rendering of large states. It works the same way and equally well with local and global states. The idea of the scoped state is to use deeply nested state hooks to allow Hookstate to rerender only affected by state change deeply nested children components. Let's come back to the original [nested state](./nested-state) example:
+Scoped state is an elegant, one line solution for the problem of efficient rendering of large states. It works the same way and equally well with local and global states. The idea of the scoped state is to use deeply nested state hooks to allow Hookstate to rerender only affected by state change deeply nested children components. Let's come back to the original [nested state](./nested-state) example:
 
 <PreviewSample example="local-complex-from-documentation" />
 
@@ -32,11 +32,11 @@ by
 const taskState = useState(props.taskState);
 ```
 
-You can see what effect the scoped state makes in the following interactive example. Set / unset `use scoped state` checkbox and try editing the fields in the form. Colors will change to show which components are re-rendered:
+You can see what effect the scoped state makes in the following interactive example. Set / unset `use the scoped state` checkbox and try editing the fields in the form. Colors will change to show which components are re-rendered:
 
 <iframe src="https://hookstate.js.org/demo-todolist" width="100%" height="700px"></iframe>
 
-More detailed comparison of rerendering differences for various types of states is documented in the [performance overview](./performance-intro) page.
+More detailed comparison of rerendering differences for various types of states are documented in the [performance overview](./performance-intro) page.
 
 ### It is efficient
 

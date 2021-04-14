@@ -6,11 +6,11 @@ sidebar_label: Nested state
 
 import { PreviewSample } from '../src/PreviewSample'
 
-[Local state](./local-state) and [Global state](./global-state) sections show examples, where state data is a primitive value. Next, we will have a look into one of the most powerful features of the Hookstate - the interface to a nested state of a complex object state. The interface is the same for local and global states and works equally well for both cases.
+The [Local state](./local-state) and [Global state](./global-state) sections show examples where state data is a primitive value. Next, we will have a look into one of the most powerful features of Hookstate - the interface to a nested state of a complex object state. The interface is the same for local and global states and works equally well for both cases.
 
 ## Accessing and mutating nested state
 
-Let's consider the following example where a state value is an array of objects. It demonstrates how to dive into nested state of the array and deep nested state of an element
+Let's consider the following example where a state value is an array of objects. It demonstrates how to dive into the nested state of the array and deeply-nested state of an element
 of the array. The state of an element is passed to a child component as a property. The child component gets and sets the deep nested state. 
 
 <PreviewSample example="local-complex-from-documentation" />
@@ -28,7 +28,7 @@ we append new element to the state of tasks, using `merge` method: `state.merge(
 
 ## `nested` state method
 
-You may noticed, that a state object mixes properties from the state value object (eg. `name` property from
+You may have noticed that a state object mixes properties from the state value object (eg. `name` property from
 `taskState` state) and state methods (eg. `merge` property from [StateMethods](typedoc-hookstate-core#interfacesstatemethodsmd) interface). It is very likely that names of properties from your state objects will not collide with names of state methods.
 In other words, your objects are unlikely to have properties named, like `merge`, `set`, `get`, etc.
 Although, it is more likely your objects may have properties with names like `value` or `error`, which also
@@ -36,10 +36,10 @@ exist in state methods.
 
 If the collision happens for whatever property name, properties 
 from state methods take priority and "hide" access to nested states via `.` syntax. However,
-there is a `nested` state method, which allows to access nested state by name. For example
+there is a `nested` state method, which allows accessing nested state by name. For example
 `taskState.nested("name")` would give access to the same nested state as `taskState.name` in the example above.
-So, if it ever happens
-your `state` object has got a property with name, for example `set`, which collides with the corresponding
+So, if it ever happens that 
+your `state` object has got a property with the name, for example `set`, which collides with the corresponding
 state method, you would be able to obtain the nested state behind the `set` property using nested method: `state.nested("set")`.
 
 It is also necessary to use `nested` method instead of property access by index syntax,
@@ -54,7 +54,7 @@ function NestedStateByName(props: { stateKey: string }) {
 }
 ```
 
-you are required to use `nested` method:
+you are required to use the `nested` method:
 
 ```tsx
 state.nested(props.stateKey).value
@@ -66,7 +66,7 @@ as the following would not be allowed by the typescript compiler:
 state[props.stateKey].value
 ```
 
-However, if your dynamic property name is from a set of names, which are known at compile time
+However, if your dynamic property name is from a set of names which are known at compile time
 and do not collide with state methods, you would be able to use property access by index syntax. For example:
 
 ```tsx
@@ -88,19 +88,19 @@ Below, you will find more about available methods for managing nested states.
 
 ### Setting new state value 
 
-Let's consider we have got the following state:
+Let's consider the following state:
 
 ```tsx
 const state = useState({ a: 1, b: 2 })
 ```
 
-One of the state methods is `set`, which is used to set new state value.
+One of the state methods is `set`, which is used to set the new state value.
 
 ```tsx
 state.set({ a: 2, b: 3 })
 ```
 
-New state value can be also a function, which returns new value taking the previous one:
+New state value can be also a function, which returns new value and accepts the previous one:
 
 ```tsx
 state.set(p => { a: p.a + 1, b: p.b - 1 })
@@ -110,7 +110,7 @@ Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) in the API re
 
 ### Getting names of existing properties
 
-Let's consider we have got the following state:
+Let's consider the following state:
 
 ```tsx
 const state = useState({ a: 1, b: 2 })
@@ -132,7 +132,7 @@ For a given state:
 const state = useState({ a: 1, b: 2 })
 ```
 
-The most efficient and recommended methods to update nested property are the following: 
+The most efficient and recommended methods to update a nested property are the following: 
 ```tsx
 state.a.set(p => p + 1) // increments value of property a
 // or
@@ -140,25 +140,25 @@ state['a'].set(p => p + 1)
 // or
 state.merge(p => ({ a: p.a + 1 }))
 ```
-It sets only property `a`, so it will rerender every component where property `a` is used.
+These set only property `a`, so it will rerender every component where property `a` is used.
 
 #### Avoid the following:
 
-There are alternative less efficient methods, but resulting in the same mutation and data state. The following sets the entire object state to the new value (although, only `a` property is changed), so it will rerender every component where **any** property of the state is used.
+There are alternative, less efficient methods, resulting in the same mutation and data state. The following sets the entire object state to the new value (although only `a` property is changed), so it will rerender every component where **any** property of the state is used.
 
 ```tsx
 state.set(p => ({ ...p, a: p.a + 1 }))
 ```
 
-The following sets only property `a` but uses the current property value via the [StateMethods.value](typedoc-hookstate-core.md#readonly-value), which marks the property `a` as used by a component even if it was not used during the last rendering. In other words using nested property state in rendering or in action dispatch
-has got the same effect: a component is rerendered on property update.
+The following sets only the property `a` but uses the current property value via the [StateMethods.value](typedoc-hookstate-core.md#readonly-value), which marks the property `a` as used by a component even if it was not used during the last rendering. In other words using nested property state in rendering or in action dispatch
+has the same effect: a component is rerendered on property update.
 ```tsx
 state['a'].set(state.a.value + 1) // increments value of property a
 ```
 
 Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) and [StateMethods.merge](typedoc-hookstate-core.md#merge) in the API reference.
 
-### Adding new property
+### Adding a new property
 
 For a given state:
 
@@ -166,7 +166,7 @@ For a given state:
 const state = useState<{ a: number, b?: number }>({ a: 1 }) // notice b property is optional
 ```
 
-The recommended methods to add new nested property are the following: 
+The recommended methods to add a new nested property are the following: 
 ```tsx
 state.b.set(2)
 // or 
@@ -178,10 +178,10 @@ state.merge({ b: 2 })
 Notice the `state` object has got **any** property defined (it is not the case in IE11),
 although not every property might pass Typescript compiler check.
 We accessed non existing property `b` and set it's state.
-It represents the fact the state of `undefined` property is actually defined state object,
+It represents the fact the state of `undefined` property is actually a defined state object,
 which can be used to set `undefined` property to a new value.
 
-It allows to add new properties to the state using the same method as for updating a property.
+It allows to add new properties to the state using the same method as is used for updating a property.
 
 #### Avoid the following
 
@@ -195,7 +195,7 @@ But this is the only available method for IE11.
 
 Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) and [StateMethods.merge](typedoc-hookstate-core.md#merge) in the API reference.
 
-### Deleting existing property
+### Deleting an existing property
 
 For a given state:
 
@@ -257,7 +257,7 @@ Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) and [StateMet
 
 ### Partial updates and deletions
 
-You may noticed the usage of [StateMethods.merge](typedoc-hookstate-core.md#merge) above. This does partial update to the state and can insert, update and delete properties all in one call:
+You may have noticed the usage of [StateMethods.merge](typedoc-hookstate-core.md#merge) above. This does a partial update to the state and can insert, update and delete properties all in one call:
 
 ```tsx
 const state = useState<Record<string, number>>({
@@ -275,9 +275,9 @@ Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) and [StateMet
 
 ## Advanced mutations for an array state
 
-### Setting new state value 
+### Setting a new state value 
 
-Let's consider we have got the following state:
+Let's consider the following state:
 
 ```tsx
 const state = useState([1, 2])
@@ -299,7 +299,7 @@ Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) in the API re
 
 ### Getting indexes of existing elements
 
-Let's consider we have got the following state:
+Let's consider the following state:
 
 ```tsx
 const state = useState([1, 2])
@@ -321,7 +321,7 @@ For a given state:
 const state = useState([1, 2])
 ```
 
-The most efficient and recommended methods to update nested element are the following: 
+The most efficient and recommended methods to update a nested element are the following: 
 ```tsx
 state[0].set(p => p + 1) // increments value of an element at 0 position
 // or
@@ -331,7 +331,7 @@ It sets only element at `0`, so it will rerender every component where this elem
 
 #### Avoid the following:
 
-There are alternative less efficient methods, but resulting in the same mutation and data state. The following sets the entire array state to the new value (although, only `0` index is changed), so it will rerender every component where **any** property of the state is used.
+There are alternative less efficient methods resulting in the same mutation and data state. The following sets the entire array state to the new value (although, only `0` index is changed), so it will rerender every component where **any** property of the state is used.
 
 ```tsx
 state.set(p => ([p[0] + 1].concat(p.slice(1))))
@@ -346,9 +346,9 @@ state[0].set(state[0].value + 1) // increments value of an element at 0
 
 Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) and [StateMethods.merge](typedoc-hookstate-core.md#merge) in the API reference.
 
-### Appending new element
+### Appending a new element
 
-For a given state:
+To a given state:
 
 ```tsx
 const state = useState([1000])
@@ -372,13 +372,13 @@ as it can be potentially less efficient than the above recommended methods:
 state.set(p => p.concat([2000]))
 ```
 
-But this is the only method available for IE11 environment.
+But this is the only method available for IE11.
 
 Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) and [StateMethods.merge](typedoc-hookstate-core.md#merge) in the API reference.
 
-### Deleting existing element
+### Deleting an existing element
 
-For a given state:
+From a given state:
 
 ```tsx
 const state = useState([1000, 2000, 3000])
@@ -451,7 +451,7 @@ Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) and [StateMet
 
 ### Splicing elements
 
-Use `Array.prototype.splice` function to remove, replace or delete elements. In particular, this can be used to prepend new elements to an array value:
+Use the `Array.prototype.splice` function to remove, replace or delete elements. In particular, this can be used to prepend new elements to an array value:
 
 ```tsx
 const state = useState([3000, 4000])
@@ -463,7 +463,7 @@ state.set(p => {
 
 ### Partial updates and deletions
 
-You may noticed the usage of [StateMethods.merge](typedoc-hookstate-core.md#merge) above. This does partial update to the state and can insert, update and delete array elements all in one call:
+You may have noticed the usage of [StateMethods.merge](typedoc-hookstate-core.md#merge) above. This does a partial update to the state and can insert, update and delete array elements all in one call:
 
 ```tsx
 const state = useStateLink([1000, 2000, 3000])
@@ -497,7 +497,7 @@ Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) and [StateMet
 
 ## Limitations for state values
 
-There are few limitations for state values, which are typical for any state management library for Javascript environment.
+There are a few limitations for state values, which are typical for any state management library for Javascript environment.
 
-* State value should be a JS primitive, like string/number/etc., or `null`/`undefined` or a JS object/array containing other JS primitive properties, objects or arrays. In other words, state values with Maps, Sets, Dates will not work properly.
-* Cyclic and cross-referrences with the state value will not work properly.
+* A state value should be a JS primitive, like string/number/etc., or `null`/`undefined` or a JS object/array containing other JS primitive properties, objects or arrays. In other words, state values with Maps, Sets, Dates will not work properly.
+* Cyclic and cross-references with the state value will not work properly.
