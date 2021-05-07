@@ -103,7 +103,7 @@ state.set({ a: 2, b: 3 })
 New state value can be also a function, which returns new value and accepts the previous one:
 
 ```tsx
-state.set(p => { a: p.a + 1, b: p.b - 1 })
+state.set(p => ({ a: p.a + 1, b: p.b - 1 }))
 ```
 
 Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) in the API reference.
