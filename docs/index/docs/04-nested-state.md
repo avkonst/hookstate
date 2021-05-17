@@ -466,7 +466,7 @@ state.set(p => {
 You may have noticed the usage of [StateMethods.merge](typedoc-hookstate-core.md#merge) above. This does a partial update to the state and can insert, update and delete array elements all in one call:
 
 ```tsx
-const state = useStateLink([1000, 2000, 3000])
+const state = useState([1000, 2000, 3000])
 state.merge({
     0: 2,
     1: none,
