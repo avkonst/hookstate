@@ -20,7 +20,7 @@ export const VersionInfo = () => {
 }
 
 const PreviewWithAsyncSource = (props: React.PropsWithChildren<{ url: string, sampleFirst?: boolean }>) => {
-    const [sampleVisible, toogleVisible] = React.useState(true);
+    const [sampleVisible, toggleVisible] = React.useState(true);
     const code = useState(() => fetch(props.url).then(r => r.text()))
 
     let codeString = ''
@@ -36,7 +36,7 @@ const PreviewWithAsyncSource = (props: React.PropsWithChildren<{ url: string, sa
         <div style={{ paddingBottom: 0, textAlign: 'right' }}>
             <button
                 style={{ background: 'none', border: 'none', color: 'inherit', fontFamily: 'inherit' }}
-                onClick={() => toogleVisible(p => !p)}
+                onClick={() => toggleVisible(p => !p)}
             >{sampleVisible ? '// hide live example' : '// show live example'}
             </button>
         </div>
