@@ -20,19 +20,19 @@ export function useSettingsState() {
         get isEditableInline() {
             return state.isEditableInline.get()
         },
-        toogleEditableInline() {
+        toggleEditableInline() {
             state.isEditableInline.set(p => !p)
         },
         get isScopedUpdateEnabled() {
             return state.isScopedUpdateEnabled.get()
         },
-        toogleScopedUpdate() {
+        toggleScopedUpdate() {
             state.isScopedUpdateEnabled.set(p => !p)
         },
         get isHighlightUpdateEnabled() {
             return state.isHighlightUpdatesEnabled.get()
         },
-        toogleHighlightUpdate() {
+        toggleHighlightUpdate() {
             state.isHighlightUpdatesEnabled.set(p => !p)
         }
     })   
