@@ -1724,7 +1724,13 @@ function useSubscribedStateMethods<S>(
         state.edition,
         update,
     );
-    React.useEffect(() => {
+    // useLayoutEffect here instead of useEffect because of this issue:
+    // https://github.com/avkonst/hookstate/issues/165#issuecomment-824670930
+    // and very likely this issue:
+    // https://github.com/avkonst/hookstate/issues/186
+    // and probably this issue:
+    // https://github.com/avkonst/hookstate/issues/145
+    React.useLayoutEffect(() => {
         subscribeTarget.subscribe(link);
         return () => {
             link.onUnmount()
