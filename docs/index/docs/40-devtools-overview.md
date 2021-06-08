@@ -106,7 +106,7 @@ Open React development tools browser's extension and enable 'Highlight on rerend
 
 Path in the above example points to the root of a state. It can also point to a nested path. Learn more about [state path](./typedoc-hookstate-core#path).
 
-## Toogle breakpoint on state update
+## Toggle breakpoint on state update
 
 Trigger a dispatch action from the Redux development tools with the following content:
 

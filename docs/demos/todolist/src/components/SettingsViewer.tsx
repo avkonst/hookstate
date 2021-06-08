@@ -18,7 +18,7 @@ export function SettingsViewer() {
                     style={{ transform: 'scale(1.6)', marginLeft: 20 }}
                     type="checkbox"
                     checked={settingsState.isEditableInline}
-                    onChange={() => settingsState.toogleEditableInline()}
+                    onChange={() => settingsState.toggleEditableInline()}
                 />
             </div>
             <div style={{ paddingLeft: 10, paddingBottom: 10 }}>
@@ -31,7 +31,7 @@ export function SettingsViewer() {
                     style={{ transform: 'scale(1.6)', marginLeft: 20 }}
                     type="checkbox"
                     checked={settingsState.isScopedUpdateEnabled}
-                    onChange={() => settingsState.toogleScopedUpdate()}
+                    onChange={() => settingsState.toggleScopedUpdate()}
                 />
             </div>
             <div style={{ paddingLeft: 10, paddingBottom: 10}}>
@@ -44,7 +44,7 @@ export function SettingsViewer() {
                     style={{ transform: 'scale(1.6)', marginLeft: 20 }}
                     type="checkbox"
                     checked={settingsState.isHighlightUpdateEnabled}
-                    onChange={() => settingsState.toogleHighlightUpdate()}
+                    onChange={() => settingsState.toggleHighlightUpdate()}
                 />
             </div>
             <div style={{ paddingLeft: 10, paddingBottom: 10, paddingRight: 10 }}>
