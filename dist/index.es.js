@@ -221,7 +221,7 @@ var StateInvalidUsageError = /** @class */ (function (_super) {
     }
     return StateInvalidUsageError;
 }(Error));
-function isNoProxyInititializer() {
+function isNoProxyInitializer() {
     try {
         var used = new Proxy({}, {});
         return false;
@@ -230,7 +230,7 @@ function isNoProxyInititializer() {
         return true;
     }
 }
-var IsNoProxy = isNoProxyInititializer();
+var IsNoProxy = isNoProxyInitializer();
 var DowngradedID = Symbol('Downgraded');
 var SelfMethodsID = Symbol('ProxyMarker');
 var RootPath = [];
@@ -379,7 +379,7 @@ var Store = /** @class */ (function () {
                     previous: prevValue,
                     merged: mergeValue
                 });
-                // if an array of object is about to loose existing property
+                // if an array of objects is about to loose existing property
                 // we consider it is the whole object is changed
                 // which is identified by upper path
                 return path.slice(0, -1);
@@ -394,7 +394,7 @@ var Store = /** @class */ (function () {
                 value: value,
                 merged: mergeValue
             });
-            // if an array of object is about to be extended by new property
+            // if an array of objects is about to be extended by new property
             // we consider it is the whole object is changed
             // which is identified by upper path
             return path.slice(0, -1);
@@ -1125,7 +1125,13 @@ function createStore(initial) {
 }
 function useSubscribedStateMethods(state, path, update, subscribeTarget) {
     var link = new StateMethodsImpl(state, path, state.get(path), state.edition, update);
-    React.useEffect(function () {
+    // useLayoutEffect here instead of useEffect because of this issue:
+    // https://github.com/avkonst/hookstate/issues/165#issuecomment-824670930
+    // and very likely this issue:
+    // https://github.com/avkonst/hookstate/issues/186
+    // and probably this issue:
+    // https://github.com/avkonst/hookstate/issues/145
+    React.useLayoutEffect(function () {
         subscribeTarget.subscribe(link);
         return function () {
             link.onUnmount();

@@ -378,9 +378,9 @@ export declare function createState<S>(initial: SetInitialStateAction<S>): State
  * either created by [createState](#createstate) (*global* state) or
  * derived from another call to [useState](#usestate) (*scoped* state).
  *
- * The `useState` forces a component to rerender everytime, when:
+ * The `useState` forces a component to rerender every time, when:
  * - a segment/part of the state data is updated *AND only if*
- * - this segement was **used** by the component during or after the latest rendering.
+ * - this segment was **used** by the component during or after the latest rendering.
  *
  * For example, if the state value is `{ a: 1, b: 2 }` and
  * a component uses only `a` property of the state, it will rerender
@@ -418,7 +418,7 @@ export declare function useState<S>(source: State<S>): State<S>;
  * The same as with the usage of a *global* state,
  * `useState` forces a component to rerender when:
  * - a segment/part of the state data is updated *AND only if*
- * - this segement was **used** by the component during or after the latest rendering.
+ * - this segment was **used** by the component during or after the latest rendering.
  *
  * You can use as many local states within the same component as you need.
  *
@@ -442,7 +442,7 @@ export declare function useHookstate<S>(source: SetInitialStateAction<S>): State
 /**
  * Allows to use a state without defining a functional react component.
  * It can be also used in class-based React components. It is also
- * particularly usefull for creating *scoped* states.
+ * particularly useful for creating *scoped* states.
  *
  * [Learn more...](https://hookstate.js.org/docs/using-without-statehook)
  *
