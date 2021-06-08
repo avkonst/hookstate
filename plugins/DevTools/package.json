@@ -38,7 +38,7 @@
         "redux-devtools-extension": "2.13.8"
     },
     "peerDependencies": {
-        "@hookstate/core": "3.0.0"
+        "@hookstate/core": "^3.0.0"
     },
     "devDependencies": {
         "@babel/core": "7.10.5",
