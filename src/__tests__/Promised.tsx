@@ -36,6 +36,59 @@ test('primitive: should rerender used on promise resolve', async () => {
     expect(result.current.get()).toEqual(100);
 });
 
+test('primitive: should rerender used on promise resolve immediately', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useState(0)
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(result.current.get()).toStrictEqual(0);
+
+    const promise = Promise.resolve(100);
+    act(() => {
+        result.current.set(promise);
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(result.current.promised).toStrictEqual(true);
+    expect(() => result.current.keys)
+        .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
+    expect(() => result.current.get())
+        .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
+
+    expect(() => result.current.set(200))
+        .toThrow('Error: HOOKSTATE-104 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-104')
+        
+    await act(async () => {
+        await promise;
+    })
+    expect(renderTimes).toStrictEqual(3);
+    expect(result.current.promised).toStrictEqual(false);
+    expect(result.current.error).toEqual(undefined);
+    expect(result.current.get()).toEqual(100);
+});
+
+test('primitive: should rerender used on promise resolve immediately global', async () => {
+    let renderTimes = 0
+    let state = createState(async () => {
+        return 100
+    });
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useState(state)
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(result.current.promised).toStrictEqual(true);
+        
+    await act(async () => {
+        await new Promise((resolve,) => setTimeout(resolve, 0));
+    })
+    expect(renderTimes).toStrictEqual(2);
+    expect(result.current.promised).toStrictEqual(false);
+    expect(result.current.error).toEqual(undefined);
+    expect(result.current.get()).toEqual(100);
+});
+
 test('array: should rerender used on promise resolve', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
