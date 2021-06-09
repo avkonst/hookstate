@@ -41,7 +41,7 @@
 
 ## Preface
 
-Hookstate is a modern alternative to Redux, Mobx, Recoil and others without boilerplate. It is simple to learn but very flexible to use. It has got impressive performance and predictable behavior.
+Hookstate is a modern alternative to Redux, Mobx, Recoil, etc. It is simple to learn, easy to use, extendable, very flexible and capable to address all state management needs of large scalable applications. It has got impressive performance and predictable behavior.
 
 **Any questions? Just ask by raising a github ticket.**
 
