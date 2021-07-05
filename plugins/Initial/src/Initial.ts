@@ -1,4 +1,3 @@
-
 import {
     Path,
     Downgraded,
@@ -16,6 +15,8 @@ export interface InitialExtensions<S> {
     get(): S | undefined;
     modified(): boolean;
     unmodified(): boolean;
+    set(s: State<S>): void;
+    revert(): void;
 }
 
 class InitialPluginInstance {
@@ -25,15 +26,33 @@ class InitialPluginInstance {
     }
     getInitial = (path: Path) => {
         let result = this.initialState;
-        path.forEach(p => {
+        path.forEach((p) => {
             result = result && result[p];
         });
         return result;
-    }
+    };
     getModified = (l: StateMethods<StateValueAtPath>): boolean => {
-        l.attach(Downgraded)
-        return !isEqual(l.value, this.getInitial(l.path))
-    }
+        l.attach(Downgraded);
+        return !isEqual(l.value, this.getInitial(l.path));
+    };
+    set = (path: Path, s: StateValueAtPath) => {
+        let result = this.initialState;
+        if (path.length > 0) {
+            for (let i = 0; i < path.length - 1; i++) {
+                result = result && result[path[i]];
+            }
+            result[path[path.length - 1]] = cloneDeep(s);
+        } else {
+            this.initialState = cloneDeep(s);
+        }
+    };
+    revert = (v: StateValueAtRoot) => {
+        let result = this.initialState;
+        v.path.forEach((p: string) => {
+            result = result && result[p];
+        });
+        v.set(() => result);
+    };
 }
 
 const PluginID = Symbol('Initial');
@@ -43,7 +62,7 @@ export function Initial(): Plugin;
 export function Initial<S>($this: State<S>): InitialExtensions<S>;
 export function Initial<S>($this?: State<S>): Plugin | InitialExtensions<S> {
     if ($this) {
-        const $th = $this as State<S>
+        const $th = $this as State<S>;
         const [instance] = $th.attach(PluginID);
         if (instance instanceof Error) {
             throw instance;
@@ -52,13 +71,15 @@ export function Initial<S>($this?: State<S>): Plugin | InitialExtensions<S> {
         return {
             get: () => inst.getInitial($th.path),
             modified: () => inst.getModified($th),
-            unmodified: () => !inst.getModified($th)
-        }
+            unmodified: () => !inst.getModified($th),
+            set: (s: S) => inst.set($th, s),
+            revert: () => inst.revert($th)
+        };
     }
     return {
         id: PluginID,
         init: (state: State<StateValueAtRoot>) => {
-            return new InitialPluginInstance(state.value) as {}
+            return new InitialPluginInstance(state.value) as {};
         }
-    }
+    };
 }
