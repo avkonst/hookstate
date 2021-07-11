@@ -699,6 +699,19 @@ ___
 
 *Defined in [index.d.ts:296](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L296)*
 
+**A note about previous values and merging:** State values are muteable in Hookstate for performance reasons. This causes a side effect in the merge operation. While merging, the previous state object is mutated as the desired changes are applied. This renders the previous property unreliable as it will match the new state property. While the [merged](#optional-readonly-merged) property can be used to detect which values were merged in, it will not inform you whether those values are different from the previous state.
+
+As a workaround, you can [batch state updates](https://hookstate.js.org/docs/performance-batched-updates) or replace merge calls with the immutable-style set operation like so:
+
+```
+state.set(p => {
+    let copy = p.clone(); /// here it is up to you to define how to clone the current state
+    copy.field = 'new value for field';
+    delete copy.fieldToDelete;
+    return copy;
+})
+```
+
 ___
 
 #### `Optional` `Readonly` state
