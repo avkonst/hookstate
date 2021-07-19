@@ -50,7 +50,7 @@ title: API @hookstate/core
 
 Ƭ **InferredStateKeysType**: *`S extends ReadonlyArray<infer _> ? ReadonlyArray<number> : S extends null ? undefined : S extends object ? ReadonlyArray<keyof S> : undefined`*
 
-*Defined in [index.d.ts:54](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L54)*
+*Defined in [index.d.ts:54](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L54)*
 
 Return type of [StateMethods.keys](#readonly-keys).
 
@@ -60,7 +60,7 @@ ___
 
 Ƭ **InferredStateOrnullType**: *`S extends undefined ? undefined : S extends null ? null : State<S>`*
 
-*Defined in [index.d.ts:60](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L60)*
+*Defined in [index.d.ts:60](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L60)*
 
 Return type of [StateMethods.map()](#map).
 
@@ -70,7 +70,7 @@ ___
 
 Ƭ **Path**: *`ReadonlyArray‹string | number›`*
 
-*Defined in [index.d.ts:17](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L17)*
+*Defined in [index.d.ts:17](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L17)*
 
 'JSON path' from root of a state object to a nested property.
 Return type of [StateMethod.path](#readonly-path).
@@ -92,7 +92,7 @@ ___
 
 Ƭ **SetInitialStateAction**: *`S | Promise‹S› | function`*
 
-*Defined in [index.d.ts:35](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L35)*
+*Defined in [index.d.ts:35](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L35)*
 
 Type of an argument of [createState](#createstate) and [useState](#usestate).
 
@@ -102,7 +102,7 @@ ___
 
 Ƭ **SetPartialStateAction**: *`S extends ReadonlyArray<> ? ReadonlyArray<U> | Record<number, U> | function : S extends object | string ? Partial<S> | function : React.SetStateAction<S>`*
 
-*Defined in [index.d.ts:29](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L29)*
+*Defined in [index.d.ts:29](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L29)*
 
 Type of an argument of [StateMethods.merge](#merge).
 
@@ -112,7 +112,7 @@ ___
 
 Ƭ **SetStateAction**: *`S | Promise‹S› | function`*
 
-*Defined in [index.d.ts:23](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L23)*
+*Defined in [index.d.ts:23](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L23)*
 
 Type of an argument of [StateMethods.set](#set).
 
@@ -122,7 +122,7 @@ ___
 
 Ƭ **State**: *[StateMixin](#interfacesstatemixinmd) & `S extends object` ? `{ readonly [K in keyof Required<S>]: State<S[K]> }` : [StateMethods](#interfacesstatemethodsmd)*
 
-*Defined in [index.d.ts:254](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L254)*
+*Defined in [index.d.ts:254](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L254)*
 
 Type of a result of [createState](#createstate) and [useState](#usestate) functions
 
@@ -132,7 +132,7 @@ Type of a result of [createState](#createstate) and [useState](#usestate) functi
 
 • **none**: *any*
 
-*Defined in [index.d.ts:48](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L48)*
+*Defined in [index.d.ts:48](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L48)*
 
 Special symbol which might be used to delete properties
 from an object calling [StateMethods.set](#set) or [StateMethods.merge](#merge).
@@ -145,7 +145,7 @@ ___
 
 • **postpone**: *keyof symbol*
 
-*Defined in [index.d.ts:41](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L41)*
+*Defined in [index.d.ts:41](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L41)*
 
 Special symbol which might be returned by onPromised callback of [StateMethods.map](#map) function.
 
@@ -157,7 +157,7 @@ Special symbol which might be returned by onPromised callback of [StateMethods.m
 
 ▸ **DevTools**<**S**>(`state`: [State](#state)‹S›): *[DevToolsExtensions](#interfacesdevtoolsextensionsmd)*
 
-*Defined in [index.d.ts:511](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L511)*
+*Defined in [index.d.ts:532](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L532)*
 
 Returns access to the development tools for a given state.
 Development tools are delivered as optional plugins.
@@ -189,7 +189,7 @@ ___
 
 ▸ **Downgraded**(): *[Plugin](#interfacespluginmd)*
 
-*Defined in [index.d.ts:473](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L473)*
+*Defined in [index.d.ts:494](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L494)*
 
 A plugin which allows to opt-out from usage of Javascript proxies for
 state usage tracking. It is useful for performance tuning.
@@ -204,11 +204,11 @@ ___
 
 ▸ **StateFragment**<**S**>(`props`: object): *ReactElement*
 
-*Defined in [index.d.ts:451](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L451)*
+*Defined in [index.d.ts:472](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L472)*
 
 Allows to use a state without defining a functional react component.
 It can be also used in class-based React components. It is also
-particularly usefull for creating *scoped* states.
+particularly useful for creating *scoped* states.
 
 [Learn more...](https://hookstate.js.org/docs/using-without-statehook)
 
@@ -231,7 +231,7 @@ Name | Type |
 
 ▸ **StateFragment**<**S**>(`props`: object): *ReactElement*
 
-*Defined in [index.d.ts:463](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L463)*
+*Defined in [index.d.ts:484](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L484)*
 
 Allows to use a state without defining a functional react component.
 See more at [StateFragment](#statefragment)
@@ -261,7 +261,7 @@ ___
 
 ▸ **createState**<**S**>(`initial`: [SetInitialStateAction](#setinitialstateaction)‹S›): *[State](#state)‹S› & [StateMethodsDestroy](#interfacesstatemethodsdestroymd)*
 
-*Defined in [index.d.ts:375](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L375)*
+*Defined in [index.d.ts:396](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L396)*
 
 Creates new state and returns it.
 
@@ -306,7 +306,7 @@ ___
 
 ▸ **useHookstate**<**S**>(`source`: [State](#state)‹S›): *[State](#state)‹S›*
 
-*Defined in [index.d.ts:436](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L436)*
+*Defined in [index.d.ts:457](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L457)*
 
 Alias to [useState](#usestate) which provides a workaround
 for [React 20613 bug](https://github.com/facebook/react/issues/20613)
@@ -325,7 +325,7 @@ Name | Type |
 
 ▸ **useHookstate**<**S**>(`source`: [SetInitialStateAction](#setinitialstateaction)‹S›): *[State](#state)‹S›*
 
-*Defined in [index.d.ts:441](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L441)*
+*Defined in [index.d.ts:462](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L462)*
 
 Alias to [useState](#usestate) which provides a workaround
 for [React 20613 bug](https://github.com/facebook/react/issues/20613)
@@ -348,13 +348,13 @@ ___
 
 ▸ **useState**<**S**>(`source`: [State](#state)‹S›): *[State](#state)‹S›*
 
-*Defined in [index.d.ts:403](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L403)*
+*Defined in [index.d.ts:424](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L424)*
 
 Enables a functional React component to use a state,
 either created by [createState](#createstate) (*global* state) or
 derived from another call to [useState](#usestate) (*scoped* state).
 
-The `useState` forces a component to rerender everytime, when:
+The `useState` forces a component to rerender every time, when:
 - a segment/part of the state data is updated *AND only if*
 - this segment was **used** by the component during or after the latest rendering.
 
@@ -386,7 +386,7 @@ or in effects) or it's children.
 
 ▸ **useState**<**S**>(`source`: [SetInitialStateAction](#setinitialstateaction)‹S›): *[State](#state)‹S›*
 
-*Defined in [index.d.ts:431](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L431)*
+*Defined in [index.d.ts:452](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L452)*
 
 This function enables a functional React component to use a state,
 created per component by [useState](#usestate) (*local* state).
@@ -451,7 +451,7 @@ Return type of [DevTools](#devtools).
 
 ▸ **label**(`name`: string): *void*
 
-*Defined in [index.d.ts:490](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L490)*
+*Defined in [index.d.ts:511](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L511)*
 
 Assigns custom label to identify the state in the development tools
 
@@ -469,7 +469,7 @@ ___
 
 ▸ **log**(`str`: string, `data?`: any): *void*
 
-*Defined in [index.d.ts:494](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L494)*
+*Defined in [index.d.ts:515](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L515)*
 
 Logs to the development tools
 
@@ -510,7 +510,7 @@ Hookstate plugin specification and factory method.
 
 • **id**: *symbol*
 
-*Defined in [index.d.ts:338](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L338)*
+*Defined in [index.d.ts:359](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L359)*
 
 Unique identifier of a plugin.
 
@@ -520,7 +520,7 @@ ___
 
 • **init**? : *undefined | function*
 
-*Defined in [index.d.ts:342](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L342)*
+*Defined in [index.d.ts:363](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L363)*
 
 Initializer for a plugin when it is attached for the first time.
 
@@ -554,7 +554,7 @@ Set of callbacks, a plugin may subscribe to.
 
 • **onBatchFinish**? : *undefined | function*
 
-*Defined in [index.d.ts:326](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L326)*
+*Defined in [index.d.ts:347](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L347)*
 
 ___
 
@@ -562,7 +562,7 @@ ___
 
 • **onBatchStart**? : *undefined | function*
 
-*Defined in [index.d.ts:325](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L325)*
+*Defined in [index.d.ts:346](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L346)*
 
 ___
 
@@ -570,7 +570,7 @@ ___
 
 • **onDestroy**? : *undefined | function*
 
-*Defined in [index.d.ts:324](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L324)*
+*Defined in [index.d.ts:345](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L345)*
 
 ___
 
@@ -578,7 +578,7 @@ ___
 
 • **onSet**? : *undefined | function*
 
-*Defined in [index.d.ts:323](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L323)*
+*Defined in [index.d.ts:344](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L344)*
 
 
 <a name="interfacesplugincallbacksonbatchargumentmd"/>
@@ -607,7 +607,7 @@ PluginCallbacks.onBatchStart/Finish argument type.
 
 • **context**? : *AnyContext*
 
-*Defined in [index.d.ts:314](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L314)*
+*Defined in [index.d.ts:335](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L335)*
 
 ___
 
@@ -615,7 +615,7 @@ ___
 
 • **path**: *[Path](#path)*
 
-*Defined in [index.d.ts:312](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L312)*
+*Defined in [index.d.ts:333](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L333)*
 
 ___
 
@@ -623,7 +623,7 @@ ___
 
 • **state**? : *StateValueAtRoot*
 
-*Defined in [index.d.ts:313](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L313)*
+*Defined in [index.d.ts:334](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L334)*
 
 
 <a name="interfacesplugincallbacksondestroyargumentmd"/>
@@ -650,7 +650,7 @@ PluginCallbacks.onDestroy argument type.
 
 • **state**? : *StateValueAtRoot*
 
-*Defined in [index.d.ts:305](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L305)*
+*Defined in [index.d.ts:326](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L326)*
 
 
 <a name="interfacesplugincallbacksonsetargumentmd"/>
@@ -681,7 +681,7 @@ PluginCallbacks.onSet argument type.
 
 • **merged**? : *StateValueAtPath*
 
-*Defined in [index.d.ts:298](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L298)*
+*Defined in [index.d.ts:319](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L319)*
 
 ___
 
@@ -689,7 +689,7 @@ ___
 
 • **path**: *[Path](#path)*
 
-*Defined in [index.d.ts:294](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L294)*
+*Defined in [index.d.ts:294](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L294)*
 
 ___
 
@@ -697,7 +697,27 @@ ___
 
 • **previous**? : *StateValueAtPath*
 
-*Defined in [index.d.ts:296](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L296)*
+*Defined in [index.d.ts:317](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L317)*
+
+**A note about previous values and merging:**
+State values are muteable in Hookstate for performance reasons. This causes a side effect in the merge operation.
+While merging, the previous state object is mutated as the desired changes are applied. This means the value of
+`previous` will reflect the merged changes as well, matching the new `state` value rather than the previous
+state value. As a result, the `previous` property is unreliable when merge is used. The
+[merged](#optional-readonly-merged) property can be used to detect which values were merged in but it will not
+inform you whether those values are different from the previous state.
+
+As a workaround, you can [batch state updates](https://hookstate.js.org/docs/performance-batched-updates) or
+replace merge calls with the immutable-style set operation like so:
+
+```
+state.set(p => {
+    let copy = p.clone(); /// here it is up to you to define how to clone the current state
+    copy.field = 'new value for field';
+    delete copy.fieldToDelete;
+    return copy;
+})
+```
 
 ___
 
@@ -705,7 +725,7 @@ ___
 
 • **state**? : *StateValueAtRoot*
 
-*Defined in [index.d.ts:295](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L295)*
+*Defined in [index.d.ts:295](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L295)*
 
 ___
 
@@ -713,7 +733,7 @@ ___
 
 • **value**? : *StateValueAtPath*
 
-*Defined in [index.d.ts:297](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L297)*
+*Defined in [index.d.ts:318](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L318)*
 
 
 <a name="interfacespluginstatecontrolmd"/>
@@ -751,7 +771,7 @@ Type of a value of a state
 
 ▸ **getUntracked**(): *S*
 
-*Defined in [index.d.ts:73](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L73)*
+*Defined in [index.d.ts:73](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L73)*
 
 Get state value, but do not leave the traces of reading it.
 
@@ -763,7 +783,7 @@ ___
 
 ▸ **mergeUntracked**(`mergeValue`: [SetPartialStateAction](#setpartialstateaction)‹S›): *[Path](#path)[]*
 
-*Defined in [index.d.ts:85](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L85)*
+*Defined in [index.d.ts:85](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L85)*
 
 Merge new state value, but do not trigger rerender.
 
@@ -781,7 +801,7 @@ ___
 
 ▸ **rerender**(`paths`: [Path](#path)[]): *void*
 
-*Defined in [index.d.ts:91](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L91)*
+*Defined in [index.d.ts:91](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L91)*
 
 Trigger rerender for hooked states, where values at the specified paths are used.
 
@@ -799,7 +819,7 @@ ___
 
 ▸ **setUntracked**(`newValue`: [SetStateAction](#setstateaction)‹S›): *[Path](#path)[]*
 
-*Defined in [index.d.ts:79](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L79)*
+*Defined in [index.d.ts:79](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L79)*
 
 Set new state value, but do not trigger rerender.
 
@@ -855,7 +875,7 @@ Type of a value of a state
 
 • **error**: *StateErrorAtRoot | undefined*
 
-*Defined in [index.d.ts:151](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L151)*
+*Defined in [index.d.ts:151](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L151)*
 
 If a state was set to a promise and the promise was rejected,
 this property will return the error captured from the promise rejection
@@ -866,7 +886,7 @@ ___
 
 • **keys**: *[InferredStateKeysType](#inferredstatekeystype)‹S›*
 
-*Defined in [index.d.ts:120](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L120)*
+*Defined in [index.d.ts:120](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L120)*
 
 Return the keys of nested states.
 For a given state of [State](#state) type,
@@ -882,7 +902,7 @@ ___
 
 • **ornull**: *[InferredStateOrnullType](#inferredstateornulltype)‹S›*
 
-*Defined in [index.d.ts:215](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L215)*
+*Defined in [index.d.ts:215](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L215)*
 
 If state value is null or undefined, returns state value.
 Otherwise, it returns this state instance but
@@ -896,7 +916,7 @@ ___
 
 • **path**: *[Path](#path)*
 
-*Defined in [index.d.ts:110](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L110)*
+*Defined in [index.d.ts:110](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L110)*
 
 'Javascript' object 'path' to an element relative to the root object
 in the state. For example:
@@ -914,7 +934,7 @@ ___
 
 • **promised**: *boolean*
 
-*Defined in [index.d.ts:146](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L146)*
+*Defined in [index.d.ts:146](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L146)*
 
 True if state value is not yet available (eg. equal to a promise)
 
@@ -924,7 +944,7 @@ ___
 
 • **value**: *S*
 
-*Defined in [index.d.ts:142](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L142)*
+*Defined in [index.d.ts:142](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L142)*
 
 Unwraps and returns the underlying state value referred by
 [path](#readonly-path) of this state instance.
@@ -952,7 +972,7 @@ const myvalue: number = state.get()
 
 ▸ **attach**(`plugin`: function): *[State](#state)‹S›*
 
-*Defined in [index.d.ts:221](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L221)*
+*Defined in [index.d.ts:221](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L221)*
 
 Adds plugin to the state.
 
@@ -968,7 +988,7 @@ Adds plugin to the state.
 
 ▸ **attach**(`pluginId`: symbol): *[[PluginCallbacks](#interfacesplugincallbacksmd) | Error, [PluginStateControl](#interfacespluginstatecontrolmd)‹S›]*
 
-*Defined in [index.d.ts:231](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L231)*
+*Defined in [index.d.ts:231](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L231)*
 
 For plugin developers only.
 It is a method to get the instance of the previously attached plugin.
@@ -992,7 +1012,7 @@ ___
 
 ▸ **batch**<**R**, **C**>(`action`: function, `context?`: Exclude‹C, Function›): *R*
 
-*Defined in [index.d.ts:207](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L207)*
+*Defined in [index.d.ts:207](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L207)*
 
 Runs the provided action callback with optimised re-rendering.
 Updating state within a batch action does not trigger immediate rerendering.
@@ -1032,7 +1052,7 @@ ___
 
 ▸ **get**(): *S*
 
-*Defined in [index.d.ts:158](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L158)*
+*Defined in [index.d.ts:158](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L158)*
 
 Unwraps and returns the underlying state value referred by
 [path](#readonly-path) of this state instance.
@@ -1047,7 +1067,7 @@ ___
 
 ▸ **merge**(`newValue`: [SetPartialStateAction](#setpartialstateaction)‹S›): *void*
 
-*Defined in [index.d.ts:185](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L185)*
+*Defined in [index.d.ts:185](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L185)*
 
 Similarly to [set](#set) method updates state value.
 
@@ -1073,7 +1093,7 @@ ___
 
 ▸ **nested**<**K**>(`key`: K): *[State](#state)‹S[K]›*
 
-*Defined in [index.d.ts:195](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L195)*
+*Defined in [index.d.ts:195](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L195)*
 
 Returns nested state by key.
 `state.nested('myprop')` returns the same as `state.myprop` or `state['myprop']`,
@@ -1099,7 +1119,7 @@ ___
 
 ▸ **set**(`newValue`: [SetStateAction](#setstateaction)‹S›): *void*
 
-*Defined in [index.d.ts:173](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L173)*
+*Defined in [index.d.ts:173](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L173)*
 
 Sets new value for a state.
 If `this.path === []`,
@@ -1141,7 +1161,7 @@ which can be destroyed by a client.
 
 ▸ **destroy**(): *void*
 
-*Defined in [index.d.ts:243](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L243)*
+*Defined in [index.d.ts:243](https://github.com/ryanwillis/hookstate/blob/master/dist/index.d.ts#L243)*
 
 Destroys an instance of a state, so
 it can clear the allocated native resources (if any)
