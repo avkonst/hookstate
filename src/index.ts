@@ -341,6 +341,7 @@ export interface PluginCallbacksOnSetArgument {
     readonly path: Path,
     readonly state?: StateValueAtRoot,
     /**
+     * **A note about previous values and merging:**
      * State values are muteable in Hookstate for performance reasons. This causes a side effect in the merge operation.
      * While merging, the previous state object is mutated as the desired changes are applied. This means the value of
      * `previous` will reflect the merged changes as well, matching the new `state` value rather than the previous
