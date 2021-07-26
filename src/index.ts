@@ -340,6 +340,27 @@ export type AnyContext = any; //tslint:disable-line: no-any
 export interface PluginCallbacksOnSetArgument {
     readonly path: Path,
     readonly state?: StateValueAtRoot,
+    /**
+     * **A note about previous values and merging:**
+     * State values are muteable in Hookstate for performance reasons. This causes a side effect in the merge operation.
+     * While merging, the previous state object is mutated as the desired changes are applied. This means the value of
+     * `previous` will reflect the merged changes as well, matching the new `state` value rather than the previous
+     * state value. As a result, the `previous` property is unreliable when merge is used. The
+     * [merged](#optional-readonly-merged) property can be used to detect which values were merged in but it will not
+     * inform you whether those values are different from the previous state.
+     *
+     * As a workaround, you can [batch state updates](https://hookstate.js.org/docs/performance-batched-updates) or
+     * replace merge calls with the immutable-style set operation like so:
+     *
+     * ```
+     * state.set(p => {
+     *     let copy = p.clone(); /// here it is up to you to define how to clone the current state
+     *     copy.field = 'new value for field';
+     *     delete copy.fieldToDelete;
+     *     return copy;
+     * })
+     * ```
+     */
     readonly previous?: StateValueAtPath,
     readonly value?: StateValueAtPath,
     readonly merged?: StateValueAtPath,
