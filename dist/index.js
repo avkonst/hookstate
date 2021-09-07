@@ -185,8 +185,8 @@ function DevTools(state) {
 ///
 /// INTERNAL SYMBOLS (LIBRARY IMPLEMENTATION)
 ///
-var isDevelopmentMode = process !== undefined && process !== null && typeof process === 'object' &&
-    process.env !== undefined && process.env !== null && typeof process.env === 'object' &&
+var isDevelopmentMode = typeof process === 'object' &&
+    typeof process.env === 'object' &&
     process.env.NODE_ENV === 'development';
 var self = Symbol('self');
 var EmptyDevToolsExtensions = {
