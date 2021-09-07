@@ -848,6 +848,38 @@ var StateMethodsImpl = /** @class */ (function () {
                 if (key === 'toJSON') {
                     throw new StateInvalidUsageError(_this.path, ErrorId.ToJson_State);
                 }
+                var nestedGetter = function (prop) {
+                    var currentDowngraded = _this.isDowngraded; // relevant for IE11 only
+                    var currentValue = _this.get(); // IE11 marks this as downgraded
+                    _this.isDowngraded = currentDowngraded; // relevant for IE11 only
+                    if ( // if currentValue is primitive type
+                    (typeof currentValue !== 'object' || currentValue === null) &&
+                        // if promised, it will be none
+                        currentValue !== none) {
+                        // This was an error case, but various tools like webpack bundler
+                        // and react dev tools attempt to get props out of non-null object,
+                        // so this was changed to return just undefined for any property request
+                        // as there is no way to fix 3rd party tools.
+                        // Logging a warning to console is also not an option
+                        // as it pollutes console for legitimate apps on app start app.
+                        // Ref: https://github.com/avkonst/hookstate/issues/125
+                        return undefined;
+                    }
+                    if (Array.isArray(currentValue)) {
+                        if (prop === 'length') {
+                            return currentValue.length;
+                        }
+                        if (prop in Array.prototype) {
+                            return Array.prototype[prop];
+                        }
+                        var index = Number(prop);
+                        if (!Number.isInteger(index)) {
+                            return undefined;
+                        }
+                        return _this.nested(index);
+                    }
+                    return _this.nested(prop.toString());
+                };
                 switch (key) {
                     case 'path':
                         return _this.path;
@@ -868,47 +900,17 @@ var StateMethodsImpl = /** @class */ (function () {
                     case 'merge':
                         return function (p) { return _this.merge(p); };
                     case 'nested':
-                        return function (p) { return _this.nested(p); };
+                        return function (p) { return nestedGetter(p); };
                     case 'batch':
                         // tslint:disable-next-line: no-any
                         return function (action, context) { return _this.batch(action, context); };
                     case 'attach':
                         return function (p) { return _this.attach(p); };
-                    case 'destroy': {
+                    case 'destroy':
                         return function () { return _this.destroy(); };
-                    }
-                    // fall down
+                    default:
+                        return nestedGetter(key);
                 }
-                var currentDowngraded = _this.isDowngraded; // relevant for IE11 only
-                var currentValue = _this.get(); // IE11 marks this as downgraded
-                _this.isDowngraded = currentDowngraded; // relevant for IE11 only
-                if ( // if currentValue is primitive type
-                (typeof currentValue !== 'object' || currentValue === null) &&
-                    // if promised, it will be none
-                    currentValue !== none) {
-                    // This was an error case, but various tools like webpack bundler
-                    // and react dev tools attempt to get props out of non-null object,
-                    // so this was changed to return just undefined for any property request
-                    // as there is no way to fix 3rd party tools.
-                    // Logging a warning to console is also not an option
-                    // as it pollutes console for legitimate apps on app start app.
-                    // Ref: https://github.com/avkonst/hookstate/issues/125
-                    return undefined;
-                }
-                if (Array.isArray(currentValue)) {
-                    if (key === 'length') {
-                        return currentValue.length;
-                    }
-                    if (key in Array.prototype) {
-                        return Array.prototype[key];
-                    }
-                    var index = Number(key);
-                    if (!Number.isInteger(index)) {
-                        return undefined;
-                    }
-                    return _this.nested(index);
-                }
-                return _this.nested(key.toString());
             };
             if (IsNoProxy) {
                 // minimal support for IE11

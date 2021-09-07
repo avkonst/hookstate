@@ -157,7 +157,7 @@ Special symbol which might be returned by onPromised callback of [StateMethods.m
 
 ▸ **DevTools**<**S**>(`state`: [State](#state)‹S›): *[DevToolsExtensions](#interfacesdevtoolsextensionsmd)*
 
-*Defined in [index.d.ts:511](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L511)*
+*Defined in [index.d.ts:532](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L532)*
 
 Returns access to the development tools for a given state.
 Development tools are delivered as optional plugins.
@@ -189,7 +189,7 @@ ___
 
 ▸ **Downgraded**(): *[Plugin](#interfacespluginmd)*
 
-*Defined in [index.d.ts:473](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L473)*
+*Defined in [index.d.ts:494](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L494)*
 
 A plugin which allows to opt-out from usage of Javascript proxies for
 state usage tracking. It is useful for performance tuning.
@@ -204,11 +204,11 @@ ___
 
 ▸ **StateFragment**<**S**>(`props`: object): *ReactElement*
 
-*Defined in [index.d.ts:451](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L451)*
+*Defined in [index.d.ts:472](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L472)*
 
 Allows to use a state without defining a functional react component.
 It can be also used in class-based React components. It is also
-particularly usefull for creating *scoped* states.
+particularly useful for creating *scoped* states.
 
 [Learn more...](https://hookstate.js.org/docs/using-without-statehook)
 
@@ -231,7 +231,7 @@ Name | Type |
 
 ▸ **StateFragment**<**S**>(`props`: object): *ReactElement*
 
-*Defined in [index.d.ts:463](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L463)*
+*Defined in [index.d.ts:484](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L484)*
 
 Allows to use a state without defining a functional react component.
 See more at [StateFragment](#statefragment)
@@ -261,7 +261,7 @@ ___
 
 ▸ **createState**<**S**>(`initial`: [SetInitialStateAction](#setinitialstateaction)‹S›): *[State](#state)‹S› & [StateMethodsDestroy](#interfacesstatemethodsdestroymd)*
 
-*Defined in [index.d.ts:375](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L375)*
+*Defined in [index.d.ts:396](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L396)*
 
 Creates new state and returns it.
 
@@ -306,7 +306,7 @@ ___
 
 ▸ **useHookstate**<**S**>(`source`: [State](#state)‹S›): *[State](#state)‹S›*
 
-*Defined in [index.d.ts:436](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L436)*
+*Defined in [index.d.ts:457](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L457)*
 
 Alias to [useState](#usestate) which provides a workaround
 for [React 20613 bug](https://github.com/facebook/react/issues/20613)
@@ -325,7 +325,7 @@ Name | Type |
 
 ▸ **useHookstate**<**S**>(`source`: [SetInitialStateAction](#setinitialstateaction)‹S›): *[State](#state)‹S›*
 
-*Defined in [index.d.ts:441](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L441)*
+*Defined in [index.d.ts:462](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L462)*
 
 Alias to [useState](#usestate) which provides a workaround
 for [React 20613 bug](https://github.com/facebook/react/issues/20613)
@@ -348,13 +348,13 @@ ___
 
 ▸ **useState**<**S**>(`source`: [State](#state)‹S›): *[State](#state)‹S›*
 
-*Defined in [index.d.ts:403](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L403)*
+*Defined in [index.d.ts:424](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L424)*
 
 Enables a functional React component to use a state,
 either created by [createState](#createstate) (*global* state) or
 derived from another call to [useState](#usestate) (*scoped* state).
 
-The `useState` forces a component to rerender everytime, when:
+The `useState` forces a component to rerender every time, when:
 - a segment/part of the state data is updated *AND only if*
 - this segment was **used** by the component during or after the latest rendering.
 
@@ -386,7 +386,7 @@ or in effects) or it's children.
 
 ▸ **useState**<**S**>(`source`: [SetInitialStateAction](#setinitialstateaction)‹S›): *[State](#state)‹S›*
 
-*Defined in [index.d.ts:431](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L431)*
+*Defined in [index.d.ts:452](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L452)*
 
 This function enables a functional React component to use a state,
 created per component by [useState](#usestate) (*local* state).
@@ -451,7 +451,7 @@ Return type of [DevTools](#devtools).
 
 ▸ **label**(`name`: string): *void*
 
-*Defined in [index.d.ts:490](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L490)*
+*Defined in [index.d.ts:511](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L511)*
 
 Assigns custom label to identify the state in the development tools
 
@@ -469,7 +469,7 @@ ___
 
 ▸ **log**(`str`: string, `data?`: any): *void*
 
-*Defined in [index.d.ts:494](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L494)*
+*Defined in [index.d.ts:515](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L515)*
 
 Logs to the development tools
 
@@ -510,7 +510,7 @@ Hookstate plugin specification and factory method.
 
 • **id**: *symbol*
 
-*Defined in [index.d.ts:338](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L338)*
+*Defined in [index.d.ts:359](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L359)*
 
 Unique identifier of a plugin.
 
@@ -520,7 +520,7 @@ ___
 
 • **init**? : *undefined | function*
 
-*Defined in [index.d.ts:342](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L342)*
+*Defined in [index.d.ts:363](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L363)*
 
 Initializer for a plugin when it is attached for the first time.
 
@@ -554,7 +554,7 @@ Set of callbacks, a plugin may subscribe to.
 
 • **onBatchFinish**? : *undefined | function*
 
-*Defined in [index.d.ts:326](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L326)*
+*Defined in [index.d.ts:347](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L347)*
 
 ___
 
@@ -562,7 +562,7 @@ ___
 
 • **onBatchStart**? : *undefined | function*
 
-*Defined in [index.d.ts:325](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L325)*
+*Defined in [index.d.ts:346](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L346)*
 
 ___
 
@@ -570,7 +570,7 @@ ___
 
 • **onDestroy**? : *undefined | function*
 
-*Defined in [index.d.ts:324](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L324)*
+*Defined in [index.d.ts:345](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L345)*
 
 ___
 
@@ -578,7 +578,7 @@ ___
 
 • **onSet**? : *undefined | function*
 
-*Defined in [index.d.ts:323](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L323)*
+*Defined in [index.d.ts:344](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L344)*
 
 
 <a name="interfacesplugincallbacksonbatchargumentmd"/>
@@ -607,7 +607,7 @@ PluginCallbacks.onBatchStart/Finish argument type.
 
 • **context**? : *AnyContext*
 
-*Defined in [index.d.ts:314](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L314)*
+*Defined in [index.d.ts:335](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L335)*
 
 ___
 
@@ -615,7 +615,7 @@ ___
 
 • **path**: *[Path](#path)*
 
-*Defined in [index.d.ts:312](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L312)*
+*Defined in [index.d.ts:333](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L333)*
 
 ___
 
@@ -623,7 +623,7 @@ ___
 
 • **state**? : *StateValueAtRoot*
 
-*Defined in [index.d.ts:313](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L313)*
+*Defined in [index.d.ts:334](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L334)*
 
 
 <a name="interfacesplugincallbacksondestroyargumentmd"/>
@@ -650,7 +650,7 @@ PluginCallbacks.onDestroy argument type.
 
 • **state**? : *StateValueAtRoot*
 
-*Defined in [index.d.ts:305](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L305)*
+*Defined in [index.d.ts:326](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L326)*
 
 
 <a name="interfacesplugincallbacksonsetargumentmd"/>
@@ -681,7 +681,7 @@ PluginCallbacks.onSet argument type.
 
 • **merged**? : *StateValueAtPath*
 
-*Defined in [index.d.ts:298](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L298)*
+*Defined in [index.d.ts:319](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L319)*
 
 ___
 
@@ -697,7 +697,27 @@ ___
 
 • **previous**? : *StateValueAtPath*
 
-*Defined in [index.d.ts:296](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L296)*
+*Defined in [index.d.ts:317](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L317)*
+
+**A note about previous values and merging:**
+State values are muteable in Hookstate for performance reasons. This causes a side effect in the merge operation.
+While merging, the previous state object is mutated as the desired changes are applied. This means the value of
+`previous` will reflect the merged changes as well, matching the new `state` value rather than the previous
+state value. As a result, the `previous` property is unreliable when merge is used. The
+[merged](#optional-readonly-merged) property can be used to detect which values were merged in but it will not
+inform you whether those values are different from the previous state.
+
+As a workaround, you can [batch state updates](https://hookstate.js.org/docs/performance-batched-updates) or
+replace merge calls with the immutable-style set operation like so:
+
+```
+state.set(p => {
+    let copy = p.clone(); /// here it is up to you to define how to clone the current state
+    copy.field = 'new value for field';
+    delete copy.fieldToDelete;
+    return copy;
+})
+```
 
 ___
 
@@ -713,7 +733,7 @@ ___
 
 • **value**? : *StateValueAtPath*
 
-*Defined in [index.d.ts:297](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L297)*
+*Defined in [index.d.ts:318](https://github.com/avkonst/hookstate/blob/master/dist/index.d.ts#L318)*
 
 
 <a name="interfacespluginstatecontrolmd"/>
