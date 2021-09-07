@@ -103,6 +103,24 @@ test('object: should rerender used via nested', async () => {
     expect(Object.keys(result.current.get())).toEqual(['field1', 'field2']);
 });
 
+test('object: should rerender used via nested function', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useState({} as { field1?: number })
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(result.current.nested("field1").value).toStrictEqual(undefined);
+
+    act(() => {
+        result.current.merge({ field1: 1 });
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(result.current.nested("field1").value).toStrictEqual(1);
+    expect(Object.keys(result.current)).toEqual(['field1']);
+    expect(Object.keys(result.current.get())).toEqual(['field1']);
+});
+
 // tslint:disable-next-line: no-any
 const TestSymbol = Symbol('TestSymbol') as any;
 test('object: should not rerender used symbol properties', async () => {

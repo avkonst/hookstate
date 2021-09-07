@@ -1444,6 +1444,40 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                 throw new StateInvalidUsageError(this.path, ErrorId.ToJson_State);
             }
             
+            let nestedGetter = (prop: PropertyKey) => {
+                const currentDowngraded = this.isDowngraded; // relevant for IE11 only
+                const currentValue = this.get(); // IE11 marks this as downgraded
+                this.isDowngraded = currentDowngraded; // relevant for IE11 only
+                if (// if currentValue is primitive type
+                    (typeof currentValue !== 'object' || currentValue === null) &&
+                    // if promised, it will be none
+                    currentValue !== none) {
+                    // This was an error case, but various tools like webpack bundler
+                    // and react dev tools attempt to get props out of non-null object,
+                    // so this was changed to return just undefined for any property request
+                    // as there is no way to fix 3rd party tools.
+                    // Logging a warning to console is also not an option
+                    // as it pollutes console for legitimate apps on app start app.
+                    // Ref: https://github.com/avkonst/hookstate/issues/125
+                    return undefined
+                }
+
+                if (Array.isArray(currentValue)) {
+                    if (prop === 'length') {
+                        return currentValue.length;
+                    }
+                    if (prop in Array.prototype) {
+                        return Array.prototype[prop];
+                    }
+                    const index = Number(prop);
+                    if (!Number.isInteger(index)) {
+                        return undefined;
+                    }
+                    return this.nested(index as keyof S)
+                }
+                return this.nested(prop.toString() as keyof S)
+            }
+
             switch (key) {
                 case 'path':
                     return this.path
@@ -1464,50 +1498,17 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                 case 'merge':
                     return (p: SetPartialStateAction<S>) => this.merge(p)
                 case 'nested':
-                    return (p: keyof S) => this.nested(p)
+                    return (p: keyof S) => nestedGetter(p)
                 case 'batch':
                     // tslint:disable-next-line: no-any
                     return <R, C>(action: () => R, context: Exclude<C, Function>) => this.batch(action, context)
                 case 'attach':
                     return (p: symbol) => this.attach(p)
-                case 'destroy': {
+                case 'destroy':
                     return () => this.destroy()
-                }
                 default:
-                    // fall down
+                    return nestedGetter(key)
             }
-            
-            const currentDowngraded = this.isDowngraded; // relevant for IE11 only
-            const currentValue = this.get(); // IE11 marks this as downgraded
-            this.isDowngraded = currentDowngraded; // relevant for IE11 only
-            if (// if currentValue is primitive type
-                (typeof currentValue !== 'object' || currentValue === null) &&
-                // if promised, it will be none
-                currentValue !== none) {
-                // This was an error case, but various tools like webpack bundler
-                // and react dev tools attempt to get props out of non-null object,
-                // so this was changed to return just undefined for any property request
-                // as there is no way to fix 3rd party tools.
-                // Logging a warning to console is also not an option
-                // as it pollutes console for legitimate apps on app start app.
-                // Ref: https://github.com/avkonst/hookstate/issues/125
-                return undefined
-            }
-
-            if (Array.isArray(currentValue)) {
-                if (key === 'length') {
-                    return currentValue.length;
-                }
-                if (key in Array.prototype) {
-                    return Array.prototype[key];
-                }
-                const index = Number(key);
-                if (!Number.isInteger(index)) {
-                    return undefined;
-                }
-                return this.nested(index as keyof S)
-            }
-            return this.nested(key.toString() as keyof S)
         }
         
         if (IsNoProxy) {
