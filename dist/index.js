@@ -22,6 +22,10 @@ and limitations under the License.
 ***************************************************************************** */
 /* global Reflect, Promise */
 
+// Do not try to use useLayoutEffect if DOM not available (SSR)
+const isDOMLoaded = typeof window !== 'undefined';
+const useIsomorphicLayoutEffect = isDOMLoaded ? React.useLayoutEffect : React.useEffect;
+
 var extendStatics = function(d, b) {
     extendStatics = Object.setPrototypeOf ||
         ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
@@ -1020,13 +1024,13 @@ var StateMethodsImpl = /** @class */ (function () {
     };
     return StateMethodsImpl;
 }());
-function proxyWrap(path, 
+function proxyWrap(path,
 // tslint:disable-next-line: no-any
-targetBootstrap, 
+targetBootstrap,
 // tslint:disable-next-line: no-any
-targetGetter, 
+targetGetter,
 // tslint:disable-next-line: no-any
-propertyGetter, 
+propertyGetter,
 // tslint:disable-next-line: no-any
 propertySetter, isValueProxy) {
     var onInvalidUsage = function (op) {
@@ -1139,7 +1143,7 @@ function useSubscribedStateMethods(state, path, update, subscribeTarget) {
     // https://github.com/avkonst/hookstate/issues/186
     // and probably this issue:
     // https://github.com/avkonst/hookstate/issues/145
-    React.useLayoutEffect(function () {
+    useIsomorphicLayoutEffect(function () {
         subscribeTarget.subscribe(link);
         return function () {
             link.onUnmount();
