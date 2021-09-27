@@ -1733,6 +1733,9 @@ function createStore<S>(initial: SetInitialStateAction<S>): Store {
     return new Store(initialValue);
 }
 
+// Do not try to use useLayoutEffect if DOM not available (SSR)
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
+
 function useSubscribedStateMethods<S>(
     state: Store,
     path: Path,
@@ -1752,7 +1755,9 @@ function useSubscribedStateMethods<S>(
     // https://github.com/avkonst/hookstate/issues/186
     // and probably this issue:
     // https://github.com/avkonst/hookstate/issues/145
-    React.useLayoutEffect(() => {
+    // useIsomorphicLayout for below issue when page is SSR
+    // https://github.com/avkonst/hookstate/issues/223
+    useIsomorphicLayoutEffect(() => {
         subscribeTarget.subscribe(link);
         return () => {
             link.onUnmount()
