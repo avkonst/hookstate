@@ -556,11 +556,15 @@ export function useHookstate<S>(
             // Global state mount or destroyed link
             // eslint-disable-next-line react-hooks/rules-of-hooks
             const [value, setValue] = React.useState({ state: parentMethods.state });
-            return useSubscribedStateMethods<S>(
+            let state =  useSubscribedStateMethods<StateValueAtRoot>(
                 value.state,
-                parentMethods.path,
+                RootPath,
                 () => setValue({ state: value.state }),
                 value.state).self;
+            for (let ind = 0; ind < parentMethods.path.length; ind += 1) {
+                state = state.nested(parentMethods.path[ind]);
+            }
+            return state as State<S>;
         }
     } else {
         // Local state mount

@@ -99,7 +99,11 @@ function useHookstate(source) {
             // Global state mount or destroyed link
             // eslint-disable-next-line react-hooks/rules-of-hooks
             var _b = React.useState({ state: parentMethods.state }), value_1 = _b[0], setValue_2 = _b[1];
-            return useSubscribedStateMethods(value_1.state, parentMethods.path, function () { return setValue_2({ state: value_1.state }); }, value_1.state).self;
+            var state = useSubscribedStateMethods(value_1.state, RootPath, function () { return setValue_2({ state: value_1.state }); }, value_1.state).self;
+            for (var ind = 0; ind < parentMethods.path.length; ind += 1) {
+                state = state.nested(parentMethods.path[ind]);
+            }
+            return state;
         }
     }
     else {

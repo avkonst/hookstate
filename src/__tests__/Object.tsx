@@ -103,6 +103,34 @@ test('object: should rerender used via nested', async () => {
     expect(Object.keys(result.current.get())).toEqual(['field1', 'field2']);
 });
 
+test('object: should rerender used via nested global', async () => {
+    let renderTimes = 0
+    let state = createState({
+        field1: 0,
+        field2: 'str'
+    });
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useState(state.field1)
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(result.current.get()).toStrictEqual(0);
+
+    act(() => {
+        result.current.set(p => p + 1);
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(result.current.get()).toStrictEqual(1);
+
+    act(() => {
+        state.field2.set("updated");
+    });
+    // should not rerender as field2 is not used by the hook
+    expect(renderTimes).toStrictEqual(2);
+    expect(result.current.get()).toStrictEqual(1);
+    expect(state.field2.get()).toStrictEqual("updated");
+});
+
 test('object: should rerender used via nested function', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
