@@ -110,7 +110,8 @@ function DevToolsInitializeInternal() {
         const path = parts[parts.length-1]
             .replace(/\s*[(].*/, '')
             .replace(/\s*at\s*/, '')
-        const moduleName = Array.from(path.matchAll(/(.*)\/(.+?)(?:\.[^\.]*$|$)/g))[0][2]
+        const pathParts = path.matchAll(new RegExp('(.*)\/(.+?)(?:\.[^\.]*$|$)', 'g'))
+        const moduleName = Array.from(pathParts)[0][2]
         if (!moduleName) {
             return defaultLabel()
         }

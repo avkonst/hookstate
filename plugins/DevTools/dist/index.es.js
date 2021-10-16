@@ -837,10 +837,7 @@ function DevToolsInitializeInternal() {
         }
         var dummyError = {};
         if ('stackTraceLimit' in Error && 'captureStackTrace' in Error) {
-            var oldLimit = Error.stackTraceLimit;
-            Error.stackTraceLimit = 6;
-            Error.captureStackTrace(dummyError, SettingsState.attach);
-            Error.stackTraceLimit = oldLimit;
+            Error.captureStackTrace(dummyError);
         }
         var s = dummyError.stack;
         if (!s) {
@@ -850,9 +847,15 @@ function DevToolsInitializeInternal() {
         if (parts.length < 3) {
             return defaultLabel();
         }
-        return parts[2]
+        var path = parts[parts.length - 1]
             .replace(/\s*[(].*/, '')
             .replace(/\s*at\s*/, '');
+        var pathParts = path.matchAll(new RegExp('(.*)\/(.+?)(?:\.[^\.]*$|$)', 'g'));
+        var moduleName = Array.from(pathParts)[0][2];
+        if (!moduleName) {
+            return defaultLabel();
+        }
+        return moduleName;
     }
     function createReduxDevToolsLogger(lnk, assignedId, onBreakpoint) {
         var fromRemote = false;

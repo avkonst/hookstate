@@ -4,7 +4,7 @@
         "src"
     ],
     "compilerOptions": {
-        "lib": ["dom"],
+        "lib": ["dom", "ES2020.String"],
         "jsx": "react",
         "allowJs": false,
         "declaration": true,
