@@ -97,10 +97,7 @@ function DevToolsInitializeInternal() {
         
         let dummyError: { stack?: string } = {}
         if ('stackTraceLimit' in Error && 'captureStackTrace' in Error) {
-            const oldLimit = Error.stackTraceLimit
-            Error.stackTraceLimit = 6;
-            Error.captureStackTrace(dummyError, SettingsState.attach)
-            Error.stackTraceLimit = oldLimit;
+            Error.captureStackTrace(dummyError)
         }
         const s = dummyError.stack;
         if (!s) {
@@ -110,9 +107,14 @@ function DevToolsInitializeInternal() {
         if (parts.length < 3) {
             return defaultLabel()
         }
-        return parts[2]
+        const path = parts[parts.length-1]
             .replace(/\s*[(].*/, '')
             .replace(/\s*at\s*/, '')
+        const moduleName = Array.from(path.matchAll(/(.*)\/(.+?)(?:\.[^\.]*$|$)/g))[0][2]
+        if (!moduleName) {
+            return defaultLabel()
+        }
+        return moduleName
     }
     
     function createReduxDevToolsLogger(
