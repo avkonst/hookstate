@@ -569,12 +569,44 @@ export function useHookstate<S>(
     } else {
         // Local state mount
         // eslint-disable-next-line react-hooks/rules-of-hooks
-        const [value, setValue] = React.useState(() => ({ state: createStore(source) }));
-        const result = useSubscribedStateMethods<S>(
-            value.state,
-            RootPath,
-            () => setValue({ state: value.state }),
-            value.state);
+        const [value, setValue] = React.useState<{
+            store: Store,
+            state: StateMethodsImpl<S>
+        }>(() => {
+            let store = createStore(source)
+            let state = new StateMethodsImpl<S>(
+                store,
+                RootPath,
+                store.get(RootPath),
+                store.edition,
+                () => {}
+                // () => setValue({
+                //     store: value.store,
+                //     state: value.state,
+                // }),
+            );
+            store.subscribe(state);
+            return {
+                store: store,
+                state: state
+            }
+        });
+        value.state.reconstruct(
+            value.store.get(RootPath),
+            value.store.edition,
+            () => setValue({
+                store: value.store,
+                state: value.state,
+            })
+        );
+        useIsomorphicLayoutEffect(() => {
+            // value.state.onMount()
+            // value.store.subscribe(value.state);
+            return () => {
+                value.state.onUnmount()
+                value.store.unsubscribe(value.state);
+            }
+        }, []);
 
         if (isDevelopmentMode) {
             // This is a workaround for the issue:
@@ -588,16 +620,16 @@ export function useHookstate<S>(
                 isEffectExecutedAfterRender.current = true; // ... and now, yes!
                 // The state is not destroyed intentionally
                 // under hot reload case.
-                return () => { isEffectExecutedAfterRender.current && value.state.destroy() }
+                return () => { isEffectExecutedAfterRender.current && value.store.destroy() }
             });
         } else {
-            React.useEffect(() => () => value.state.destroy(), []);
+            React.useEffect(() => () => value.store.destroy(), []);
         }
         const devtools = useState[DevToolsID]
         if (devtools) {
-            result.attach(devtools)
+            value.state.attach(devtools)
         }
-        return result.self;
+        return value.state.self;
     }
 }
 
@@ -749,7 +781,7 @@ class StateInvalidUsageError extends Error {
 }
 
 interface Subscriber {
-    onSet(paths: Path[], actions: (() => void)[]): void;
+    onSet(paths: Path[], actions: (() => void)[]): boolean;
 }
 
 interface Subscribable {
@@ -969,6 +1001,7 @@ class Store implements Subscribable {
 
         const actions: (() => void)[] = [];
         this._subscribers.forEach(s => s.onSet(paths, actions));
+        // TODO action can be duplicate, so we can distinct them before calling
         actions.forEach(a => a());
     }
 
@@ -1127,9 +1160,25 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         public readonly path: Path,
         private valueSource: S,
         private valueEdition: number,
-        private readonly onSetUsed: () => void
+        private onSetUsed: () => void
     ) { }
 
+    reconstruct(valueSource: S, valueEdition: number, onSetUsed: () => void) {
+        this.valueSource = valueSource;
+        this.valueEdition = valueEdition;
+        this.onSetUsed = onSetUsed;
+        
+        this.valueCache = ValueUnusedMarker;
+        delete this.isDowngraded;
+        delete this.subscribers;
+
+        this.selfCache = this.selfCache;
+        
+        delete this.childrenCache;
+        // if (this.childrenCache) {
+        // }
+    }
+    
     getUntracked(allowPromised?: boolean) {
         if (this.valueEdition !== this.state.edition) {
             this.valueSource = this.state.get(this.path)
@@ -1283,11 +1332,17 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
     }
 
     unsubscribe(l: Subscriber) {
-        this.subscribers!.delete(l);
+        if (this.subscribers) {
+            this.subscribers.delete(l);
+        }
     }
     
     get isMounted(): boolean {
         return !this.onSetUsed[UnmountedMarker]
+    }
+
+    onMount() {
+        delete this.onSetUsed[UnmountedMarker];
     }
 
     onUnmount() {
@@ -1298,18 +1353,23 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         const update = () => {
             if (this.isDowngraded && this.valueCache !== ValueUnusedMarker) {
                 actions.push(this.onSetUsed);
+                delete this.selfCache;
                 return true;
             }
             for (let path of paths) {
-                const firstChildKey = path[this.path.length];
-                if (firstChildKey === undefined) {
+                const nextChildKey = path[this.path.length];
+                if (nextChildKey === undefined) {
+                    // There is no next child to dive into
+                    // So it is this one which was updated
                     if (this.valueCache !== ValueUnusedMarker) {
                         actions.push(this.onSetUsed);
+                        delete this.selfCache;
                         return true;
                     }
                 } else {
-                    const firstChildValue = this.childrenCache && this.childrenCache[firstChildKey];
-                    if (firstChildValue && firstChildValue.onSet(paths, actions)) {
+                    const nextChild = this.childrenCache && this.childrenCache[nextChildKey];
+                    if (nextChild && nextChild.onSet(paths, actions)) {
+                        delete this.selfCache;
                         return true;
                     }
                 }
@@ -1320,7 +1380,9 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         const updated = update();
         if (!updated && this.subscribers !== undefined) {
             this.subscribers.forEach(s => {
-                s.onSet(paths, actions)
+                if (s.onSet(paths, actions)) {
+                    delete this.selfCache;
+                }
             })
         }
         return updated;
@@ -1343,9 +1405,9 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         // we do not cache children to avoid unnecessary memory leaks
         if (this.isMounted) {
             this.childrenCache = this.childrenCache || {};
-            const cachehit = this.childrenCache[key];
-            if (cachehit) {
-                return cachehit;
+            const cachedChild = this.childrenCache[key];
+            if (cachedChild) {
+                return cachedChild;
             }
         }
         const r = new StateMethodsImpl(
@@ -1540,8 +1602,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         
         this.selfCache = proxyWrap(this.path, this.valueSource,
             () => {
-                this.get() // get latest & mark used
-                return this.valueSource
+                return this.get();
             },
             getter,
             (_, key, value) => {
@@ -1640,7 +1701,7 @@ function proxyWrap(
         targetBootstrap = {}
     }
     return new Proxy(targetBootstrap, {
-        getPrototypeOf: (target) => {
+        getPrototypeOf: (_target) => {
             // should satisfy the invariants:
             // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy/handler/getPrototypeOf#Invariants
             const targetReal = targetGetter()
@@ -1649,23 +1710,23 @@ function proxyWrap(
             }
             return Object.getPrototypeOf(targetReal);
         },
-        setPrototypeOf: (target, v) => {
+        setPrototypeOf: (_target, v) => {
             return onInvalidUsage(isValueProxy ?
                 ErrorId.SetPrototypeOf_State :
                 ErrorId.SetPrototypeOf_Value)
         },
-        isExtensible: (target) => {
+        isExtensible: (_target) => {
             // should satisfy the invariants:
             // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy/handler/isExtensible#Invariants
             return true; // required to satisfy the invariants of the getPrototypeOf
             // return Object.isExtensible(target);
         },
-        preventExtensions: (target) => {
+        preventExtensions: (_target) => {
             return onInvalidUsage(isValueProxy ?
                 ErrorId.PreventExtensions_State :
                 ErrorId.PreventExtensions_Value)
         },
-        getOwnPropertyDescriptor: (target, p) => {
+        getOwnPropertyDescriptor: (_target, p) => {
             const targetReal = targetGetter()
             if (targetReal === undefined || targetReal === null) {
                 return undefined;
@@ -1681,7 +1742,7 @@ function proxyWrap(
                 set: undefined
             };
         },
-        has: (target, p) => {
+        has: (_target, p) => {
             if (typeof p === 'symbol') {
                 return false;
             }
@@ -1693,17 +1754,17 @@ function proxyWrap(
         },
         get: propertyGetter,
         set: propertySetter,
-        deleteProperty: (target, p) => {
+        deleteProperty: (_target, p) => {
             return onInvalidUsage(isValueProxy ?
                 ErrorId.DeleteProperty_State :
                 ErrorId.DeleteProperty_Value)
         },
-        defineProperty: (target, p, attributes) => {
+        defineProperty: (_target, p, attributes) => {
             return onInvalidUsage(isValueProxy ?
                 ErrorId.DefineProperty_State :
                 ErrorId.DefineProperty_Value)
         },
-        ownKeys: (target) => {
+        ownKeys: (_target) => {
             const targetReal = targetGetter()
             if (Array.isArray(targetReal)) {
                 return Object.keys(targetReal).concat('length');
@@ -1713,12 +1774,12 @@ function proxyWrap(
             }
             return Object.keys(targetReal);
         },
-        apply: (target, thisArg, argArray?) => {
+        apply: (_target, thisArg, argArray?) => {
             return onInvalidUsage(isValueProxy ?
                 ErrorId.Apply_State:
                 ErrorId.Apply_Value)
         },
-        construct: (target, argArray, newTarget?) => {
+        construct: (_target, argArray, newTarget?) => {
             return onInvalidUsage(isValueProxy ?
                 ErrorId.Construct_State :
                 ErrorId.Construct_Value)
