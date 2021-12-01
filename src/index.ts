@@ -1365,6 +1365,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                     if (this.valueCache !== ValueUnusedMarker) {
                         actions.push(this.onSetUsed);
                         delete this.selfCache;
+                        delete this.childrenCache;
                         return true;
                     }
                 } else {
