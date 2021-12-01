@@ -1151,6 +1151,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
     private subscribers: Set<Subscriber> | undefined;
 
     private isDowngraded: boolean | undefined;
+    private children: Record<string | number, StateMethodsImpl<StateValueAtPath>> | undefined;
     private childrenCache: Record<string | number, StateMethodsImpl<StateValueAtPath>> | undefined;
     private selfCache: State<S> | undefined;
     private valueCache: StateValueAtPath = ValueUnusedMarker;
@@ -1174,9 +1175,8 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
 
         this.selfCache = this.selfCache;
         
+        this.children = this.childrenCache;
         delete this.childrenCache;
-        // if (this.childrenCache) {
-        // }
     }
     
     getUntracked(allowPromised?: boolean) {
@@ -1203,6 +1203,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                 // We take this opportunity to clean up caches
                 // to avoid memory leaks via stale children states cache.
                 this.valueCache = ValueUnusedMarker
+                // TODO what do we need to do with this.children here?
                 delete this.childrenCache
                 delete this.selfCache
             }
@@ -1410,13 +1411,26 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                 return cachedChild;
             }
         }
-        const r = new StateMethodsImpl(
-            this.state,
-            this.path.slice().concat(key),
-            this.valueSource[key],
-            this.valueEdition,
-            this.onSetUsed,
-        )
+        this.children = this.children || {};
+        const child = this.children[key];
+        let r;
+        if (child) {
+            child.reconstruct(
+                this.valueSource[key],
+                this.valueEdition,
+                this.onSetUsed
+            )
+            r = child;
+        } else {
+            r = new StateMethodsImpl(
+                this.state,
+                this.path.slice().concat(key),
+                this.valueSource[key],
+                this.valueEdition,
+                this.onSetUsed,
+            )
+            this.children[key] = r;
+        }
         if (this.isDowngraded) {
             r.isDowngraded = true;
         }
