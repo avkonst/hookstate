@@ -555,12 +555,40 @@ export function useHookstate<S>(
         } else {
             // Global state mount or destroyed link
             // eslint-disable-next-line react-hooks/rules-of-hooks
-            const [value, setValue] = React.useState({ state: parentMethods.state });
-            let state =  useSubscribedStateMethods<StateValueAtRoot>(
-                value.state,
-                RootPath,
-                () => setValue({ state: value.state }),
-                value.state).self;
+            const [value, setValue] = React.useState<{
+                store: Store,
+                state: StateMethodsImpl<S>
+            }>(() => {
+                let store = parentMethods.state
+                let state = new StateMethodsImpl<S>(
+                    store,
+                    RootPath,
+                    store.get(RootPath),
+                    store.edition,
+                    () => {}
+                );
+                store.subscribe(state);
+                return {
+                    store: store,
+                    state: state
+                }
+            });
+            value.state.reconstruct(
+                value.store.get(RootPath),
+                value.store.edition,
+                () => setValue({
+                    store: value.store,
+                    state: value.state,
+                })
+            );
+            useIsomorphicLayoutEffect(() => {
+                return () => {
+                    value.state.onUnmount()
+                    value.store.unsubscribe(value.state);
+                }
+            }, []);
+            
+            let state: State<StateValueAtPath> =  value.state.self;
             for (let ind = 0; ind < parentMethods.path.length; ind += 1) {
                 state = state.nested(parentMethods.path[ind]);
             }
@@ -580,10 +608,6 @@ export function useHookstate<S>(
                 store.get(RootPath),
                 store.edition,
                 () => {}
-                // () => setValue({
-                //     store: value.store,
-                //     state: value.state,
-                // }),
             );
             store.subscribe(state);
             return {
@@ -600,8 +624,6 @@ export function useHookstate<S>(
             })
         );
         useIsomorphicLayoutEffect(() => {
-            // value.state.onMount()
-            // value.store.subscribe(value.state);
             return () => {
                 value.state.onUnmount()
                 value.store.unsubscribe(value.state);
