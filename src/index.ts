@@ -546,12 +546,40 @@ export function useHookstate<S>(
         if (parentMethods.isMounted) {
             // Scoped state mount
             // eslint-disable-next-line react-hooks/rules-of-hooks
-            const [, setValue] = React.useState({});
-            return useSubscribedStateMethods<S>(
-                parentMethods.state,
-                parentMethods.path,
-                () => setValue({}),
-                parentMethods).self;
+            const [value, setValue] = React.useState<{
+                store: Store,
+                state: StateMethodsImpl<S>
+            }>(() => {
+                let store = parentMethods.state
+                let state = new StateMethodsImpl<S>(
+                    store,
+                    parentMethods.path,
+                    store.get(parentMethods.path),
+                    store.edition,
+                    () => {}
+                );
+                parentMethods.subscribe(state);
+                return {
+                    store: store,
+                    state: state
+                }
+            });
+            value.state.reconstruct(
+                value.store.get(parentMethods.path),
+                value.store.edition,
+                () => setValue({
+                    store: value.store,
+                    state: value.state,
+                })
+            );
+            useIsomorphicLayoutEffect(() => {
+                return () => {
+                    value.state.onUnmount()
+                    parentMethods.unsubscribe(value.state);
+                }
+            }, []);
+            
+            return value.state.self;
         } else {
             // Global state mount or destroyed link
             // eslint-disable-next-line react-hooks/rules-of-hooks
