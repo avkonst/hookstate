@@ -200,6 +200,51 @@ test('object: should rerender stable (global)', async () => {
     expect(result.current[1].b !== state1b).toBeTruthy();
 });
 
+test('object: should rerender stable with deep mutation (global)', async () => {
+    let renderTimes = 0
+    let gs0 = createState({a: {b: {c: 0}, d: {}}})
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useState(gs0)
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(result.current.a.get().b.c).toStrictEqual(0);
+
+    let state0 = result.current;
+    let state0a = result.current.a; 
+    let state0ab = result.current.a.b;
+    let state0abc = result.current.a.b.c;
+    let state0ad = result.current.a.d;
+    expect(state0.a === state0a).toBeTruthy();
+    expect(state0.a.b === state0ab).toBeTruthy();
+    expect(state0.a.b.c === state0abc).toBeTruthy();
+    expect(state0.a.d === state0ad).toBeTruthy();
+    act(() => {
+        result.current.a.b.c.set(42);
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(result.current !== state0).toBeTruthy();
+    expect(result.current.a !== state0a).toBeTruthy();
+    expect(result.current.a.b !== state0ab).toBeTruthy();
+    expect(result.current.a.b.c !== state0abc).toBeTruthy();
+    expect(result.current.a.b.c.get()).toStrictEqual(42);
+    expect(result.current.a.d === state0ad).toBeTruthy();
+    expect(state0abc.get()).toStrictEqual(42);
+
+    state0 = result.current;
+    state0a = result.current.a; 
+    state0ab = result.current.a.b;
+    state0abc = result.current.a.b.c;
+    state0ad = result.current.a.d;
+    act(() => {});
+    expect(result.current === state0).toBeTruthy();
+    expect(result.current.a === state0a).toBeTruthy();
+    expect(result.current.a.b === state0ab).toBeTruthy();
+    expect(result.current.a.b.c === state0abc).toBeTruthy();
+    expect(result.current.a.b.c.get()).toStrictEqual(42);
+    expect(result.current.a.d === state0ad).toBeTruthy();
+});
+
 test('object: should rerender stable nested update (global)', async () => {
     let renderTimes = 0
     let gs0 = createState({a: 0, b: 0})
