@@ -211,7 +211,7 @@ test('primitive: stale state should auto refresh', async () => {
     expect(renderTimes).toStrictEqual(2);
     expect(result.current.get()).toStrictEqual(1);
     
-    await new Promise(resolve => setTimeout(() => resolve(), 110));
+    await new Promise(resolve => setTimeout(() => resolve(0), 110));
     expect(renderTimes).toStrictEqual(3);
     expect(result.current.get()).toStrictEqual(2);
     

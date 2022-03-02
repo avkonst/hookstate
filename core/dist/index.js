@@ -2,9 +2,11 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
-function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
+var React = require('react');
 
-var React = _interopDefault(require('react'));
+function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
+
+var React__default = /*#__PURE__*/_interopDefaultLegacy(React);
 
 /*! *****************************************************************************
 Copyright (c) Microsoft Corporation.
@@ -100,7 +102,7 @@ function useHookstate(source) {
         if (parentMethods.isMounted) {
             // Scoped state mount
             // eslint-disable-next-line react-hooks/rules-of-hooks
-            var _a = React.useState(function () {
+            var _a = React__default["default"].useState(function () {
                 var store = parentMethods.state;
                 var state = new StateMethodsImpl(store, parentMethods.path, store.get(parentMethods.path), store.edition, function () { });
                 parentMethods.subscribe(state);
@@ -124,7 +126,7 @@ function useHookstate(source) {
         else {
             // Global state mount or destroyed link
             // eslint-disable-next-line react-hooks/rules-of-hooks
-            var _b = React.useState(function () {
+            var _b = React__default["default"].useState(function () {
                 var store = parentMethods.state;
                 var state = new StateMethodsImpl(store, RootPath, store.get(RootPath), store.edition, function () { });
                 store.subscribe(state);
@@ -153,7 +155,7 @@ function useHookstate(source) {
     else {
         // Local state mount
         // eslint-disable-next-line react-hooks/rules-of-hooks
-        var _c = React.useState(function () {
+        var _c = React__default["default"].useState(function () {
             var store = createStore(source);
             var state = new StateMethodsImpl(store, RootPath, store.get(RootPath), store.edition, function () { });
             store.subscribe(state);
@@ -177,9 +179,9 @@ function useHookstate(source) {
             // https://github.com/avkonst/hookstate/issues/109
             // See technical notes on React behavior here:
             // https://github.com/apollographql/apollo-client/issues/5870#issuecomment-689098185
-            var isEffectExecutedAfterRender_1 = React.useRef(false);
+            var isEffectExecutedAfterRender_1 = React__default["default"].useRef(false);
             isEffectExecutedAfterRender_1.current = false; // not yet...
-            React.useEffect(function () {
+            React__default["default"].useEffect(function () {
                 isEffectExecutedAfterRender_1.current = true; // ... and now, yes!
                 // The state is not destroyed intentionally
                 // under hot reload case.
@@ -187,7 +189,7 @@ function useHookstate(source) {
             });
         }
         else {
-            React.useEffect(function () { return function () { return value_3.store.destroy(); }; }, []);
+            React__default["default"].useEffect(function () { return function () { return value_3.store.destroy(); }; }, []);
         }
         var devtools = useState[DevToolsID];
         if (devtools) {
@@ -281,8 +283,8 @@ var ErrorId;
 var StateInvalidUsageError = /** @class */ (function (_super) {
     __extends(StateInvalidUsageError, _super);
     function StateInvalidUsageError(path, id, details) {
-        return _super.call(this, "Error: HOOKSTATE-" + id + " [path: /" + path.join('/') + (details ? ", details: " + details : '') + "]. " +
-            ("See https://hookstate.js.org/docs/exceptions#hookstate-" + id)) || this;
+        return _super.call(this, "Error: HOOKSTATE-".concat(id, " [path: /").concat(path.join('/')).concat(details ? ", details: ".concat(details) : '', "]. ") +
+            "See https://hookstate.js.org/docs/exceptions#hookstate-".concat(id)) || this;
     }
     return StateInvalidUsageError;
 }(Error));
@@ -1226,7 +1228,7 @@ function createStore(initial) {
     return new Store(initialValue);
 }
 // Do not try to use useLayoutEffect if DOM not available (SSR)
-var useIsomorphicLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
+var useIsomorphicLayoutEffect = typeof window !== 'undefined' ? React__default["default"].useLayoutEffect : React__default["default"].useEffect;
 
 exports.DevTools = DevTools;
 exports.DevToolsID = DevToolsID;

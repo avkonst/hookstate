@@ -26,7 +26,7 @@ test('error: should not allow create state from another state value', async () =
         return useState(state1.result.current.get().prop1)
     })
 
-    expect(state2.result.error.message)
+    expect(state2.result.error?.message)
         // tslint:disable-next-line: max-line-length
         .toEqual(`Error: HOOKSTATE-101 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-101`)
 });
@@ -44,7 +44,7 @@ test('error: should not allow create state from another state value (nested)', a
         return useState(state2.result.current.prop1.get())
     })
 
-    expect(state3.result.error.message)
+    expect(state3.result.error?.message)
         // tslint:disable-next-line: max-line-length
         .toEqual(`Error: HOOKSTATE-101 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-101`)
 });

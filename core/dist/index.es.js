@@ -275,8 +275,8 @@ var ErrorId;
 var StateInvalidUsageError = /** @class */ (function (_super) {
     __extends(StateInvalidUsageError, _super);
     function StateInvalidUsageError(path, id, details) {
-        return _super.call(this, "Error: HOOKSTATE-" + id + " [path: /" + path.join('/') + (details ? ", details: " + details : '') + "]. " +
-            ("See https://hookstate.js.org/docs/exceptions#hookstate-" + id)) || this;
+        return _super.call(this, "Error: HOOKSTATE-".concat(id, " [path: /").concat(path.join('/')).concat(details ? ", details: ".concat(details) : '', "]. ") +
+            "See https://hookstate.js.org/docs/exceptions#hookstate-".concat(id)) || this;
     }
     return StateInvalidUsageError;
 }(Error));

@@ -351,7 +351,7 @@ test('primitive: should rerender used on promise resolve init', async () => {
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
 
     await act(async () => {
-        await new Promise(resolve => setTimeout(() => act(() => resolve()), 600));
+        await new Promise(resolve => setTimeout(() => act(() => resolve(0)), 600));
     })
     expect(renderTimes).toStrictEqual(2);
     expect(result.current.promised).toStrictEqual(false);
@@ -377,7 +377,7 @@ test('primitive: should rerender used on promise resolve init global', async () 
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
 
     await act(async () => {
-        await new Promise(resolve => setTimeout(() => act(() => resolve()), 600));
+        await new Promise(resolve => setTimeout(() => act(() => resolve(0)), 600));
     })
     expect(renderTimes).toStrictEqual(2);
     expect(result.current.promised).toStrictEqual(false);
@@ -404,7 +404,7 @@ test('primitive: should rerender used on promise reject init global', async () =
 
     try {
         await act(async () => {
-            await new Promise(resolve => setTimeout(() => act(() => resolve()), 600));
+            await new Promise(resolve => setTimeout(() => act(() => resolve(0)), 600));
         })
     } catch (err) {
         //
@@ -435,7 +435,7 @@ test('primitive: should set after promise reject', async () => {
 
     try {
         await act(async () => {
-            await new Promise(resolve => setTimeout(() => act(() => resolve()), 600));
+            await new Promise(resolve => setTimeout(() => act(() => resolve(0)), 600));
         })
     } catch (err) {
         //
