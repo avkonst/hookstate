@@ -1,6 +1,6 @@
 {
     "name": "@hookstate/core",
-    "version": "4.0.0-RC",
+    "version": "4.0.0-rc.2",
     "description": "The flexible, fast and extendable state management for React that is based on hooks and state usage tracking.",
     "license": "MIT",
     "author": {
@@ -16,6 +16,7 @@
     "main": "dist/index.js",
     "module": "dist/index.es.js",
     "jsnext:main": "dist/index.es.js",
+    "types": "dist/index.d.ts",
     "engines": {
         "node": ">=8",
         "npm": ">=5"
@@ -28,9 +29,6 @@
         "test": "cross-env CI=1 jest --env=jsdom",
         "test:w": "jest --env=jsdom --watch",
         "update": "ncu -u",
-        "publish-major": "pnpm publish --major --no-git-tag-version",
-        "publish-minor": "pnpm publish --minor --no-git-tag-version",
-        "publish-patch": "pnpm publish --patch --no-git-tag-version",
         "prepare": "pnpm build"
     },
     "peerDependencies": {
