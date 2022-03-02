@@ -2,8 +2,9 @@ language: node_js
 node_js:
   - stable
 scripts:
-  - npm install codecov -g
-  - yarn install
-  - yarn test -- --coverage
+  - npm install -g pnpm
+  - pnpm install codecov -g
+  - pnpm install
+  - pnpm test -- --coverage
 after_success:
   - codecov -e TRAVIS_NODE_VERSION

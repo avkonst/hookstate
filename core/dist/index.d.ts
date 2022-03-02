@@ -530,3 +530,4 @@ export interface DevToolsExtensions {
  * @typeparam S Type of a value of a state
  */
 export declare function DevTools<S>(state: State<S>): DevToolsExtensions;
+//# sourceMappingURL=index.d.ts.map

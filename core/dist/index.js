@@ -1,4 +1,10 @@
-import React from 'react';
+'use strict';
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
+
+var React = _interopDefault(require('react'));
 
 /*! *****************************************************************************
 Copyright (c) Microsoft Corporation.
@@ -1222,5 +1228,13 @@ function createStore(initial) {
 // Do not try to use useLayoutEffect if DOM not available (SSR)
 var useIsomorphicLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
 
-export { DevTools, DevToolsID, Downgraded, StateFragment, createState, none, postpone, useHookstate, useState };
-//# sourceMappingURL=index.es.js.map
+exports.DevTools = DevTools;
+exports.DevToolsID = DevToolsID;
+exports.Downgraded = Downgraded;
+exports.StateFragment = StateFragment;
+exports.createState = createState;
+exports.none = none;
+exports.postpone = postpone;
+exports.useHookstate = useHookstate;
+exports.useState = useState;
+//# sourceMappingURL=index.js.map
