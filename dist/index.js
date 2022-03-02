@@ -7,29 +7,31 @@ function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'defau
 var React = _interopDefault(require('react'));
 
 /*! *****************************************************************************
-Copyright (c) Microsoft Corporation. All rights reserved.
-Licensed under the Apache License, Version 2.0 (the "License"); you may not use
-this file except in compliance with the License. You may obtain a copy of the
-License at http://www.apache.org/licenses/LICENSE-2.0
+Copyright (c) Microsoft Corporation.
 
-THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
-WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
-MERCHANTABLITY OR NON-INFRINGEMENT.
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted.
 
-See the Apache Version 2.0 License for specific language governing permissions
-and limitations under the License.
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
 ***************************************************************************** */
 /* global Reflect, Promise */
 
 var extendStatics = function(d, b) {
     extendStatics = Object.setPrototypeOf ||
         ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+        function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
     return extendStatics(d, b);
 };
 
 function __extends(d, b) {
+    if (typeof b !== "function" && b !== null)
+        throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
     extendStatics(d, b);
     function __() { this.constructor = d; }
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
@@ -98,14 +100,50 @@ function useHookstate(source) {
         if (parentMethods.isMounted) {
             // Scoped state mount
             // eslint-disable-next-line react-hooks/rules-of-hooks
-            var _a = React.useState({}), setValue_1 = _a[1];
-            return useSubscribedStateMethods(parentMethods.state, parentMethods.path, function () { return setValue_1({}); }, parentMethods).self;
+            var _a = React.useState(function () {
+                var store = parentMethods.state;
+                var state = new StateMethodsImpl(store, parentMethods.path, store.get(parentMethods.path), store.edition, function () { });
+                parentMethods.subscribe(state);
+                return {
+                    store: store,
+                    state: state
+                };
+            }), value_1 = _a[0], setValue_1 = _a[1];
+            value_1.state.reconstruct(value_1.store.get(parentMethods.path), value_1.store.edition, function () { return setValue_1({
+                store: value_1.store,
+                state: value_1.state,
+            }); });
+            useIsomorphicLayoutEffect(function () {
+                return function () {
+                    value_1.state.onUnmount();
+                    parentMethods.unsubscribe(value_1.state);
+                };
+            }, []);
+            return value_1.state.self;
         }
         else {
             // Global state mount or destroyed link
             // eslint-disable-next-line react-hooks/rules-of-hooks
-            var _b = React.useState({ state: parentMethods.state }), value_1 = _b[0], setValue_2 = _b[1];
-            var state = useSubscribedStateMethods(value_1.state, RootPath, function () { return setValue_2({ state: value_1.state }); }, value_1.state).self;
+            var _b = React.useState(function () {
+                var store = parentMethods.state;
+                var state = new StateMethodsImpl(store, RootPath, store.get(RootPath), store.edition, function () { });
+                store.subscribe(state);
+                return {
+                    store: store,
+                    state: state
+                };
+            }), value_2 = _b[0], setValue_2 = _b[1];
+            value_2.state.reconstruct(value_2.store.get(RootPath), value_2.store.edition, function () { return setValue_2({
+                store: value_2.store,
+                state: value_2.state,
+            }); });
+            useIsomorphicLayoutEffect(function () {
+                return function () {
+                    value_2.state.onUnmount();
+                    value_2.store.unsubscribe(value_2.state);
+                };
+            }, []);
+            var state = value_2.state.self;
             for (var ind = 0; ind < parentMethods.path.length; ind += 1) {
                 state = state.nested(parentMethods.path[ind]);
             }
@@ -115,8 +153,25 @@ function useHookstate(source) {
     else {
         // Local state mount
         // eslint-disable-next-line react-hooks/rules-of-hooks
-        var _c = React.useState(function () { return ({ state: createStore(source) }); }), value_2 = _c[0], setValue_3 = _c[1];
-        var result = useSubscribedStateMethods(value_2.state, RootPath, function () { return setValue_3({ state: value_2.state }); }, value_2.state);
+        var _c = React.useState(function () {
+            var store = createStore(source);
+            var state = new StateMethodsImpl(store, RootPath, store.get(RootPath), store.edition, function () { });
+            store.subscribe(state);
+            return {
+                store: store,
+                state: state
+            };
+        }), value_3 = _c[0], setValue_3 = _c[1];
+        value_3.state.reconstruct(value_3.store.get(RootPath), value_3.store.edition, function () { return setValue_3({
+            store: value_3.store,
+            state: value_3.state,
+        }); });
+        useIsomorphicLayoutEffect(function () {
+            return function () {
+                value_3.state.onUnmount();
+                value_3.store.unsubscribe(value_3.state);
+            };
+        }, []);
         if (isDevelopmentMode) {
             // This is a workaround for the issue:
             // https://github.com/avkonst/hookstate/issues/109
@@ -128,17 +183,17 @@ function useHookstate(source) {
                 isEffectExecutedAfterRender_1.current = true; // ... and now, yes!
                 // The state is not destroyed intentionally
                 // under hot reload case.
-                return function () { isEffectExecutedAfterRender_1.current && value_2.state.destroy(); };
+                return function () { isEffectExecutedAfterRender_1.current && value_3.store.destroy(); };
             });
         }
         else {
-            React.useEffect(function () { return function () { return value_2.state.destroy(); }; }, []);
+            React.useEffect(function () { return function () { return value_3.store.destroy(); }; }, []);
         }
         var devtools = useState[DevToolsID];
         if (devtools) {
-            result.attach(devtools);
+            value_3.state.attach(devtools);
         }
-        return result.self;
+        return value_3.state.self;
     }
 }
 function StateFragment(props) {
@@ -421,6 +476,7 @@ var Store = /** @class */ (function () {
         }
         var actions = [];
         this._subscribers.forEach(function (s) { return s.onSet(paths, actions); });
+        // TODO action can be duplicate, so we can distinct them before calling
         actions.forEach(function (a) { return a(); });
     };
     Store.prototype.afterSet = function (params) {
@@ -548,6 +604,17 @@ var StateMethodsImpl = /** @class */ (function () {
         this.onSetUsed = onSetUsed;
         this.valueCache = ValueUnusedMarker;
     }
+    StateMethodsImpl.prototype.reconstruct = function (valueSource, valueEdition, onSetUsed) {
+        this.valueSource = valueSource;
+        this.valueEdition = valueEdition;
+        this.onSetUsed = onSetUsed;
+        this.valueCache = ValueUnusedMarker;
+        delete this.isDowngraded;
+        delete this.subscribers;
+        this.selfCache = this.selfCache;
+        this.children = this.childrenCache;
+        delete this.childrenCache;
+    };
     StateMethodsImpl.prototype.getUntracked = function (allowPromised) {
         if (this.valueEdition !== this.state.edition) {
             this.valueSource = this.state.get(this.path);
@@ -572,6 +639,7 @@ var StateMethodsImpl = /** @class */ (function () {
                 // We take this opportunity to clean up caches
                 // to avoid memory leaks via stale children states cache.
                 this.valueCache = ValueUnusedMarker;
+                // TODO what do we need to do with this.children here?
                 delete this.childrenCache;
                 delete this.selfCache;
             }
@@ -700,7 +768,9 @@ var StateMethodsImpl = /** @class */ (function () {
         this.subscribers.add(l);
     };
     StateMethodsImpl.prototype.unsubscribe = function (l) {
-        this.subscribers.delete(l);
+        if (this.subscribers) {
+            this.subscribers.delete(l);
+        }
     };
     Object.defineProperty(StateMethodsImpl.prototype, "isMounted", {
         get: function () {
@@ -709,6 +779,9 @@ var StateMethodsImpl = /** @class */ (function () {
         enumerable: false,
         configurable: true
     });
+    StateMethodsImpl.prototype.onMount = function () {
+        delete this.onSetUsed[UnmountedMarker];
+    };
     StateMethodsImpl.prototype.onUnmount = function () {
         this.onSetUsed[UnmountedMarker] = true;
     };
@@ -717,20 +790,26 @@ var StateMethodsImpl = /** @class */ (function () {
         var update = function () {
             if (_this.isDowngraded && _this.valueCache !== ValueUnusedMarker) {
                 actions.push(_this.onSetUsed);
+                delete _this.selfCache;
                 return true;
             }
             for (var _i = 0, paths_1 = paths; _i < paths_1.length; _i++) {
                 var path = paths_1[_i];
-                var firstChildKey = path[_this.path.length];
-                if (firstChildKey === undefined) {
+                var nextChildKey = path[_this.path.length];
+                if (nextChildKey === undefined) {
+                    // There is no next child to dive into
+                    // So it is this one which was updated
                     if (_this.valueCache !== ValueUnusedMarker) {
                         actions.push(_this.onSetUsed);
+                        delete _this.selfCache;
+                        delete _this.childrenCache;
                         return true;
                     }
                 }
                 else {
-                    var firstChildValue = _this.childrenCache && _this.childrenCache[firstChildKey];
-                    if (firstChildValue && firstChildValue.onSet(paths, actions)) {
+                    var nextChild = _this.childrenCache && _this.childrenCache[nextChildKey];
+                    if (nextChild && nextChild.onSet(paths, actions)) {
+                        delete _this.selfCache;
                         return true;
                     }
                 }
@@ -740,7 +819,9 @@ var StateMethodsImpl = /** @class */ (function () {
         var updated = update();
         if (!updated && this.subscribers !== undefined) {
             this.subscribers.forEach(function (s) {
-                s.onSet(paths, actions);
+                if (s.onSet(paths, actions)) {
+                    delete _this.selfCache;
+                }
             });
         }
         return updated;
@@ -764,12 +845,22 @@ var StateMethodsImpl = /** @class */ (function () {
         // we do not cache children to avoid unnecessary memory leaks
         if (this.isMounted) {
             this.childrenCache = this.childrenCache || {};
-            var cachehit = this.childrenCache[key];
-            if (cachehit) {
-                return cachehit;
+            var cachedChild = this.childrenCache[key];
+            if (cachedChild) {
+                return cachedChild;
             }
         }
-        var r = new StateMethodsImpl(this.state, this.path.slice().concat(key), this.valueSource[key], this.valueEdition, this.onSetUsed);
+        this.children = this.children || {};
+        var child = this.children[key];
+        var r;
+        if (child) {
+            child.reconstruct(this.valueSource[key], this.valueEdition, this.onSetUsed);
+            r = child;
+        }
+        else {
+            r = new StateMethodsImpl(this.state, this.path.slice().concat(key), this.valueSource[key], this.valueEdition, this.onSetUsed);
+            this.children[key] = r;
+        }
         if (this.isDowngraded) {
             r.isDowngraded = true;
         }
@@ -939,8 +1030,7 @@ var StateMethodsImpl = /** @class */ (function () {
                 return this.selfCache;
             }
             this.selfCache = proxyWrap(this.path, this.valueSource, function () {
-                _this.get(); // get latest & mark used
-                return _this.valueSource;
+                return _this.get();
             }, getter, function (_, key, value) {
                 throw new StateInvalidUsageError(_this.path, ErrorId.SetProperty_State);
             }, false);
@@ -1040,7 +1130,7 @@ propertySetter, isValueProxy) {
         targetBootstrap = {};
     }
     return new Proxy(targetBootstrap, {
-        getPrototypeOf: function (target) {
+        getPrototypeOf: function (_target) {
             // should satisfy the invariants:
             // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy/handler/getPrototypeOf#Invariants
             var targetReal = targetGetter();
@@ -1049,23 +1139,23 @@ propertySetter, isValueProxy) {
             }
             return Object.getPrototypeOf(targetReal);
         },
-        setPrototypeOf: function (target, v) {
+        setPrototypeOf: function (_target, v) {
             return onInvalidUsage(isValueProxy ?
                 ErrorId.SetPrototypeOf_State :
                 ErrorId.SetPrototypeOf_Value);
         },
-        isExtensible: function (target) {
+        isExtensible: function (_target) {
             // should satisfy the invariants:
             // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy/handler/isExtensible#Invariants
             return true; // required to satisfy the invariants of the getPrototypeOf
             // return Object.isExtensible(target);
         },
-        preventExtensions: function (target) {
+        preventExtensions: function (_target) {
             return onInvalidUsage(isValueProxy ?
                 ErrorId.PreventExtensions_State :
                 ErrorId.PreventExtensions_Value);
         },
-        getOwnPropertyDescriptor: function (target, p) {
+        getOwnPropertyDescriptor: function (_target, p) {
             var targetReal = targetGetter();
             if (targetReal === undefined || targetReal === null) {
                 return undefined;
@@ -1081,7 +1171,7 @@ propertySetter, isValueProxy) {
                 set: undefined
             };
         },
-        has: function (target, p) {
+        has: function (_target, p) {
             if (typeof p === 'symbol') {
                 return false;
             }
@@ -1093,17 +1183,17 @@ propertySetter, isValueProxy) {
         },
         get: propertyGetter,
         set: propertySetter,
-        deleteProperty: function (target, p) {
+        deleteProperty: function (_target, p) {
             return onInvalidUsage(isValueProxy ?
                 ErrorId.DeleteProperty_State :
                 ErrorId.DeleteProperty_Value);
         },
-        defineProperty: function (target, p, attributes) {
+        defineProperty: function (_target, p, attributes) {
             return onInvalidUsage(isValueProxy ?
                 ErrorId.DefineProperty_State :
                 ErrorId.DefineProperty_Value);
         },
-        ownKeys: function (target) {
+        ownKeys: function (_target) {
             var targetReal = targetGetter();
             if (Array.isArray(targetReal)) {
                 return Object.keys(targetReal).concat('length');
@@ -1113,12 +1203,12 @@ propertySetter, isValueProxy) {
             }
             return Object.keys(targetReal);
         },
-        apply: function (target, thisArg, argArray) {
+        apply: function (_target, thisArg, argArray) {
             return onInvalidUsage(isValueProxy ?
                 ErrorId.Apply_State :
                 ErrorId.Apply_Value);
         },
-        construct: function (target, argArray, newTarget) {
+        construct: function (_target, argArray, newTarget) {
             return onInvalidUsage(isValueProxy ?
                 ErrorId.Construct_State :
                 ErrorId.Construct_Value);
@@ -1137,25 +1227,6 @@ function createStore(initial) {
 }
 // Do not try to use useLayoutEffect if DOM not available (SSR)
 var useIsomorphicLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
-function useSubscribedStateMethods(state, path, update, subscribeTarget) {
-    var link = new StateMethodsImpl(state, path, state.get(path), state.edition, update);
-    // useLayoutEffect here instead of useEffect because of this issue:
-    // https://github.com/avkonst/hookstate/issues/165#issuecomment-824670930
-    // and very likely this issue:
-    // https://github.com/avkonst/hookstate/issues/186
-    // and probably this issue:
-    // https://github.com/avkonst/hookstate/issues/145
-    // useIsomorphicLayout for below issue when page is SSR
-    // https://github.com/avkonst/hookstate/issues/223
-    useIsomorphicLayoutEffect(function () {
-        subscribeTarget.subscribe(link);
-        return function () {
-            link.onUnmount();
-            subscribeTarget.unsubscribe(link);
-        };
-    });
-    return link;
-}
 
 exports.DevTools = DevTools;
 exports.DevToolsID = DevToolsID;
