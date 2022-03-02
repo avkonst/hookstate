@@ -16,26 +16,20 @@
     "main": "dist/index.js",
     "module": "dist/index.es.js",
     "jsnext:main": "dist/index.es.js",
-    "engines": {
-        "node": ">=8",
-        "npm": ">=5"
-    },
+    "types": "dist/index.d.ts",
     "scripts": {
-        "start": "rollup -c -w",
         "build": "rollup -c",
-        "build:watch": "yarn run start",
-        "lint": "tslint --project .",
+        "build:w": "rollup -c -w",
+        "build:docs": "typedoc --plugin typedoc-plugin-markdown --hideBreadcrumbs --tsconfig ./tsconfig.typedoc.json --exclude \"dist/**.js\" --gitRevision master --includeDeclarations --excludeExternals --excludeNotExported --categorizeByGroup false --readme none --hideGenerator --mode file --out dist/docs && concat-md --decrease-title-levels --dir-name-as-title dist/docs > dist/typedoc.md && rimraf dist/docs && replace '></a>' '/>' dist/typedoc.md && replace 'Ƭ [*][*]([A-Za-z0-9]+)[*][*]: [*](.*)[*]' 'Ƭ **$1**: *`$2`*' dist/typedoc.md && replace 'Ƭ [*][*]State[*][*]: [*](.*)[*]' 'Ƭ **State**: *[StateMixin](#interfacesstatemixinmd) & `S extends object` ? `{ readonly [K in keyof Required<S>]: State<S[K]> }` : [StateMethods](#interfacesstatemethodsmd)*' dist/typedoc.md && replace '[(]statemethods.md#\\[self\\][)]' '(#self)' dist/typedoc.md && replace '[(]statemixin.md#\\[self\\][)]' '(#self-1)' dist/typedoc.md && replace '[(]statemixindestroy.md#\\[self\\][)]' '(#self-2)' dist/typedoc.md && replace '# @hookstate/core' '' dist/typedoc.md && replace '<a name=\"readmemd\"/>' '\n---\nid: typedoc-hookstate-core\ntitle: API @hookstate/core\n---' dist/typedoc.md && replace '\n\n(---)' '$1' dist/typedoc.md && mv dist/typedoc.md ../docs/index/docs/typedoc-hookstate-core.md",
         "clean": "rimraf dist",
-        "clean-deps": "rimraf node_modules",
-        "test": "cross-env CI=1 react-scripts test --env=jsdom",
-        "test:watch": "react-scripts test --env=jsdom",
-        "check-updates": "ncu",
-        "apply-updates": "ncu -u",
-        "prepare": "yarn build"
+        "test": "cross-env CI=1 jest --env=jsdom",
+        "test:w": "jest --env=jsdom --watch",
+        "update": "ncu -u",
+        "prepare": "pnpm build"
     },
     "dependencies": {},
     "peerDependencies": {
-        "@hookstate/core": "^3.0.0",
+        "@hookstate/core": "^3.0.0 || ^4.0.0",
         "@hookstate/initial": "^3.0.0",
         "lodash.clonedeep": "^4.5.0",
         "lodash.isequal": "^4.5.0"
