@@ -27,5 +27,5 @@
         "unmount",
         "untracked"
     ],
-    "jest.jestCommandLine": "yarn test:watch"
+    "jest.jestCommandLine": "pnpm jest"
 }
