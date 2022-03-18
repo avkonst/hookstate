@@ -30,7 +30,7 @@
     "dependencies": {},
     "peerDependencies": {
         "@hookstate/core": "^3.0.0 || ^4.0.0",
-        "@hookstate/initial": "^3.0.0",
+        "@hookstate/initial": "file:../Initial",
         "lodash.clonedeep": "^4.5.0",
         "lodash.isequal": "^4.5.0"
     },

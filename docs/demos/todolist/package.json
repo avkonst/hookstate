@@ -5,7 +5,7 @@
   "homepage": ".",
   "dependencies": {
     "@hookstate/core": "file:../../../core",
-    "@hookstate/devtools": "3.0.1",
+    "@hookstate/devtools": "file:../../../plugins/DevTools",
     "@types/jest": "27.4.1",
     "@types/node": "17.0.21",
     "@types/react": "17.0.40",
