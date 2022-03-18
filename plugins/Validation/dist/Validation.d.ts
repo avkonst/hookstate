@@ -16,3 +16,4 @@ export interface ValidationExtensions<S> {
 }
 export declare function Validation(): Plugin;
 export declare function Validation<S>($this: State<S>): ValidationExtensions<S>;
+//# sourceMappingURL=Validation.d.ts.map

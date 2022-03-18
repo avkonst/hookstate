@@ -6,19 +6,13 @@ module.exports = {
   favicon: 'img/favicon-32.png',
   projectName: 'avkonst/hookstate', // Usually your repo name.
   themeConfig: {
-    disableDarkMode: true,
     algolia: {
       // analytics overview
       // https://www.algolia.com/apps/BH4D9OD16A/analytics/overview
       apiKey: 'dcdff324d429abfd7d47357fc6919625',
       indexName: 'hookstate_js',
-      // appId: 'app-id', // Optional, if you run the DocSearch crawler on your own
+      appId: 'Q8EMF8ZB58', // Optional, if you run the DocSearch crawler on your own
       // algoliaOptions: {}, // Optional, if provided by Algolia
-    },
-    googleAnalytics: {
-      trackingID: 'UA-146415947-1',
-      // Optional fields.
-      anonymizeIP: true, // Should IPs be anonymized?
     },
     navbar: {
       title: 'Hookstate',
@@ -26,7 +20,7 @@ module.exports = {
         alt: 'Hookstate',
         src: 'img/favicon-196.png',
       },
-      links: [
+      items: [
         {to: 'docs/getting-started', label: 'Docs', position: 'left'},
         {to: 'blog', label: 'Blog', position: 'left'},
         {
@@ -97,6 +91,11 @@ module.exports = {
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
+        },
+        googleAnalytics: {
+          trackingID: 'UA-146415947-1',
+          // Optional fields.
+          anonymizeIP: true, // Should IPs be anonymized?
         },
       },
     ],

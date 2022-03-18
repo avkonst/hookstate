@@ -5,3 +5,4 @@ export interface TouchedExtensions {
 }
 export declare function Touched(): Plugin;
 export declare function Touched<S>($this: State<S>): TouchedExtensions;
+//# sourceMappingURL=Touched.d.ts.map
