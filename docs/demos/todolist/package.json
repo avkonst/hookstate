@@ -4,7 +4,7 @@
   "private": true,
   "homepage": ".",
   "dependencies": {
-    "@hookstate/core": "3.0.0",
+    "@hookstate/core": "file:../../../core",
     "@hookstate/devtools": "3.0.0",
     "@types/jest": "26.0.4",
     "@types/node": "14.0.23",
@@ -22,13 +22,7 @@
     "build-site": "react-scripts build && cp -r build ../../index/build/demo-todolist",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "update": "ncu -u",
-    "cy:open": "cypress open",
-    "cy:run": "cypress run",
-    "e2e":  "concurrently --success first --kill-others \"yarn start\" \"yarn cy:run\""
-  },
-  "eslintConfig": {
-    "extends": "react-app"
+    "update": "ncu -u"
   },
   "browserslist": {
     "production": [
@@ -41,9 +35,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },
-  "devDependencies": {
-    "concurrently": "^6.0.0",
-    "cypress": "6.8.0"
   }
 }
