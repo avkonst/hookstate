@@ -6,3 +6,4 @@ export interface InitialExtensions<S> {
 }
 export declare function Initial(): Plugin;
 export declare function Initial<S>($this: State<S>): InitialExtensions<S>;
+//# sourceMappingURL=Initial.d.ts.map

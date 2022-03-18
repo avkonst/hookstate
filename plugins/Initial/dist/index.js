@@ -2,11 +2,14 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
-function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
-
 var core = require('@hookstate/core');
-var isEqual = _interopDefault(require('lodash.isequal'));
-var cloneDeep = _interopDefault(require('lodash.clonedeep'));
+var isEqual = require('lodash.isequal');
+var cloneDeep = require('lodash.clonedeep');
+
+function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
+
+var isEqual__default = /*#__PURE__*/_interopDefaultLegacy(isEqual);
+var cloneDeep__default = /*#__PURE__*/_interopDefaultLegacy(cloneDeep);
 
 var InitialPluginInstance = /** @class */ (function () {
     function InitialPluginInstance(initialValue) {
@@ -20,9 +23,9 @@ var InitialPluginInstance = /** @class */ (function () {
         };
         this.getModified = function (l) {
             l.attach(core.Downgraded);
-            return !isEqual(l.value, _this.getInitial(l.path));
+            return !isEqual__default["default"](l.value, _this.getInitial(l.path));
         };
-        this.initialState = cloneDeep(initialValue);
+        this.initialState = cloneDeep__default["default"](initialValue);
     }
     return InitialPluginInstance;
 }());

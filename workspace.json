@@ -1,6 +1,7 @@
 {
 	"version": 2,
 	"projects": {
-		"core": "core"
+		"core": "core",
+		"initial": "plugins/Initial"
     }
 }
