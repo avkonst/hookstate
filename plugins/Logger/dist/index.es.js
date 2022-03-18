@@ -5,19 +5,19 @@ var LoggerPluginInstance = /** @class */ (function () {
         var limit = 100;
         var r = JSON.stringify(s);
         if (r && r.length > 100) {
-            return r.slice(0, limit) + "... (" + (r.length - limit) + " characters trunkated)";
+            return "".concat(r.slice(0, limit), "... (").concat(r.length - limit, " characters trunkated)");
         }
         return r;
     };
     LoggerPluginInstance.prototype.onSet = function (p) {
         // tslint:disable-next-line: no-console
-        console.log("[hookstate]: new value set at path '/" + p.path.join('/') + "': " +
-            ("" + this.toJsonTrimmed(p.value)), p);
+        console.log("[hookstate]: new value set at path '/".concat(p.path.join('/'), "': ") +
+            "".concat(this.toJsonTrimmed(p.value)), p);
     };
     LoggerPluginInstance.prototype.log = function (path, l) {
         // tslint:disable-next-line: no-console
-        return console.log("[hookstate]: current value at path '/" + path.join('/') + ": " +
-            (this.toJsonTrimmed(l.getUntracked()) + "'"), {
+        return console.log("[hookstate]: current value at path '/".concat(path.join('/'), ": ") +
+            "".concat(this.toJsonTrimmed(l.getUntracked()), "'"), {
             path: path,
             value: l.getUntracked()
         });

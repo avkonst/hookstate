@@ -1,5 +1,4 @@
 packages:
   - 'core/**'
-  - 'plugins/Initial/**'
-  # - 'plugins/**'
-  # - 'docs/**'
+  - 'plugins/**'
+  - 'docs/**'

@@ -4,7 +4,6 @@
 			"dependencies": "*",
 			"devDependencies": "*"
 		},
-		"tslint.json": "*",
 		"nx.json": "*"
 	},
 	"npmScope": "@hookstate",

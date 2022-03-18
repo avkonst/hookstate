@@ -11,3 +11,4 @@ export declare function Labelled(label: string): () => Plugin;
  * plugins persisting a state.
  */
 export declare function Labelled<S>(link: State<S>): string | undefined;
+//# sourceMappingURL=Labelled.d.ts.map

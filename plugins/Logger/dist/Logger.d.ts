@@ -4,3 +4,4 @@ export interface LoggerExtensions {
 }
 export declare function Logger(): Plugin;
 export declare function Logger<S>($this: State<S>): LoggerExtensions;
+//# sourceMappingURL=Logger.d.ts.map

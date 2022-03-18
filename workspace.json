@@ -2,6 +2,16 @@
 	"version": 2,
 	"projects": {
 		"core": "core",
-		"initial": "plugins/Initial"
+		"broadcasted": "plugins/Broadcasted",
+		"devtools": "plugins/DevTools",
+		"initial": "plugins/Initial",
+		"labelled": "plugins/Labelled",
+		"logger": "plugins/Logger",
+		"persistence": "plugins/Persistence",
+		"touched": "plugins/Touched",
+		"untracked": "plugins/Untracked",
+		"validation": "plugins/Validation",
+		"docs": "docs/index",
+		"todolist": "docs/demos/todolist"
     }
 }
