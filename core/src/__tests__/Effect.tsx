@@ -1,6 +1,7 @@
 import { createState, useState } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
+import { useEffect } from 'react';
 
 test('primitive: should rerender stable', async () => {
     let renderTimes = 0
@@ -426,4 +427,92 @@ test('object: should rerender stable nested update (scoped)', async () => {
     expect(result.current[0].b === state0b).toBeTruthy();
     expect(result.current[1].a === state1a).toBeTruthy();
     expect(result.current[1].b !== state1b).toBeTruthy();
+});
+
+test('object: should rerender if used in useEffect', async () => {
+    let renderTimes = 0
+    let effectTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1
+        let state = useState({a: 0, b: 0})
+        useEffect(() => {
+            effectTimes += 1
+            // mark used either first or both
+            state.a.get() && state.b.get()
+        }, [state.a, state.b])
+        return state;
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(effectTimes).toStrictEqual(1);
+
+    act(() => {
+        result.current.a.set(p => p + 1);
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(effectTimes).toStrictEqual(2);
+
+    act(() => {
+        result.current.b.set(p => p + 1);
+    });
+    expect(renderTimes).toStrictEqual(3);
+    expect(effectTimes).toStrictEqual(3);
+
+});
+
+test('object: should rerender if nested object used in useEffect', async () => {
+    let renderTimes = 0
+    let effectTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1
+        let state = useState({a: 0, b: { c: 0, d: 0 }})
+        useEffect(() => {
+            effectTimes += 1
+            // mark used either first or both
+            state.a.get() && state.b.get()
+        }, [state.a, state.b])
+        return state;
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(effectTimes).toStrictEqual(1);
+
+    act(() => {
+        result.current.a.set(p => p + 1);
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(effectTimes).toStrictEqual(2);
+
+    act(() => {
+        result.current.b.set(p => p);
+    });
+    expect(renderTimes).toStrictEqual(3);
+    expect(effectTimes).toStrictEqual(3);
+});
+
+test('object: should rerender if nested object used and updated in useEffect', async () => {
+    let renderTimes = 0
+    let effectTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1
+        let state = useState({a: 0, b: { c: 0, d: 0 }})
+        useEffect(() => {
+            effectTimes += 1
+            // mark used either first or both
+            state.a.get() && state.b.get()
+        }, [state.a, state.b])
+        return state;
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(effectTimes).toStrictEqual(1);
+
+    act(() => {
+        result.current.a.set(p => p + 1);
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(effectTimes).toStrictEqual(2);
+
+    act(() => {
+        result.current.b.c.set(p => p + 1);
+    });
+    expect(renderTimes).toStrictEqual(3);
+    expect(effectTimes).toStrictEqual(3);
 });

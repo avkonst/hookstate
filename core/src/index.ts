@@ -550,7 +550,7 @@ export function useHookstate<S>(
                 store: Store,
                 state: StateMethodsImpl<S>
             }>(() => {
-                let store = parentMethods.state
+                let store = parentMethods.store
                 let state = new StateMethodsImpl<S>(
                     store,
                     parentMethods.path,
@@ -587,7 +587,7 @@ export function useHookstate<S>(
                 store: Store,
                 state: StateMethodsImpl<S>
             }>(() => {
-                let store = parentMethods.state
+                let store = parentMethods.store
                 let state = new StateMethodsImpl<S>(
                     store,
                     RootPath,
@@ -1207,7 +1207,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
     private valueCache: StateValueAtPath = ValueUnusedMarker;
     
     constructor(
-        public readonly state: Store,
+        public readonly store: Store,
         public readonly path: Path,
         private valueSource: S,
         private valueEdition: number,
@@ -1230,9 +1230,9 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
     }
     
     getUntracked(allowPromised?: boolean) {
-        if (this.valueEdition !== this.state.edition) {
-            this.valueSource = this.state.get(this.path)
-            this.valueEdition = this.state.edition
+        if (this.valueEdition !== this.store.edition) {
+            this.valueSource = this.store.get(this.path)
+            this.valueEdition = this.store.edition
 
             if (this.isMounted) {
                 // this link is still mounted to a component
@@ -1259,8 +1259,8 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
             }
         }
         if (this.valueSource === none && !allowPromised) {
-            if (this.state.promised && this.state.promised.error) {
-                throw this.state.promised.error;
+            if (this.store.promised && this.store.promised.error) {
+                throw this.store.promised.error;
             }
             throw new StateInvalidUsageError(this.path, ErrorId.GetStateWhenPromised)
         }
@@ -1294,11 +1294,11 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         if (typeof newValue === 'object' && newValue !== null && newValue[SelfMethodsID]) {
             throw new StateInvalidUsageError(this.path, ErrorId.SetStateToValueFromState)
         }
-        return [this.state.set(this.path, newValue, mergeValue)];
+        return [this.store.set(this.path, newValue, mergeValue)];
     }
 
     set(newValue: SetStateAction<S>) {
-        this.state.update(this.setUntracked(newValue));
+        this.store.update(this.setUntracked(newValue));
     }
 
     mergeUntracked(sourceValue: SetPartialStateAction<S>): Path[] {
@@ -1360,7 +1360,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
     }
 
     merge(sourceValue: SetPartialStateAction<S>) {
-        this.state.update(this.mergeUntracked(sourceValue));
+        this.store.update(this.mergeUntracked(sourceValue));
     }
 
     nested<K extends keyof S>(key: K): State<S[K]> {
@@ -1368,11 +1368,11 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
     }
     
     rerender(paths: Path[]) {
-        this.state.update(paths)
+        this.store.update(paths)
     }
 
     destroy(): void {
-        this.state.destroy()
+        this.store.destroy()
     }
 
     subscribe(l: Subscriber) {
@@ -1474,7 +1474,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
             r = child;
         } else {
             r = new StateMethodsImpl(
-                this.state,
+                this.store,
                 this.path.slice().concat(key),
                 this.valueSource[key],
                 this.valueEdition,
@@ -1679,7 +1679,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
     
     get promised(): boolean {
         const currentValue = this.get(true) // marks used
-        if (currentValue === none && this.state.promised && !this.state.promised.fullfilled) {
+        if (currentValue === none && this.store.promised && !this.store.promised.fullfilled) {
             return true;
         }
         return false;
@@ -1688,8 +1688,8 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
     get error(): StateErrorAtRoot | undefined {
         const currentValue = this.get(true) // marks used
         if (currentValue === none) {
-            if (this.state.promised && this.state.promised.fullfilled) {
-                return this.state.promised.error;
+            if (this.store.promised && this.store.promised.fullfilled) {
+                return this.store.promised.error;
             }
             this.get() // will throw 'read while promised' exception
         }
@@ -1702,14 +1702,14 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
     ): R {
         const opts = { context: context }
         try {
-            this.state.startBatch(this.path, opts)
+            this.store.startBatch(this.path, opts)
             const result = action(this.self) as R
             if (result as unknown as Symbol === postpone) {
-                this.state.postponeBatch(() => this.batch(action, context))
+                this.store.postponeBatch(() => this.batch(action, context))
             }
             return result
         } finally {
-            this.state.finishBatch(this.path, opts)
+            this.store.finishBatch(this.path, opts)
         }
     }
 
@@ -1735,11 +1735,11 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                 }
                 return this.self;
             }
-            this.state.register(pluginMeta);
+            this.store.register(pluginMeta);
             return this.self;
         } else {
             return [
-                this.state.getPlugin(p) ||
+                this.store.getPlugin(p) ||
                     (new StateInvalidUsageError(this.path, ErrorId.GetUnknownPlugin, p.toString())), 
                 this
             ];
