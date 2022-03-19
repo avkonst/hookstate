@@ -548,16 +548,18 @@ export function useHookstate<S>(
             // eslint-disable-next-line react-hooks/rules-of-hooks
             const [value, setValue] = React.useState(() => {
                 let store = parentMethods.store
+                let onSetUsedCallback = () => setValue({
+                    store: store,
+                    state: state,
+                })
                 let state: StateMethodsImpl<S> = new StateMethodsImpl<S>(
                     store,
                     parentMethods.path,
                     store.get(parentMethods.path),
                     store.edition,
-                    () => setValue({
-                        store: store,
-                        state: state,
-                    })
+                    onSetUsedCallback
                 );
+                onSetUsedCallback[RootStateAccessor] = state;
                 parentMethods.subscribe(state);
                 return {
                     store: store,
@@ -581,16 +583,18 @@ export function useHookstate<S>(
             // eslint-disable-next-line react-hooks/rules-of-hooks
             const [value, setValue] = React.useState(() => {
                 let store = parentMethods.store
+                let onSetUsedCallback = () => setValue({
+                    store: store,
+                    state: state,
+                })
                 let state: StateMethodsImpl<S> = new StateMethodsImpl<S>(
                     store,
                     RootPath,
                     store.get(RootPath),
                     store.edition,
-                    () => setValue({
-                        store: store,
-                        state: state,
-                    })
+                    onSetUsedCallback
                 );
+                onSetUsedCallback[RootStateAccessor] = state;
                 store.subscribe(state);
                 return {
                     store: store,
@@ -619,16 +623,18 @@ export function useHookstate<S>(
         // eslint-disable-next-line react-hooks/rules-of-hooks
         const [value, setValue] = React.useState(() => {
             let store = createStore(source)
+            let onSetUsedCallback = () => setValue({
+                store: store,
+                state: state,
+            })
             let state: StateMethodsImpl<S> = new StateMethodsImpl<S>(
                 store,
                 RootPath,
                 store.get(RootPath),
                 store.edition,
-                () => setValue({
-                    store: store,
-                    state: state,
-                })
+                onSetUsedCallback
             );
+            onSetUsedCallback[RootStateAccessor] = state;
             store.subscribe(state);
             return {
                 store: store,
@@ -1185,6 +1191,9 @@ function OnSetUsedNoAction() { /** no action callback */ }
 const UnmountedMarker = Symbol('UnmountedMarker');
 OnSetUsedNoAction[UnmountedMarker] = true
 
+// TODO temprary for experiments with state tree restoration
+const RootStateAccessor = Symbol('RootStateAccessor');
+
 class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subscribable, Subscriber {
     private subscribers: Set<Subscriber> | undefined;
 
@@ -1228,6 +1237,11 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                 if (this.valueCache !== ValueUnusedMarker) {
                     this.valueCache = ValueUnusedMarker
                     this.get(true) // renew cache to keep it marked used
+                    // let walkedState: StateMethods<StateValueAtPath> = this.onSetUsed[RootStateAccessor];
+                    // for (let pathElem of this.path) {
+                    //     walkedState = walkedState.nested(pathElem)
+                    // }
+                    // walkedState.get()
                 }
             } else {
                 // This link is not mounted to a component

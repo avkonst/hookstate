@@ -1,4 +1,4 @@
-import { createState, useState } from '../';
+import { createState, Downgraded, useState } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import { useEffect } from 'react';
@@ -446,6 +446,12 @@ test('object: should rerender if used in useEffect', async () => {
     expect(effectTimes).toStrictEqual(1);
 
     act(() => {
+        result.current.b.set(p => p + 1);
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(effectTimes).toStrictEqual(1);
+
+    act(() => {
         result.current.a.set(p => p + 1);
     });
     expect(renderTimes).toStrictEqual(2);
@@ -497,9 +503,15 @@ test('object: should rerender if nested object used and updated in useEffect', a
         useEffect(() => {
             effectTimes += 1
             // mark used either first or both
-            state.a.get() && state.b.get()
+            state.a.get() && state.b.get().c
         }, [state.a, state.b])
         return state;
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(effectTimes).toStrictEqual(1);
+
+    act(() => {
+        result.current.b.d.set(p => p + 1);
     });
     expect(renderTimes).toStrictEqual(1);
     expect(effectTimes).toStrictEqual(1);
@@ -512,6 +524,36 @@ test('object: should rerender if nested object used and updated in useEffect', a
 
     act(() => {
         result.current.b.c.set(p => p + 1);
+    });
+    expect(renderTimes).toStrictEqual(3);
+    expect(effectTimes).toStrictEqual(3);
+});
+
+test('object: should rerender if 2 states used in useEffect', async () => {
+    let renderTimes = 0
+    let effectTimes = 0
+    const result = renderHook(() => {
+        renderTimes += 1
+        let state1 = useState({a: 0})
+        let state2 = useState({a: 0})
+        useEffect(() => {
+            effectTimes += 1
+            // mark used either first or both
+            state1.a.get() && state2.get().a
+        }, [state1, state2])
+        return [state1, state2];
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(effectTimes).toStrictEqual(1);
+
+    act(() => {
+        result.result.current[0].a.set(p => p + 1);
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(effectTimes).toStrictEqual(2);
+
+    act(() => {
+        result.result.current[1].a.set(p => p + 1);
     });
     expect(renderTimes).toStrictEqual(3);
     expect(effectTimes).toStrictEqual(3);
