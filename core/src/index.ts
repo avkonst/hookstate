@@ -546,17 +546,17 @@ export function useHookstate<S>(
         if (parentMethods.isMounted) {
             // Scoped state mount
             // eslint-disable-next-line react-hooks/rules-of-hooks
-            const [value, setValue] = React.useState<{
-                store: Store,
-                state: StateMethodsImpl<S>
-            }>(() => {
+            const [value, setValue] = React.useState(() => {
                 let store = parentMethods.store
-                let state = new StateMethodsImpl<S>(
+                let state: StateMethodsImpl<S> = new StateMethodsImpl<S>(
                     store,
                     parentMethods.path,
                     store.get(parentMethods.path),
                     store.edition,
-                    () => {}
+                    () => setValue({
+                        store: store,
+                        state: state,
+                    })
                 );
                 parentMethods.subscribe(state);
                 return {
@@ -566,11 +566,7 @@ export function useHookstate<S>(
             });
             value.state.reconstruct(
                 value.store.get(parentMethods.path),
-                value.store.edition,
-                () => setValue({
-                    store: value.store,
-                    state: value.state,
-                })
+                value.store.edition
             );
             useIsomorphicLayoutEffect(() => {
                 return () => {
@@ -583,17 +579,17 @@ export function useHookstate<S>(
         } else {
             // Global state mount or destroyed link
             // eslint-disable-next-line react-hooks/rules-of-hooks
-            const [value, setValue] = React.useState<{
-                store: Store,
-                state: StateMethodsImpl<S>
-            }>(() => {
+            const [value, setValue] = React.useState(() => {
                 let store = parentMethods.store
-                let state = new StateMethodsImpl<S>(
+                let state: StateMethodsImpl<S> = new StateMethodsImpl<S>(
                     store,
                     RootPath,
                     store.get(RootPath),
                     store.edition,
-                    () => {}
+                    () => setValue({
+                        store: store,
+                        state: state,
+                    })
                 );
                 store.subscribe(state);
                 return {
@@ -603,11 +599,7 @@ export function useHookstate<S>(
             });
             value.state.reconstruct(
                 value.store.get(RootPath),
-                value.store.edition,
-                () => setValue({
-                    store: value.store,
-                    state: value.state,
-                })
+                value.store.edition
             );
             useIsomorphicLayoutEffect(() => {
                 return () => {
@@ -625,17 +617,17 @@ export function useHookstate<S>(
     } else {
         // Local state mount
         // eslint-disable-next-line react-hooks/rules-of-hooks
-        const [value, setValue] = React.useState<{
-            store: Store,
-            state: StateMethodsImpl<S>
-        }>(() => {
+        const [value, setValue] = React.useState(() => {
             let store = createStore(source)
-            let state = new StateMethodsImpl<S>(
+            let state: StateMethodsImpl<S> = new StateMethodsImpl<S>(
                 store,
                 RootPath,
                 store.get(RootPath),
                 store.edition,
-                () => {}
+                () => setValue({
+                    store: store,
+                    state: state,
+                })
             );
             store.subscribe(state);
             return {
@@ -645,11 +637,7 @@ export function useHookstate<S>(
         });
         value.state.reconstruct(
             value.store.get(RootPath),
-            value.store.edition,
-            () => setValue({
-                store: value.store,
-                state: value.state,
-            })
+            value.store.edition
         );
         useIsomorphicLayoutEffect(() => {
             return () => {
@@ -1214,10 +1202,9 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         private onSetUsed: () => void
     ) { }
 
-    reconstruct(valueSource: S, valueEdition: number, onSetUsed: () => void) {
+    reconstruct(valueSource: S, valueEdition: number) {
         this.valueSource = valueSource;
         this.valueEdition = valueEdition;
-        this.onSetUsed = onSetUsed;
         
         this.valueCache = ValueUnusedMarker;
         delete this.isDowngraded;
@@ -1468,8 +1455,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         if (child) {
             child.reconstruct(
                 this.valueSource[key],
-                this.valueEdition,
-                this.onSetUsed
+                this.valueEdition
             )
             r = child;
         } else {
