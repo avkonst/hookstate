@@ -115,6 +115,15 @@ export interface PluginStateControl<S> {
 }
 
 /**
+ * 
+ */
+enum StateValueMode {
+    Tracked,
+    Origin,
+    Escaped,
+}
+
+/**
  * An interface to manage a state in Hookstate.
  * 
  * @typeparam S Type of a value of a state
@@ -546,11 +555,12 @@ export function useHookstate<S>(
         if (parentMethods.isMounted) {
             // Scoped state mount
             // eslint-disable-next-line react-hooks/rules-of-hooks
-            const [value, setValue] = React.useState(() => {
+            const initializer = () => {
                 let store = parentMethods.store
                 let onSetUsedCallback = () => setValue({
-                    store: store,
-                    state: state,
+                    store: store, // immutable
+                    state: state, // immutable
+                    source: value.source // mutable, get the latest from value
                 })
                 let state: StateMethodsImpl<S> = new StateMethodsImpl<S>(
                     store,
@@ -563,13 +573,19 @@ export function useHookstate<S>(
                 parentMethods.subscribe(state);
                 return {
                     store: store,
-                    state: state
+                    state: state,
+                    source: source
                 }
-            });
+            };
+            const [value, setValue] = React.useState(initializer);
             value.state.reconstruct(
                 value.store.get(parentMethods.path),
-                value.store.edition
+                value.store.edition,
+                // parent state object has changed its reference object
+                // so the scopped state should change too
+                value.source !== source
             );
+            value.source = source;
             useIsomorphicLayoutEffect(() => {
                 return () => {
                     value.state.onUnmount()
@@ -581,11 +597,12 @@ export function useHookstate<S>(
         } else {
             // Global state mount or destroyed link
             // eslint-disable-next-line react-hooks/rules-of-hooks
-            const [value, setValue] = React.useState(() => {
+            let initializer = () => {
                 let store = parentMethods.store
                 let onSetUsedCallback = () => setValue({
-                    store: store,
-                    state: state,
+                    store: store, // immutable
+                    state: state, // immutable
+                    source: value.source // mutable, get the latest from value
                 })
                 let state: StateMethodsImpl<S> = new StateMethodsImpl<S>(
                     store,
@@ -598,13 +615,19 @@ export function useHookstate<S>(
                 store.subscribe(state);
                 return {
                     store: store,
-                    state: state
+                    state: state,
+                    source: source
                 }
-            });
+            }
+            const [value, setValue] = React.useState(initializer);
             value.state.reconstruct(
                 value.store.get(RootPath),
-                value.store.edition
+                value.store.edition,
+                // parent state object has changed its reference object
+                // so the scopped state should change too
+                value.source !== source
             );
+            value.source = source;
             useIsomorphicLayoutEffect(() => {
                 return () => {
                     value.state.onUnmount()
@@ -643,7 +666,8 @@ export function useHookstate<S>(
         });
         value.state.reconstruct(
             value.store.get(RootPath),
-            value.store.edition
+            value.store.edition,
+            false
         );
         useIsomorphicLayoutEffect(() => {
             return () => {
@@ -1211,7 +1235,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         private onSetUsed: () => void
     ) { }
 
-    reconstruct(valueSource: S, valueEdition: number) {
+    reconstruct(valueSource: S, valueEdition: number, forget: boolean) {
         this.valueSource = valueSource;
         this.valueEdition = valueEdition;
         
@@ -1219,10 +1243,13 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         delete this.isDowngraded;
         delete this.subscribers;
 
-        this.selfCache = this.selfCache;
-        
-        this.children = this.childrenCache;
-        delete this.childrenCache;
+        if (forget) {
+            delete this.selfCache;
+            delete this.children
+        } else {
+            this.children = this.childrenCache;
+        }
+        delete this.childrenCache
     }
     
     getUntracked(allowPromised?: boolean) {
@@ -1469,7 +1496,8 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         if (child) {
             child.reconstruct(
                 this.valueSource[key],
-                this.valueEdition
+                this.valueEdition,
+                false
             )
             r = child;
         } else {
