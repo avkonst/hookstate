@@ -123,6 +123,7 @@ importers:
       '@hookstate/validation': file:../../plugins/Validation
       '@material-ui/core': 4.12.3
       '@material-ui/icons': 4.11.2
+      '@mdx-js/react': 2.1.0
       '@types/lodash.clonedeep': 4.5.6
       '@types/lodash.isequal': 4.5.5
       broadcast-channel: 4.10.0
@@ -147,6 +148,7 @@ importers:
       '@hookstate/validation': link:../../plugins/Validation
       '@material-ui/core': 4.12.3_react-dom@17.0.2+react@17.0.2
       '@material-ui/icons': 4.11.2_fced322086cd04afb0b6feec9e866920
+      '@mdx-js/react': 2.1.0_react@17.0.2
       '@types/lodash.clonedeep': 4.5.6
       '@types/lodash.isequal': 4.5.5
       broadcast-channel: 4.10.0
@@ -3670,6 +3672,16 @@ packages:
       react: 17.0.2
     dev: false
 
+  /@mdx-js/react/2.1.0_react@17.0.2:
+    resolution: {integrity: sha512-RlPnY2WcVe91pOilf3Rmu1pArKj7gSK03uoaMFKjPWTyh9t6t1VYGSX40twlpChNSPmbcQ29D0xvSBOVMWA6yw==}
+    peerDependencies:
+      react: '>=16'
+    dependencies:
+      '@types/mdx': 2.0.1
+      '@types/react': 17.0.40
+      react: 17.0.2
+    dev: false
+
   /@mdx-js/util/1.6.22:
     resolution: {integrity: sha512-H1rQc1ZOHANWBvPcW+JpGwr+juXSxM8Q8YCkm3GhZd8REu1fHR3z99CErO1p9pkcfcxZnMdIZdIsXkOHY0NilA==}
     dev: false
@@ -4760,6 +4772,10 @@ packages:
     resolution: {integrity: sha512-W864tg/Osz1+9f4lrGTZpCSO5/z4608eUp19tbozkq2HJK6i3z1kT0H9tlADXuYIb1YYOBByU4Jsqkk75q48qA==}
     dependencies:
       '@types/unist': 2.0.6
+    dev: false
+
+  /@types/mdx/2.0.1:
+    resolution: {integrity: sha512-JPEv4iAl0I+o7g8yVWDwk30es8mfVrjkvh5UeVR2sYPpZCK44vrAPsbJpIS+rJAUxLgaSAMKTEH5Vn5qd9XsrQ==}
     dev: false
 
   /@types/mime/1.3.2:

@@ -1,5 +1,5 @@
 ---
-id: cool-hookstate-performance-demo-from-moonpiano-application
+slug: cool-hookstate-performance-demo-from-moonpiano-application
 title: Performance demo from the Moonpiano application
 author: avkonst
 # author_title: Front End Engineer @ Facebook

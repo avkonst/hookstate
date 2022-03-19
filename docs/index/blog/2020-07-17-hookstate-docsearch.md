@@ -1,5 +1,5 @@
 ---
-id: hookstate-docsearch
+slug: hookstate-docsearch
 title: Algolia search bar for Hookstate documentation 
 author: avkonst
 # author_title: Front End Engineer @ Facebook

@@ -1,5 +1,5 @@
 ---
-id: hookstate-2-released
+slug: hookstate-2-released
 title: Hookstate 2.0 released
 author: avkonst
 # author_title: Front End Engineer @ Facebook
