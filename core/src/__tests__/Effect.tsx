@@ -672,8 +672,56 @@ test('object: should rerender if 2 states used in useEffect', async () => {
     expect(effectTimes).toStrictEqual(2);
 
     act(() => {
-        result.result.current[1].a.set(p => p + 1);
+        result.result.current[0].a.set(p => p - 1);
     });
     expect(renderTimes).toStrictEqual(3);
     expect(effectTimes).toStrictEqual(3);
+
+    act(() => {
+        result.result.current[0].a.set(p => p);
+    });
+    expect(renderTimes).toStrictEqual(4);
+    expect(effectTimes).toStrictEqual(4);
+
+    act(() => {
+        result.result.current[0].a.set(p => p + 1);
+    });
+    expect(renderTimes).toStrictEqual(5);
+    expect(effectTimes).toStrictEqual(5);
+
+    act(() => {
+        result.result.current[1].a.set(p => p + 1);
+    });
+    expect(renderTimes).toStrictEqual(6);
+    expect(effectTimes).toStrictEqual(6);
+});
+
+test('object: should rerender if 2 states but 1 used in useEffect', async () => {
+    let renderTimes = 0
+    let effectTimes = 0
+    const result = renderHook(() => {
+        renderTimes += 1
+        let state1 = useState({a: 0})
+        let state2 = useState({a: 0})
+        useEffect(() => {
+            effectTimes += 1
+            state2.get().a
+        }, [state2])
+        state1.a.get() // mark used
+        return [state1, state2];
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(effectTimes).toStrictEqual(1);
+
+    act(() => {
+        result.result.current[0].a.set(p => p + 1);
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(effectTimes).toStrictEqual(1);
+
+    act(() => {
+        result.result.current[1].a.set(p => p + 1);
+    });
+    expect(renderTimes).toStrictEqual(3);
+    expect(effectTimes).toStrictEqual(2);
 });

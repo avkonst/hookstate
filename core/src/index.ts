@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 
 ///
 /// EXPORTED SYMBOLS (LIBRARY INTERFACE)
@@ -1252,6 +1252,13 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         delete this.childrenCache
     }
     
+    reconnect() {
+        this.childrenCache = {
+            ...this.children,
+            ...this.childrenCache
+        }
+    }
+    
     getUntracked(allowPromised?: boolean) {
         if (this.valueEdition !== this.store.edition) {
             this.valueSource = this.store.get(this.path)
@@ -1893,3 +1900,21 @@ function createStore<S>(initial: SetInitialStateAction<S>): Store {
 
 // Do not try to use useLayoutEffect if DOM not available (SSR)
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
+
+let originUseEffect: (effect: React.EffectCallback, deps?: React.DependencyList) => void;
+function useHookEffect(effect: React.EffectCallback, deps?: React.DependencyList) {
+    for (const i of deps || []) {
+        let state = i[self] as StateMethodsImpl<StateValueAtPath> | undefined
+        if (state) {
+            state.reconnect()
+        }
+    }
+    return originUseEffect(effect, deps)
+}
+function interceptUseEffect() {
+    if (!originUseEffect) {
+        originUseEffect = React['useEffect'];
+        React['useEffect'] = useHookEffect;
+    }
+}
+interceptUseEffect()
