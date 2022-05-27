@@ -1,5 +1,5 @@
 {
-  "name": "hookstate-example-app",
+  "name": "@hookstate/todolist",
   "version": "0.1.0",
   "private": true,
   "homepage": ".",

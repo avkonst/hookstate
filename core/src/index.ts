@@ -569,8 +569,6 @@ export function useHookstate<S>(
                     store.edition,
                     onSetUsedCallback
                 );
-                onSetUsedCallback[RootStateAccessor] = state;
-                parentMethods.subscribe(state);
                 return {
                     store: store,
                     state: state,
@@ -579,6 +577,7 @@ export function useHookstate<S>(
             };
             const [value, setValue] = React.useState(initializer);
             value.state.reconstruct(
+                parentMethods.path,
                 value.store.get(parentMethods.path),
                 value.store.edition,
                 // parent state object has changed its reference object
@@ -586,6 +585,8 @@ export function useHookstate<S>(
                 value.source !== source
             );
             value.source = source;
+
+            parentMethods.subscribe(value.state); // in sync here, not in effect
             useIsomorphicLayoutEffect(() => {
                 return () => {
                     value.state.onUnmount()
@@ -611,8 +612,6 @@ export function useHookstate<S>(
                     store.edition,
                     onSetUsedCallback
                 );
-                onSetUsedCallback[RootStateAccessor] = state;
-                store.subscribe(state);
                 return {
                     store: store,
                     state: state,
@@ -621,6 +620,7 @@ export function useHookstate<S>(
             }
             const [value, setValue] = React.useState(initializer);
             value.state.reconstruct(
+                RootPath,
                 value.store.get(RootPath),
                 value.store.edition,
                 // parent state object has changed its reference object
@@ -628,6 +628,8 @@ export function useHookstate<S>(
                 value.source !== source
             );
             value.source = source;
+
+            value.store.subscribe(value.state); // in sync here, not in effect
             useIsomorphicLayoutEffect(() => {
                 return () => {
                     value.state.onUnmount()
@@ -644,7 +646,7 @@ export function useHookstate<S>(
     } else {
         // Local state mount
         // eslint-disable-next-line react-hooks/rules-of-hooks
-        const [value, setValue] = React.useState(() => {
+        let initializer = () => {
             let store = createStore(source)
             let onSetUsedCallback = () => setValue({
                 store: store,
@@ -657,18 +659,20 @@ export function useHookstate<S>(
                 store.edition,
                 onSetUsedCallback
             );
-            onSetUsedCallback[RootStateAccessor] = state;
-            store.subscribe(state);
             return {
                 store: store,
                 state: state
             }
-        });
+        }
+        const [value, setValue] = React.useState(initializer);
         value.state.reconstruct(
+            RootPath,
             value.store.get(RootPath),
             value.store.edition,
             false
         );
+        
+        value.store.subscribe(value.state); // in sync here, not in effect
         useIsomorphicLayoutEffect(() => {
             return () => {
                 value.state.onUnmount()
@@ -1215,9 +1219,6 @@ function OnSetUsedNoAction() { /** no action callback */ }
 const UnmountedMarker = Symbol('UnmountedMarker');
 OnSetUsedNoAction[UnmountedMarker] = true
 
-// TODO temprary for experiments with state tree restoration
-const RootStateAccessor = Symbol('RootStateAccessor');
-
 class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subscribable, Subscriber {
     private subscribers: Set<Subscriber> | undefined;
 
@@ -1229,13 +1230,14 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
     
     constructor(
         public readonly store: Store,
-        public readonly path: Path,
+        public path: Path,
         private valueSource: S,
         private valueEdition: number,
         private onSetUsed: () => void
     ) { }
 
-    reconstruct(valueSource: S, valueEdition: number, forget: boolean) {
+    reconstruct(path: Path, valueSource: S, valueEdition: number, forget: boolean) {
+        this.path = path;
         this.valueSource = valueSource;
         this.valueEdition = valueEdition;
         
@@ -1502,6 +1504,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         let r;
         if (child) {
             child.reconstruct(
+                this.path.slice().concat(key),
                 this.valueSource[key],
                 this.valueEdition,
                 false

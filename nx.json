@@ -31,6 +31,12 @@
 				"target": "build",
 				"projects": "dependencies"
 			}
+		],
+		"start": [
+			{
+				"target": "build",
+				"projects": "dependencies"
+			}
 		]
 	},
 	"defaultProject": "core"
