@@ -20,7 +20,7 @@
     "scripts": {
         "build": "nx run-many --target=build --all",
         "test": "nx run-many --target=test --all",
-        "update": "nx run-many --target=update --all",
+        "update:deps": "nx run-many --target=update --all",
         "clean": "nx run-many --target=clean --all",
         "nx:w": "nodemon node_modules/@nrwl/cli/bin/nx.js"
     },
@@ -28,7 +28,7 @@
         "@nrwl/cli": "13.9.3",
         "@nrwl/workspace": "13.9.3",
         "jest": "^27.5.1",
-        "nodemon": "^2.0.15",
+        "nodemon": "^2.0.16",
         "nx": "13.9.3",
         "typescript": "4.6.2"
     }
