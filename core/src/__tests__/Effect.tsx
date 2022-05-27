@@ -125,6 +125,37 @@ test('object: should rerender stable nested update', async () => {
     expect(result.current[1].b !== state1b).toBeTruthy();
 });
 
+test('object: should rerender only value used', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        let state = useState<{a: {b: number}} | undefined>({a: {b: 0}});
+        state.get() // use only object level value
+        return state;
+    });
+    expect(renderTimes).toStrictEqual(1);
+    
+    act(() => {
+        result.current.set(undefined);
+    });
+    expect(renderTimes).toStrictEqual(2);
+
+    act(() => {
+        result.current.set({a: {b: 0}});
+    });
+    expect(renderTimes).toStrictEqual(3);
+
+    act(() => {
+        result.current.set({a: {b: 0}});
+    });
+    expect(renderTimes).toStrictEqual(4);
+
+    act(() => {
+        result.current.ornull?.a.b.set(1);
+    });
+    expect(renderTimes).toStrictEqual(4);
+});
+
 test('primitive: should rerender stable (global)', async () => {
     let renderTimes = 0
     let gs0 = createState(0)
