@@ -31,6 +31,17 @@ function __extends(d, b) {
     d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 }
 
+var __assign = function() {
+    __assign = Object.assign || function __assign(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
+
 /**
  * Special symbol which might be returned by onPromised callback of [StateMethods.map](#map) function.
  *
@@ -44,6 +55,15 @@ var postpone = Symbol('postpone');
  * [Learn more...](https://hookstate.js.org/docs/nested-state#deleting-existing-element)
  */
 var none = Symbol('none');
+/**
+ *
+ */
+var StateValueMode;
+(function (StateValueMode) {
+    StateValueMode[StateValueMode["Tracked"] = 0] = "Tracked";
+    StateValueMode[StateValueMode["Origin"] = 1] = "Origin";
+    StateValueMode[StateValueMode["Escaped"] = 2] = "Escaped";
+})(StateValueMode || (StateValueMode = {}));
 /**
  * Creates new state and returns it.
  *
@@ -94,19 +114,28 @@ function useHookstate(source) {
         if (parentMethods.isMounted) {
             // Scoped state mount
             // eslint-disable-next-line react-hooks/rules-of-hooks
-            var _a = React.useState(function () {
-                var store = parentMethods.state;
-                var state = new StateMethodsImpl(store, parentMethods.path, store.get(parentMethods.path), store.edition, function () { });
+            var initializer = function () {
+                var store = parentMethods.store;
+                var onSetUsedCallback = function () { return setValue_1({
+                    store: store,
+                    state: state,
+                    source: value_1.source // mutable, get the latest from value
+                }); };
+                var state = new StateMethodsImpl(store, parentMethods.path, store.get(parentMethods.path), store.edition, onSetUsedCallback);
+                onSetUsedCallback[RootStateAccessor] = state;
                 parentMethods.subscribe(state);
                 return {
                     store: store,
-                    state: state
+                    state: state,
+                    source: source
                 };
-            }), value_1 = _a[0], setValue_1 = _a[1];
-            value_1.state.reconstruct(value_1.store.get(parentMethods.path), value_1.store.edition, function () { return setValue_1({
-                store: value_1.store,
-                state: value_1.state,
-            }); });
+            };
+            var _a = React.useState(initializer), value_1 = _a[0], setValue_1 = _a[1];
+            value_1.state.reconstruct(value_1.store.get(parentMethods.path), value_1.store.edition, 
+            // parent state object has changed its reference object
+            // so the scopped state should change too
+            value_1.source !== source);
+            value_1.source = source;
             useIsomorphicLayoutEffect(function () {
                 return function () {
                     value_1.state.onUnmount();
@@ -118,19 +147,28 @@ function useHookstate(source) {
         else {
             // Global state mount or destroyed link
             // eslint-disable-next-line react-hooks/rules-of-hooks
-            var _b = React.useState(function () {
-                var store = parentMethods.state;
-                var state = new StateMethodsImpl(store, RootPath, store.get(RootPath), store.edition, function () { });
+            var initializer = function () {
+                var store = parentMethods.store;
+                var onSetUsedCallback = function () { return setValue_2({
+                    store: store,
+                    state: state,
+                    source: value_2.source // mutable, get the latest from value
+                }); };
+                var state = new StateMethodsImpl(store, RootPath, store.get(RootPath), store.edition, onSetUsedCallback);
+                onSetUsedCallback[RootStateAccessor] = state;
                 store.subscribe(state);
                 return {
                     store: store,
-                    state: state
+                    state: state,
+                    source: source
                 };
-            }), value_2 = _b[0], setValue_2 = _b[1];
-            value_2.state.reconstruct(value_2.store.get(RootPath), value_2.store.edition, function () { return setValue_2({
-                store: value_2.store,
-                state: value_2.state,
-            }); });
+            };
+            var _b = React.useState(initializer), value_2 = _b[0], setValue_2 = _b[1];
+            value_2.state.reconstruct(value_2.store.get(RootPath), value_2.store.edition, 
+            // parent state object has changed its reference object
+            // so the scopped state should change too
+            value_2.source !== source);
+            value_2.source = source;
             useIsomorphicLayoutEffect(function () {
                 return function () {
                     value_2.state.onUnmount();
@@ -149,17 +187,19 @@ function useHookstate(source) {
         // eslint-disable-next-line react-hooks/rules-of-hooks
         var _c = React.useState(function () {
             var store = createStore(source);
-            var state = new StateMethodsImpl(store, RootPath, store.get(RootPath), store.edition, function () { });
+            var onSetUsedCallback = function () { return setValue_3({
+                store: store,
+                state: state,
+            }); };
+            var state = new StateMethodsImpl(store, RootPath, store.get(RootPath), store.edition, onSetUsedCallback);
+            onSetUsedCallback[RootStateAccessor] = state;
             store.subscribe(state);
             return {
                 store: store,
                 state: state
             };
         }), value_3 = _c[0], setValue_3 = _c[1];
-        value_3.state.reconstruct(value_3.store.get(RootPath), value_3.store.edition, function () { return setValue_3({
-            store: value_3.store,
-            state: value_3.state,
-        }); });
+        value_3.state.reconstruct(value_3.store.get(RootPath), value_3.store.edition, false);
         useIsomorphicLayoutEffect(function () {
             return function () {
                 value_3.state.onUnmount();
@@ -589,30 +629,39 @@ function OnSetUsedNoAction() { }
 // use symbol to mark that a function has no effect anymore
 var UnmountedMarker = Symbol('UnmountedMarker');
 OnSetUsedNoAction[UnmountedMarker] = true;
+// TODO temprary for experiments with state tree restoration
+var RootStateAccessor = Symbol('RootStateAccessor');
 var StateMethodsImpl = /** @class */ (function () {
-    function StateMethodsImpl(state, path, valueSource, valueEdition, onSetUsed) {
-        this.state = state;
+    function StateMethodsImpl(store, path, valueSource, valueEdition, onSetUsed) {
+        this.store = store;
         this.path = path;
         this.valueSource = valueSource;
         this.valueEdition = valueEdition;
         this.onSetUsed = onSetUsed;
         this.valueCache = ValueUnusedMarker;
     }
-    StateMethodsImpl.prototype.reconstruct = function (valueSource, valueEdition, onSetUsed) {
+    StateMethodsImpl.prototype.reconstruct = function (valueSource, valueEdition, forget) {
         this.valueSource = valueSource;
         this.valueEdition = valueEdition;
-        this.onSetUsed = onSetUsed;
         this.valueCache = ValueUnusedMarker;
         delete this.isDowngraded;
         delete this.subscribers;
-        this.selfCache = this.selfCache;
-        this.children = this.childrenCache;
+        if (forget) {
+            delete this.selfCache;
+            delete this.children;
+        }
+        else {
+            this.children = this.childrenCache;
+        }
         delete this.childrenCache;
     };
+    StateMethodsImpl.prototype.reconnect = function () {
+        this.childrenCache = __assign(__assign({}, this.children), this.childrenCache);
+    };
     StateMethodsImpl.prototype.getUntracked = function (allowPromised) {
-        if (this.valueEdition !== this.state.edition) {
-            this.valueSource = this.state.get(this.path);
-            this.valueEdition = this.state.edition;
+        if (this.valueEdition !== this.store.edition) {
+            this.valueSource = this.store.get(this.path);
+            this.valueEdition = this.store.edition;
             if (this.isMounted) {
                 // this link is still mounted to a component
                 // populate cache again to ensure correct tracking of usage
@@ -620,6 +669,11 @@ var StateMethodsImpl = /** @class */ (function () {
                 if (this.valueCache !== ValueUnusedMarker) {
                     this.valueCache = ValueUnusedMarker;
                     this.get(true); // renew cache to keep it marked used
+                    // let walkedState: StateMethods<StateValueAtPath> = this.onSetUsed[RootStateAccessor];
+                    // for (let pathElem of this.path) {
+                    //     walkedState = walkedState.nested(pathElem)
+                    // }
+                    // walkedState.get()
                 }
             }
             else {
@@ -639,8 +693,8 @@ var StateMethodsImpl = /** @class */ (function () {
             }
         }
         if (this.valueSource === none && !allowPromised) {
-            if (this.state.promised && this.state.promised.error) {
-                throw this.state.promised.error;
+            if (this.store.promised && this.store.promised.error) {
+                throw this.store.promised.error;
             }
             throw new StateInvalidUsageError(this.path, ErrorId.GetStateWhenPromised);
         }
@@ -678,10 +732,10 @@ var StateMethodsImpl = /** @class */ (function () {
         if (typeof newValue === 'object' && newValue !== null && newValue[SelfMethodsID]) {
             throw new StateInvalidUsageError(this.path, ErrorId.SetStateToValueFromState);
         }
-        return [this.state.set(this.path, newValue, mergeValue)];
+        return [this.store.set(this.path, newValue, mergeValue)];
     };
     StateMethodsImpl.prototype.set = function (newValue) {
-        this.state.update(this.setUntracked(newValue));
+        this.store.update(this.setUntracked(newValue));
     };
     StateMethodsImpl.prototype.mergeUntracked = function (sourceValue) {
         var currentValue = this.getUntracked();
@@ -744,16 +798,16 @@ var StateMethodsImpl = /** @class */ (function () {
         return Object.keys(sourceValue).map(function (p) { return updatedPath.slice().concat(p); });
     };
     StateMethodsImpl.prototype.merge = function (sourceValue) {
-        this.state.update(this.mergeUntracked(sourceValue));
+        this.store.update(this.mergeUntracked(sourceValue));
     };
     StateMethodsImpl.prototype.nested = function (key) {
         return this.child(key).self;
     };
     StateMethodsImpl.prototype.rerender = function (paths) {
-        this.state.update(paths);
+        this.store.update(paths);
     };
     StateMethodsImpl.prototype.destroy = function () {
-        this.state.destroy();
+        this.store.destroy();
     };
     StateMethodsImpl.prototype.subscribe = function (l) {
         if (this.subscribers === undefined) {
@@ -848,11 +902,11 @@ var StateMethodsImpl = /** @class */ (function () {
         var child = this.children[key];
         var r;
         if (child) {
-            child.reconstruct(this.valueSource[key], this.valueEdition, this.onSetUsed);
+            child.reconstruct(this.valueSource[key], this.valueEdition, false);
             r = child;
         }
         else {
-            r = new StateMethodsImpl(this.state, this.path.slice().concat(key), this.valueSource[key], this.valueEdition, this.onSetUsed);
+            r = new StateMethodsImpl(this.store, this.path.slice().concat(key), this.valueSource[key], this.valueEdition, this.onSetUsed);
             this.children[key] = r;
         }
         if (this.isDowngraded) {
@@ -1036,7 +1090,7 @@ var StateMethodsImpl = /** @class */ (function () {
     Object.defineProperty(StateMethodsImpl.prototype, "promised", {
         get: function () {
             var currentValue = this.get(true); // marks used
-            if (currentValue === none && this.state.promised && !this.state.promised.fullfilled) {
+            if (currentValue === none && this.store.promised && !this.store.promised.fullfilled) {
                 return true;
             }
             return false;
@@ -1048,8 +1102,8 @@ var StateMethodsImpl = /** @class */ (function () {
         get: function () {
             var currentValue = this.get(true); // marks used
             if (currentValue === none) {
-                if (this.state.promised && this.state.promised.fullfilled) {
-                    return this.state.promised.error;
+                if (this.store.promised && this.store.promised.fullfilled) {
+                    return this.store.promised.error;
                 }
                 this.get(); // will throw 'read while promised' exception
             }
@@ -1062,15 +1116,15 @@ var StateMethodsImpl = /** @class */ (function () {
         var _this = this;
         var opts = { context: context };
         try {
-            this.state.startBatch(this.path, opts);
+            this.store.startBatch(this.path, opts);
             var result = action(this.self);
             if (result === postpone) {
-                this.state.postponeBatch(function () { return _this.batch(action, context); });
+                this.store.postponeBatch(function () { return _this.batch(action, context); });
             }
             return result;
         }
         finally {
-            this.state.finishBatch(this.path, opts);
+            this.store.finishBatch(this.path, opts);
         }
     };
     Object.defineProperty(StateMethodsImpl.prototype, "ornull", {
@@ -1095,12 +1149,12 @@ var StateMethodsImpl = /** @class */ (function () {
                 }
                 return this.self;
             }
-            this.state.register(pluginMeta);
+            this.store.register(pluginMeta);
             return this.self;
         }
         else {
             return [
-                this.state.getPlugin(p) ||
+                this.store.getPlugin(p) ||
                     (new StateInvalidUsageError(this.path, ErrorId.GetUnknownPlugin, p.toString())),
                 this
             ];
@@ -1221,6 +1275,24 @@ function createStore(initial) {
 }
 // Do not try to use useLayoutEffect if DOM not available (SSR)
 var useIsomorphicLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
+var originUseEffect;
+function useHookEffect(effect, deps) {
+    for (var _i = 0, _a = deps || []; _i < _a.length; _i++) {
+        var i = _a[_i];
+        var state = i[self];
+        if (state) {
+            state.reconnect();
+        }
+    }
+    return originUseEffect(effect, deps);
+}
+function interceptUseEffect() {
+    if (!originUseEffect) {
+        originUseEffect = React['useEffect'];
+        React['useEffect'] = useHookEffect;
+    }
+}
+interceptUseEffect();
 
 export { DevTools, DevToolsID, Downgraded, StateFragment, createState, none, postpone, useHookstate, useState };
 //# sourceMappingURL=index.es.js.map

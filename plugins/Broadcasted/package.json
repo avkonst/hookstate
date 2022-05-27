@@ -35,7 +35,7 @@
     "devDependencies": {
         "@babel/core": "7.17.8",
         "@babel/runtime": "7.17.8",
-        "@hookstate/core": "file:../../core",
+        "@hookstate/core": "workspace:*",
         "@rollup/plugin-babel": "5.3.1",
         "@rollup/plugin-commonjs": "21.0.2",
         "@rollup/plugin-node-resolve": "13.1.3",
