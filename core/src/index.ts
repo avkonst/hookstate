@@ -1904,7 +1904,7 @@ const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? React.useLayou
 let originUseEffect: (effect: React.EffectCallback, deps?: React.DependencyList) => void;
 function useHookEffect(effect: React.EffectCallback, deps?: React.DependencyList) {
     for (const i of deps || []) {
-        let state = i[self] as StateMethodsImpl<StateValueAtPath> | undefined
+        let state = (i as any)[self] as StateMethodsImpl<StateValueAtPath> | undefined
         if (state) {
             state.reconnect()
         }
