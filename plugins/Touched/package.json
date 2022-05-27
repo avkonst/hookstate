@@ -30,7 +30,7 @@
     "dependencies": {},
     "peerDependencies": {
         "@hookstate/core": "^3.0.0 || ^4.0.0",
-        "@hookstate/initial": "file:../Initial",
+        "@hookstate/initial": "^3.0.0 || ^4.0.0",
         "lodash.clonedeep": "^4.5.0",
         "lodash.isequal": "^4.5.0"
     },
@@ -38,7 +38,7 @@
         "@babel/core": "7.17.8",
         "@babel/runtime": "7.17.8",
         "@hookstate/core": "workspace:*",
-        "@hookstate/initial": "3.0.0",
+        "@hookstate/initial": "wokrspace:*",
         "@rollup/plugin-babel": "5.3.1",
         "@rollup/plugin-commonjs": "21.0.2",
         "@rollup/plugin-node-resolve": "13.1.3",
