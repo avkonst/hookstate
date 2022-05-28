@@ -23,6 +23,7 @@
     "build-site": "react-scripts build && cp -r build ../../index/build/demo-todolist",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
+    "release": "npm publish",
     "update:deps": "ncu -u"
   },
   "browserslist": {

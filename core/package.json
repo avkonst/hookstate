@@ -24,6 +24,7 @@
         "clean": "rimraf dist",
         "test": "cross-env CI=1 jest --env=jsdom",
         "test:w": "jest --env=jsdom --watch",
+        "release": "npm publish",
         "update:deps": "ncu -u"
     },
     "peerDependencies": {

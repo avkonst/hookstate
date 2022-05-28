@@ -37,6 +37,12 @@
 				"target": "build",
 				"projects": "dependencies"
 			}
+		],
+		"release": [
+			{
+				"target": "build",
+				"projects": "self"
+			}
 		]
 	},
 	"defaultProject": "core"
