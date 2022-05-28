@@ -19,6 +19,54 @@ test('primitive: should rerender used', async () => {
     expect(result.current.get()).toStrictEqual(1);
 });
 
+test('primitive: should not rerender used if set to the same', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useState(0)
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(result.current.get()).toStrictEqual(0);
+
+    act(() => {
+        result.current.set(p => p);
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(result.current.get()).toStrictEqual(0);
+});
+
+test('primitive: should not rerender used if set to the same (null)', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useState(null)
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(result.current.get()).toStrictEqual(null);
+
+    act(() => {
+        result.current.set(p => p);
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(result.current.get()).toStrictEqual(null);
+});
+
+test('primitive: should not rerender used if set to the same (undefined)', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useState(undefined)
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(result.current.get()).toStrictEqual(undefined);
+
+    act(() => {
+        result.current.set(p => p);
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(result.current.get()).toStrictEqual(undefined);
+});
+
 test('primitive: should rerender used (boolean)', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
@@ -101,7 +149,7 @@ test('primitive: should rerender used (global undefined)', async () => {
     expect(result.current.get()).toStrictEqual(2);
 });
 
-test('primitive: should rerender used when set to the same', async () => {
+test('primitive: should not rerender used when set to the same', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1
@@ -113,7 +161,7 @@ test('primitive: should rerender used when set to the same', async () => {
     act(() => {
         result.current.set(p => p);
     });
-    expect(renderTimes).toStrictEqual(2);
+    expect(renderTimes).toStrictEqual(1);
     expect(result.current.get()).toStrictEqual(0);
 });
 
@@ -127,7 +175,7 @@ test('primitive: should rerender when keys used', async () => {
     expect(result.current.keys).toEqual(undefined);
 
     act(() => {
-        result.current.set(p => p);
+        result.current.set(p => p + 1);
     });
     expect(renderTimes).toStrictEqual(2);
     expect(result.current.keys).toEqual(undefined);

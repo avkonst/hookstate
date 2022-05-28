@@ -1324,12 +1324,17 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         return this.get()
     }
 
-    setUntracked(newValue: SetStateAction<S>, mergeValue?: Partial<StateValueAtPath>): [Path] {
+    setUntracked(newValue: SetStateAction<S>, mergeValue?: Partial<StateValueAtPath>): Path[] {
         if (typeof newValue === 'function') {
             newValue = (newValue as ((prevValue: S) => S))(this.getUntracked());
         }
         if (typeof newValue === 'object' && newValue !== null && newValue[SelfMethodsID]) {
             throw new StateInvalidUsageError(this.path, ErrorId.SetStateToValueFromState)
+        }
+        if (newValue !== Object(newValue) && newValue === this.getUntracked(true)) {
+            // this is primitive value and has not changed
+            // so skip this set call as it does not make an effect
+            return []
         }
         return [this.store.set(this.path, newValue, mergeValue)];
     }
@@ -1344,7 +1349,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
             sourceValue = (sourceValue as Function)(currentValue);
         }
 
-        let updatedPaths: [Path];
+        let updatedPaths: Path[];
         let deletedOrInsertedProps = false
 
         if (Array.isArray(currentValue)) {

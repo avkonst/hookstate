@@ -16,11 +16,11 @@ test('primitive: should rerender stable', async () => {
     let state0 = result.current[0];
     let state1 = result.current[0];
     act(() => {
-        result.current[1].set(p => p);
+        result.current[1].set(p => p + 1);
     });
     expect(renderTimes).toStrictEqual(2);
     expect(result.current[0].get()).toStrictEqual(0);
-    expect(result.current[1].get()).toStrictEqual(1);
+    expect(result.current[1].get()).toStrictEqual(2);
     expect(result.current[0] === state0).toBeTruthy();
     expect(result.current[1] !== state1).toBeTruthy();
 });
@@ -100,13 +100,13 @@ test('object: should rerender stable nested update', async () => {
     expect(state0.a !== state0.b).toBeTruthy();
     expect(state1.a !== state1.b).toBeTruthy();
     act(() => {
-        result.current[1].b.set(p => p);
+        result.current[1].b.set(p => p + 1);
     });
     expect(renderTimes).toStrictEqual(2);
     expect(result.current[0].a.get()).toStrictEqual(0);
     expect(result.current[0].b.get()).toStrictEqual(0);
     expect(result.current[1].a.get()).toStrictEqual(1);
-    expect(result.current[1].b.get()).toStrictEqual(1);
+    expect(result.current[1].b.get()).toStrictEqual(2);
     expect(result.current[0] === state0).toBeTruthy();
     expect(result.current[1] !== state1).toBeTruthy();
     
@@ -171,11 +171,11 @@ test('primitive: should rerender stable (global)', async () => {
     let state0 = result.current[0];
     let state1 = result.current[0];
     act(() => {
-        result.current[1].set(p => p);
+        result.current[1].set(p => p + 1);
     });
     expect(renderTimes).toStrictEqual(2);
     expect(result.current[0].get()).toStrictEqual(0);
-    expect(result.current[1].get()).toStrictEqual(1);
+    expect(result.current[1].get()).toStrictEqual(2);
     expect(result.current[0] === state0).toBeTruthy();
     expect(result.current[1] !== state1).toBeTruthy();
 });
@@ -304,13 +304,13 @@ test('object: should rerender stable nested update (global)', async () => {
     expect(state0.a !== state0.b).toBeTruthy();
     expect(state1.a !== state1.b).toBeTruthy();
     act(() => {
-        result.current[1].b.set(p => p);
+        result.current[1].b.set(p => p + 1);
     });
     expect(renderTimes).toStrictEqual(2);
     expect(result.current[0].a.get()).toStrictEqual(0);
     expect(result.current[0].b.get()).toStrictEqual(0);
     expect(result.current[1].a.get()).toStrictEqual(1);
-    expect(result.current[1].b.get()).toStrictEqual(1);
+    expect(result.current[1].b.get()).toStrictEqual(2);
     expect(result.current[0] === state0).toBeTruthy();
     expect(result.current[1] !== state1).toBeTruthy();
     
@@ -345,11 +345,11 @@ test('primitive: should rerender stable (scoped)', async () => {
     let state0 = result.current[0];
     let state1 = result.current[0];
     act(() => {
-        result.current[1].set(p => p);
+        result.current[1].set(p => p + 1);
     });
     expect(renderTimes).toStrictEqual(2);
     expect(result.current[0].get()).toStrictEqual(0);
-    expect(result.current[1].get()).toStrictEqual(1);
+    expect(result.current[1].get()).toStrictEqual(2);
     expect(result.current[0] === state0).toBeTruthy();
     expect(result.current[1] !== state1).toBeTruthy();
 });
@@ -554,13 +554,13 @@ test('object: should rerender stable nested update (scoped)', async () => {
     expect(state0.a !== state0.b).toBeTruthy();
     expect(state1.a !== state1.b).toBeTruthy();
     act(() => {
-        result.current[1].b.set(p => p);
+        result.current[1].b.set(p => p + 1);
     });
     expect(renderTimes).toStrictEqual(2);
     expect(result.current[0].a.get()).toStrictEqual(0);
     expect(result.current[0].b.get()).toStrictEqual(0);
     expect(result.current[1].a.get()).toStrictEqual(1);
-    expect(result.current[1].b.get()).toStrictEqual(1);
+    expect(result.current[1].b.get()).toStrictEqual(2);
     expect(result.current[0] === state0).toBeTruthy();
     expect(result.current[1] !== state1).toBeTruthy();
     
@@ -709,7 +709,7 @@ test('object: should rerender if 2 states used in useEffect', async () => {
     expect(effectTimes).toStrictEqual(3);
 
     act(() => {
-        result.result.current[0].a.set(p => p);
+        result.result.current[0].a.set(p => p + 1);
     });
     expect(renderTimes).toStrictEqual(4);
     expect(effectTimes).toStrictEqual(4);

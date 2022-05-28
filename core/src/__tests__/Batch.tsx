@@ -111,9 +111,11 @@ test('object: should rerender used via nested batch promised', async () => {
     expect(() => result.current.get())
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
 
-    expect(() => result.current.set(200))
-        .toThrow('Error: HOOKSTATE-104 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-104')
-
+    act(() =>
+        expect(() => result.current.set(200))
+            .toThrow('Error: HOOKSTATE-104 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-104')
+    )
+    
     let executed = false;
     act(() => {
         expect(() => result.current.batch(() => {
