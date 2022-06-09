@@ -115,15 +115,6 @@ export interface PluginStateControl<S> {
 }
 
 /**
- * 
- */
-enum StateValueMode {
-    Tracked,
-    Origin,
-    Escaped,
-}
-
-/**
  * An interface to manage a state in Hookstate.
  * 
  * @typeparam S Type of a value of a state
@@ -1909,20 +1900,21 @@ function createStore<S>(initial: SetInitialStateAction<S>): Store {
 // Do not try to use useLayoutEffect if DOM not available (SSR)
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
 
-let originUseEffect: (effect: React.EffectCallback, deps?: React.DependencyList) => void;
+let useEffectOrigin: (effect: React.EffectCallback, deps?: React.DependencyList) => void;
 function useHookEffect(effect: React.EffectCallback, deps?: React.DependencyList) {
-    for (const dep of deps || []) {
-        if (!dep || typeof dep !== 'object') continue
-        let state = (dep as any)[self] as StateMethodsImpl<StateValueAtPath> | undefined
-        if (state) {
-            state.reconnect()
+    for (const i of deps || []) {
+        if (i === Object(i)) {
+            let state = (i as any)[self] as StateMethodsImpl<StateValueAtPath> | undefined
+            if (state) {
+                state.reconnect()
+            }
         }
     }
-    return originUseEffect(effect, deps)
+    return useEffectOrigin(effect, deps)
 }
 function interceptUseEffect() {
-    if (!originUseEffect) {
-        originUseEffect = React['useEffect'];
+    if (!useEffectOrigin) {
+        useEffectOrigin = React['useEffect'];
         React['useEffect'] = useHookEffect;
     }
 }
