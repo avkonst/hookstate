@@ -1,4 +1,5 @@
 import React from 'react';
+import { shallowEqual } from './is-shallow-equal';
 
 ///
 /// EXPORTED SYMBOLS (LIBRARY INTERFACE)
@@ -1900,8 +1901,7 @@ function createStore<S>(initial: SetInitialStateAction<S>): Store {
 // Do not try to use useLayoutEffect if DOM not available (SSR)
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
 
-let useEffectOrigin: (effect: React.EffectCallback, deps?: React.DependencyList) => void;
-function useHookEffect(effect: React.EffectCallback, deps?: React.DependencyList) {
+function reconnectDependencies(deps?: React.DependencyList): React.DependencyList | undefined {
     for (const i of deps || []) {
         if (i === Object(i)) {
             let state = (i as any)[self] as StateMethodsImpl<StateValueAtPath> | undefined
@@ -1910,12 +1910,92 @@ function useHookEffect(effect: React.EffectCallback, deps?: React.DependencyList
             }
         }
     }
+    return deps;
+} 
+
+let useEffectOrigin: (effect: React.EffectCallback, deps?: React.DependencyList) => void;
+export function useHookEffect(effect: React.EffectCallback, deps?: React.DependencyList) {
+    reconnectDependencies(deps)
     return useEffectOrigin(effect, deps)
 }
-function interceptUseEffect() {
+
+let useLayoutEffectOrigin: (effect: React.EffectCallback, deps?: React.DependencyList) => void;
+export function useHookLayoutEffect(effect: React.EffectCallback, deps?: React.DependencyList) {
+    reconnectDependencies(deps)
+    return useLayoutEffectOrigin(effect, deps)
+}
+
+let useInsertionEffectOrigin: (effect: React.EffectCallback, deps?: React.DependencyList) => void;
+export function useHookInsertionEffect(effect: React.EffectCallback, deps?: React.DependencyList) {
+    reconnectDependencies(deps)
+    return useInsertionEffectOrigin(effect, deps)
+}
+
+let useImperativeHandleOrigin: <T, R extends T>(ref: React.Ref<T>|undefined, init: () => R, deps?: React.DependencyList) => void;
+export function useHookImperativeHandle<T, R extends T>(ref: React.Ref<T>|undefined, init: () => R, deps?: React.DependencyList): void {
+    reconnectDependencies(deps)
+    return useImperativeHandleOrigin(ref, init, deps)
+}
+
+let useMemoOrigin: <T>(factory: () => T, deps: React.DependencyList | undefined) => T;
+export function useHookMemo<T>(factory: () => T, deps: React.DependencyList | undefined): T {
+    reconnectDependencies(deps)
+    return useMemoOrigin(factory, deps)
+}
+
+let useCallbackOrigin: <T extends Function>(callback: T, deps: React.DependencyList) => T;
+export function useHookCallback<T extends Function>(callback: T, deps: React.DependencyList): T {
+    reconnectDependencies(deps)
+    return useCallbackOrigin(callback, deps)
+}
+
+let memoOrigin: <P extends object>(
+    Component: React.FunctionComponent<P>,
+    propsAreEqual?: (prevProps: Readonly<P>, nextProps: Readonly<P>) => boolean
+) => React.NamedExoticComponent<P>;
+
+export function hookMemo<T extends React.ComponentType<any>>(
+    Component: T,
+    propsAreEqual?: (prevProps: Readonly<React.ComponentProps<T>>, nextProps: Readonly<React.ComponentProps<T>>) => boolean
+): React.MemoExoticComponent<T>;
+export function hookMemo<P extends object>(
+    Component: React.FunctionComponent<P>,
+    propsAreEqual?: (prevProps: Readonly<P>, nextProps: Readonly<P>) => boolean
+): React.NamedExoticComponent<P> {
+    return memoOrigin(Component, (prevProps, nextProps) => {
+        reconnectDependencies(Object.keys(nextProps).map(i => nextProps[i]))
+        return (propsAreEqual || shallowEqual)(prevProps, nextProps)
+    })
+}
+
+function interceptReactHooks() {
     if (!useEffectOrigin) {
         useEffectOrigin = React['useEffect'];
         React['useEffect'] = useHookEffect;
     }
+    if (!useLayoutEffectOrigin) {
+        useLayoutEffectOrigin = React['useLayoutEffect'];
+        React['useLayoutEffect'] = useHookLayoutEffect;
+    }
+    if (!useInsertionEffectOrigin) {
+        useInsertionEffectOrigin = React['useInsertionEffect'];
+        React['useInsertionEffect'] = useHookInsertionEffect;
+    }
+    if (!useImperativeHandleOrigin) {
+        useImperativeHandleOrigin = React['useImperativeHandle'];
+        React['useImperativeHandle'] = useHookImperativeHandle
+    }
+    if (!useMemoOrigin) {
+        useMemoOrigin = React['useMemo'];
+        React['useMemo'] = useHookMemo;
+    }
+    if (!useCallbackOrigin) {
+        useCallbackOrigin = React['useCallback'];
+        React['useCallback'] = useHookCallback;
+    }
+    if (!memoOrigin) {
+        memoOrigin = React['memo'];
+        React['memo'] = hookMemo;
+    }
 }
-interceptUseEffect()
+interceptReactHooks()
