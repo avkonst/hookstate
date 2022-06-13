@@ -1,4 +1,5 @@
 import React from 'react';
+import { getCache, resetCache } from './cache';
 import { shallowEqual } from './is-shallow-equal';
 
 ///
@@ -549,9 +550,11 @@ export function useHookstate<S>(
             // eslint-disable-next-line react-hooks/rules-of-hooks
             const initializer = () => {
                 let store = parentMethods.store
+                let hookReference = {}
                 let onSetUsedCallback = () => setValue({
                     store: store, // immutable
                     state: state, // immutable
+                    ref: hookReference,
                     source: value.source // mutable, get the latest from value
                 })
                 let state: StateMethodsImpl<S> = new StateMethodsImpl<S>(
@@ -559,11 +562,13 @@ export function useHookstate<S>(
                     parentMethods.path,
                     store.get(parentMethods.path),
                     store.edition,
-                    onSetUsedCallback
+                    onSetUsedCallback,
+                    hookReference
                 );
                 return {
                     store: store,
                     state: state,
+                    ref: hookReference,
                     source: source
                 }
             };
@@ -574,7 +579,8 @@ export function useHookstate<S>(
                 value.store.edition,
                 // parent state object has changed its reference object
                 // so the scopped state should change too
-                value.source !== source
+                value.source !== source,
+                value.ref
             );
             value.source = source;
 
@@ -592,9 +598,11 @@ export function useHookstate<S>(
             // eslint-disable-next-line react-hooks/rules-of-hooks
             let initializer = () => {
                 let store = parentMethods.store
+                let hookReference = {}
                 let onSetUsedCallback = () => setValue({
                     store: store, // immutable
                     state: state, // immutable
+                    ref: hookReference,
                     source: value.source // mutable, get the latest from value
                 })
                 let state: StateMethodsImpl<S> = new StateMethodsImpl<S>(
@@ -602,12 +610,14 @@ export function useHookstate<S>(
                     RootPath,
                     store.get(RootPath),
                     store.edition,
-                    onSetUsedCallback
+                    onSetUsedCallback,
+                    hookReference
                 );
                 return {
                     store: store,
                     state: state,
-                    source: source
+                    ref: hookReference,
+                    source: source,
                 }
             }
             const [value, setValue] = React.useState(initializer);
@@ -617,7 +627,8 @@ export function useHookstate<S>(
                 value.store.edition,
                 // parent state object has changed its reference object
                 // so the scopped state should change too
-                value.source !== source
+                value.source !== source,
+                value.ref
             );
             value.source = source;
 
@@ -640,20 +651,28 @@ export function useHookstate<S>(
         // eslint-disable-next-line react-hooks/rules-of-hooks
         let initializer = () => {
             let store = createStore(source)
+            let hookReference = {}
             let onSetUsedCallback = () => setValue({
                 store: store,
                 state: state,
+                ref: hookReference,
             })
-            let state: StateMethodsImpl<S> = new StateMethodsImpl<S>(
-                store,
-                RootPath,
-                store.get(RootPath),
-                store.edition,
-                onSetUsedCallback
-            );
+            let state: StateMethodsImpl<S> = getCache(hookReference, store, "__", store.get(RootPath), (value) => {
+                return new StateMethodsImpl<S>(
+                    store,
+                    RootPath,
+                    value,
+                    store.edition,
+                    onSetUsedCallback,
+                    hookReference,
+                )
+            }, () => {
+                throw Error("unexpected")
+            });
             return {
                 store: store,
-                state: state
+                state: state,
+                ref: hookReference,
             }
         }
         const [value, setValue] = React.useState(initializer);
@@ -661,7 +680,8 @@ export function useHookstate<S>(
             RootPath,
             value.store.get(RootPath),
             value.store.edition,
-            false
+            false,
+            value.ref
         );
 
         value.store.subscribe(value.state); // in sync here, not in effect
@@ -993,8 +1013,11 @@ class Store implements Subscribable {
         }
 
         let target = this._value;
+        resetCache(this, "__", target)
         for (let i = 0; i < path.length - 1; i += 1) {
+            let prevTarget = target;
             target = target[path[i]];
+            resetCache(prevTarget, path[i], target)
         }
 
         const p = path[path.length - 1]
@@ -1002,6 +1025,7 @@ class Store implements Subscribable {
             if (value !== none) {
                 // Property UPDATE case
                 let prevValue = target[p]
+                resetCache(target, p, prevValue)
                 target[p] = value;
                 this.afterSet({
                     path: path,
@@ -1144,13 +1168,23 @@ class Store implements Subscribable {
     }
 
     toMethods() {
-        return new StateMethodsImpl<StateValueAtRoot>(
-            this,
-            RootPath,
-            this.get(RootPath),
-            this.edition,
-            OnSetUsedNoAction
-        )
+        return getCache(this, this, "__toMethods", this.get(RootPath), (childValue) => {
+            return new StateMethodsImpl<StateValueAtRoot>(
+                this,
+                RootPath,
+                childValue,
+                this.edition,
+                OnSetUsedNoAction,
+                this
+            )
+        }, (childState, childValue) => {
+            childState.reconstruct(
+                RootPath,
+                childValue,
+                this.edition,
+                true,
+                this)
+        })
     }
 
     subscribe(l: Subscriber) {
@@ -1215,22 +1249,24 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
 
     private isDowngraded: boolean | undefined;
     private children: Record<string | number, StateMethodsImpl<StateValueAtPath>> | undefined;
-    private childrenCache: Record<string | number, StateMethodsImpl<StateValueAtPath>> | undefined;
-    private selfCache: State<S> | undefined;
-    private valueCache: StateValueAtPath = ValueUnusedMarker;
+    private childrenCache: Record<string | number, StateMethodsImpl<StateValueAtPath>> | undefined; // TODO rename to childrenUsed
+    private selfCache: State<S> | undefined; // TODO rename selfProxy
+    private valueCache: StateValueAtPath = ValueUnusedMarker; // TODO rename valueProxy
 
     constructor(
         public readonly store: Store,
         public path: Path,
         private valueSource: S,
         private valueEdition: number,
-        private onSetUsed: () => void
+        private onSetUsed: () => void,
+        private hookReference: Object
     ) { }
 
-    reconstruct(path: Path, valueSource: S, valueEdition: number, forget: boolean) {
+    reconstruct(path: Path, valueSource: S, valueEdition: number, forget: boolean, hookReference: Object) {
         this.path = path;
         this.valueSource = valueSource;
         this.valueEdition = valueEdition;
+        this.hookReference = hookReference;
 
         this.valueCache = ValueUnusedMarker;
         delete this.isDowngraded;
@@ -1495,27 +1531,25 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                 return cachedChild;
             }
         }
-        this.children = this.children || {};
-        const child = this.children[key];
-        let r;
-        if (child) {
-            child.reconstruct(
-                this.path.slice().concat(key),
-                this.valueSource[key],
-                this.valueEdition,
-                false
-            )
-            r = child;
-        } else {
-            r = new StateMethodsImpl(
+        
+        let r = getCache(this.hookReference, this.valueSource, key, this.valueSource[key], (childValue) => {
+            return new StateMethodsImpl(
                 this.store,
                 this.path.slice().concat(key),
-                this.valueSource[key],
+                childValue,
                 this.valueEdition,
                 this.onSetUsed,
+                this.hookReference,
             )
-            this.children[key] = r;
-        }
+        }, (childState, childValue) => {
+            childState.reconstruct(
+                this.path.slice().concat(key),
+                childValue,
+                this.valueEdition,
+                false,
+                this.hookReference
+            )
+        });
         if (this.isDowngraded) {
             r.isDowngraded = true;
         }
