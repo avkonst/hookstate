@@ -4,6 +4,13 @@ import './index.css';
 
 import '@hookstate/devtools';
 
+// optional, defaults are almost always right
+import { configure } from '@hookstate/core';
+configure({
+    interceptDependencyListsMode: "always",
+    isDevelopmentMode: process.env.NODE_ENV === 'development'
+})
+
 import App from './App';
 import * as serviceWorker from './serviceWorker';
 

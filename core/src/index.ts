@@ -36,7 +36,7 @@ export type SetStateAction<S> = (S | Promise<S>) | ((prevState: S) => (S | Promi
  */
 export type SetPartialStateAction<S> =
     S extends ReadonlyArray<(infer U)> ?
-        ReadonlyArray<U> | Record<number, U> | ((prevValue: S) => (ReadonlyArray<U> | Record<number, U>)) :
+    ReadonlyArray<U> | Record<number, U> | ((prevValue: S) => (ReadonlyArray<U> | Record<number, U>)) :
     S extends object | string ? Partial<S> | ((prevValue: S) => Partial<S>) :
     React.SetStateAction<S>;
 
@@ -172,13 +172,13 @@ export interface StateMethods<S> {
      * True if state value is not yet available (eg. equal to a promise)
      */
     readonly promised: boolean;
-    
+
     /**
      * If a state was set to a promise and the promise was rejected,
      * this property will return the error captured from the promise rejection
      */
     readonly error: StateErrorAtRoot | undefined;
-    
+
     /**
      * Unwraps and returns the underlying state value referred by
      * [path](#readonly-path) of this state instance.
@@ -186,7 +186,7 @@ export interface StateMethods<S> {
      * It returns the same result as [StateMethods.value](#readonly-value) method.
      */
     get(): S;
-    
+
     /**
      * Sets new value for a state.
      * If `this.path === []`,
@@ -202,7 +202,7 @@ export interface StateMethods<S> {
      * The function receives the current state value as an argument.
      */
     set(newValue: SetStateAction<S>): void;
-    
+
     /**
      * Similarly to [set](#set) method updates state value.
      *
@@ -215,7 +215,7 @@ export interface StateMethods<S> {
      * value with the argument converted to string and sets the result to the state.
      */
     merge(newValue: SetPartialStateAction<S>): void;
-    
+
     /**
      * Returns nested state by key.
      * `state.nested('myprop')` returns the same as `state.myprop` or `state['myprop']`,
@@ -226,7 +226,7 @@ export interface StateMethods<S> {
      * @param key child property name or index
      */
     nested<K extends keyof S>(key: K): State<S[K]>;
-    
+
     /**
      * Runs the provided action callback with optimised re-rendering.
      * Updating state within a batch action does not trigger immediate rerendering.
@@ -258,7 +258,7 @@ export interface StateMethods<S> {
      * [Learn more...](https://hookstate.js.org/docs/extensions-overview)
      */
     attach(plugin: () => Plugin): State<S>
-    
+
     /**
      * For plugin developers only.
      * It is a method to get the instance of the previously attached plugin.
@@ -585,7 +585,7 @@ export function useHookstate<S>(
                     parentMethods.unsubscribe(value.state);
                 }
             }, []);
-            
+
             return value.state.self;
         } else {
             // Global state mount or destroyed link
@@ -628,8 +628,8 @@ export function useHookstate<S>(
                     value.store.unsubscribe(value.state);
                 }
             }, []);
-            
-            let state: State<StateValueAtPath> =  value.state.self;
+
+            let state: State<StateValueAtPath> = value.state.self;
             for (let ind = 0; ind < parentMethods.path.length; ind += 1) {
                 state = state.nested(parentMethods.path[ind]);
             }
@@ -663,7 +663,7 @@ export function useHookstate<S>(
             value.store.edition,
             false
         );
-        
+
         value.store.subscribe(value.state); // in sync here, not in effect
         useIsomorphicLayoutEffect(() => {
             return () => {
@@ -672,14 +672,14 @@ export function useHookstate<S>(
             }
         }, []);
 
-        if (isDevelopmentMode) {
+        if (configuration.isDevelopmentMode) {
             // This is a workaround for the issue:
             // https://github.com/avkonst/hookstate/issues/109
             // See technical notes on React behavior here:
             // https://github.com/apollographql/apollo-client/issues/5870#issuecomment-689098185
             const isEffectExecutedAfterRender = React.useRef(false);
             isEffectExecutedAfterRender.current = false; // not yet...
-            
+
             React.useEffect(() => {
                 isEffectExecutedAfterRender.current = true; // ... and now, yes!
                 // The state is not destroyed intentionally
@@ -799,10 +799,6 @@ export function DevTools<S>(state: State<S>): DevToolsExtensions {
 /// INTERNAL SYMBOLS (LIBRARY IMPLEMENTATION)
 ///
 
-const isDevelopmentMode = typeof process === 'object' && 
-    typeof process.env === 'object' &&
-    process.env.NODE_ENV === 'development'
-
 const self = Symbol('self')
 
 const EmptyDevToolsExtensions: DevToolsExtensions = {
@@ -811,6 +807,9 @@ const EmptyDevToolsExtensions: DevToolsExtensions = {
 }
 
 enum ErrorId {
+    // TODO document
+    StateUsedInDependencyList = 100,
+
     InitStateToValueFromState = 101,
     SetStateToValueFromState = 102,
     GetStateWhenPromised = 103,
@@ -1076,7 +1075,7 @@ class Store implements Subscribable {
         }
     }
 
-    startBatch(path: Path, options?: { context?:  AnyContext }): void {
+    startBatch(path: Path, options?: { context?: AnyContext }): void {
         this._batches += 1
 
         const cbArgument: Writeable<PluginCallbacksOnBatchArgument> = {
@@ -1091,7 +1090,7 @@ class Store implements Subscribable {
         this._batchStartSubscribers.forEach(cb => cb(cbArgument))
     }
 
-    finishBatch(path: Path, options?: { context?:  AnyContext }): void {
+    finishBatch(path: Path, options?: { context?: AnyContext }): void {
         const cbArgument: Writeable<PluginCallbacksOnBatchArgument> = {
             path: path
         }
@@ -1219,7 +1218,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
     private childrenCache: Record<string | number, StateMethodsImpl<StateValueAtPath>> | undefined;
     private selfCache: State<S> | undefined;
     private valueCache: StateValueAtPath = ValueUnusedMarker;
-    
+
     constructor(
         public readonly store: Store,
         public path: Path,
@@ -1232,7 +1231,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         this.path = path;
         this.valueSource = valueSource;
         this.valueEdition = valueEdition;
-        
+
         this.valueCache = ValueUnusedMarker;
         delete this.isDowngraded;
         delete this.subscribers;
@@ -1245,14 +1244,14 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         }
         delete this.childrenCache
     }
-    
+
     reconnect() {
         this.childrenCache = {
             ...this.children,
             ...this.childrenCache
         }
     }
-    
+
     getUntracked(allowPromised?: boolean) {
         if (this.valueEdition !== this.store.edition) {
             this.valueSource = this.store.get(this.path)
@@ -1400,7 +1399,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
     nested<K extends keyof S>(key: K): State<S[K]> {
         return this.child(key as string | number).self as State<S[K]>
     }
-    
+
     rerender(paths: Path[]) {
         this.store.update(paths)
     }
@@ -1421,7 +1420,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
             this.subscribers.delete(l);
         }
     }
-    
+
     get isMounted(): boolean {
         return !this.onSetUsed[UnmountedMarker]
     }
@@ -1525,7 +1524,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         }
         return r;
     }
-    
+
     private valueArrayImpl(currentValue: StateValueAtPath[]): S {
         if (IsNoProxy) {
             this.isDowngraded = true
@@ -1598,7 +1597,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         if (this.selfCache) {
             return this.selfCache
         }
-        
+
         const getter = (_: object, key: PropertyKey) => {
             if (key === self) {
                 return this
@@ -1609,7 +1608,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
             if (key === 'toJSON') {
                 throw new StateInvalidUsageError(this.path, ErrorId.ToJson_State);
             }
-            
+
             let nestedGetter = (prop: PropertyKey) => {
                 const currentDowngraded = this.isDowngraded; // relevant for IE11 only
                 const currentValue = this.get(); // IE11 marks this as downgraded
@@ -1676,18 +1675,18 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                     return nestedGetter(key)
             }
         }
-        
+
         if (IsNoProxy) {
             // minimal support for IE11
             const result = (Array.isArray(this.valueSource) ? [] : {}) as State<S>;
             [self, 'toJSON', 'path', 'keys', 'value', 'ornull',
                 'promised', 'error', 'get', 'set', 'merge',
                 'nested', 'batch', 'attach', 'destroy']
-            .forEach(key => {
-                Object.defineProperty(result, key, {
-                    get: () => getter(result, key)
+                .forEach(key => {
+                    Object.defineProperty(result, key, {
+                        get: () => getter(result, key)
+                    })
                 })
-            })
             if (typeof this.valueSource === 'object' && this.valueSource !== null) {
                 Object.keys(this.valueSource).forEach(key => {
                     Object.defineProperty(result, key, {
@@ -1699,7 +1698,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
             this.selfCache = result;
             return this.selfCache
         }
-        
+
         this.selfCache = proxyWrap(this.path, this.valueSource,
             () => {
                 return this.get();
@@ -1711,7 +1710,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
             false) as unknown as State<S>;
         return this.selfCache
     }
-    
+
     get promised(): boolean {
         const currentValue = this.get(true) // marks used
         if (currentValue === none && this.store.promised && !this.store.promised.fullfilled) {
@@ -1775,7 +1774,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         } else {
             return [
                 this.store.getPlugin(p) ||
-                    (new StateInvalidUsageError(this.path, ErrorId.GetUnknownPlugin, p.toString())), 
+                (new StateInvalidUsageError(this.path, ErrorId.GetUnknownPlugin, p.toString())),
                 this
             ];
         }
@@ -1876,7 +1875,7 @@ function proxyWrap(
         },
         apply: (_target, thisArg, argArray?) => {
             return onInvalidUsage(isValueProxy ?
-                ErrorId.Apply_State:
+                ErrorId.Apply_State :
                 ErrorId.Apply_Value)
         },
         construct: (_target, argArray, newTarget?) => {
@@ -1901,21 +1900,79 @@ function createStore<S>(initial: SetInitialStateAction<S>): Store {
 // Do not try to use useLayoutEffect if DOM not available (SSR)
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
 
-function reconnectDependencies(deps?: React.DependencyList): React.DependencyList | undefined {
+export interface Configuration {
+    interceptDependencyListsMode: 'always' | 'development' | 'never',
+    isDevelopmentMode: boolean,
+}
+let configuration: Configuration & { hiddenInterceptDependencyListsModeDebug: boolean } = {
+    interceptDependencyListsMode: 'always',
+    // TODO this does not always work, so it is better if it is set by the app explictly. Document this
+    isDevelopmentMode: typeof process === 'object' &&
+        typeof process.env === 'object' &&
+        process.env.NODE_ENV === 'development',
+    hiddenInterceptDependencyListsModeDebug: false
+}
+// TODO document
+export function configure(config: Partial<Configuration>) {
+    configuration = {
+        interceptDependencyListsMode: config.interceptDependencyListsMode ?? configuration.interceptDependencyListsMode,
+        isDevelopmentMode: config.isDevelopmentMode ?? configuration.isDevelopmentMode,
+        hiddenInterceptDependencyListsModeDebug: false
+    }
+
+    interceptReactHooks() // not really required, but for safety
+
+    if (configuration.interceptDependencyListsMode === 'never') {
+        configuration.hiddenInterceptDependencyListsModeDebug = false;
+        React['useEffect'] = useEffectOrigin;
+        React['useLayoutEffect'] = useLayoutEffectOrigin;
+        React['useInsertionEffect'] = useInsertionEffectOrigin;
+        React['useImperativeHandle'] = useImperativeHandleOrigin;
+        React['useMemo'] = useMemoOrigin;
+        React['useCallback'] = useCallbackOrigin;
+        // the following does not make an effect as memo calls happen on module load
+        // so it is always set to memoIntercept
+        React['memo'] = memoOrigin as any;
+    } else {
+        React['useEffect'] = useEffectIntercept;
+        React['useLayoutEffect'] = useLayoutEffectIntercept;
+        React['useInsertionEffect'] = useInsertionEffectIntercept;
+        React['useImperativeHandle'] = useImperativeHandleIntercept;
+        React['useMemo'] = useMemoIntercept;
+        React['useCallback'] = useCallbackIntercept;
+        // the following does not make an effect as memo calls happen on module load
+        // so it is always set to memoIntercept
+        React['memo'] = memoIntercept as any;
+        if (configuration.interceptDependencyListsMode === 'development'
+            && configuration.isDevelopmentMode) {
+            configuration.hiddenInterceptDependencyListsModeDebug = true;
+        }
+    }
+}
+
+function reconnectDependencies(deps?: React.DependencyList, fromIntercept?: boolean): React.DependencyList | undefined {
     for (const i of deps || []) {
         if (i === Object(i)) {
             let state = (i as any)[self] as StateMethodsImpl<StateValueAtPath> | undefined
             if (state) {
+                if (fromIntercept && configuration.hiddenInterceptDependencyListsModeDebug) {
+                    // TODO document this exception
+                    throw new StateInvalidUsageError(state.path, ErrorId.StateUsedInDependencyList)
+                }
                 state.reconnect()
             }
         }
     }
     return deps;
-} 
+}
 
 let useEffectOrigin: (effect: React.EffectCallback, deps?: React.DependencyList) => void;
 export function useHookEffect(effect: React.EffectCallback, deps?: React.DependencyList) {
     reconnectDependencies(deps)
+    return useEffectOrigin(effect, deps)
+}
+function useEffectIntercept(effect: React.EffectCallback, deps?: React.DependencyList) {
+    reconnectDependencies(deps, true)
     return useEffectOrigin(effect, deps)
 }
 
@@ -1924,16 +1981,28 @@ export function useHookLayoutEffect(effect: React.EffectCallback, deps?: React.D
     reconnectDependencies(deps)
     return useLayoutEffectOrigin(effect, deps)
 }
+function useLayoutEffectIntercept(effect: React.EffectCallback, deps?: React.DependencyList) {
+    reconnectDependencies(deps, true)
+    return useLayoutEffectOrigin(effect, deps)
+}
 
 let useInsertionEffectOrigin: (effect: React.EffectCallback, deps?: React.DependencyList) => void;
 export function useHookInsertionEffect(effect: React.EffectCallback, deps?: React.DependencyList) {
     reconnectDependencies(deps)
     return useInsertionEffectOrigin(effect, deps)
 }
+function useInsertionEffectIntercept(effect: React.EffectCallback, deps?: React.DependencyList) {
+    reconnectDependencies(deps, true)
+    return useInsertionEffectOrigin(effect, deps)
+}
 
-let useImperativeHandleOrigin: <T, R extends T>(ref: React.Ref<T>|undefined, init: () => R, deps?: React.DependencyList) => void;
-export function useHookImperativeHandle<T, R extends T>(ref: React.Ref<T>|undefined, init: () => R, deps?: React.DependencyList): void {
+let useImperativeHandleOrigin: <T, R extends T>(ref: React.Ref<T> | undefined, init: () => R, deps?: React.DependencyList) => void;
+export function useHookImperativeHandle<T, R extends T>(ref: React.Ref<T> | undefined, init: () => R, deps?: React.DependencyList): void {
     reconnectDependencies(deps)
+    return useImperativeHandleOrigin(ref, init, deps)
+}
+function useImperativeHandleIntercept<T, R extends T>(ref: React.Ref<T> | undefined, init: () => R, deps?: React.DependencyList): void {
+    reconnectDependencies(deps, true)
     return useImperativeHandleOrigin(ref, init, deps)
 }
 
@@ -1942,10 +2011,18 @@ export function useHookMemo<T>(factory: () => T, deps: React.DependencyList | un
     reconnectDependencies(deps)
     return useMemoOrigin(factory, deps)
 }
+function useMemoIntercept<T>(factory: () => T, deps: React.DependencyList | undefined): T {
+    reconnectDependencies(deps, true)
+    return useMemoOrigin(factory, deps)
+}
 
 let useCallbackOrigin: <T extends Function>(callback: T, deps: React.DependencyList) => T;
 export function useHookCallback<T extends Function>(callback: T, deps: React.DependencyList): T {
     reconnectDependencies(deps)
+    return useCallbackOrigin(callback, deps)
+}
+function useCallbackIntercept<T extends Function>(callback: T, deps: React.DependencyList): T {
+    reconnectDependencies(deps, true)
     return useCallbackOrigin(callback, deps)
 }
 
@@ -1953,7 +2030,6 @@ let memoOrigin: <P extends object>(
     Component: React.FunctionComponent<P>,
     propsAreEqual?: (prevProps: Readonly<P>, nextProps: Readonly<P>) => boolean
 ) => React.NamedExoticComponent<P>;
-
 export function hookMemo<T extends React.ComponentType<any>>(
     Component: T,
     propsAreEqual?: (prevProps: Readonly<React.ComponentProps<T>>, nextProps: Readonly<React.ComponentProps<T>>) => boolean
@@ -1967,35 +2043,48 @@ export function hookMemo<P extends object>(
         return (propsAreEqual || shallowEqual)(prevProps, nextProps)
     })
 }
+function memoIntercept<T extends React.ComponentType<any>>(
+    Component: T,
+    propsAreEqual?: (prevProps: Readonly<React.ComponentProps<T>>, nextProps: Readonly<React.ComponentProps<T>>) => boolean
+): React.MemoExoticComponent<T>;
+function memoIntercept<P extends object>(
+    Component: React.FunctionComponent<P>,
+    propsAreEqual?: (prevProps: Readonly<P>, nextProps: Readonly<P>) => boolean
+): React.NamedExoticComponent<P> {
+    return memoOrigin(Component, (prevProps, nextProps) => {
+        reconnectDependencies(Object.keys(nextProps).map(i => nextProps[i]), true)
+        return (propsAreEqual || shallowEqual)(prevProps, nextProps)
+    })
+}
 
 function interceptReactHooks() {
     if (!useEffectOrigin) {
         useEffectOrigin = React['useEffect'];
-        React['useEffect'] = useHookEffect;
+        React['useEffect'] = useEffectIntercept;
     }
     if (!useLayoutEffectOrigin) {
         useLayoutEffectOrigin = React['useLayoutEffect'];
-        React['useLayoutEffect'] = useHookLayoutEffect;
+        React['useLayoutEffect'] = useLayoutEffectIntercept;
     }
     if (!useInsertionEffectOrigin) {
         useInsertionEffectOrigin = React['useInsertionEffect'];
-        React['useInsertionEffect'] = useHookInsertionEffect;
+        React['useInsertionEffect'] = useInsertionEffectIntercept;
     }
     if (!useImperativeHandleOrigin) {
         useImperativeHandleOrigin = React['useImperativeHandle'];
-        React['useImperativeHandle'] = useHookImperativeHandle
+        React['useImperativeHandle'] = useImperativeHandleIntercept;
     }
     if (!useMemoOrigin) {
         useMemoOrigin = React['useMemo'];
-        React['useMemo'] = useHookMemo;
+        React['useMemo'] = useMemoIntercept;
     }
     if (!useCallbackOrigin) {
         useCallbackOrigin = React['useCallback'];
-        React['useCallback'] = useHookCallback;
+        React['useCallback'] = useCallbackIntercept;
     }
     if (!memoOrigin) {
         memoOrigin = React['memo'];
-        React['memo'] = hookMemo;
+        React['memo'] = memoIntercept;
     }
 }
 interceptReactHooks()

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTasksState, Task } from './TasksState';
-import { State, useState, none } from '@hookstate/core';
+import { State, useState, none, hookMemo } from '@hookstate/core';
 import { useSettingsState } from './SettingsState';
 
 function TaskEditor(props: { task: State<Task> }) {
@@ -152,6 +152,8 @@ function TaskEditor(props: { task: State<Task> }) {
     </div>
 }
 
+const TaskEditorMomorized = React.memo(TaskEditor)
+
 export function TasksViewer() {
     const tasksState = useTasksState()
     
@@ -162,7 +164,7 @@ export function TasksViewer() {
     }
     
     return <div key="" style={{ textAlign: 'left', marginBottom: 50 }}>{
-        tasksState.map((task, i) => <TaskEditor
+        tasksState.map((task, i) => <TaskEditorMomorized
             key={task.id.value}
             task={task}
         />)
