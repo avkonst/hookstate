@@ -889,7 +889,7 @@ class Store implements Subscribable {
 
     constructor(private _value: StateValueAtRoot) {
         if (typeof _value === 'object' &&
-            Promise.resolve(_value) === _value) {
+            configuration.promiseDetector(_value)) {
             this._promised = this.createPromised(_value)
             this._value = none
         } else if (_value === none) {
@@ -964,7 +964,7 @@ class Store implements Subscribable {
                 this._promised = this.createPromised(undefined)
                 delete onSetArg.value
                 delete onSetArg.state
-            } else if (typeof value === 'object' && Promise.resolve(value) === value) {
+            } else if (typeof value === 'object' && configuration.promiseDetector(value)) {
                 this._promised = this.createPromised(value)
                 value = none
                 delete onSetArg.value
@@ -988,7 +988,7 @@ class Store implements Subscribable {
             return path;
         }
 
-        if (typeof value === 'object' && Promise.resolve(value) === value) {
+        if (typeof value === 'object' && configuration.promiseDetector(value)) {
             throw new StateInvalidUsageError(path, ErrorId.SetStateNestedToPromised)
         }
 
@@ -1903,6 +1903,7 @@ const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? React.useLayou
 export interface Configuration {
     interceptDependencyListsMode: 'always' | 'development' | 'never',
     isDevelopmentMode: boolean,
+    promiseDetector: (p: any) => boolean,
 }
 let configuration: Configuration & { hiddenInterceptDependencyListsModeDebug: boolean } = {
     interceptDependencyListsMode: 'always',
@@ -1910,6 +1911,7 @@ let configuration: Configuration & { hiddenInterceptDependencyListsModeDebug: bo
     isDevelopmentMode: typeof process === 'object' &&
         typeof process.env === 'object' &&
         process.env.NODE_ENV === 'development',
+    promiseDetector: (p) => Promise.resolve(p) === p,
     hiddenInterceptDependencyListsModeDebug: false
 }
 // TODO document
@@ -1917,6 +1919,7 @@ export function configure(config: Partial<Configuration>) {
     configuration = {
         interceptDependencyListsMode: config.interceptDependencyListsMode ?? configuration.interceptDependencyListsMode,
         isDevelopmentMode: config.isDevelopmentMode ?? configuration.isDevelopmentMode,
+        promiseDetector: config.promiseDetector ?? configuration.promiseDetector,
         hiddenInterceptDependencyListsModeDebug: false
     }
 
