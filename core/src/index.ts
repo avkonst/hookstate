@@ -48,13 +48,6 @@ export type SetPartialStateAction<S> =
 export type SetInitialStateAction<S> = S | Promise<S> | (() => S | Promise<S>)
 
 /**
- * Special symbol which might be returned by onPromised callback of [StateMethods.map](#map) function.
- * 
- * [Learn more...](https://hookstate.js.org/docs/asynchronous-state#executing-an-action-when-state-is-loaded)
- */
-export const postpone = Symbol('postpone')
-
-/**
  * Special symbol which might be used to delete properties
  * from an object calling [StateMethods.set](#set) or [StateMethods.merge](#merge).
  * 
@@ -228,22 +221,6 @@ export interface StateMethods<S> {
     nested<K extends keyof S>(key: K): State<S[K]>;
 
     /**
-     * Runs the provided action callback with optimised re-rendering.
-     * Updating state within a batch action does not trigger immediate rerendering.
-     * Instead, all required rerendering is done once the batch is finished.
-     * 
-     * [Learn more about batching...](https://hookstate.js.org/docs/performance-batched-updates
-     * 
-     * @param action callback function to execute in a batch
-     * 
-     * @param context custom user's value, which is passed to plugins
-     */
-    batch<R, C>(
-        action: (s: State<S>) => R,
-        context?: Exclude<C, Function>
-    ): R;
-
-    /**
      * If state value is null or undefined, returns state value.
      * Otherwise, it returns this state instance but
      * with null and undefined removed from the type parameter.
@@ -350,8 +327,7 @@ export interface PluginCallbacksOnSetArgument {
      * [merged](#optional-readonly-merged) property can be used to detect which values were merged in but it will not
      * inform you whether those values are different from the previous state.
      *
-     * As a workaround, you can [batch state updates](https://hookstate.js.org/docs/performance-batched-updates) or
-     * replace merge calls with the immutable-style set operation like so:
+     * As a workaround, you can replace merge calls with the immutable-style set operation like so:
      *
      * ```
      * state.set(p => {
@@ -377,16 +353,6 @@ export interface PluginCallbacksOnDestroyArgument {
 
 /**
  * For plugin developers only.
- * PluginCallbacks.onBatchStart/Finish argument type.
- */
-export interface PluginCallbacksOnBatchArgument {
-    readonly path: Path,
-    readonly state?: StateValueAtRoot,
-    readonly context?: AnyContext,
-}
-
-/**
- * For plugin developers only.
  * Set of callbacks, a plugin may subscribe to.
  * 
  * [Learn more...](https://hookstate.js.org/docs/writing-plugin)
@@ -394,8 +360,6 @@ export interface PluginCallbacksOnBatchArgument {
 export interface PluginCallbacks {
     readonly onSet?: (arg: PluginCallbacksOnSetArgument) => void,
     readonly onDestroy?: (arg: PluginCallbacksOnDestroyArgument) => void,
-    readonly onBatchStart?: (arg: PluginCallbacksOnBatchArgument) => void,
-    readonly onBatchFinish?: (arg: PluginCallbacksOnBatchArgument) => void,
 };
 
 /**
@@ -844,7 +808,7 @@ class StateInvalidUsageError extends Error {
 }
 
 interface Subscriber {
-    onSet(paths: Path[], actions: (() => void)[]): boolean;
+    onSet(paths: SetActionDescriptor, actions: Set<() => void>): boolean;
 }
 
 interface Subscribable {
@@ -870,22 +834,21 @@ const DestroyedEdition = -1
 
 type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 
+interface SetActionDescriptor {
+    path: Path,
+    actions?: Record<string | number, "I" | "U" | "D">
+}
+
 class Store implements Subscribable {
     private _edition = 0;
 
     private _subscribers: Set<Subscriber> = new Set();
     private _setSubscribers: Set<Required<PluginCallbacks>['onSet']> = new Set();
     private _destroySubscribers: Set<Required<PluginCallbacks>['onDestroy']> = new Set();
-    private _batchStartSubscribers: Set<Required<PluginCallbacks>['onBatchStart']> = new Set();
-    private _batchFinishSubscribers: Set<Required<PluginCallbacks>['onBatchFinish']> = new Set();
 
     private _plugins: Map<symbol, PluginCallbacks> = new Map();
 
     private _promised?: Promised;
-
-    private _batches = 0;
-    private _batchesPendingPaths?: Path[];
-    private _batchesPendingActions?: (() => void)[];
 
     constructor(private _value: StateValueAtRoot) {
         if (typeof _value === 'object' &&
@@ -903,24 +866,19 @@ class Store implements Subscribable {
             (r: StateValueAtPath) => {
                 if (this.promised === promised && this.edition !== DestroyedEdition) {
                     this._promised = undefined
-                    this.set(RootPath, r, undefined)
-                    this.update([RootPath])
+                    let ad = { path: RootPath };
+                    this.update(this.set(ad, r, undefined))
                 }
             },
             () => {
                 if (this.promised === promised && this.edition !== DestroyedEdition) {
                     this._edition += 1
-                    this.update([RootPath])
+                    let ad = { path: RootPath };
+                    this.update(ad)
                 }
             },
             () => {
-                if (this._batchesPendingActions &&
-                    this._value !== none &&
-                    this.edition !== DestroyedEdition) {
-                    const actions = this._batchesPendingActions
-                    this._batchesPendingActions = undefined
-                    actions.forEach(a => a())
-                }
+                // TODO implement State.then here
             }
         );
         return promised;
@@ -945,8 +903,10 @@ class Store implements Subscribable {
         return result;
     }
 
-    set(path: Path, value: StateValueAtPath, mergeValue: Partial<StateValueAtPath> | undefined): Path {
+    set(ad: SetActionDescriptor, value: StateValueAtPath, mergeValue: Partial<StateValueAtPath> | undefined): SetActionDescriptor {
+        let path = ad.path;
         if (this._edition < 0) {
+            // TODO convert to console log
             throw new StateInvalidUsageError(path, ErrorId.SetStateWhenDestroyed)
         }
 
@@ -985,10 +945,11 @@ class Store implements Subscribable {
                 this.promised.resolver(this._value)
             }
 
-            return path;
+            return ad;
         }
 
         if (typeof value === 'object' && configuration.promiseDetector(value)) {
+            // TODO this one still can get into the state as nested property, need to check on read instead
             throw new StateInvalidUsageError(path, ErrorId.SetStateNestedToPromised)
         }
 
@@ -1011,7 +972,7 @@ class Store implements Subscribable {
                     merged: mergeValue
                 })
 
-                return path;
+                return ad;
             } else {
                 // Property DELETE case
                 let prevValue = target[p]
@@ -1030,7 +991,10 @@ class Store implements Subscribable {
                 // if an array of objects is about to loose existing property
                 // we consider it is the whole object is changed
                 // which is identified by upper path
-                return path.slice(0, -1)
+                return {
+                    path: path.slice(0, -1),
+                    actions: { [p]: "D" as "D" }
+                }
             }
         }
 
@@ -1047,24 +1011,30 @@ class Store implements Subscribable {
             // if an array of objects is about to be extended by new property
             // we consider it is the whole object is changed
             // which is identified by upper path
-            return path.slice(0, -1)
+            return {
+                path: path.slice(0, -1),
+                actions: { [p]: "I" as "I" }
+            }
         }
 
         // Non-existing property DELETE case
         // no-op
-        return path;
+        return ad;
     }
 
-    update(paths: Path[]) {
-        if (this._batches) {
-            this._batchesPendingPaths = this._batchesPendingPaths || []
-            this._batchesPendingPaths = this._batchesPendingPaths.concat(paths)
-            return;
+    update(ad: SetActionDescriptor) {
+        const actions = new Set<() => void>();
+        // check if actions descriptor can be unfolded into a number of individual update actions
+        // this is the case when merge call swaps to properties for example
+        // so we optimize rerendering only these properties
+        if (ad.actions && Object.values(ad.actions).findIndex(i => i !== "U") === -1) {
+            // all actions are update actions
+            Object.keys(ad.actions).forEach(key => {
+                this._subscribers.forEach(s => s.onSet({ path: ad.path.concat(key) }, actions));
+            })
+        } else {
+            this._subscribers.forEach(s => s.onSet(ad, actions));
         }
-
-        const actions: (() => void)[] = [];
-        this._subscribers.forEach(s => s.onSet(paths, actions));
-        // TODO action can be duplicate, so we can distinct them before calling
         actions.forEach(a => a());
     }
 
@@ -1073,48 +1043,6 @@ class Store implements Subscribable {
             this._edition += 1;
             this._setSubscribers.forEach(cb => cb(params))
         }
-    }
-
-    startBatch(path: Path, options?: { context?: AnyContext }): void {
-        this._batches += 1
-
-        const cbArgument: Writeable<PluginCallbacksOnBatchArgument> = {
-            path: path
-        }
-        if (options && 'context' in options) {
-            cbArgument.context = options.context
-        }
-        if (this._value !== none) {
-            cbArgument.state = this._value
-        }
-        this._batchStartSubscribers.forEach(cb => cb(cbArgument))
-    }
-
-    finishBatch(path: Path, options?: { context?: AnyContext }): void {
-        const cbArgument: Writeable<PluginCallbacksOnBatchArgument> = {
-            path: path
-        }
-        if (options && 'context' in options) {
-            cbArgument.context = options.context
-        }
-        if (this._value !== none) {
-            cbArgument.state = this._value
-        }
-        this._batchFinishSubscribers.forEach(cb => cb(cbArgument))
-
-        this._batches -= 1
-        if (this._batches === 0) {
-            if (this._batchesPendingPaths) {
-                const paths = this._batchesPendingPaths
-                this._batchesPendingPaths = undefined
-                this.update(paths)
-            }
-        }
-    }
-
-    postponeBatch(action: () => void): void {
-        this._batchesPendingActions = this._batchesPendingActions || []
-        this._batchesPendingActions.push(action)
     }
 
     getPlugin(pluginId: symbol) {
@@ -1134,12 +1062,6 @@ class Store implements Subscribable {
         }
         if (pluginCallbacks.onDestroy) {
             this._destroySubscribers.add((p) => pluginCallbacks.onDestroy!(p))
-        }
-        if (pluginCallbacks.onBatchStart) {
-            this._batchStartSubscribers.add((p) => pluginCallbacks.onBatchStart!(p))
-        }
-        if (pluginCallbacks.onBatchFinish) {
-            this._batchFinishSubscribers.add((p) => pluginCallbacks.onBatchFinish!(p))
         }
     }
 
@@ -1316,46 +1238,76 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
     }
 
     setUntracked(newValue: SetStateAction<S>, mergeValue?: Partial<StateValueAtPath>): Path[] {
+        let r = this.setUntrackedV4(newValue, mergeValue);
+        if (r) {
+            return [r.path]
+        }
+        return []
+    }
+
+    setUntrackedV4(newValue: SetStateAction<S>, mergeValue?: Partial<StateValueAtPath>): SetActionDescriptor | null {
         if (typeof newValue === 'function') {
             newValue = (newValue as ((prevValue: S) => S))(this.getUntracked());
         }
         if (typeof newValue === 'object' && newValue !== null && newValue[SelfMethodsID]) {
+            // TODO check on read instead as it might escape as nested on set anyway
             throw new StateInvalidUsageError(this.path, ErrorId.SetStateToValueFromState)
         }
         if (newValue !== Object(newValue) && newValue === this.getUntracked(true)) {
             // this is primitive value and has not changed
             // so skip this set call as it does not make an effect
-            return []
+            return null
         }
-        return [this.store.set(this.path, newValue, mergeValue)];
+        return this.store.set({ path: this.path }, newValue, mergeValue);
     }
 
     set(newValue: SetStateAction<S>) {
-        this.store.update(this.setUntracked(newValue));
+        let ad = this.setUntrackedV4(newValue);
+        if (ad) {
+            this.store.update(ad);
+        }
     }
 
     mergeUntracked(sourceValue: SetPartialStateAction<S>): Path[] {
+        let r = this.mergeUntrackedV4(sourceValue);
+        if (r) {
+            return [r.path]
+        }
+        return []
+    }
+
+    mergeUntrackedV4(sourceValue: SetPartialStateAction<S>): SetActionDescriptor | null {
         const currentValue = this.getUntracked()
         if (typeof sourceValue === 'function') {
             sourceValue = (sourceValue as Function)(currentValue);
         }
 
-        let updatedPaths: Path[];
-        let deletedOrInsertedProps = false
-
         if (Array.isArray(currentValue)) {
             if (Array.isArray(sourceValue)) {
-                return this.setUntracked(currentValue.concat(sourceValue) as unknown as S, sourceValue)
+                let ad: Required<SetActionDescriptor> = { path: this.path, actions: {} };
+                sourceValue.forEach((e, i) => {
+                    ad.actions[currentValue.push(e) - 1] = "I"
+                })
+                if (Object.keys(ad.actions).length > 0) {
+                    this.setUntrackedV4(currentValue, sourceValue)
+                    return ad
+                }
+                return null
             } else {
+                let ad: Required<SetActionDescriptor> = { path: this.path, actions: {} };
                 const deletedIndexes: number[] = []
                 Object.keys(sourceValue).sort().forEach(i => {
                     const index = Number(i);
                     const newPropValue = sourceValue[index]
                     if (newPropValue === none) {
-                        deletedOrInsertedProps = true
+                        ad.actions[index] = "D"
                         deletedIndexes.push(index)
                     } else {
-                        deletedOrInsertedProps = deletedOrInsertedProps || !(index in currentValue);
+                        if (index in currentValue) {
+                            ad.actions[index] = "U"
+                        } else {
+                            ad.actions[index] = "I"
+                        }
                         (currentValue as StateValueAtPath[])[index] = newPropValue
                     }
                 });
@@ -1365,35 +1317,45 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                 deletedIndexes.reverse().forEach(p => {
                     (currentValue as unknown as []).splice(p, 1)
                 })
-                updatedPaths = this.setUntracked(currentValue, sourceValue)
+                if (Object.keys(ad.actions).length > 0) {
+                    this.setUntrackedV4(currentValue, sourceValue)
+                    return ad
+                }
+                return null
             }
         } else if (typeof currentValue === 'object' && currentValue !== null) {
+            let ad: Required<SetActionDescriptor> = { path: this.path, actions: {} };
             Object.keys(sourceValue).forEach(key => {
                 const newPropValue = sourceValue[key]
                 if (newPropValue === none) {
-                    deletedOrInsertedProps = true
+                    ad.actions[key] = "D"
                     delete currentValue[key]
                 } else {
-                    deletedOrInsertedProps = deletedOrInsertedProps || !(key in currentValue)
+                    if (key in currentValue) {
+                        ad.actions[key] = "U"
+                    } else {
+                        ad.actions[key] = "I"
+                    }
                     currentValue[key] = newPropValue
                 }
             })
-            updatedPaths = this.setUntracked(currentValue, sourceValue)
+            if (Object.keys(ad.actions).length > 0) {
+                this.setUntrackedV4(currentValue, sourceValue)
+                return ad
+            }
+            return null
         } else if (typeof currentValue === 'string') {
-            return this.setUntracked((currentValue + String(sourceValue)) as unknown as S, sourceValue)
+            return this.setUntrackedV4((currentValue + String(sourceValue)) as unknown as S, sourceValue)
         } else {
-            return this.setUntracked(sourceValue as S)
+            return this.setUntrackedV4(sourceValue as S)
         }
-
-        if (updatedPaths.length !== 1 || updatedPaths[0] !== this.path || deletedOrInsertedProps) {
-            return updatedPaths
-        }
-        const updatedPath = updatedPaths[0]
-        return Object.keys(sourceValue).map(p => updatedPath.slice().concat(p))
     }
 
     merge(sourceValue: SetPartialStateAction<S>) {
-        this.store.update(this.mergeUntracked(sourceValue));
+        let r = this.mergeUntrackedV4(sourceValue);
+        if (r) {
+            this.store.update(r)
+        }
     }
 
     nested<K extends keyof S>(key: K): State<S[K]> {
@@ -1401,7 +1363,9 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
     }
 
     rerender(paths: Path[]) {
-        this.store.update(paths)
+        for (let path of paths) {
+            this.store.update({ path })
+        }
     }
 
     destroy(): void {
@@ -1433,39 +1397,50 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         this.onSetUsed[UnmountedMarker] = true
     }
 
-    onSet(paths: Path[], actions: (() => void)[]): boolean {
+    onSet(ad: SetActionDescriptor, actions: Set<() => void>): boolean {
         const update = () => {
+            let isAffected = false
             if (this.isDowngraded && this.valueCache !== ValueUnusedMarker) {
-                actions.push(this.onSetUsed);
+                actions.add(this.onSetUsed);
                 delete this.selfCache;
-                return true;
+                isAffected = true;
             }
-            for (let path of paths) {
-                const nextChildKey = path[this.path.length];
-                if (nextChildKey === undefined) {
-                    // There is no next child to dive into
-                    // So it is this one which was updated
-                    if (this.valueCache !== ValueUnusedMarker) {
-                        actions.push(this.onSetUsed);
-                        delete this.selfCache;
+            let path = ad.path;
+            const nextChildKey = path[this.path.length];
+            if (nextChildKey === undefined) {
+                // There is no next child to dive into
+                // So it is this one which was updated
+                if (this.valueCache !== ValueUnusedMarker) {
+                    actions.add(this.onSetUsed);
+                    delete this.selfCache;
+                    if (ad.actions && this.childrenCache) {
+                        // TODO write more tests for stable state for this use case
+                        for (let childKey in ad.actions) {
+                            const child = this.childrenCache?.[childKey]
+                            // TODO if this state is a state of an array, delete action should shift childrenCache as well
+                            if (child) {
+                                delete this.childrenCache[childKey]
+                            }
+                        }
+                    } else {                        
                         delete this.childrenCache;
-                        return true;
                     }
-                } else {
-                    const nextChild = this.childrenCache && this.childrenCache[nextChildKey];
-                    if (nextChild && nextChild.onSet(paths, actions)) {
-                        delete this.selfCache;
-                        return true;
-                    }
+                    return true;
+                }
+            } else {
+                const nextChild = this.childrenCache?.[nextChildKey];
+                if (nextChild && nextChild.onSet(ad, actions)) {
+                    delete this.selfCache;
+                    return true;
                 }
             }
-            return false;
+            return isAffected;
         }
 
         const updated = update();
         if (!updated && this.subscribers !== undefined) {
             this.subscribers.forEach(s => {
-                if (s.onSet(paths, actions)) {
+                if (s.onSet(ad, actions)) {
                     delete this.selfCache;
                 }
             })
@@ -1664,9 +1639,6 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                     return (p: SetPartialStateAction<S>) => this.merge(p)
                 case 'nested':
                     return (p: keyof S) => nestedGetter(p)
-                case 'batch':
-                    // tslint:disable-next-line: no-any
-                    return <R, C>(action: () => R, context: Exclude<C, Function>) => this.batch(action, context)
                 case 'attach':
                     return (p: symbol) => this.attach(p)
                 case 'destroy':
@@ -1728,23 +1700,6 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
             this.get() // will throw 'read while promised' exception
         }
         return undefined;
-    }
-
-    batch<R, C>(
-        action: (s: State<S>) => R,
-        context?: Exclude<C, Function>
-    ): R {
-        const opts = { context: context }
-        try {
-            this.store.startBatch(this.path, opts)
-            const result = action(this.self) as R
-            if (result as unknown as Symbol === postpone) {
-                this.store.postponeBatch(() => this.batch(action, context))
-            }
-            return result
-        } finally {
-            this.store.finishBatch(this.path, opts)
-        }
     }
 
     get ornull(): InferredStateOrnullType<S> {

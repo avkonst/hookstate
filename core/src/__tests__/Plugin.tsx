@@ -18,12 +18,6 @@ test('plugin: common flow callbacks', async () => {
             init: () => {
                 messages.push('onInit called')
                 return {
-                    onBatchStart: (p) => {
-                        messages.push(`onBatchStart called, [${p.path}]: ${JSON.stringify(p.state)}, context: ${JSON.stringify(p.context)}`)
-                    },
-                    onBatchFinish: (p) => {
-                        messages.push(`onBatchFinish called, [${p.path}]: ${JSON.stringify(p.state)}, context: ${JSON.stringify(p.context)}`)
-                    },
                     onSet: (p) => {
                         messages.push(`onSet called, [${p.path}]: ${JSON.stringify(p.state)}, ${JSON.stringify(p.previous)} => ${JSON.stringify(p.value)}, ${JSON.stringify(p.merged)}`)
                     },
@@ -83,10 +77,6 @@ test('plugin: common flow callbacks', async () => {
     (result.current.attach(TestPlugin)[0] as { onExtension(): void; }).onExtension();
     expect(messages.slice(4)).toEqual(['onExtension called']);
 
-    result.current.batch((s) => {
-        messages.push(`batch executed, state: ${JSON.stringify(s.get())}`)
-    }, 'custom context')
-    expect(messages.slice(5)).toEqual(['onBatchStart called, []: [{"f1":2,"f2":"str2"}], context: "custom context"', 'batch executed, state: [{"f1":2,"f2":"str2"}]', 'onBatchFinish called, []: [{"f1":2,"f2":"str2"}], context: "custom context"'])
     expect(result.current.attach(TestPluginUnknown)[0] instanceof Error).toEqual(true)
 
     expect(result.current.get()[0].f1).toStrictEqual(2);
@@ -97,7 +87,7 @@ test('plugin: common flow callbacks', async () => {
         controls.setUntracked([{ f1: 0, f2: 'str3' }])
     })
     expect(renderTimes).toStrictEqual(4);
-    expect(messages.slice(8)).toEqual(['onSet called, []: [{"f1":0,"f2":"str3"}], [{"f1":2,"f2":"str2"}] => [{"f1":0,"f2":"str3"}], undefined']);
+    expect(messages.slice(5)).toEqual(['onSet called, []: [{"f1":0,"f2":"str3"}], [{"f1":2,"f2":"str2"}] => [{"f1":0,"f2":"str3"}], undefined']);
 
     expect(result.current.get()[0].f1).toStrictEqual(0);
     expect(result.current.get()[0].f2).toStrictEqual('str3');
@@ -107,7 +97,7 @@ test('plugin: common flow callbacks', async () => {
         controlsNested.mergeUntracked('str2')
     })
     expect(renderTimes).toStrictEqual(4);
-    expect(messages.slice(9)).toEqual(
+    expect(messages.slice(6)).toEqual(
         ['onSet called, [0,f2]: [{"f1":0,"f2":"str3str2"}], "str3" => "str3str2", "str2"']);
 
     expect(result.current.get()[0].f1).toStrictEqual(0);
@@ -116,7 +106,7 @@ test('plugin: common flow callbacks', async () => {
         controlsNested.rerender([[0, 'f1'], [0, 'f2']])
     })
     expect(renderTimes).toStrictEqual(5);
-    expect(messages.slice(10)).toEqual([]);
+    expect(messages.slice(7)).toEqual([]);
 
     expect(result.current.get()[0].f1).toStrictEqual(0);
     expect(result.current.get()[0].f2).toStrictEqual('str3str2');
@@ -124,45 +114,45 @@ test('plugin: common flow callbacks', async () => {
         controlsNested.rerender([[0, 'unknown'], [0, 'f2']])
     })
     expect(renderTimes).toStrictEqual(6);
-    expect(messages.slice(10)).toEqual([]);
+    expect(messages.slice(7)).toEqual([]);
 
     expect(result.current.get()[0].f1).toStrictEqual(0);
     expect(result.current.get()[0].f2).toStrictEqual('str3str2');
     act(() => {
         controlsNested.rerender([[0, 'unknown'], [1]])
     })
-    expect(renderTimes).toStrictEqual(7);
-    expect(messages.slice(10)).toEqual([]);
+    expect(renderTimes).toStrictEqual(6);
+    expect(messages.slice(7)).toEqual([]);
 
     expect(result.current.get()[0].f1).toStrictEqual(0);
     expect(result.current.get()[0].f2).toStrictEqual('str3str2');
     act(() => {
         controlsNested.rerender([[0, 'unknown']])
     })
-    expect(renderTimes).toStrictEqual(7);
-    expect(messages.slice(10)).toEqual([]);
+    expect(renderTimes).toStrictEqual(6);
+    expect(messages.slice(7)).toEqual([]);
 
     expect(result.current.get()[0].f1).toStrictEqual(0);
     expect(result.current.get()[0].f2).toStrictEqual('str3str2');
     act(() => {
         controlsNested.rerender([[0]])
     })
-    expect(renderTimes).toStrictEqual(8);
-    expect(messages.slice(10)).toEqual([]);
+    expect(renderTimes).toStrictEqual(7);
+    expect(messages.slice(7)).toEqual([]);
 
     unmount()
-    expect(messages.slice(10)).toEqual(['onDestroy called, [{"f1":0,"f2":"str3str2"}]'])
+    expect(messages.slice(7)).toEqual(['onDestroy called, [{"f1":0,"f2":"str3str2"}]'])
 
     expect(result.current.get()[0].f1).toStrictEqual(0);
-    expect(messages.slice(11)).toEqual([])
+    expect(messages.slice(8)).toEqual([])
 
     act(() => {
         expect(() => result.current[0].f1.set(p => p + 1)).toThrow(
             'Error: HOOKSTATE-106 [path: /0/f1]. See https://hookstate.js.org/docs/exceptions#hookstate-106'
         );
     });
-    expect(renderTimes).toStrictEqual(8);
-    expect(messages.slice(11)).toEqual([])
+    expect(renderTimes).toStrictEqual(7);
+    expect(messages.slice(8)).toEqual([])
 });
 
 const stateInf = createState([{
