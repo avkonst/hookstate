@@ -152,7 +152,8 @@ function TaskEditor(props: { task: State<Task> }) {
     </div>
 }
 
-const TaskEditorMomorized = React.memo(TaskEditor)
+const TaskEditorMomorized = TaskEditor
+// const TaskEditorMomorized = React.memo(TaskEditor)
 
 export function TasksViewer() {
     const tasksState = useTasksState()
