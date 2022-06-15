@@ -1135,11 +1135,11 @@ OnSetUsedNoAction[UnmountedMarker] = true
 class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subscribable, Subscriber {
     private subscribers: Set<Subscriber> | undefined;
 
-    private isDowngraded: boolean | undefined;
-    private children: Record<string | number, StateMethodsImpl<StateValueAtPath>> | undefined;
-    private childrenCache: Record<string | number, StateMethodsImpl<StateValueAtPath>> | undefined;
-    private selfCache: State<S> | undefined;
-    private valueCache: StateValueAtPath = ValueUnusedMarker;
+    private downgraded: boolean | undefined;
+    private childrenCreated: Record<string | number, StateMethodsImpl<StateValueAtPath>> | undefined;
+    private childrenUsed: Record<string | number, StateMethodsImpl<StateValueAtPath>> | undefined;
+    private selfUsed: State<S> | undefined;
+    private valueUsed: StateValueAtPath = ValueUnusedMarker;
 
     constructor(
         public readonly store: Store,
@@ -1149,28 +1149,34 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         private onSetUsed: () => void
     ) { }
 
-    reconstruct(path: Path, valueSource: S, valueEdition: number, forget: boolean) {
+    reconstruct(path: Path, valueSource: S, valueEdition: number, reset: boolean) {
         this.path = path;
         this.valueSource = valueSource;
         this.valueEdition = valueEdition;
 
-        this.valueCache = ValueUnusedMarker;
-        delete this.isDowngraded;
-        delete this.subscribers;
+        this.valueUsed = ValueUnusedMarker;
+        delete this.downgraded;
 
-        if (forget) {
-            delete this.selfCache;
-            delete this.children
+        if (reset) {
+            delete this.selfUsed;
+            delete this.childrenCreated
         } else {
-            this.children = this.childrenCache;
+            this.childrenCreated = this.childrenUsed;
         }
-        delete this.childrenCache
+        delete this.childrenUsed
+
+        // We should not delete subscribers as these are self cleaned up when unmounted
+        // Theoretically it is possible to reconnect subscribers like we done it for 
+        // children, but it is easier and more efficient to leave subscribers to have independent lifecycle
+        // If we delete subscribers here, scoped states wrapped in React.memo
+        // will lose state change propagation and rerendering for scopped states
+        // delete this.subscribers;
     }
 
     reconnect() {
-        this.childrenCache = {
-            ...this.children,
-            ...this.childrenCache
+        this.childrenUsed = {
+            ...this.childrenCreated,
+            ...this.childrenUsed
         }
     }
 
@@ -1183,14 +1189,9 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                 // this link is still mounted to a component
                 // populate cache again to ensure correct tracking of usage
                 // when React scans which states to rerender on update
-                if (this.valueCache !== ValueUnusedMarker) {
-                    this.valueCache = ValueUnusedMarker
+                if (this.valueUsed !== ValueUnusedMarker) {
+                    this.valueUsed = ValueUnusedMarker
                     this.get(true) // renew cache to keep it marked used
-                    // let walkedState: StateMethods<StateValueAtPath> = this.onSetUsed[RootStateAccessor];
-                    // for (let pathElem of this.path) {
-                    //     walkedState = walkedState.nested(pathElem)
-                    // }
-                    // walkedState.get()
                 }
             } else {
                 // This link is not mounted to a component
@@ -1202,10 +1203,10 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                 // when a component unmounted.
                 // We take this opportunity to clean up caches
                 // to avoid memory leaks via stale children states cache.
-                this.valueCache = ValueUnusedMarker
+                this.valueUsed = ValueUnusedMarker
                 // TODO what do we need to do with this.children here?
-                delete this.childrenCache
-                delete this.selfCache
+                delete this.childrenUsed
+                delete this.selfUsed
             }
         }
         if (this.valueSource === none && !allowPromised) {
@@ -1219,18 +1220,18 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
 
     get(allowPromised?: boolean) {
         const currentValue = this.getUntracked(allowPromised)
-        if (this.valueCache === ValueUnusedMarker) {
-            if (this.isDowngraded) {
-                this.valueCache = currentValue;
+        if (this.valueUsed === ValueUnusedMarker) {
+            if (this.downgraded) {
+                this.valueUsed = currentValue;
             } else if (Array.isArray(currentValue)) {
-                this.valueCache = this.valueArrayImpl(currentValue as unknown as StateValueAtPath[]);
+                this.valueUsed = this.valueArrayImpl(currentValue as unknown as StateValueAtPath[]);
             } else if (typeof currentValue === 'object' && currentValue !== null) {
-                this.valueCache = this.valueObjectImpl(currentValue as unknown as object);
+                this.valueUsed = this.valueObjectImpl(currentValue as unknown as object);
             } else {
-                this.valueCache = currentValue;
+                this.valueUsed = currentValue;
             }
         }
-        return this.valueCache as S;
+        return this.valueUsed as S;
     }
 
     get value(): S {
@@ -1400,9 +1401,9 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
     onSet(ad: SetActionDescriptor, actions: Set<() => void>): boolean {
         const update = () => {
             let isAffected = false
-            if (this.isDowngraded && this.valueCache !== ValueUnusedMarker) {
+            if (this.downgraded && this.valueUsed !== ValueUnusedMarker) {
                 actions.add(this.onSetUsed);
-                delete this.selfCache;
+                delete this.selfUsed;
                 isAffected = true;
             }
             let path = ad.path;
@@ -1410,27 +1411,39 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
             if (nextChildKey === undefined) {
                 // There is no next child to dive into
                 // So it is this one which was updated
-                if (this.valueCache !== ValueUnusedMarker) {
+                if (this.valueUsed !== ValueUnusedMarker) {
                     actions.add(this.onSetUsed);
-                    delete this.selfCache;
-                    if (ad.actions && this.childrenCache) {
-                        // TODO write more tests for stable state for this use case
-                        for (let childKey in ad.actions) {
-                            const child = this.childrenCache?.[childKey]
-                            // TODO if this state is a state of an array, delete action should shift childrenCache as well
-                            if (child) {
-                                delete this.childrenCache[childKey]
+                    delete this.selfUsed;
+                    if (ad.actions && this.childrenUsed) {
+                        // TODO add automated unit tests for this part
+                        if (Array.isArray(this.valueSource)
+                            && Object.values(ad.actions).includes("D")) {
+                            // this is an array and some elements were removed
+                            // so invalidate cache for all children after the first deleted
+                            let firstDeletedIndex = Object.keys(ad.actions)
+                                .map(i => Number(i))
+                                .sort()
+                                .find(i => ad.actions?.[i] === "D")!
+                            for (let childKey in this.childrenUsed) {
+                                if (Number(childKey) >= firstDeletedIndex ||
+                                    childKey in ad.actions) {
+                                    delete this.childrenUsed[childKey]
+                                }
+                            }
+                        } else {
+                            for (let childKey in ad.actions) {
+                                delete this.childrenUsed[childKey]
                             }
                         }
-                    } else {                        
-                        delete this.childrenCache;
+                    } else {
+                        delete this.childrenUsed;
                     }
                     return true;
                 }
             } else {
-                const nextChild = this.childrenCache?.[nextChildKey];
+                const nextChild = this.childrenUsed?.[nextChildKey];
                 if (nextChild && nextChild.onSet(ad, actions)) {
-                    delete this.selfCache;
+                    delete this.selfUsed;
                     return true;
                 }
             }
@@ -1441,7 +1454,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         if (!updated && this.subscribers !== undefined) {
             this.subscribers.forEach(s => {
                 if (s.onSet(ad, actions)) {
-                    delete this.selfCache;
+                    delete this.selfUsed;
                 }
             })
         }
@@ -1464,18 +1477,18 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         // if this state is not mounted to a hook,
         // we do not cache children to avoid unnecessary memory leaks
         if (this.isMounted) {
-            this.childrenCache = this.childrenCache || {};
-            const cachedChild = this.childrenCache[key];
+            this.childrenUsed = this.childrenUsed || {};
+            const cachedChild = this.childrenUsed[key];
             if (cachedChild) {
                 return cachedChild;
             }
         }
-        this.children = this.children || {};
-        const child = this.children[key];
+        this.childrenCreated = this.childrenCreated || {};
+        const child = this.childrenCreated[key];
         let r;
         if (child) {
             child.reconstruct(
-                this.path.slice().concat(key),
+                this.path.concat(key),
                 this.valueSource[key],
                 this.valueEdition,
                 false
@@ -1484,25 +1497,25 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         } else {
             r = new StateMethodsImpl(
                 this.store,
-                this.path.slice().concat(key),
+                this.path.concat(key),
                 this.valueSource[key],
                 this.valueEdition,
                 this.onSetUsed,
             )
-            this.children[key] = r;
+            this.childrenCreated[key] = r;
         }
-        if (this.isDowngraded) {
-            r.isDowngraded = true;
+        if (this.downgraded) {
+            r.downgraded = true;
         }
-        if (this.childrenCache) {
-            this.childrenCache[key] = r;
+        if (this.childrenUsed) {
+            this.childrenUsed[key] = r;
         }
         return r;
     }
 
     private valueArrayImpl(currentValue: StateValueAtPath[]): S {
         if (IsNoProxy) {
-            this.isDowngraded = true
+            this.downgraded = true
             return currentValue as unknown as S;
         }
         return proxyWrap(this.path, currentValue,
@@ -1541,7 +1554,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
 
     private valueObjectImpl(currentValue: object): S {
         if (IsNoProxy) {
-            this.isDowngraded = true
+            this.downgraded = true
             return currentValue as unknown as S;
         }
         return proxyWrap(this.path, currentValue,
@@ -1569,8 +1582,8 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
     }
 
     get self(): State<S> {
-        if (this.selfCache) {
-            return this.selfCache
+        if (this.selfUsed) {
+            return this.selfUsed
         }
 
         const getter = (_: object, key: PropertyKey) => {
@@ -1585,9 +1598,9 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
             }
 
             let nestedGetter = (prop: PropertyKey) => {
-                const currentDowngraded = this.isDowngraded; // relevant for IE11 only
+                const currentDowngraded = this.downgraded; // relevant for IE11 only
                 const currentValue = this.get(); // IE11 marks this as downgraded
-                this.isDowngraded = currentDowngraded; // relevant for IE11 only
+                this.downgraded = currentDowngraded; // relevant for IE11 only
                 if (// if currentValue is primitive type
                     (typeof currentValue !== 'object' || currentValue === null) &&
                     // if promised, it will be none
@@ -1667,11 +1680,11 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                     })
                 })
             }
-            this.selfCache = result;
-            return this.selfCache
+            this.selfUsed = result;
+            return this.selfUsed
         }
 
-        this.selfCache = proxyWrap(this.path, this.valueSource,
+        this.selfUsed = proxyWrap(this.path, this.valueSource,
             () => {
                 return this.get();
             },
@@ -1680,7 +1693,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                 throw new StateInvalidUsageError(this.path, ErrorId.SetProperty_State)
             },
             false) as unknown as State<S>;
-        return this.selfCache
+        return this.selfUsed
     }
 
     get promised(): boolean {
@@ -1717,10 +1730,10 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         if (typeof p === 'function') {
             const pluginMeta = p();
             if (pluginMeta.id === DowngradedID) {
-                this.isDowngraded = true;
-                if (this.valueCache !== ValueUnusedMarker) {
+                this.downgraded = true;
+                if (this.valueUsed !== ValueUnusedMarker) {
                     const currentValue = this.getUntracked(true);
-                    this.valueCache = currentValue;
+                    this.valueUsed = currentValue;
                 }
                 return this.self;
             }
