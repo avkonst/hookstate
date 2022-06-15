@@ -22,6 +22,7 @@
         "test": "nx run-many --target=test --all",
         "update:deps": "nx run-many --target=update:deps --all",
         "clean": "nx run-many --target=clean --all",
+        "release": "nx run-many --target=release --all",
         "nx:w": "nodemon node_modules/@nrwl/cli/bin/nx.js"
     },
     "devDependencies": {
