@@ -816,16 +816,6 @@ interface Subscribable {
     unsubscribe(l: Subscriber): void;
 }
 
-function isNoProxyInitializer() {
-    try {
-        const used = new Proxy({}, {});
-        return false;
-    } catch (e) {
-        return true;
-    }
-};
-const IsNoProxy = isNoProxyInitializer()
-
 const DowngradedID = Symbol('Downgraded');
 const SelfMethodsID = Symbol('ProxyMarker');
 
@@ -1131,6 +1121,8 @@ function OnSetUsedNoAction() { /** no action callback */ }
 // use symbol to mark that a function has no effect anymore
 const UnmountedMarker = Symbol('UnmountedMarker');
 OnSetUsedNoAction[UnmountedMarker] = true
+
+// TODO remove from the docs IE11 support
 
 class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subscribable, Subscriber {
     private subscribers: Set<Subscriber> | undefined;
@@ -1514,10 +1506,6 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
     }
 
     private valueArrayImpl(currentValue: StateValueAtPath[]): S {
-        if (IsNoProxy) {
-            this.downgraded = true
-            return currentValue as unknown as S;
-        }
         return proxyWrap(this.path, currentValue,
             () => currentValue,
             (target: object, key: PropertyKey) => {
@@ -1553,10 +1541,6 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
     }
 
     private valueObjectImpl(currentValue: object): S {
-        if (IsNoProxy) {
-            this.downgraded = true
-            return currentValue as unknown as S;
-        }
         return proxyWrap(this.path, currentValue,
             () => currentValue,
             (target: object, key: PropertyKey) => {
@@ -1598,9 +1582,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
             }
 
             let nestedGetter = (prop: PropertyKey) => {
-                const currentDowngraded = this.downgraded; // relevant for IE11 only
-                const currentValue = this.get(); // IE11 marks this as downgraded
-                this.downgraded = currentDowngraded; // relevant for IE11 only
+                const currentValue = this.get();
                 if (// if currentValue is primitive type
                     (typeof currentValue !== 'object' || currentValue === null) &&
                     // if promised, it will be none
@@ -1659,29 +1641,6 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                 default:
                     return nestedGetter(key)
             }
-        }
-
-        if (IsNoProxy) {
-            // minimal support for IE11
-            const result = (Array.isArray(this.valueSource) ? [] : {}) as State<S>;
-            [self, 'toJSON', 'path', 'keys', 'value', 'ornull',
-                'promised', 'error', 'get', 'set', 'merge',
-                'nested', 'batch', 'attach', 'destroy']
-                .forEach(key => {
-                    Object.defineProperty(result, key, {
-                        get: () => getter(result, key)
-                    })
-                })
-            if (typeof this.valueSource === 'object' && this.valueSource !== null) {
-                Object.keys(this.valueSource).forEach(key => {
-                    Object.defineProperty(result, key, {
-                        enumerable: true,
-                        get: () => getter(result, key)
-                    })
-                })
-            }
-            this.selfUsed = result;
-            return this.selfUsed
         }
 
         this.selfUsed = proxyWrap(this.path, this.valueSource,
