@@ -262,6 +262,25 @@ export interface StateMethodsDestroy {
 }
 
 /**
+ * Returns an interface stripped of all keys that don't resolve to U, defaulting 
+ * to a non-strict comparison of T[key] extends U. Setting B to true performs
+ * a strict type comparison of T[key] extends U & U extends T[key]
+ */
+type KeysOfType<T, U, B = false> = {
+    [P in keyof T]: B extends true
+    ? T[P] extends U
+    ? (U extends T[P]
+        ? P
+        : never)
+    : never
+    : T[P] extends U
+    ? P
+    : never;
+}[keyof T];
+
+type PickByType<T, U, B = false> = Pick<T, KeysOfType<T, U, B>>;
+
+/**
  * Type of a result of [createState](#createstate) and [useState](#usestate) functions
  * 
  * @typeparam S Type of a value of a state
@@ -274,7 +293,7 @@ export type State<S> = StateMethods<S> & (
     S extends ReadonlyArray<(infer U)> ? ReadonlyArray<State<U>> :
     S extends object ? Omit<
         { readonly [K in keyof Required<S>]: State<S[K]>; },
-        keyof StateMethods<S> | keyof StateMethodsDestroy
+        keyof StateMethods<S> | keyof StateMethodsDestroy | KeysOfType<S, Function>
     > : {}
 );
 
@@ -504,7 +523,7 @@ export function useHookstate<S>(
 export function useHookstate<S>(
     source: SetInitialStateAction<S> | State<S>
 ): State<S> {
-    const parentMethods = typeof source === 'object' && source !== null ?
+    const parentMethods = Object(source) === source ?
         source[self] as StateMethodsImpl<S> | undefined :
         undefined;
     if (parentMethods) {
@@ -782,6 +801,10 @@ enum ErrorId {
     SetStateWhenDestroyed = 106,
     ToJson_Value = 108,
     ToJson_State = 109,
+
+    // TODO document
+    GetProperty_Function = 110,
+
     GetUnknownPlugin = 120,
 
     SetProperty_State = 201,
@@ -841,7 +864,7 @@ class Store implements Subscribable {
     private _promised?: Promised;
 
     constructor(private _value: StateValueAtRoot) {
-        if (typeof _value === 'object' &&
+        if (Object(_value) === _value &&
             configuration.promiseDetector(_value)) {
             this._promised = this.createPromised(_value)
             this._value = none
@@ -914,7 +937,7 @@ class Store implements Subscribable {
                 this._promised = this.createPromised(undefined)
                 delete onSetArg.value
                 delete onSetArg.state
-            } else if (typeof value === 'object' && configuration.promiseDetector(value)) {
+            } else if (Object(value) === value && configuration.promiseDetector(value)) {
                 this._promised = this.createPromised(value)
                 value = none
                 delete onSetArg.value
@@ -938,7 +961,7 @@ class Store implements Subscribable {
             return ad;
         }
 
-        if (typeof value === 'object' && configuration.promiseDetector(value)) {
+        if (Object(value) === value && configuration.promiseDetector(value)) {
             // TODO this one still can get into the state as nested property, need to check on read instead
             throw new StateInvalidUsageError(path, ErrorId.SetStateNestedToPromised)
         }
@@ -1217,8 +1240,14 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                 this.valueUsed = currentValue;
             } else if (Array.isArray(currentValue)) {
                 this.valueUsed = this.valueArrayImpl(currentValue as unknown as StateValueAtPath[]);
-            } else if (typeof currentValue === 'object' && currentValue !== null) {
-                this.valueUsed = this.valueObjectImpl(currentValue as unknown as object);
+            } else if (Object(currentValue) === currentValue) {
+                if ((currentValue as StateValueAtPath).constructor?.name === "Object") {
+                    this.valueUsed = this.valueObjectImpl(currentValue as unknown as object);
+                } else {
+                    // any other object except Object, for example Date
+                    this.downgraded = true
+                    this.valueUsed = currentValue;
+                }
             } else {
                 this.valueUsed = currentValue;
             }
@@ -1242,7 +1271,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         if (typeof newValue === 'function') {
             newValue = (newValue as ((prevValue: S) => S))(this.getUntracked());
         }
-        if (typeof newValue === 'object' && newValue !== null && newValue[SelfMethodsID]) {
+        if (Object(newValue) === newValue && newValue[SelfMethodsID]) {
             // TODO check on read instead as it might escape as nested on set anyway
             throw new StateInvalidUsageError(this.path, ErrorId.SetStateToValueFromState)
         }
@@ -1316,7 +1345,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                 }
                 return null
             }
-        } else if (typeof currentValue === 'object' && currentValue !== null) {
+        } else if (Object(currentValue) === currentValue) {
             let ad: Required<SetActionDescriptor> = { path: this.path, actions: {} };
             Object.keys(sourceValue).forEach(key => {
                 const newPropValue = sourceValue[key]
@@ -1459,7 +1488,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
             return Object.keys(value).map(i => Number(i)).filter(i => Number.isInteger(i)) as
                 unknown as InferredStateKeysType<S>;
         }
-        if (typeof value === 'object' && value !== null) {
+        if (Object(value) === value) {
             return Object.keys(value) as unknown as InferredStateKeysType<S>;
         }
         return undefined as InferredStateKeysType<S>;
@@ -1475,13 +1504,18 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                 return cachedChild;
             }
         }
+        const valueSource = this.valueSource[key]
+        if (typeof valueSource === 'function') {
+            // hitting a method of a custom type, should be no-op
+            throw new StateInvalidUsageError(this.path, ErrorId.GetProperty_Function)
+        }
         this.childrenCreated = this.childrenCreated || {};
         const child = this.childrenCreated[key];
         let r;
         if (child) {
             child.reconstruct(
                 this.path.concat(key),
-                this.valueSource[key],
+                valueSource,
                 this.valueEdition,
                 false
             )
@@ -1490,7 +1524,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
             r = new StateMethodsImpl(
                 this.store,
                 this.path.concat(key),
-                this.valueSource[key],
+                valueSource,
                 this.valueEdition,
                 this.onSetUsed,
             )
@@ -1584,7 +1618,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
             let nestedGetter = (prop: PropertyKey) => {
                 const currentValue = this.get();
                 if (// if currentValue is primitive type
-                    (typeof currentValue !== 'object' || currentValue === null) &&
+                    (Object(currentValue) !== currentValue) &&
                     // if promised, it will be none
                     currentValue !== none) {
                     // This was an error case, but various tools like webpack bundler
@@ -1723,7 +1757,7 @@ function proxyWrap(
     const onInvalidUsage = (op: ErrorId) => {
         throw new StateInvalidUsageError(path, op)
     }
-    if (typeof targetBootstrap !== 'object' || targetBootstrap === null) {
+    if (Object(targetBootstrap) !== targetBootstrap) {
         targetBootstrap = {}
     }
     return new Proxy(targetBootstrap, {
@@ -1773,7 +1807,7 @@ function proxyWrap(
                 return false;
             }
             const targetReal = targetGetter()
-            if (typeof targetReal === 'object' && targetReal !== null) {
+            if (Object(targetReal) === targetReal) {
                 return p in targetReal;
             }
             return false;
@@ -1818,7 +1852,7 @@ function createStore<S>(initial: SetInitialStateAction<S>): Store {
     if (typeof initial === 'function') {
         initialValue = (initial as (() => S | Promise<S>))();
     }
-    if (typeof initialValue === 'object' && initialValue !== null && initialValue[SelfMethodsID]) {
+    if (Object(initialValue) === initialValue && initialValue[SelfMethodsID]) {
         throw new StateInvalidUsageError(RootPath, ErrorId.InitStateToValueFromState)
     }
     return new Store(initialValue);

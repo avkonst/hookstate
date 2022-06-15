@@ -413,3 +413,19 @@ test('object: should return nested state with conflict name', async () => {
     expect(result.current.nested('value').value).toEqual(1)
     expect(result.current.value.value).toEqual(1)
 });
+
+test('object: should return downgraded value for custom object classes', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useState(new Date("2022-06-15"))
+    });
+
+    expect(result.current.value.getMonth()).toEqual(5)
+    expect(result.current.value instanceof Date).toEqual(true)
+    act(() => {
+        result.current.set(_ => new Date("2022-06-16"));
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(() => (result.current as any).getMonth).toThrow('Error: HOOKSTATE-110 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-110')
+});
