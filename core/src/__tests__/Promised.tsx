@@ -204,7 +204,7 @@ test('primitive: should rerender used on promise resolve second', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState(new Promise<number>(resolve => setTimeout(() => {
+        return useState(() => new Promise<number>(resolve => setTimeout(() => {
             act(() => resolve(100))
         }, 500)))
     });
@@ -339,7 +339,7 @@ test('primitive: should rerender used on promise resolve init', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState(new Promise<number>(resolve => setTimeout(() => {
+        return useState(() => new Promise<number>(resolve => setTimeout(() => {
             act(() => resolve(100))
         }, 500)))
     });

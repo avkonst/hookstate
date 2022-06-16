@@ -441,6 +441,15 @@ export function createState<S>(
 }
 
 /**
+ * @warning Initializing a local state to a promise without using 
+ * an initializer callback function, which returns a Promise,
+ * is almost always a mistake. So, it is blocked.
+ * Use `useState(() => your_promise)` instead of `useState(your_promise)`.
+ */
+export function useState<S>(
+    source: Promise<S>
+): never;
+/**
  * Enables a functional React component to use a state,
  * either created by [createState](#createstate) (*global* state) or
  * derived from another call to [useState](#usestate) (*scoped* state).
@@ -506,6 +515,15 @@ export function useState<S>(
     return useHookstate(source as State<S>);
 }
 
+/**
+ * @warning Initializing a local state to a promise without using 
+ * an initializer callback function, which returns a Promise,
+ * is almost always a mistake. So, it is blocked.
+ * Use `useHookstate(() => your_promise)` instead of `useHookstate(your_promise)`.
+ */
+export function useHookstate<S>(
+    source: Promise<S>
+): never;
 /**
  * Alias to [useState](#usestate) which provides a workaround
  * for [React 20613 bug](https://github.com/facebook/react/issues/20613)
