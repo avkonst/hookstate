@@ -879,48 +879,63 @@ class Store implements Subscribable {
 
     private _plugins: Map<symbol, PluginCallbacks> = new Map();
 
-    private _promised?: Promised;
+    private _promise?: Promise<StateValueAtRoot>;
+    private _promiseResolver?: (_: StateValueAtRoot) => void;
+    private _promiseError?: StateValueAtRoot;
 
     constructor(private _value: StateValueAtRoot) {
         if (Object(_value) === _value &&
             configuration.promiseDetector(_value)) {
-            this._promised = this.createPromised(_value)
-            this._value = none
+            this.setPromised(_value)
         } else if (_value === none) {
-            this._promised = this.createPromised(undefined)
+            this.setPromised(undefined)
         }
     }
 
-    createPromised(newValue: StateValueAtPath | undefined) {
-        const promised = new Promised(
-            newValue ? Promise.resolve(newValue) : undefined,
-            (r: StateValueAtPath) => {
-                if (this.promised === promised && this.edition !== DestroyedEdition) {
-                    this._promised = undefined
-                    let ad = { path: RootPath };
-                    this.update(this.set(ad, r, undefined))
+    setPromised(promise: StateValueAtPath | undefined) {
+        this._value = none
+        this._promiseError = undefined
+        this._promiseResolver = undefined
+
+        if (!promise) {
+            this._promise = new Promise<StateValueAtRoot>(resolve => {
+                this._promiseResolver = resolve;
+            })
+            return;
+        }
+
+        promise = promise
+            .then((r: StateValueAtRoot) => {
+                if (this._promise === promise && this.edition !== DestroyedEdition) {
+                    this._promise = undefined
+                    this._promiseError = undefined
+                    this._promiseResolver === undefined
+                    this.update(this.set(RootPath, r, undefined))
                 }
-            },
-            () => {
-                if (this.promised === promised && this.edition !== DestroyedEdition) {
+            })
+            .catch((err: StateValueAtRoot) => {
+                if (this._promise === promise && this.edition !== DestroyedEdition) {
+                    this._promise = undefined
+                    this._promiseResolver = undefined
+                    this._promiseError = err
                     this._edition += 1
                     let ad = { path: RootPath };
                     this.update(ad)
                 }
-            },
-            () => {
-                // TODO implement State.then here
-            }
-        );
-        return promised;
+            })
+        this._promise = promise
     }
 
     get edition() {
         return this._edition;
     }
 
-    get promised() {
-        return this._promised;
+    get promise() {
+        return this._promise;
+    }
+
+    get promiseError() {
+        return this._promiseError;
     }
 
     get(path: Path) {
@@ -934,8 +949,7 @@ class Store implements Subscribable {
         return result;
     }
 
-    set(ad: SetActionDescriptor, value: StateValueAtPath, mergeValue: Partial<StateValueAtPath> | undefined): SetActionDescriptor {
-        let path = ad.path;
+    set(path: Path, value: StateValueAtPath, mergeValue: Partial<StateValueAtPath> | undefined): SetActionDescriptor {
         if (this._edition < 0) {
             // TODO convert to console log
             throw new StateInvalidUsageError(path, ErrorId.SetStateWhenDestroyed)
@@ -952,16 +966,18 @@ class Store implements Subscribable {
                 merged: mergeValue
             }
             if (value === none) {
-                this._promised = this.createPromised(undefined)
+                this.setPromised(undefined)
                 delete onSetArg.value
                 delete onSetArg.state
             } else if (Object(value) === value && configuration.promiseDetector(value)) {
-                this._promised = this.createPromised(value)
+                this.setPromised(value)
                 value = none
                 delete onSetArg.value
                 delete onSetArg.state
-            } else if (this._promised && (!this._promised.resolver && !this._promised.fullfilled)) {
+            } else if (this._promise && !this._promiseResolver) {
                 throw new StateInvalidUsageError(path, ErrorId.SetStateWhenPromised)
+            } else {
+                this._promiseError = undefined
             }
 
             let prevValue = this._value;
@@ -971,12 +987,17 @@ class Store implements Subscribable {
             this._value = value;
             this.afterSet(onSetArg)
 
-            if (prevValue === none && this._value !== none &&
-                this.promised && this.promised.resolver) {
-                this.promised.resolver(this._value)
+            if (prevValue === none && this._value !== none && this._promiseResolver) {
+                this._promise = undefined
+                this._promiseError = undefined
+                let resolver = this._promiseResolver
+                this._promiseResolver === undefined
+                resolver(this._value)
             }
 
-            return ad;
+            return {
+                path
+            };
         }
 
         if (Object(value) === value && configuration.promiseDetector(value)) {
@@ -1003,7 +1024,9 @@ class Store implements Subscribable {
                     merged: mergeValue
                 })
 
-                return ad;
+                return {
+                    path
+                };
             } else {
                 // Property DELETE case
                 let prevValue = target[p]
@@ -1050,7 +1073,9 @@ class Store implements Subscribable {
 
         // Non-existing property DELETE case
         // no-op
-        return ad;
+        return {
+            path
+        };
     }
 
     update(ad: SetActionDescriptor) {
@@ -1242,10 +1267,13 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                 delete this.selfUsed
             }
         }
-        if (this.valueSource === none && !allowPromised) {
-            if (this.store.promised && this.store.promised.error) {
-                throw this.store.promised.error;
-            }
+        if (allowPromised) {
+            return this.valueSource
+        }
+        if (this.store.promiseError) {
+            throw this.store.promiseError;
+        }
+        if (this.store.promise) {
             throw new StateInvalidUsageError(this.path, ErrorId.GetStateWhenPromised)
         }
         return this.valueSource;
@@ -1298,7 +1326,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
             // so skip this set call as it does not make an effect
             return null
         }
-        return this.store.set({ path: this.path }, newValue, mergeValue);
+        return this.store.set(this.path, newValue, mergeValue);
     }
 
     set(newValue: SetStateAction<S>) {
@@ -1708,22 +1736,13 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
     }
 
     get promised(): boolean {
-        const currentValue = this.get(true) // marks used
-        if (currentValue === none && this.store.promised && !this.store.promised.fullfilled) {
-            return true;
-        }
-        return false;
+        this.get(true) // marks used
+        return !!this.store.promise;
     }
 
     get error(): StateErrorAtRoot | undefined {
-        const currentValue = this.get(true) // marks used
-        if (currentValue === none) {
-            if (this.store.promised && this.store.promised.fullfilled) {
-                return this.store.promised.error;
-            }
-            this.get() // will throw 'read while promised' exception
-        }
-        return undefined;
+        this.get(!!this.store.promiseError) // marks used
+        return this.store.promiseError;
     }
 
     get ornull(): InferredStateOrnullType<S> {
