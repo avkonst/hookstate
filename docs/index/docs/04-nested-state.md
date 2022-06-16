@@ -24,14 +24,14 @@ We can dive to the deeply nested states of primitive values and set it, like
 we set the name property of a task in the `TaskEditor` component: `taskState.name.set(e.target.value)`.
 
 We can also set a state of an object to the entire new object. In the example above,
-we append new element to the state of tasks, using `merge` method: `state.merge([{ name: 'Untitled' }])`.
+we append new element to the state of tasks, using the `merge` method: `state.merge([{ name: 'Untitled' }])`.
 
 ## `nested` state method
 
 You may have noticed that a state object mixes properties from the state value object (eg. `name` property from
 `taskState` state) and state methods (eg. `merge` property from [StateMethods](typedoc-hookstate-core#interfacesstatemethodsmd) interface). It is very likely that names of properties from your state objects will not collide with names of state methods.
 In other words, your objects are unlikely to have properties named, like `merge`, `set`, `get`, etc.
-Although, it is more likely your objects may have properties with names like `value` or `error`, which also
+However, it is more likely your objects may have properties with names like `value` or `error`, which also
 exist in state methods.
 
 If the collision happens for whatever property name, properties 
@@ -497,7 +497,7 @@ Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) and [StateMet
 
 ## Limitations for state values
 
-There are a few limitations for state values, which are typical for any state management library for Javascript environment.
+There are a few limitations for state values, which are typical for any state management library for JavaScript environment.
 
 * A state value should be a JS primitive, like string/number/etc., or `null`/`undefined` or a JS object/array containing other JS primitive properties, objects or arrays. In other words, state values with Maps, Sets, Dates will not work properly.
 * Cyclic and cross-references with the state value will not work properly.

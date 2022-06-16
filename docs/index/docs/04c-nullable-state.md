@@ -39,7 +39,7 @@ if (stateOrNull) {
 }
 ```
 
-[StateMethods.ornull](typedoc-hookstate-core.md#ornull) property is a very convenient way to deal in those cases. Here is the example of a component, which receives a state whose value might be `null`.
+[StateMethods.ornull](typedoc-hookstate-core.md#ornull) property is a very convenient way to deal in those cases. Here is an example of a component, which receives a state whose value might be `null`.
 
 ```tsx
 const MyInputField = (props: { state: State<string | null>}) => {
@@ -54,7 +54,7 @@ const MyInputField = (props: { state: State<string | null>}) => {
 }
 ```
 
-[StateMethods.ornull](typedoc-hookstate-core.md#ornull) property is just a convenience. Traditional `||` may also work depending on a case. Here is the example of a component, which receives a state whose value might be `null`, but still proceeds with rendering 'state editor':
+[StateMethods.ornull](typedoc-hookstate-core.md#ornull) property is just a convenience. Traditional `||` may also work depending on a case. Here is an example of a component, which receives a state whose value might be `null`, but still proceeds with rendering 'state editor':
 
 ```tsx
 const MyInputField = (props: { state: State<string | null>}) => {
