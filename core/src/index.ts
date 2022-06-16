@@ -872,6 +872,7 @@ interface SetActionDescriptor {
 
 class Store implements Subscribable {
     private _edition = 0;
+    private _stateMethods?: StateMethodsImpl<StateValueAtRoot>;
 
     private _subscribers: Set<Subscriber> = new Set();
     private _setSubscribers: Set<Required<PluginCallbacks>['onSet']> = new Set();
@@ -1122,13 +1123,27 @@ class Store implements Subscribable {
     }
 
     toMethods() {
-        return new StateMethodsImpl<StateValueAtRoot>(
-            this,
-            RootPath,
-            this.get(RootPath),
-            this.edition,
-            OnSetUsedNoAction
-        )
+        let onSetUsedStoreStateMethods = () => {
+            this._stateMethods?.reconstruct(
+                RootPath,
+                this.get(RootPath),
+                this.edition,
+                false
+            )
+        }
+        onSetUsedStoreStateMethods[UnmountedMarker] = true
+
+        if (!this._stateMethods) {
+            this._stateMethods = new StateMethodsImpl<StateValueAtRoot>(
+                this,
+                RootPath,
+                this.get(RootPath),
+                this.edition,
+                onSetUsedStoreStateMethods
+            )
+            this.subscribe(this._stateMethods)
+        }
+        return this._stateMethods;
     }
 
     subscribe(l: Subscriber) {
@@ -1149,44 +1164,11 @@ class Store implements Subscribable {
     }
 }
 
-class Promised {
-    public fullfilled?: true;
-    public error?: StateErrorAtRoot;
-    public resolver?: (_: StateValueAtRoot) => void;
-
-    constructor(public promise: Promise<StateValueAtPath> | undefined,
-        onResolve: (r: StateValueAtPath) => void,
-        onReject: () => void,
-        onPostResolve: () => void) {
-        if (!promise) {
-            promise = new Promise<StateValueAtRoot>(resolve => {
-                this.resolver = resolve;
-            })
-        }
-        this.promise = promise
-            .then(r => {
-                this.fullfilled = true
-                if (!this.resolver) {
-                    onResolve(r)
-                }
-            })
-            .catch(err => {
-                this.fullfilled = true
-                this.error = err
-                onReject()
-            })
-            .then(() => onPostResolve())
-    }
-}
-
 // use symbol property to allow for easier reference finding
 const ValueUnusedMarker = Symbol('ValueUnusedMarker');
 
-function OnSetUsedNoAction() { /** no action callback */ }
-
 // use symbol to mark that a function has no effect anymore
 const UnmountedMarker = Symbol('UnmountedMarker');
-OnSetUsedNoAction[UnmountedMarker] = true
 
 // TODO remove from the docs IE11 support
 
@@ -1243,28 +1225,9 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
             this.valueSource = this.store.get(this.path)
             this.valueEdition = this.store.edition
 
-            if (this.isMounted) {
-                // this link is still mounted to a component
-                // populate cache again to ensure correct tracking of usage
-                // when React scans which states to rerender on update
-                if (this.valueUsed !== ValueUnusedMarker) {
-                    this.valueUsed = ValueUnusedMarker
-                    this.get(true) // renew cache to keep it marked used
-                }
-            } else {
-                // This link is not mounted to a component
-                // for example, it might be global link or
-                // a link which has been discarded after rerender
-                // but still captured by some callback or an effect.
-                // If we are here and if it was mounted before,
-                // it means it has not been garbage collected
-                // when a component unmounted.
-                // We take this opportunity to clean up caches
-                // to avoid memory leaks via stale children states cache.
+            if (this.valueUsed !== ValueUnusedMarker) {
                 this.valueUsed = ValueUnusedMarker
-                // TODO what do we need to do with this.children here?
-                delete this.childrenUsed
-                delete this.selfUsed
+                this.get(true) // renew cache to keep it marked used
             }
         }
         if (allowPromised) {
@@ -1541,15 +1504,12 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
     }
 
     child(key: number | string) {
-        // if this state is not mounted to a hook,
-        // we do not cache children to avoid unnecessary memory leaks
-        if (this.isMounted) {
-            this.childrenUsed = this.childrenUsed || {};
-            const cachedChild = this.childrenUsed[key];
-            if (cachedChild) {
-                return cachedChild;
-            }
+        this.childrenUsed = this.childrenUsed || {};
+        const cachedChild = this.childrenUsed[key];
+        if (cachedChild) {
+            return cachedChild;
         }
+
         const valueSource = this.valueSource[key]
         if (typeof valueSource === 'function') {
             // hitting a method of a custom type, should be no-op

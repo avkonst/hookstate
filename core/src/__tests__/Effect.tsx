@@ -756,3 +756,47 @@ test('object: should rerender if 2 states but 1 used in useEffect', async () => 
     expect(renderTimes).toStrictEqual(3);
     expect(effectTimes).toStrictEqual(2);
 });
+
+test('object: should give stable reference for global state', async () => {
+    const state = createState({hello: ["hi", "world"]});
+    
+    let stateHello1 = state.hello
+    let stateHelloValue1 = state.hello.value
+    expect(stateHello1 == state.hello).toBeTruthy();
+    expect(stateHelloValue1 == stateHello1.value).toBeTruthy();
+    expect(stateHelloValue1 == state.hello.value).toBeTruthy();
+    
+    let stateHelloHi1 = state.hello[0]
+    let stateHelloHiValue1 = state.hello[0].value
+    expect(stateHelloHi1 == state.hello[0]).toBeTruthy();
+    expect(stateHelloHiValue1 == stateHelloHi1.value).toBeTruthy();
+    expect(stateHelloHiValue1 == state.hello[0].value).toBeTruthy();
+    
+    let stateHelloWorld1 = state.hello[1]
+    let stateHelloWorldValue1 = state.hello[1].value
+    expect(stateHelloWorld1 == state.hello[1]).toBeTruthy();
+    expect(stateHelloWorldValue1 == stateHelloWorld1.value).toBeTruthy();
+    expect(stateHelloWorldValue1 == state.hello[1].value).toBeTruthy();
+
+    state.hello[0].set("Hi");
+    let stateHello2 = state.hello
+    let stateHelloValue2 = state.hello.value
+    expect(stateHello1 != stateHello2).toBeTruthy();
+    expect(stateHello2 == state.hello).toBeTruthy();
+    expect(stateHelloValue2 == stateHello2.value).toBeTruthy();
+    expect(stateHelloValue2 == state.hello.value).toBeTruthy();
+    
+    let stateHelloHi2 = state.hello[0]
+    let stateHelloHiValue2 = state.hello[0].value
+    expect(stateHelloHi1 != stateHelloHi2).toBeTruthy();
+    expect(stateHelloHi2 == state.hello[0]).toBeTruthy();
+    expect(stateHelloHiValue2 == stateHelloHi2.value).toBeTruthy();
+    expect(stateHelloHiValue2 == state.hello[0].value).toBeTruthy();
+    
+    let stateHelloWorld2 = state.hello[1]
+    let stateHelloWorldValue2 = state.hello[1].value
+    expect(stateHelloWorld1 == stateHelloWorld2).toBeTruthy();
+    expect(stateHelloWorld2 == state.hello[1]).toBeTruthy();
+    expect(stateHelloWorldValue2 == stateHelloWorld2.value).toBeTruthy();
+    expect(stateHelloWorldValue2 == state.hello[1].value).toBeTruthy();
+});
