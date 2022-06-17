@@ -177,8 +177,18 @@ export interface StateMethods<S> {
      * [path](#readonly-path) of this state instance.
      *
      * It returns the same result as [StateMethods.value](#readonly-value) method.
+     * 
+     * If the additional option `noproxy` is set, the method will return
+     * the original data object without wrapping it by proxy.
+     * All properties of the object will be marked as used and on change will trigger the rerender.
+     * 
+     * If the additional option `stealth` is set, the method will not mark
+     * the object as used and it will not trigger the rerender if it is changed.
+     * It might be helpful to use it during debugging, for example:
+     * `console.log(state.get({ stealth: true }))`.
+     * If you use it, make sure you know what you are doing. 
      */
-    get(): S;
+    get(options?: { noproxy?: boolean, stealth?: boolean }): S;
 
     /**
      * Sets new value for a state.
@@ -857,6 +867,7 @@ interface Subscribable {
     unsubscribe(l: Subscriber): void;
 }
 
+// TODO deprecate
 const DowngradedID = Symbol('Downgraded');
 const SelfMethodsID = Symbol('ProxyMarker');
 
@@ -1220,17 +1231,17 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         }
     }
 
-    getUntracked(allowPromised?: boolean) {
+    getUntracked(__internalAllowPromised?: boolean) {
         if (this.valueEdition !== this.store.edition) {
             this.valueSource = this.store.get(this.path)
             this.valueEdition = this.store.edition
 
             if (this.valueUsed !== ValueUnusedMarker) {
                 this.valueUsed = ValueUnusedMarker
-                this.get(true) // renew cache to keep it marked used
+                this.get({ __internalAllowPromised: true }) // renew cache to keep it marked used
             }
         }
-        if (allowPromised) {
+        if (__internalAllowPromised) {
             return this.valueSource
         }
         if (this.store.promiseError) {
@@ -1242,24 +1253,29 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         return this.valueSource;
     }
 
-    get(allowPromised?: boolean) {
-        const currentValue = this.getUntracked(allowPromised)
+    get(options?: { noproxy?: boolean, stealth?: boolean, __internalAllowPromised?: boolean }) {
+        const valueSource = this.getUntracked(options?.__internalAllowPromised)
+        if (options?.stealth) {
+            return valueSource;
+        }
         if (this.valueUsed === ValueUnusedMarker) {
-            if (this.downgraded) {
-                this.valueUsed = currentValue;
-            } else if (Array.isArray(currentValue)) {
-                this.valueUsed = this.valueArrayImpl(currentValue as unknown as StateValueAtPath[]);
-            } else if (Object(currentValue) === currentValue) {
-                if ((currentValue as StateValueAtPath).constructor?.name === "Object") {
-                    this.valueUsed = this.valueObjectImpl(currentValue as unknown as object);
+            if (Array.isArray(valueSource)) {
+                this.valueUsed = this.valueArrayImpl(valueSource as unknown as StateValueAtPath[]);
+            } else if (Object(valueSource) === valueSource) {
+                if ((valueSource as StateValueAtPath).constructor?.name === "Object") {
+                    this.valueUsed = this.valueObjectImpl(valueSource as unknown as object);
                 } else {
                     // any other object except Object, for example Date
                     this.downgraded = true
-                    this.valueUsed = currentValue;
+                    this.valueUsed = valueSource;
                 }
             } else {
-                this.valueUsed = currentValue;
+                this.valueUsed = valueSource;
             }
+        }
+        if (options?.noproxy) {
+            this.downgraded = true
+            return valueSource;
         }
         return this.valueUsed as S;
     }
@@ -1431,7 +1447,9 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
     onSet(ad: SetActionDescriptor, actions: Set<() => void>): boolean {
         const update = () => {
             let isAffected = false
-            if (this.downgraded && this.valueUsed !== ValueUnusedMarker) {
+            if (this.downgraded
+                // TODO this condition becomes redundant when Downgraded plugins is deleted
+                && this.valueUsed !== ValueUnusedMarker) {
                 actions.add(this.onSetUsed);
                 delete this.selfUsed;
                 isAffected = true;
@@ -1537,6 +1555,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
             this.childrenCreated[key] = r;
         }
         if (this.downgraded) {
+            // TODO this is redundant when Downgraded plugin is deleted
             r.downgraded = true;
         }
         if (this.childrenUsed) {
@@ -1667,7 +1686,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                 case 'error':
                     return this.error
                 case 'get':
-                    return () => this.get()
+                    return (opts: { noproxy: boolean, stealth: boolean }) => this.get(opts)
                 case 'set':
                     return (p: SetStateAction<S>) => this.set(p)
                 case 'merge':
@@ -1696,12 +1715,12 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
     }
 
     get promised(): boolean {
-        this.get(true) // marks used
+        this.get({ __internalAllowPromised: true }) // marks used
         return !!this.store.promise;
     }
 
     get error(): StateErrorAtRoot | undefined {
-        this.get(!!this.store.promiseError) // marks used
+        this.get({ __internalAllowPromised: !!this.store.promiseError }) // marks used
         return this.store.promiseError;
     }
 
