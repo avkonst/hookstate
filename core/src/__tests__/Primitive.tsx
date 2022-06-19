@@ -1,4 +1,4 @@
-import { useState, createState } from '../';
+import { useState, createState, State, StateMethods } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import React from 'react';
@@ -23,7 +23,8 @@ test('primitive: should not rerender used if set to the same', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState(0)
+        let r: StateMethods<number> = useState(0)
+        return r
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.get()).toStrictEqual(0);

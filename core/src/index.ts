@@ -71,9 +71,9 @@ export type InferredStateKeysType<S> =
  * 
  * @typeparam S Type of a value of a state
  */
-export type InferredStateOrnullType<S> =
+export type InferredStateOrnullType<S, E> =
     S extends undefined ? undefined :
-    S extends null ? null : State<S>;
+    S extends null ? null : State<S, E>;
 
 /**
  * For plugin developers only.
@@ -113,7 +113,8 @@ export interface PluginStateControl<S> {
  * 
  * @typeparam S Type of a value of a state
  */
-export interface StateMethods<S> {
+export interface StateMethods<S, E = {}> {
+    // TODO remove default value for E parameter
     /**
      * 'Javascript' object 'path' to an element relative to the root object
      * in the state. For example:
@@ -228,7 +229,7 @@ export interface StateMethods<S> {
      * 
      * @param key child property name or index
      */
-    nested<K extends keyof S>(key: K): State<S[K]>;
+    nested<K extends keyof S>(key: K): State<S[K], E>;
 
     /**
      * If state value is null or undefined, returns state value.
@@ -237,15 +238,17 @@ export interface StateMethods<S> {
      * 
      * [Learn more...](https://hookstate.js.org/docs/nullable-state)
      */
-    ornull: InferredStateOrnullType<S>;
+    ornull: InferredStateOrnullType<S, E>;
 
+    // TODO deprecate
     /**
      * Adds plugin to the state.
      * 
      * [Learn more...](https://hookstate.js.org/docs/extensions-overview)
      */
-    attach(plugin: () => Plugin): State<S>
+    attach(plugin: () => Plugin): State<S, E>
 
+    // TODO deprecate
     /**
      * For plugin developers only.
      * It is a method to get the instance of the previously attached plugin.
@@ -288,7 +291,7 @@ type KeysOfType<T, U, B = false> = {
     : never;
 }[keyof T];
 
-type PickByType<T, U, B = false> = Pick<T, KeysOfType<T, U, B>>;
+// type PickByType<T, U, B = false> = Pick<T, KeysOfType<T, U, B>>;
 
 /**
  * Type of a result of [createState](#createstate) and [useState](#usestate) functions
@@ -299,11 +302,11 @@ type PickByType<T, U, B = false> = Pick<T, KeysOfType<T, U, B>>;
  * [Learn more about local states...](https://hookstate.js.org/docs/local-state)
  * [Learn more about nested states...](https://hookstate.js.org/docs/nested-state)
  */
-export type State<S> = StateMethods<S> & (
-    S extends ReadonlyArray<(infer U)> ? ReadonlyArray<State<U>> :
+export type State<S, E = {}> = StateMethods<S, E> & E & (
+    S extends ReadonlyArray<(infer U)> ? ReadonlyArray<State<U, E>> :
     S extends object ? Omit<
-        { readonly [K in keyof Required<S>]: State<S[K]>; },
-        keyof StateMethods<S> | keyof StateMethodsDestroy | KeysOfType<S, Function>
+        { readonly [K in keyof Required<S>]: State<S[K], E>; },
+        keyof StateMethods<S, E> | keyof StateMethodsDestroy | KeysOfType<S, Function> | keyof E
     > : {}
 );
 
@@ -339,6 +342,15 @@ export type StateErrorAtRoot = any; //tslint:disable-line: no-any
  * @ignore
  */
 export type AnyContext = any; //tslint:disable-line: no-any
+
+/**
+ * For plugin developers only.
+ * Extension.onSet argument type.
+ */
+export interface ExtensionOnSetArgument {
+    readonly state: State<StateValueAtRoot, {}>,
+    readonly descriptor: SetActionDescriptor
+}
 
 /**
  * For plugin developers only.
@@ -405,9 +417,19 @@ export interface Plugin {
     /**
      * Initializer for a plugin when it is attached for the first time.
      */
-    readonly init?: (state: State<StateValueAtRoot>) => PluginCallbacks;
+    readonly init?: (state: State<StateValueAtRoot, {}>) => PluginCallbacks;
 }
 
+// TODO document
+export interface Extension<E extends {}> {
+    readonly onInit: (state: () => State<StateValueAtRoot, {}>) => {
+        readonly [K in keyof Required<E>]: (state: State<StateValueAtPath, {}>) => E[K];
+    },
+    readonly onSet?: (state: State<StateValueAtRoot, {}>, descriptor: SetActionDescriptor) => void,
+    readonly onDestroy?: (state: State<StateValueAtRoot, {}>) => void,
+};
+
+// TODO deprecate
 /**
  * Creates new state and returns it.
  *
@@ -441,15 +463,23 @@ export interface Plugin {
  */
 export function createState<S>(
     initial: SetInitialStateAction<S>
-): State<S> & StateMethodsDestroy {
-    const methods = createStore(initial).toMethods();
+): State<S, {}> & StateMethodsDestroy {
+    return createHookstate(initial)
+}
+
+export function createHookstate<S, E>(
+    initial: SetInitialStateAction<S>,
+    extensions?: () => Extension<E>
+): State<S, E> & StateMethodsDestroy {
+    const methods = createStore(initial, extensions).toMethods();
     const devtools = createState[DevToolsID]
     if (devtools) {
         methods.attach(devtools)
     }
-    return methods.self as State<S> & StateMethodsDestroy;
+    return methods.self as State<S, E> & StateMethodsDestroy;
 }
 
+// TODO deprectate useState
 /**
  * @warning Initializing a local state to a promise without using 
  * an initializer callback function, which returns a Promise,
@@ -487,8 +517,8 @@ export function useState<S>(
  * or in effects) or it's children.
  */
 export function useState<S>(
-    source: State<S>
-): State<S>;
+    source: State<S, {}>
+): State<S, {}>;
 /**
  * This function enables a functional React component to use a state,
  * created per component by [useState](#usestate) (*local* state).
@@ -518,12 +548,82 @@ export function useState<S>(
  */
 export function useState<S>(
     source: SetInitialStateAction<S>
-): State<S>;
+): State<S, {}>;
 export function useState<S>(
-    source: SetInitialStateAction<S> | State<S>
-): State<S> {
-    return useHookstate(source as State<S>);
+    source: SetInitialStateAction<S> | State<S, {}>
+): State<S, {}> {
+    return useHookstate(source as State<S, {}>);
 }
+
+// TODO document
+export function extend<
+    E1 extends {} = {},
+    E2 extends {} = {},
+    E3 extends {} = {},
+    E4 extends {} = {},
+    E5 extends {} = {}
+>(extensions: [
+    Extension<E1>, Extension<E2>?, Extension<E3>?, Extension<E4>?, Extension<E5>?
+]): Extension<E5 & E4 & E3 & E2 & E1> {
+    let exts = extensions.filter(i => i);
+    let onSetCbs = exts.map(i => i!.onSet).filter(i => i)
+    let onDestroyCbs = exts.map(i => i!.onDestroy).filter(i => i)
+    let result: Writeable<Extension<{}>> = {
+        onInit: (instanceFactory) => {
+            let combinedMethods: Record<string, (i: State<StateValueAtPath, {}>) => any> = {}
+            for (let ext of exts) {
+                let extMethods = ext!.onInit(instanceFactory)
+                combinedMethods = {
+                    ...combinedMethods,
+                    ...extMethods,
+                }
+            }
+            return combinedMethods
+        }
+    }
+    if (onSetCbs.length > 0) {
+        result.onSet = (s, d) => {
+            for (let cb of onSetCbs) {
+                cb!(s, d);
+            }
+        }
+    }
+    if (onDestroyCbs.length > 0) {
+        result.onDestroy = (s) => {
+            for (let cb of onDestroyCbs) {
+                cb!(s);
+            }
+        }
+    }
+    return result as Extension<E1 & E2 & E3 & E4 & E5>
+}
+
+// interface MyExtension extends Extension<MyExtensionMethods> { };
+
+// interface MyExtension2 extends Extension<MyExtensionMethods2> { };
+
+// interface MyExtensionMethods {
+//     validate(): this
+//     a(): boolean
+// }
+
+// interface MyExtensionMethods2 {
+//     validate(): void
+//     b(): boolean
+// }
+
+// export function useHookstateWithExtensions<S, E>(
+//     source: SetInitialStateAction<S>,
+//     extensions?: () => Extension<E>
+// ): State<S, E> {
+//     return {} as State<S, E>
+// }
+
+// let s = useHookstateWithExtensions(true, () => extend([{} as MyExtension, {} as MyExtension2]))
+// s.validate()
+
+// let s2 = useHookstateWithExtensions(true, () => ({} as MyExtension))
+// s2.validate()
 
 /**
  * @warning Initializing a local state to a promise without using 
@@ -531,28 +631,32 @@ export function useState<S>(
  * is almost always a mistake. So, it is blocked.
  * Use `useHookstate(() => your_promise)` instead of `useHookstate(your_promise)`.
  */
-export function useHookstate<S>(
-    source: Promise<S>
+export function useHookstate<S, E>(
+    source: Promise<S>,
+    extensions?: () => Extension<E>
 ): never;
 /**
  * Alias to [useState](#usestate) which provides a workaround
  * for [React 20613 bug](https://github.com/facebook/react/issues/20613)
  */
-export function useHookstate<S>(
-    source: State<S>
-): State<S>;
+export function useHookstate<S, E>(
+    source: State<S, E>,
+    extensions?: () => Extension<E>
+): State<S, E>;
 /**
  * Alias to [useState](#usestate) which provides a workaround
  * for [React 20613 bug](https://github.com/facebook/react/issues/20613)
  */
-export function useHookstate<S>(
-    source: SetInitialStateAction<S>
-): State<S>;
-export function useHookstate<S>(
-    source: SetInitialStateAction<S> | State<S>
-): State<S> {
+export function useHookstate<S, E>(
+    source: SetInitialStateAction<S>,
+    extensions?: () => Extension<E>
+): State<S, E>;
+export function useHookstate<S, E>(
+    source: SetInitialStateAction<S> | State<S, E>,
+    extensions?: () => Extension<E>
+): State<S, E> {
     const parentMethods = Object(source) === source ?
-        source[self] as StateMethodsImpl<S> | undefined :
+        source[self] as StateMethodsImpl<S, E> | undefined :
         undefined;
     if (parentMethods) {
         if (parentMethods.isMounted) {
@@ -565,7 +669,7 @@ export function useHookstate<S>(
                     state: state, // immutable
                     source: value.source // mutable, get the latest from value
                 })
-                let state: StateMethodsImpl<S> = new StateMethodsImpl<S>(
+                let state = new StateMethodsImpl<S, E>(
                     store,
                     parentMethods.path,
                     store.get(parentMethods.path),
@@ -608,7 +712,7 @@ export function useHookstate<S>(
                     state: state, // immutable
                     source: value.source // mutable, get the latest from value
                 })
-                let state: StateMethodsImpl<S> = new StateMethodsImpl<S>(
+                let state = new StateMethodsImpl<S, E>(
                     store,
                     RootPath,
                     store.get(RootPath),
@@ -640,22 +744,22 @@ export function useHookstate<S>(
                 }
             }, []);
 
-            let state: State<StateValueAtPath> = value.state.self;
+            let state: State<StateValueAtPath, E> = value.state.self;
             for (let ind = 0; ind < parentMethods.path.length; ind += 1) {
                 state = state.nested(parentMethods.path[ind]);
             }
-            return state as State<S>;
+            return state as State<S, E>;
         }
     } else {
         // Local state mount
         // eslint-disable-next-line react-hooks/rules-of-hooks
         let initializer = () => {
-            let store = createStore(source)
+            let store = createStore(source, extensions)
             let onSetUsedCallback = () => setValue({
                 store: store,
                 state: state,
             })
-            let state: StateMethodsImpl<S> = new StateMethodsImpl<S>(
+            let state = new StateMethodsImpl<S, E>(
                 store,
                 RootPath,
                 store.get(RootPath),
@@ -717,10 +821,10 @@ export function useHookstate<S>(
  * 
  * @typeparam S Type of a value of a state
  */
-export function StateFragment<S>(
+export function StateFragment<S, E>(
     props: {
-        state: State<S>,
-        children: (state: State<S>) => React.ReactElement,
+        state: State<S, E>,
+        children: (state: State<S, E>) => React.ReactElement,
     }
 ): React.ReactElement;
 /**
@@ -731,22 +835,24 @@ export function StateFragment<S>(
  * 
  * @typeparam S Type of a value of a state
  */
-export function StateFragment<S>(
+export function StateFragment<S, E>(
     props: {
         state: SetInitialStateAction<S>,
-        children: (state: State<S>) => React.ReactElement,
+        // TODO ingect extensions
+        children: (state: State<S, E>) => React.ReactElement,
     }
 ): React.ReactElement;
-export function StateFragment<S>(
+export function StateFragment<S, E>(
     props: {
-        state: State<S> | SetInitialStateAction<S>,
-        children: (state: State<S>) => React.ReactElement,
+        state: State<S, E> | SetInitialStateAction<S>,
+        children: (state: State<S, E>) => React.ReactElement,
     }
 ): React.ReactElement {
-    const scoped = useState(props.state as State<S>);
+    const scoped = useHookstate(props.state as State<S, E>);
     return props.children(scoped);
 }
 
+// TODO deprecate
 /**
  * A plugin which allows to opt-out from usage of Javascript proxies for
  * state usage tracking. It is useful for performance tuning.
@@ -798,7 +904,7 @@ export interface DevToolsExtensions {
  * 
  * @typeparam S Type of a value of a state
  */
-export function DevTools<S>(state: State<S>): DevToolsExtensions {
+export function DevTools<S, E>(state: State<S, E>): DevToolsExtensions {
     const plugin = state.attach(DevToolsID);
     if (plugin[0] instanceof Error) {
         return EmptyDevToolsExtensions;
@@ -876,32 +982,36 @@ const DestroyedEdition = -1
 
 type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 
-interface SetActionDescriptor {
+// TODO document move
+export interface SetActionDescriptor {
     path: Path,
     actions?: Record<string | number, "I" | "U" | "D">
 }
 
 class Store implements Subscribable {
     private _edition = 0;
-    private _stateMethods?: StateMethodsImpl<StateValueAtRoot>;
+    private _stateMethods?: StateMethodsImpl<StateValueAtRoot, {}>;
 
     private _subscribers: Set<Subscriber> = new Set();
     private _setSubscribers: Set<Required<PluginCallbacks>['onSet']> = new Set();
     private _destroySubscribers: Set<Required<PluginCallbacks>['onDestroy']> = new Set();
 
     private _plugins: Map<symbol, PluginCallbacks> = new Map();
+    private _extensionMethods: {} | undefined;
 
     private _promise?: Promise<StateValueAtRoot>;
     private _promiseResolver?: (_: StateValueAtRoot) => void;
     private _promiseError?: StateValueAtRoot;
 
-    constructor(private _value: StateValueAtRoot) {
+    constructor(private _value: StateValueAtRoot, private _extension?: Extension<{}>) {
         if (Object(_value) === _value &&
             configuration.promiseDetector(_value)) {
             this.setPromised(_value)
         } else if (_value === none) {
             this.setPromised(undefined)
         }
+
+        this._extensionMethods = this._extension?.onInit(() => this.toMethods().self)
     }
 
     setPromised(promise: StateValueAtPath | undefined) {
@@ -936,6 +1046,10 @@ class Store implements Subscribable {
                 }
             })
         this._promise = promise
+    }
+
+    get extension() {
+        return this._extensionMethods
     }
 
     get edition() {
@@ -1091,6 +1205,8 @@ class Store implements Subscribable {
     }
 
     update(ad: SetActionDescriptor) {
+        this._extension?.onSet?.(this.toMethods().self, ad)
+
         const actions = new Set<() => void>();
         // check if actions descriptor can be unfolded into a number of individual update actions
         // this is the case when merge call swaps to properties for example
@@ -1145,7 +1261,7 @@ class Store implements Subscribable {
         onSetUsedStoreStateMethods[UnmountedMarker] = true
 
         if (!this._stateMethods) {
-            this._stateMethods = new StateMethodsImpl<StateValueAtRoot>(
+            this._stateMethods = new StateMethodsImpl<StateValueAtRoot, {}>(
                 this,
                 RootPath,
                 this.get(RootPath),
@@ -1166,7 +1282,10 @@ class Store implements Subscribable {
     }
 
     destroy() {
-        this._destroySubscribers.forEach(cb => cb(this._value !== none ? { state: this._value } : {}))
+        this._extension?.onDestroy?.(this.toMethods().self)
+
+        let params = this._value !== none ? { state: this._value } : {};
+        this._destroySubscribers.forEach(cb => cb(params))
         this._edition = DestroyedEdition
     }
 
@@ -1183,13 +1302,13 @@ const UnmountedMarker = Symbol('UnmountedMarker');
 
 // TODO remove from the docs IE11 support
 
-class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subscribable, Subscriber {
+class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy, Subscribable, Subscriber {
     private subscribers: Set<Subscriber> | undefined;
 
     private downgraded: boolean | undefined;
-    private childrenCreated: Record<string | number, StateMethodsImpl<StateValueAtPath>> | undefined;
-    private childrenUsed: Record<string | number, StateMethodsImpl<StateValueAtPath>> | undefined;
-    private selfUsed: State<S> | undefined;
+    private childrenCreated: Record<string | number, StateMethodsImpl<StateValueAtPath, E>> | undefined;
+    private childrenUsed: Record<string | number, StateMethodsImpl<StateValueAtPath, E>> | undefined;
+    private selfUsed: State<S, E> | undefined;
     private valueUsed: StateValueAtPath = ValueUnusedMarker;
 
     constructor(
@@ -1405,8 +1524,8 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         }
     }
 
-    nested<K extends keyof S>(key: K): State<S[K]> {
-        return this.child(key as string | number).self as State<S[K]>
+    nested<K extends keyof S>(key: K): State<S[K], E> {
+        return this.child(key as string | number).self as State<S[K], E>
     }
 
     rerender(paths: Path[]) {
@@ -1545,7 +1664,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
             )
             r = child;
         } else {
-            r = new StateMethodsImpl(
+            r = new StateMethodsImpl<StateValueAtPath, E>(
                 this.store,
                 this.path.concat(key),
                 valueSource,
@@ -1624,7 +1743,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         ) as unknown as S;
     }
 
-    get self(): State<S> {
+    get self(): State<S, E> {
         if (this.selfUsed) {
             return this.selfUsed
         }
@@ -1695,9 +1814,15 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
                     return (p: keyof S) => nestedGetter(p)
                 case 'attach':
                     return (p: symbol) => this.attach(p)
-                case 'destroy':
+                case 'destroy': // TODO move destroy to the state, otherwise State type hides this well existing property
                     return () => this.destroy()
                 default:
+                    // check if extension method
+                    let ext = this.store.extension
+                    if (ext && key in ext) {
+                        return ext[key](this.self)
+                    }
+                    // otherwise nested child
                     return nestedGetter(key)
             }
         }
@@ -1710,7 +1835,7 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
             (_, key, value) => {
                 throw new StateInvalidUsageError(this.path, ErrorId.SetProperty_State)
             },
-            false) as unknown as State<S>;
+            false) as unknown as State<S, E>;
         return this.selfUsed
     }
 
@@ -1724,18 +1849,18 @@ class StateMethodsImpl<S> implements StateMethods<S>, StateMethodsDestroy, Subsc
         return this.store.promiseError;
     }
 
-    get ornull(): InferredStateOrnullType<S> {
+    get ornull(): InferredStateOrnullType<S, E> {
         const value = this.get()
         if (value === null || value === undefined) {
-            return value as unknown as InferredStateOrnullType<S>;
+            return value as unknown as InferredStateOrnullType<S, E>;
         }
-        return this.self as InferredStateOrnullType<S>;
+        return this.self as InferredStateOrnullType<S, E>;
     }
 
-    attach(plugin: () => Plugin): State<S>
+    attach(plugin: () => Plugin): State<S, E>
     attach(pluginId: symbol): [PluginCallbacks | Error, PluginStateControl<S>]
     attach(p: (() => Plugin) | symbol):
-        State<S> | [PluginCallbacks | Error, PluginStateControl<S>] {
+        State<S, E> | [PluginCallbacks | Error, PluginStateControl<S>] {
         if (typeof p === 'function') {
             const pluginMeta = p();
             if (pluginMeta.id === DowngradedID) {
@@ -1863,7 +1988,7 @@ function proxyWrap(
     });
 }
 
-function createStore<S>(initial: SetInitialStateAction<S>): Store {
+function createStore<S, E>(initial: SetInitialStateAction<S>, extensions?: () => Extension<E>): Store {
     let initialValue: S | Promise<S> = initial as (S | Promise<S>);
     if (typeof initial === 'function') {
         initialValue = (initial as (() => S | Promise<S>))();
@@ -1871,7 +1996,7 @@ function createStore<S>(initial: SetInitialStateAction<S>): Store {
     if (Object(initialValue) === initialValue && initialValue[SelfMethodsID]) {
         throw new StateInvalidUsageError(RootPath, ErrorId.InitStateToValueFromState)
     }
-    return new Store(initialValue);
+    return new Store(initialValue, extensions?.());
 }
 
 // Do not try to use useLayoutEffect if DOM not available (SSR)
@@ -1933,7 +2058,7 @@ export function configure(config: Partial<Configuration>) {
 function reconnectDependencies(deps?: React.DependencyList, fromIntercept?: boolean): React.DependencyList | undefined {
     for (const i of deps || []) {
         if (i === Object(i)) {
-            let state = (i as any)[self] as StateMethodsImpl<StateValueAtPath> | undefined
+            let state = (i as any)[self] as StateMethodsImpl<StateValueAtPath, {}> | undefined
             if (state) {
                 if (fromIntercept && configuration.hiddenInterceptDependencyListsModeDebug) {
                     // TODO document this exception
