@@ -1,4 +1,4 @@
-import { useState, createState, Plugin, DevToolsID, DevTools, DevToolsExtensions, PluginCallbacks, useHookstate, extend, StateValueAtPath, State, Extension, SetActionDescriptor, StateErrorAtRoot } from '../';
+import { useState, createState, Plugin, DevToolsID, DevTools, DevToolsExtensions, PluginCallbacks, useHookstate, extend, StateValueAtPath, State, Extension, SetActionDescriptor, StateErrorAtRoot, StateValue } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 
@@ -6,14 +6,16 @@ const TestPlugin = Symbol('TestPlugin')
 const TestPluginUnknown = Symbol('TestPluginUnknown')
 
 interface MyExtensionMethods {
-    extensionMethod(cb: (this: this) => void): number,
-    // extensionMethod2(this: this): this,
+    extensionMethod(): number,
+    extensionMethodWithArg(cb: (v: StateValue<this>) => number): number,
+    extensionMethodSetValue(v: StateValue<this>): void,
     extensionProp: this
 }
 
 function MyExtension(messages: string[]) {
     return new MyExtensionImpl(messages) as Extension<MyExtensionMethods>
 }
+
 
 class MyExtensionImpl implements Extension<MyExtensionMethods> {
     constructor(private messages: string[]) {}
@@ -23,6 +25,16 @@ class MyExtensionImpl implements Extension<MyExtensionMethods> {
         return {
             extensionMethod: (s) => {
                 return () => this.messages.push(`onExtension called: ${s.path.join('/')}`)
+            },
+            extensionMethodWithArg: (s) => {
+                return (cb) => {
+                    let r = cb(s.value);
+                    this.messages.push(`onExtensionWithArg called: ${s.path.join('/')}, cb: ${r}`)
+                    return r;
+                }
+            },
+            extensionMethodSetValue: (s) => {
+                return (v) => s.set(v)
             },
             extensionProp: (s) => {
                 this.messages.push(`onExtensionProp called: ${s.path.join('/')}`)
@@ -91,7 +103,7 @@ test('extension: common flow callbacks', async () => {
     expect(Object.keys(result.current.get()[0])).toEqual(['f1', 'f2']);
     expect(messages.slice(4)).toEqual([]);
 
-    expect(result.current.extensionMethod((v) => { v })).toEqual(5)
+    expect(result.current.extensionMethod()).toEqual(5)
     expect(messages.slice(4)).toEqual(['onExtension called: ']);
 
     expect(result.current[0].f1.extensionMethod()).toEqual(6)
@@ -103,6 +115,12 @@ test('extension: common flow callbacks', async () => {
     expect(result.current[0].f1.extensionProp.value === result.current[0].f1.value).toBeTruthy()
     expect(messages.slice(7)).toEqual(['onExtensionProp called: 0/f1']);
 
+    expect(result.current.extensionMethodWithArg((v) => v[0].f1)).toEqual(2)
+    expect(messages.slice(8)).toEqual(['onExtensionWithArg called: , cb: 2']);
+
+    expect(result.current[0].f1.extensionMethodWithArg(v => v)).toEqual(2)
+    expect(messages.slice(9)).toEqual(['onExtensionWithArg called: 0/f1, cb: 2']);
+
     expect(result.current.get()[0].f1).toStrictEqual(2);
     expect(result.current.get()[0].f2).toStrictEqual('str2');
     expect(renderTimes).toStrictEqual(4);
@@ -110,7 +128,7 @@ test('extension: common flow callbacks', async () => {
         result.current.set([{ f1: 0, f2: 'str3' }])
     })
     expect(renderTimes).toStrictEqual(5);
-    expect(messages.slice(7)).toEqual(['onSet called, []: [{"f1":0,"f2":"str3"}], undefined']);
+    expect(messages.slice(10)).toEqual(['onSet called, []: [{"f1":0,"f2":"str3"}], undefined']);
 
     expect(result.current.get()[0].f1).toStrictEqual(0);
     expect(result.current.get()[0].f2).toStrictEqual('str3');
@@ -119,25 +137,33 @@ test('extension: common flow callbacks', async () => {
         result.current[0].f2.merge('str2')
     })
     expect(renderTimes).toStrictEqual(6);
-    expect(messages.slice(6)).toEqual(
+    expect(messages.slice(11)).toEqual(
         ['onSet called, [0,f2]: [{"f1":0,"f2":"str3str2"}], undefined']);
 
-    expect(renderTimes).toStrictEqual(6);
-    expect(messages.slice(8)).toEqual([]);
+    expect(result.current.get()[0].f2).toStrictEqual('str3str2');
+    act(() => {
+        result.current[0].f2.extensionMethodSetValue("str5")
+    })
+    expect(renderTimes).toStrictEqual(7);
+    expect(result.current.get()[0].f2).toStrictEqual('str5');
+    expect(messages.slice(12)).toEqual(['onSet called, [0,f2]: [{"f1":0,"f2":"str5"}], undefined'])
 
+    expect(renderTimes).toStrictEqual(7);
+    expect(messages.slice(13)).toEqual([]);
+    
     unmount()
-    expect(messages.slice(8)).toEqual(['onDestroy called, [{"f1":0,"f2":"str3str2"}]'])
+    expect(messages.slice(13)).toEqual(['onDestroy called, [{"f1":0,"f2":"str5"}]'])
 
     expect(result.current.get()[0].f1).toStrictEqual(0);
-    expect(messages.slice(9)).toEqual([])
+    expect(messages.slice(14)).toEqual([])
 
     act(() => {
         expect(() => result.current[0].f1.set(p => p + 1)).toThrow(
             'Error: HOOKSTATE-106 [path: /0/f1]. See https://hookstate.js.org/docs/exceptions#hookstate-106'
         );
     });
-    expect(renderTimes).toStrictEqual(6);
-    expect(messages.slice(9)).toEqual([])
+    expect(renderTimes).toStrictEqual(7);
+    expect(messages.slice(14)).toEqual([])
 });
 
 const stateInf = createState([{

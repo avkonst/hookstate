@@ -310,6 +310,9 @@ export type State<S, E = {}> = StateMethods<S, E> & E & (
     > : {}
 );
 
+// TODO document, give example how to use in extension method signatures
+export type StateValue<V> = V extends State<(infer S)> ? S : V
+
 /**
  * For plugin developers only.
  * Type alias to highlight the places where we are dealing with root state value.
