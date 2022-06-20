@@ -1307,7 +1307,7 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
 
     private downgraded: boolean | undefined;
     private childrenCreated: Record<string | number, StateMethodsImpl<StateValueAtPath, E>> | undefined;
-    // private childrenUsedPrevious: Record<string | number, StateMethodsImpl<StateValueAtPath, E>> | undefined;
+    private childrenUsedPrevious: Record<string | number, StateMethodsImpl<StateValueAtPath, E>> | undefined;
     private childrenUsed: Record<string | number, StateMethodsImpl<StateValueAtPath, E>> | undefined;
     private selfUsed: State<S, E> | undefined;
     private valueUsed: StateValueAtPath = ValueUnusedMarker;
@@ -1337,10 +1337,9 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
         if (reset) {
             delete this.selfUsed;
             delete this.childrenCreated
-            // delete this.childrenUsedPrevious
+            delete this.childrenUsedPrevious
         } else {
-            this.childrenCreated = this.childrenUsed;
-            // this.childrenUsedPrevious = this.childrenUsed;
+            this.childrenUsedPrevious = this.childrenUsed;
         }
         delete this.childrenUsed
 
@@ -1354,8 +1353,7 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
 
     reconnect() {
         this.childrenUsed = {
-            ...this.childrenCreated,
-            // ...this.childrenUsedPrevious,
+            ...this.childrenUsedPrevious,
             ...this.childrenUsed
         }
     }
@@ -1591,9 +1589,9 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
                 if (this.valueUsed !== ValueUnusedMarker) {
                     actions.add(this.onSetUsed);
                     delete this.selfUsed;
-                    // delete this.childrenUsed;
-
-                    if (ad.actions && this.childrenUsed) {
+                    delete this.childrenUsed;
+                    
+                    if (ad.actions && this.childrenCreated) {
                         // TODO add automated unit tests for this part
                         if (Array.isArray(this.valueSource)
                             && Object.values(ad.actions).includes("D")) {
@@ -1603,19 +1601,19 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
                                 .map(i => Number(i))
                                 .sort()
                                 .find(i => ad.actions?.[i] === "D")!
-                            for (let childKey in this.childrenUsed) {
+                            for (let childKey in this.childrenCreated) {
                                 if (Number(childKey) >= firstDeletedIndex ||
                                     childKey in ad.actions) {
-                                    delete this.childrenUsed[childKey]
+                                    delete this.childrenCreated[childKey]
                                 }
                             }
                         } else {
                             for (let childKey in ad.actions) {
-                                delete this.childrenUsed[childKey]
+                                delete this.childrenCreated[childKey]
                             }
                         }
                     } else {
-                        delete this.childrenUsed;
+                        delete this.childrenCreated;
                     }
                     return true;
                 }
