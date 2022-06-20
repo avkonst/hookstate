@@ -1773,6 +1773,8 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
             }
 
             let nestedGetter = (prop: PropertyKey) => {
+                const currentValue = this.get();
+
                 if (prop in Object.prototype) {
                     // Mark it used entirely, so changes to the value
                     // invalidate and rerender results for Object.prototype.toString(),
@@ -1780,11 +1782,9 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
                     // We check for Object prototype functions
                     // even for primitive values, because primitive values still
                     // can have object methods.
-                    this.get({ noproxy: true });
                     return Object.prototype[prop];
                 }
 
-                const currentValue = this.get();
                 if (// if currentValue is primitive type
                     (Object(currentValue) !== currentValue) &&
                     // if promised, it will be none
