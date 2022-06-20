@@ -1649,7 +1649,7 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
 
     child(key: number | string) {
         this.childrenUsed = this.childrenUsed || {};
-        const cachedChild = this.childrenUsed[key];
+        const cachedChild = this.childrenUsed.hasOwnProperty(key) && this.childrenUsed[key];
         if (cachedChild) {
             return cachedChild;
         }
@@ -1729,6 +1729,9 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
         return proxyWrap(this.path, currentValue,
             () => currentValue,
             (target: object, key: PropertyKey) => {
+                if (key in Object.prototype) {
+                    return Object.prototype[key];
+                }
                 if (key === SelfMethodsID) {
                     return this;
                 }
@@ -1767,6 +1770,17 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
             }
 
             let nestedGetter = (prop: PropertyKey) => {
+                if (prop in Object.prototype) {
+                    // Mark it used entirely, so changes to the value
+                    // invalidate and rerender results for Object.prototype.toString(),
+                    // for example.
+                    // We check for Object prototype functions
+                    // even for primitive values, because primitive values still
+                    // can have object methods.
+                    this.get({ noproxy: true });
+                    return Object.prototype[prop];
+                }
+
                 const currentValue = this.get();
                 if (// if currentValue is primitive type
                     (Object(currentValue) !== currentValue) &&

@@ -23,6 +23,41 @@ test('object: should rerender used', async () => {
     expect(Object.keys(result.current.get())).toEqual(['field1', 'field2']);
 });
 
+test('object: should not crash on toString', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useState({
+            field1: 0,
+            field2: 'str'
+        })
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(result.current.get().field1).toStrictEqual(0);
+
+    expect(result.current.value.toString()).toBe("[object Object]")
+    expect(result.current.toString()).toBe("[object Object]")
+
+    expect(result.current.field1.value.toString()).toBe("0")
+    expect(result.current.field1.toString()).toBe("[object Object]")
+});
+
+test('object: should not crash on valueOf', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useState({
+            field1: 0,
+            field2: 'str'
+        })
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(result.current.get().field1).toStrictEqual(0);
+
+    expect(result.current.value.valueOf() === result.current.value).toBe(true)
+    expect(result.current.valueOf() === result.current).toBe(true)
+});
+
 test('object: should rerender used null', async () => {
     let renderTimes = 0
     
