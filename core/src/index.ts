@@ -991,7 +991,7 @@ export interface SetActionDescriptor {
 
 class Store implements Subscribable {
     private _edition = 0;
-    private _stateMethods?: StateMethodsImpl<StateValueAtRoot, {}>;
+    private _stateMethods: StateMethodsImpl<StateValueAtRoot, {}>;
 
     private _subscribers: Set<Subscriber> = new Set();
     private _setSubscribers: Set<Required<PluginCallbacks>['onSet']> = new Set();
@@ -1011,6 +1011,25 @@ class Store implements Subscribable {
         } else if (_value === none) {
             this.setPromised(undefined)
         }
+
+        let onSetUsedStoreStateMethods = () => {
+            this._stateMethods.reconstruct(
+                RootPath,
+                this.get(RootPath),
+                this.edition,
+                false
+            )
+        }
+        onSetUsedStoreStateMethods[UnmountedMarker] = true
+
+        this._stateMethods = new StateMethodsImpl<StateValueAtRoot, {}>(
+            this,
+            RootPath,
+            this.get(RootPath),
+            this.edition,
+            onSetUsedStoreStateMethods
+        )
+        this.subscribe(this._stateMethods)
 
         this._extensionMethods = this._extension?.onInit(() => this.toMethods().self)
     }
@@ -1251,26 +1270,6 @@ class Store implements Subscribable {
     }
 
     toMethods() {
-        let onSetUsedStoreStateMethods = () => {
-            this._stateMethods?.reconstruct(
-                RootPath,
-                this.get(RootPath),
-                this.edition,
-                false
-            )
-        }
-        onSetUsedStoreStateMethods[UnmountedMarker] = true
-
-        if (!this._stateMethods) {
-            this._stateMethods = new StateMethodsImpl<StateValueAtRoot, {}>(
-                this,
-                RootPath,
-                this.get(RootPath),
-                this.edition,
-                onSetUsedStoreStateMethods
-            )
-            this.subscribe(this._stateMethods)
-        }
         return this._stateMethods;
     }
 
@@ -1308,6 +1307,7 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
 
     private downgraded: boolean | undefined;
     private childrenCreated: Record<string | number, StateMethodsImpl<StateValueAtPath, E>> | undefined;
+    // private childrenUsedPrevious: Record<string | number, StateMethodsImpl<StateValueAtPath, E>> | undefined;
     private childrenUsed: Record<string | number, StateMethodsImpl<StateValueAtPath, E>> | undefined;
     private selfUsed: State<S, E> | undefined;
     private valueUsed: StateValueAtPath = ValueUnusedMarker;
@@ -1337,8 +1337,10 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
         if (reset) {
             delete this.selfUsed;
             delete this.childrenCreated
+            // delete this.childrenUsedPrevious
         } else {
             this.childrenCreated = this.childrenUsed;
+            // this.childrenUsedPrevious = this.childrenUsed;
         }
         delete this.childrenUsed
 
@@ -1353,6 +1355,7 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
     reconnect() {
         this.childrenUsed = {
             ...this.childrenCreated,
+            // ...this.childrenUsedPrevious,
             ...this.childrenUsed
         }
     }
@@ -1588,6 +1591,8 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
                 if (this.valueUsed !== ValueUnusedMarker) {
                     actions.add(this.onSetUsed);
                     delete this.selfUsed;
+                    // delete this.childrenUsed;
+
                     if (ad.actions && this.childrenUsed) {
                         // TODO add automated unit tests for this part
                         if (Array.isArray(this.valueSource)
@@ -1684,9 +1689,7 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
             // TODO this is redundant when Downgraded plugin is deleted
             r.downgraded = true;
         }
-        if (this.childrenUsed) {
-            this.childrenUsed[key] = r;
-        }
+        this.childrenUsed[key] = r;
         return r;
     }
 
