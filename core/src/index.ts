@@ -108,12 +108,14 @@ export interface PluginStateControl<S> {
     rerender(paths: Path[]): void;
 }
 
+// TODO move __State to State definition, so StateMethods are not used directly by user
+// TODO and declare incompatible __synthetic marker, so StateMethods would become forced to be replaced by State
 /**
  * An interface to manage a state in Hookstate.
  * 
  * @typeparam S Type of a value of a state
  */
-export interface StateMethods<S, E = {}> {
+export interface StateMethods<S, E = {}> extends State_<S, E> {
     // TODO remove default value for E parameter
     /**
      * 'Javascript' object 'path' to an element relative to the root object
@@ -293,6 +295,16 @@ type KeysOfType<T, U, B = false> = {
 
 // type PickByType<T, U, B = false> = Pick<T, KeysOfType<T, U, B>>;
 
+export const __state = Symbol('__state')
+export interface State_<S, E> {
+    [__state]: (s: S, e: E) => never
+}
+
+// TODO document, give example how to use in extension method signatures
+export type StateValue<V> = V extends State_<(infer S), (infer _)> ? S : V
+// TODO document, give example how to use in extension method signatures
+export type StateExtension<V> = V extends State_<(infer _), (infer E)> ? E : V
+
 /**
  * Type of a result of [createState](#createstate) and [useState](#usestate) functions
  * 
@@ -309,9 +321,6 @@ export type State<S, E = {}> = StateMethods<S, E> & E & (
         keyof StateMethods<S, E> | keyof StateMethodsDestroy | KeysOfType<S, Function> | keyof E
     > : {}
 );
-
-// TODO document, give example how to use in extension method signatures
-export type StateValue<V> = V extends State<(infer S)> ? S : V
 
 /**
  * For plugin developers only.
@@ -472,14 +481,14 @@ export function createState<S>(
 
 export function createHookstate<S, E>(
     initial: SetInitialStateAction<S>,
-    extensions?: () => Extension<E>
+    extension?: () => Extension<E>
 ): State<S, E> & StateMethodsDestroy {
-    const methods = createStore(initial, extensions).toMethods();
+    const methods = createStore(initial, extension).toMethods();
     const devtools = createState[DevToolsID]
     if (devtools) {
         methods.attach(devtools)
     }
-    return methods.self as State<S, E> & StateMethodsDestroy;
+    return methods.self as unknown as State<S, E> & StateMethodsDestroy;
 }
 
 // TODO deprectate useState
@@ -601,33 +610,6 @@ export function extend<
     return result as Extension<E1 & E2 & E3 & E4 & E5>
 }
 
-// interface MyExtension extends Extension<MyExtensionMethods> { };
-
-// interface MyExtension2 extends Extension<MyExtensionMethods2> { };
-
-// interface MyExtensionMethods {
-//     validate(): this
-//     a(): boolean
-// }
-
-// interface MyExtensionMethods2 {
-//     validate(): void
-//     b(): boolean
-// }
-
-// export function useHookstateWithExtensions<S, E>(
-//     source: SetInitialStateAction<S>,
-//     extensions?: () => Extension<E>
-// ): State<S, E> {
-//     return {} as State<S, E>
-// }
-
-// let s = useHookstateWithExtensions(true, () => extend([{} as MyExtension, {} as MyExtension2]))
-// s.validate()
-
-// let s2 = useHookstateWithExtensions(true, () => ({} as MyExtension))
-// s2.validate()
-
 /**
  * @warning Initializing a local state to a promise without using 
  * an initializer callback function, which returns a Promise,
@@ -636,15 +618,19 @@ export function extend<
  */
 export function useHookstate<S, E>(
     source: Promise<S>,
-    extensions?: () => Extension<E>
+    extension?: () => Extension<E>
+): never;
+// TODO block this on type system level
+export function useHookstate<S, E, E2>(
+    source: State_<S, E>,
+    extension: () => Extension<E2>
 ): never;
 /**
  * Alias to [useState](#usestate) which provides a workaround
  * for [React 20613 bug](https://github.com/facebook/react/issues/20613)
  */
 export function useHookstate<S, E>(
-    source: State<S, E>,
-    extensions?: () => Extension<E>
+    source: State_<S, E>
 ): State<S, E>;
 /**
  * Alias to [useState](#usestate) which provides a workaround
@@ -652,11 +638,11 @@ export function useHookstate<S, E>(
  */
 export function useHookstate<S, E>(
     source: SetInitialStateAction<S>,
-    extensions?: () => Extension<E>
+    extension?: () => Extension<E>
 ): State<S, E>;
 export function useHookstate<S, E>(
     source: SetInitialStateAction<S> | State<S, E>,
-    extensions?: () => Extension<E>
+    extension?: () => Extension<E>
 ): State<S, E> {
     const parentMethods = Object(source) === source ?
         source[self] as StateMethodsImpl<S, E> | undefined :
@@ -757,7 +743,7 @@ export function useHookstate<S, E>(
         // Local state mount
         // eslint-disable-next-line react-hooks/rules-of-hooks
         let initializer = () => {
-            let store = createStore(source, extensions)
+            let store = createStore(source, extension)
             let onSetUsedCallback = () => setValue({
                 store: store,
                 state: state,
@@ -815,6 +801,14 @@ export function useHookstate<S, E>(
     }
 }
 
+// TODO block on type system
+export function StateFragment<S, E>(
+    props: {
+        state: State_<S, E>,
+        extension: () => Extension<E>,
+        children: (state: State<S, E>) => React.ReactElement,
+    }
+): never;
 /**
  * Allows to use a state without defining a functional react component.
  * It can be also used in class-based React components. It is also
@@ -826,7 +820,7 @@ export function useHookstate<S, E>(
  */
 export function StateFragment<S, E>(
     props: {
-        state: State<S, E>,
+        state: State_<S, E>,
         children: (state: State<S, E>) => React.ReactElement,
     }
 ): React.ReactElement;
@@ -841,17 +835,18 @@ export function StateFragment<S, E>(
 export function StateFragment<S, E>(
     props: {
         state: SetInitialStateAction<S>,
-        // TODO ingect extensions
+        extension?: () => Extension<E>,
         children: (state: State<S, E>) => React.ReactElement,
     }
 ): React.ReactElement;
 export function StateFragment<S, E>(
     props: {
         state: State<S, E> | SetInitialStateAction<S>,
+        extension?: () => Extension<E>,
         children: (state: State<S, E>) => React.ReactElement,
     }
 ): React.ReactElement {
-    const scoped = useHookstate(props.state as State<S, E>);
+    const scoped = useHookstate(props.state as SetInitialStateAction<S>, props.extension);
     return props.children(scoped);
 }
 
@@ -958,6 +953,9 @@ enum ErrorId {
     Construct_Value = 212,
     Apply_State = 213,
     Apply_Value = 214,
+
+    // TODO document
+    InternalError = 0,
 }
 
 class StateInvalidUsageError extends Error {
@@ -1313,6 +1311,12 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
     private childrenUsed: Record<string | number, StateMethodsImpl<StateValueAtPath, E>> | undefined;
     private selfUsed: State<S, E> | undefined;
     private valueUsed: StateValueAtPath = ValueUnusedMarker;
+
+    [__state]: (s: S, e: E) => never = () => {
+        // this is impossible (from the typescript point of view) to reach 
+        // to this function and call it from the client side
+        throw new StateInvalidUsageError(this.path, ErrorId.InternalError)
+    };
 
     constructor(
         public readonly store: Store,
