@@ -488,7 +488,7 @@ export function createHookstate<S, E>(
     if (devtools) {
         methods.attach(devtools)
     }
-    return methods.self as unknown as State<S, E> & StateMethodsDestroy;
+    return methods.self() as unknown as State<S, E> & StateMethodsDestroy;
 }
 
 // TODO deprectate useState
@@ -672,6 +672,12 @@ export function useHookstate<S, E>(
                 }
             };
             const [value, setValue] = React.useState(initializer);
+            // TODO move to a class hide props on prototype level
+            // hide props from development tools
+            Object.defineProperty(value, 'store', { enumerable: false });
+            Object.defineProperty(value, 'state', { enumerable: false });
+            Object.defineProperty(value, 'source', { enumerable: false });
+
             value.state.reconstruct(
                 parentMethods.path,
                 value.store.get(parentMethods.path),
@@ -690,7 +696,10 @@ export function useHookstate<S, E>(
                 }
             }, []);
 
-            return value.state.self;
+            let state = value.state.self();
+            // expose property in development tools
+            value['[hookstate(scoped)]'] = state; // TODO use label here, add core extension to label states
+            return state
         } else {
             // Global state mount or destroyed link
             // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -715,6 +724,11 @@ export function useHookstate<S, E>(
                 }
             }
             const [value, setValue] = React.useState(initializer);
+            // hide props from development tools
+            Object.defineProperty(value, 'store', { enumerable: false });
+            Object.defineProperty(value, 'state', { enumerable: false });
+            Object.defineProperty(value, 'source', { enumerable: false });
+
             value.state.reconstruct(
                 RootPath,
                 value.store.get(RootPath),
@@ -733,10 +747,12 @@ export function useHookstate<S, E>(
                 }
             }, []);
 
-            let state: State<StateValueAtPath, E> = value.state.self;
+            let state: State<StateValueAtPath, E> = value.state.self();
             for (let ind = 0; ind < parentMethods.path.length; ind += 1) {
                 state = state.nested(parentMethods.path[ind]);
             }
+            // expose property in development tools
+            value['[hookstate(global)]'] = state; // TODO use label here, add core extension to label states
             return state as State<S, E>;
         }
     } else {
@@ -761,6 +777,10 @@ export function useHookstate<S, E>(
             }
         }
         const [value, setValue] = React.useState(initializer);
+        // hide props from development tools
+        Object.defineProperty(value, 'store', { enumerable: false });
+        Object.defineProperty(value, 'state', { enumerable: false });
+
         value.state.reconstruct(
             RootPath,
             value.store.get(RootPath),
@@ -784,20 +804,25 @@ export function useHookstate<S, E>(
             const isEffectExecutedAfterRender = React.useRef(false);
             isEffectExecutedAfterRender.current = false; // not yet...
 
-            React.useEffect(() => {
+            // TODO make this origin and not intercepted (visible in devtools)
+            useEffectOrigin(() => {
                 isEffectExecutedAfterRender.current = true; // ... and now, yes!
                 // The state is not destroyed intentionally
                 // under hot reload case.
                 return () => { isEffectExecutedAfterRender.current && value.store.destroy() }
             });
         } else {
-            React.useEffect(() => () => value.store.destroy(), []);
+            // TODO make this origin and not intercepted (visible in devtools)
+            useEffectOrigin(() => () => value.store.destroy(), []);
         }
         const devtools = useState[DevToolsID]
         if (devtools) {
             value.state.attach(devtools)
         }
-        return value.state.self;
+        let state = value.state.self();
+        // expose property in development tools
+        value['[hookstate(local)]'] = state; // TODO use label here, add core extension to label states
+        return state
     }
 }
 
@@ -1031,7 +1056,7 @@ class Store implements Subscribable {
         )
         this.subscribe(this._stateMethods)
 
-        this._extensionMethods = this._extension?.onInit(() => this.toMethods().self)
+        this._extensionMethods = this._extension?.onInit(() => this.toMethods().self())
     }
 
     setPromised(promise: StateValueAtPath | undefined) {
@@ -1225,7 +1250,7 @@ class Store implements Subscribable {
     }
 
     update(ad: SetActionDescriptor) {
-        this._extension?.onSet?.(this.toMethods().self, ad)
+        this._extension?.onSet?.(this.toMethods().self(), ad)
 
         const actions = new Set<() => void>();
         // check if actions descriptor can be unfolded into a number of individual update actions
@@ -1259,7 +1284,7 @@ class Store implements Subscribable {
             return;
         }
 
-        const pluginCallbacks = plugin.init ? plugin.init(this.toMethods().self) : {};
+        const pluginCallbacks = plugin.init ? plugin.init(this.toMethods().self()) : {};
         this._plugins.set(plugin.id, pluginCallbacks);
         if (pluginCallbacks.onSet) {
             this._setSubscribers.add((p) => pluginCallbacks.onSet!(p))
@@ -1282,7 +1307,7 @@ class Store implements Subscribable {
     }
 
     destroy() {
-        this._extension?.onDestroy?.(this.toMethods().self)
+        this._extension?.onDestroy?.(this.toMethods().self())
 
         let params = this._value !== none ? { state: this._value } : {};
         this._destroySubscribers.forEach(cb => cb(params))
@@ -1408,6 +1433,10 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
     }
 
     get value(): S {
+        // various tools, including react dev tools and webpack import
+        // inspect an object and it's properties
+        // so these should not throw
+        // return this.get({ __internalAllowPromised: true })
         return this.get()
     }
 
@@ -1533,7 +1562,7 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
     }
 
     nested<K extends keyof S>(key: K): State<S[K], E> {
-        return this.child(key as string | number).self as State<S[K], E>
+        return this.child(key as string | number).self() as State<S[K], E>
     }
 
     rerender(paths: Path[]) {
@@ -1590,7 +1619,7 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
                     actions.add(this.onSetUsed);
                     delete this.selfUsed;
                     delete this.childrenUsed;
-                    
+
                     if (ad.actions && this.childrenCreated) {
                         // TODO add automated unit tests for this part
                         if (Array.isArray(this.valueSource)
@@ -1754,7 +1783,7 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
         ) as unknown as S;
     }
 
-    get self(): State<S, E> {
+    self(): State<S, E> {
         if (this.selfUsed) {
             return this.selfUsed
         }
@@ -1771,7 +1800,7 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
             }
 
             let nestedGetter = (prop: PropertyKey) => {
-                const currentValue = this.get();
+                const currentValue = this.get({ __internalAllowPromised: prop === '$$typeof' || prop === 'constructor' });
 
                 if (prop in Object.prototype) {
                     // Mark it used entirely, so changes to the value
@@ -1842,7 +1871,7 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
                     // check if extension method
                     let ext = this.store.extension
                     if (ext && key in ext) {
-                        return ext[key](this.self)
+                        return ext[key](this.self())
                     }
                     // otherwise nested child
                     return nestedGetter(key)
@@ -1850,8 +1879,8 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
         }
 
         this.selfUsed = proxyWrap(this.path, this.valueSource,
-            () => {
-                return this.get();
+            (opts) => {
+                return this.get({ __internalAllowPromised: true, stealth: opts?.stealth });
             },
             getter,
             (_, key, value) => {
@@ -1876,7 +1905,7 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
         if (value === null || value === undefined) {
             return value as unknown as InferredStateOrnullType<S, E>;
         }
-        return this.self as InferredStateOrnullType<S, E>;
+        return this.self() as InferredStateOrnullType<S, E>;
     }
 
     attach(plugin: () => Plugin): State<S, E>
@@ -1891,10 +1920,10 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
                     const currentValue = this.getUntracked(true);
                     this.valueUsed = currentValue;
                 }
-                return this.self;
+                return this.self();
             }
             this.store.register(pluginMeta);
-            return this.self;
+            return this.self();
         } else {
             return [
                 this.store.getPlugin(p) ||
@@ -1910,7 +1939,7 @@ function proxyWrap(
     // tslint:disable-next-line: no-any
     targetBootstrap: any,
     // tslint:disable-next-line: no-any
-    targetGetter: () => any,
+    targetGetter: (opts?: { stealth?: boolean }) => any,
     // tslint:disable-next-line: no-any
     propertyGetter: (unused: any, key: PropertyKey) => any,
     // tslint:disable-next-line: no-any
@@ -1930,6 +1959,9 @@ function proxyWrap(
             const targetReal = targetGetter()
             if (targetReal === undefined || targetReal === null) {
                 return null;
+            }
+            if (targetReal === none) {
+                return Object.getPrototypeOf(new Promise(() => { }));
             }
             return Object.getPrototypeOf(targetReal);
         },
@@ -1951,19 +1983,43 @@ function proxyWrap(
         },
         getOwnPropertyDescriptor: (_target, p) => {
             const targetReal = targetGetter()
-            if (targetReal === undefined || targetReal === null) {
+
+            if (Object(targetReal) === targetReal) {
+                const origin = Object.getOwnPropertyDescriptor(targetReal, p);
+                if (Array.isArray(targetReal) && p in Array.prototype) {
+                    return origin;
+                }
+                return origin && {
+                    // should be configurable as may not exist on proxy target
+                    configurable: true, // JSON.stringify() does not work for an object without it
+                    enumerable: origin.enumerable,
+                    get: () => propertyGetter(targetReal, p),
+                    set: undefined
+                };
+            }
+
+            if (isValueProxy || targetReal === none) {
                 return undefined;
             }
-            const origin = Object.getOwnPropertyDescriptor(targetReal, p);
-            if (origin && Array.isArray(targetReal) && p in Array.prototype) {
-                return origin;
+            if (p === 'value') {
+                return {
+                    // should be configurable as does not exist on proxy target
+                    configurable: true,
+                    enumerable: true,
+                    get: () => targetGetter({ stealth: true }),
+                    set: undefined
+                };
             }
-            return origin && {
-                configurable: true, // JSON.stringify() does not work for an object without it
-                enumerable: origin.enumerable,
-                get: () => propertyGetter(targetReal, p),
-                set: undefined
-            };
+            if (p === 'path') {
+                return {
+                    // should be configurable as does not exist on proxy target
+                    configurable: true,
+                    enumerable: true,
+                    get: () => path,
+                    set: undefined
+                };
+            }
+            return undefined;
         },
         has: (_target, p) => {
             if (typeof p === 'symbol') {
@@ -1973,7 +2029,10 @@ function proxyWrap(
             if (Object(targetReal) === targetReal) {
                 return p in targetReal;
             }
-            return false;
+            if (isValueProxy || targetReal === none) {
+                return false;
+            }
+            return p === 'value' || p === 'path';
         },
         get: propertyGetter,
         set: propertySetter,
@@ -1990,12 +2049,22 @@ function proxyWrap(
         ownKeys: (_target) => {
             const targetReal = targetGetter()
             if (Array.isArray(targetReal)) {
-                return Object.keys(targetReal).concat('length');
+                if (_target.length === undefined) {
+                    // an object turned into an array now
+                    // inject length property now as it is defined on the array
+                    // to enable getOwnPropertyDescriptor for length not throw
+                    Object.defineProperty(targetBootstrap, 'length', {
+                        value: 0, writable: true, enumerable: false, configurable: false
+                    })
+                }
             }
-            if (targetReal === undefined || targetReal === null) {
-                return [];
+            if (Object(targetReal) === targetReal) {
+                return Object.getOwnPropertyNames(targetReal);
             }
-            return Object.keys(targetReal);
+            if (isValueProxy || targetReal === none) {
+                return []
+            }
+            return ['value', 'path']
         },
         apply: (_target, thisArg, argArray?) => {
             return onInvalidUsage(isValueProxy ?
@@ -2020,9 +2089,6 @@ function createStore<S, E>(initial: SetInitialStateAction<S>, extensions?: () =>
     }
     return new Store(initialValue, extensions?.());
 }
-
-// Do not try to use useLayoutEffect if DOM not available (SSR)
-const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? React.useLayoutEffect : React.useEffect;
 
 export interface Configuration {
     interceptDependencyListsMode: 'always' | 'development' | 'never',
@@ -2215,3 +2281,6 @@ function interceptReactHooks() {
     }
 }
 interceptReactHooks()
+
+// Do not try to use useLayoutEffect if DOM not available (SSR)
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffectOrigin! : useEffectOrigin!;

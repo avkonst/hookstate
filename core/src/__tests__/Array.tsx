@@ -1,4 +1,4 @@
-import { useState } from '../';
+import { none, useState } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 
@@ -289,4 +289,60 @@ test('array: should not rerender unused self', async () => {
     expect(result.current.get().length).toEqual(2);
     expect(Object.keys(result.current)).toEqual(['0', '1']);
     expect(Object.keys(result.current.get())).toEqual(['0', '1']);
+});
+
+test('array: should not crash on getOwnPropertyDescriptor length', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useState([0, 0])
+    });
+
+    expect(Object.getOwnPropertyDescriptor(result.current, 'length')).toBeTruthy()
+    expect(Object.getOwnPropertyNames(result.current)).toStrictEqual(["0", "1", "length"])
+    expect(Object.keys(result.current)).toStrictEqual(["0", "1"])
+});
+
+test('array: should not crash on getOwnPropertyDescriptor length after promise', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useState(none)
+    });
+    
+    act(() => result.current.set([0, 0]))
+    
+    expect(Object.keys(result.current)).toStrictEqual(["0", "1"])
+    // limitation: getOwnPropertyDescriptor works after keys call only
+    
+    expect(Object.getOwnPropertyDescriptor(result.current, 'length')).toBeTruthy()
+    expect(Object.getOwnPropertyNames(result.current)).toStrictEqual(["0", "1", "length"])
+    
+    act(() => result.current.set({ a: 1 }))
+    
+    expect(Object.keys(result.current)).toStrictEqual(["a"])
+    // limitation: getOwnPropertyDescriptor works after keys call only
+    
+    expect(Object.getOwnPropertyDescriptor(result.current, 'length')).toBeUndefined()
+    expect(Object.getOwnPropertyNames(result.current)).toStrictEqual(["a"])
+    
+});
+
+test('array: should not crash on getOwnPropertyDescriptor length turned to object', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useState<any>([0, 0])
+    });
+    
+    expect(Object.getOwnPropertyDescriptor(result.current, 'length')).toBeTruthy()
+    expect(Object.getOwnPropertyNames(result.current)).toStrictEqual(["0", "1", "length"])
+    expect(Object.keys(result.current)).toStrictEqual(["0", "1"])    
+    
+    act(() => result.current.set({ a: 1 }))
+    
+    expect(Object.keys(result.current)).toStrictEqual(["a"])
+    // limitation: getOwnPropertyDescriptor works after keys call only
+    expect(Object.getOwnPropertyDescriptor(result.current, 'length')).toBeUndefined()
+    expect(Object.getOwnPropertyNames(result.current)).toStrictEqual(["a"])
 });

@@ -1,4 +1,4 @@
-import { createState, useState } from '@hookstate/core';
+import { createState, useHookstate } from '@hookstate/core';
 
 const settingsState = createState({
     isEditableInline: true,
@@ -7,7 +7,7 @@ const settingsState = createState({
 })
 
 export function useSettingsState() {
-    const state = useState(settingsState)
+    const state = useHookstate(settingsState)
 
     // This function wraps the state by an interface,
     // i.e. the state link is not accessible directly outside of this module.
