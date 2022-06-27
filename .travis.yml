@@ -2,10 +2,17 @@ dist: focal
 language: node_js
 node_js:
   - stable
-scripts:
-  - npm install -g pnpm
+cache:
+  npm: false
+  directories:
+    - "~/.pnpm-store"
+before_install:
+  - curl -f https://get.pnpm.io/v6.16.js | node - add --global pnpm@7
+  - pnpm config set store-dir ~/.pnpm-store
+install:
   - pnpm install codecov -g
   - pnpm install
+scripts:
   - pnpm test -- --coverage
 after_success:
   - codecov -e TRAVIS_NODE_VERSION
