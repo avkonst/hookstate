@@ -96,7 +96,7 @@ function Home() {
   return (
     <Layout
       title={`${siteConfig.title}: supercharged React.useState hook`}
-      description="The simple but incredibly fast and flexible state management that is based on React state hook">
+      description="The most straightforward, extensible and incredibly fast state management that is based on React state hook">
       <header className={classnames('hero hero--primary', styles.heroBanner)}>
         <div className="container">
           <h1 className="hero__title">{siteConfig.title}</h1>

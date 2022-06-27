@@ -1,6 +1,6 @@
 module.exports = {
   title: 'Hookstate',
-  tagline: 'The simple but incredibly fast and flexible state management that is based on React state hook',
+  tagline: 'The most straightforward, extensible and incredibly fast state management that is based on React state hook',
   url: 'https://hookstate.js.org',
   baseUrl: '/',
   favicon: 'img/favicon-32.png',
