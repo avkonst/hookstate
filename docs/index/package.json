@@ -4,8 +4,7 @@
   "private": true,
   "scripts": {
     "start": "docusaurus start --no-open --host 0.0.0.0",
-    "build": "docusaurus build",
-    "build-site": "docusaurus build && cp .netlify-headers build/_headers && cp .netlify-redirects build/_redirects",
+    "build": "docusaurus build && cp .netlify-headers build/_headers && cp .netlify-redirects build/_redirects",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
     "update:deps": "ncu -u"
@@ -23,7 +22,7 @@
     "@hookstate/validation": "workspace:*",
     "@material-ui/core": "4.12.4",
     "@material-ui/icons": "4.11.3",
-    "@mdx-js/react": "2.1.1",
+    "@mdx-js/react": "1.6.22",
     "@types/lodash.clonedeep": "4.5.7",
     "@types/lodash.isequal": "4.5.6",
     "broadcast-channel": "4.12.0",

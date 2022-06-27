@@ -6,6 +6,9 @@ module.exports = {
   favicon: 'img/favicon-32.png',
   projectName: 'avkonst/hookstate', // Usually your repo name.
   themeConfig: {
+    colorMode: {
+      disableSwitch: true,
+    },
     algolia: {
       // analytics overview
       // https://www.algolia.com/apps/BH4D9OD16A/analytics/overview
@@ -92,6 +95,11 @@ module.exports = {
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
         },
+        gtag: {
+          trackingID: 'UA-146415947-1',
+          // Optional fields.
+          anonymizeIP: true, // Should IPs be anonymized?
+        },
         googleAnalytics: {
           trackingID: 'UA-146415947-1',
           // Optional fields.
@@ -101,11 +109,9 @@ module.exports = {
     ],
   ],
   plugins: [
-    '@docusaurus/plugin-google-analytics',
     [
       '@docusaurus/plugin-sitemap',
       {
-        cacheTime: 600 * 1000, // 600 sec - cache purge period
         changefreq: 'weekly',
         priority: 0.5,
       },

@@ -3,7 +3,17 @@
  * and scoped locally.
  */
 
+ .heroTitle {
+  text-transform: uppercase;
+  padding: 2rem 0;
+  padding-bottom: 1rem;
+}
+
 .heroBanner {
+  /* background-size: 100%;
+  background-position: 0;
+  background-image: linear-gradient( rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5) ), url('https://static.vecteezy.com/system/resources/previews/000/642/562/non_2x/abstract-futuristic-hexagon-shape-pattern-connection-in-gradient-blue-technology-background-vector.jpg'); */
+  background-color: rgb(11, 57, 102);
   padding: 4rem 0;
   text-align: center;
   position: relative;
@@ -32,4 +42,8 @@
 .featureImage {
   height: 200px;
   width: 200px;
+}
+
+.getStarted {
+  background-color: lightgreen;
 }

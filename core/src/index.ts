@@ -115,7 +115,7 @@ export interface PluginStateControl<S> {
  * 
  * @typeparam S Type of a value of a state
  */
-export interface StateMethods<S, E = {}> extends State_<S, E> {
+export interface StateMethods<S, E = {}> extends __State<S, E> {
     // TODO remove default value for E parameter
     /**
      * 'Javascript' object 'path' to an element relative to the root object
@@ -281,7 +281,7 @@ export interface StateMethodsDestroy {
  * to a non-strict comparison of T[key] extends U. Setting B to true performs
  * a strict type comparison of T[key] extends U & U extends T[key]
  */
-type KeysOfType<T, U, B = false> = {
+export type __KeysOfType<T, U, B = false> = {
     [P in keyof T]: B extends true
     ? T[P] extends U
     ? (U extends T[P]
@@ -296,14 +296,14 @@ type KeysOfType<T, U, B = false> = {
 // type PickByType<T, U, B = false> = Pick<T, KeysOfType<T, U, B>>;
 
 export const __state = Symbol('__state')
-export interface State_<S, E> {
+export interface __State<S, E> {
     [__state]: (s: S, e: E) => never
 }
 
 // TODO document, give example how to use in extension method signatures
-export type StateValue<V> = V extends State_<(infer S), (infer _)> ? S : V
+export type StateValue<V> = V extends __State<(infer S), (infer _)> ? S : V
 // TODO document, give example how to use in extension method signatures
-export type StateExtension<V> = V extends State_<(infer _), (infer E)> ? E : V
+export type StateExtension<V> = V extends __State<(infer _), (infer E)> ? E : V
 
 /**
  * Type of a result of [createState](#createstate) and [useState](#usestate) functions
@@ -318,7 +318,7 @@ export type State<S, E = {}> = StateMethods<S, E> & E & (
     S extends ReadonlyArray<(infer U)> ? ReadonlyArray<State<U, E>> :
     S extends object ? Omit<
         { readonly [K in keyof Required<S>]: State<S[K], E>; },
-        keyof StateMethods<S, E> | keyof StateMethodsDestroy | KeysOfType<S, Function> | keyof E
+        keyof StateMethods<S, E> | keyof StateMethodsDestroy | __KeysOfType<S, Function> | keyof E
     > : {}
 );
 
@@ -346,23 +346,6 @@ export type StateValueAtPath = any; //tslint:disable-line: no-any
  * @ignore
  */
 export type StateErrorAtRoot = any; //tslint:disable-line: no-any
-/**
- * For plugin developers only.
- * Type alias to highlight the places where we are dealing with context value.
- *
- * @hidden
- * @ignore
- */
-export type AnyContext = any; //tslint:disable-line: no-any
-
-/**
- * For plugin developers only.
- * Extension.onSet argument type.
- */
-export interface ExtensionOnSetArgument {
-    readonly state: State<StateValueAtRoot, {}>,
-    readonly descriptor: SetActionDescriptor
-}
 
 /**
  * For plugin developers only.
@@ -622,7 +605,7 @@ export function useHookstate<S, E>(
 ): never;
 // TODO block this on type system level
 export function useHookstate<S, E, E2>(
-    source: State_<S, E>,
+    source: __State<S, E>,
     extension: () => Extension<E2>
 ): never;
 /**
@@ -630,7 +613,7 @@ export function useHookstate<S, E, E2>(
  * for [React 20613 bug](https://github.com/facebook/react/issues/20613)
  */
 export function useHookstate<S, E>(
-    source: State_<S, E>
+    source: __State<S, E>
 ): State<S, E>;
 /**
  * Alias to [useState](#usestate) which provides a workaround
@@ -829,7 +812,7 @@ export function useHookstate<S, E>(
 // TODO block on type system
 export function StateFragment<S, E>(
     props: {
-        state: State_<S, E>,
+        state: __State<S, E>,
         extension: () => Extension<E>,
         children: (state: State<S, E>) => React.ReactElement,
     }
@@ -845,7 +828,7 @@ export function StateFragment<S, E>(
  */
 export function StateFragment<S, E>(
     props: {
-        state: State_<S, E>,
+        state: __State<S, E>,
         children: (state: State<S, E>) => React.ReactElement,
     }
 ): React.ReactElement;
