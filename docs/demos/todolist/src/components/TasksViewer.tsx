@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTasksState, Task } from './TasksState';
-import { State, useState, none } from '@hookstate/core';
+import { State, useHookstate, none } from '@hookstate/core';
 import { useSettingsState } from './SettingsState';
 
 function TaskEditor(props: { task: State<Task> }) {
@@ -17,7 +17,7 @@ function TaskEditor(props: { task: State<Task> }) {
     // we could use 'props.task' everywhere instead of taskState.
     //     See https://hookstate.js.org/docs/scoped-state
     //     for more details about the *scoped state*.
-    let taskState = useState(props.task);
+    let taskState = useHookstate(props.task);
     if (!settingsState.isScopedUpdateEnabled) {
         // For demonstration purposes, we allow to opt out of
         // the *scoped state* optimisation, if it is disabled:
@@ -30,11 +30,11 @@ function TaskEditor(props: { task: State<Task> }) {
     // The next hook is *local state* with the initial state equal
     // to the copy of the state value, which was supplied in properties. 
     // State to access and mutate a COPY of the global state:
-    const taskNameLocal = useState(taskState.name.get());
+    const taskNameLocal = useHookstate(taskState.name.get());
 
     // The next hook is *local state* link with the initial state
     // created from a constant
-    const isEditing = useState(false)
+    const isEditing = useHookstate(false)
 
     // This is the trick to obtain different color on every run of this function
     var colors = ['#ff0000', '#00ff00', '#0000ff'];
@@ -152,6 +152,9 @@ function TaskEditor(props: { task: State<Task> }) {
     </div>
 }
 
+const TaskEditorMomorized = TaskEditor
+// const TaskEditorMomorized = React.memo(TaskEditor)
+
 export function TasksViewer() {
     const tasksState = useTasksState()
     
@@ -162,7 +165,7 @@ export function TasksViewer() {
     }
     
     return <div key="" style={{ textAlign: 'left', marginBottom: 50 }}>{
-        tasksState.map((task, i) => <TaskEditor
+        tasksState.map((task, i) => <TaskEditorMomorized
             key={task.id.value}
             task={task}
         />)

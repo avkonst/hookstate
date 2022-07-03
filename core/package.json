@@ -1,0 +1,71 @@
+{
+    "name": "@hookstate/core",
+    "version": "4.0.0-rc11",
+    "description": "The flexible, fast and extendable state management for React that is based on hooks and state usage tracking.",
+    "license": "MIT",
+    "author": {
+        "name": "Andrey Konstantinov"
+    },
+    "repository": {
+        "url": "https://github.com/avkonst/hookstate"
+    },
+    "bugs": {
+        "url": "https://github.com/avkonst/hookstate/issues"
+    },
+    "homepage": "https://github.com/avkonst/hookstate",
+    "main": "dist/index.js",
+    "module": "dist/index.es.js",
+    "jsnext:main": "dist/index.es.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "build": "rollup -c",
+        "build:w": "rollup -c -w",
+        "build:docs": "typedoc --plugin typedoc-plugin-markdown --hideBreadcrumbs --tsconfig ./tsconfig.json --exclude \"dist/**.js\" --gitRevision master --excludeExternals --categorizeByGroup false --readme none --hideGenerator --out dist/docs ./src/index.ts && concat-md --decrease-title-levels --dir-name-as-title dist/docs > dist/typedoc.md && rimraf dist/docs && node ./replace-in-typedoc.js && mv dist/typedoc.md ../docs/index/docs/typedoc-hookstate-core.md",
+        "clean": "rimraf dist",
+        "test": "jest --env=jsdom",
+        "test:ci": "jest --env=jsdom --coverage && codecov -e TRAVIS_NODE_VERSION",
+        "test:w": "jest --env=jsdom --watch",
+        "release": "npm publish",
+        "update:deps": "ncu -u"
+    },
+    "peerDependencies": {
+        "react": "^16.8.6 || ^17.0.0 || ^18.0.0"
+    },
+    "devDependencies": {
+        "@babel/core": "7.18.2",
+        "@babel/runtime": "7.18.3",
+        "@rollup/plugin-babel": "5.3.1",
+        "@rollup/plugin-commonjs": "22.0.0",
+        "@rollup/plugin-node-resolve": "13.3.0",
+        "@rollup/plugin-url": "7.0.0",
+        "@testing-library/react": "13.2.0",
+        "@testing-library/react-hooks": "8.0.0",
+        "@types/jest": "27.5.1",
+        "@types/node": "^17.0.35",
+        "@types/react": "18.0.9",
+        "@types/react-dom": "18.0.5",
+        "codecov": "3.8.3",
+        "concat-md": "0.4.0",
+        "coverage": "0.4.1",
+        "cross-env": "7.0.3",
+        "jest": "^28.1.0",
+        "jest-environment-jsdom": "28.1.2",
+        "npm-check-updates": "13.0.3",
+        "react": "18.1.0",
+        "react-dom": "18.1.0",
+        "react-test-renderer": "18.1.0",
+        "replace": "1.2.1",
+        "rimraf": "3.0.2",
+        "rollup": "2.75.0",
+        "rollup-plugin-peer-deps-external": "2.2.4",
+        "rollup-plugin-typescript2": "0.31.2",
+        "ts-jest": "28.0.3",
+        "tslib": "^2.4.0",
+        "typedoc": "0.22.15",
+        "typedoc-plugin-markdown": "3.12.1",
+        "typescript": "4.7.2"
+    },
+    "files": [
+        "dist"
+    ]
+}

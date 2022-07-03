@@ -1,5 +1,5 @@
 ---
-id: new-hookstate-website
+slug: new-hookstate-website
 title: Hookstate website rework
 author: avkonst
 # author_title: Front End Engineer @ Facebook

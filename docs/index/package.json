@@ -1,38 +1,39 @@
 {
-  "name": "docs-2",
+  "name": "@hookstate/docs",
   "version": "0.0.0",
   "private": true,
   "scripts": {
     "start": "docusaurus start --no-open --host 0.0.0.0",
-    "build": "docusaurus build",
-    "build-site": "docusaurus build && cp .netlify-headers build/_headers && cp .netlify-redirects build/_redirects",
+    "build": "docusaurus build && cp .netlify-headers build/_headers && cp .netlify-redirects build/_redirects",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
-    "apply-updates": "ncu -u"
+    "update:deps": "ncu -u"
   },
   "dependencies": {
-    "@docusaurus/core": "2.0.0-alpha.55",
-    "@docusaurus/preset-classic": "2.0.0-alpha.55",
-    "@hookstate/core": "3.0.0",
-    "@hookstate/initial": "3.0.0",
-    "@hookstate/labelled": "3.0.0",
-    "@hookstate/persistence": "3.0.0",
-    "@hookstate/broadcasted": "3.0.2",
-    "@hookstate/touched": "3.0.0",
-    "@hookstate/untracked": "3.0.0",
-    "@hookstate/validation": "3.0.0",
-    "@material-ui/core": "4.11.0",
-    "@material-ui/icons": "4.9.1",
-    "@types/lodash.clonedeep": "4.5.6",
-    "@types/lodash.isequal": "4.5.5",
-    "broadcast-channel": "3.4.1",
-    "classnames": "2.2.6",
+    "@docusaurus/core": "2.0.0-beta.21",
+    "@docusaurus/preset-classic": "2.0.0-beta.21",
+    "@hookstate/core": "workspace:*",
+    "@hookstate/initial": "workspace:*",
+    "@hookstate/labelled": "workspace:*",
+    "@hookstate/persistence": "workspace:*",
+    "@hookstate/broadcasted": "workspace:*",
+    "@hookstate/touched": "workspace:*",
+    "@hookstate/untracked": "workspace:*",
+    "@hookstate/validation": "workspace:*",
+    "@material-ui/core": "4.12.4",
+    "@material-ui/icons": "4.11.3",
+    "@mdx-js/react": "1.6.22",
+    "@types/lodash.clonedeep": "4.5.7",
+    "@types/lodash.isequal": "4.5.6",
+    "broadcast-channel": "4.12.0",
+    "classnames": "2.3.1",
     "lodash.clonedeep": "4.5.0",
     "lodash.isequal": "4.5.0",
-    "prism-react-renderer": "1.1.1",
-    "react": "16.13.1",
-    "react-dom": "16.13.1",
-    "react-player": "2.5.0"
+    "prism-react-renderer": "1.3.3",
+    "react": "18.1.0",
+    "react-dom": "18.1.0",
+    "react-player": "2.10.1",
+    "clsx": "^1.1.1"
   },
   "browserslist": {
     "production": [
@@ -47,7 +48,9 @@
     ]
   },
   "devDependencies": {
-    "@babel/preset-typescript": "^7.10.4",
-    "npm-check-updates": "^7.0.1"
+    "@docusaurus/module-type-aliases": "2.0.0-beta.21",
+    "@tsconfig/docusaurus": "^1.0.5",
+    "npm-check-updates": "^13.0.3",
+    "typescript": "^4.6.4"
   }
 }

@@ -4,13 +4,14 @@
         "src"
     ],
     "compilerOptions": {
-        "lib": ["dom"],
+        "lib": ["DOM"],
         "jsx": "react",
         "allowJs": false,
         "declaration": true,
+        "declarationMap": true,
         "isolatedModules": false
     },
     "exclude": [
-        "src/*.test.tsx"
+        "src/__tests__"
     ]
 }

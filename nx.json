@@ -1,0 +1,55 @@
+{
+	"implicitDependencies": {
+		"package.json": {
+			"dependencies": "*",
+			"devDependencies": "*"
+		},
+		"nx.json": "*"
+	},
+	"npmScope": "@hookstate",
+	"tasksRunnerOptions": {
+		"default": {
+			"runner": "@nrwl/workspace/tasks-runners/default",
+			"options": {
+				"cacheableOperations": ["build", "test", "lint", "e2e"],
+				"parallel": 1
+			}
+		}
+	},
+	"affected": {
+		"defaultBase": "master"
+	},
+	"targetDependencies": {
+		"build": [
+			{
+				"target": "build",
+				"projects": "dependencies"
+			}
+		],
+		"test": [
+			{
+				"target": "build",
+				"projects": "dependencies"
+			}
+		],
+		"test:ci": [
+			{
+				"target": "build",
+				"projects": "dependencies"
+			}
+		],
+		"start": [
+			{
+				"target": "build",
+				"projects": "dependencies"
+			}
+		],
+		"release": [
+			{
+				"target": "build",
+				"projects": "self"
+			}
+		]
+	},
+	"defaultProject": "core"
+}

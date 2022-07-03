@@ -1,4 +1,4 @@
-import { createState, useState } from '@hookstate/core';
+import { createState, useHookstate } from '@hookstate/core';
 
 export interface Task {
     id: string;
@@ -24,7 +24,7 @@ const state = createState<Task[]>(new Promise(resolve => {
             name: 'Enjoy simpler code and faster application',
             done: false,
         }
-    ]), 3000)    
+    ]), 3000)
 }))
 
 export function useTasksState() {
@@ -35,7 +35,7 @@ export function useTasksState() {
     // depending on your circumstances. Apply your engineering judgement
     // to choose the best option. If unsure, exposing the state directly
     // like it is done below is a safe bet.        
-    return useState(state)
+    return useHookstate(state)
 }
 
 // for example purposes, let's update the state outside of a React component

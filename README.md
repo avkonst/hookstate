@@ -3,7 +3,7 @@
 </h1>
 
 <p align="center">
-  The simple but very powerful and incredibly fast state management for React that is based on hooks.
+  The most straightforward, extensible and incredibly fast state management that is based on React state hook.
 </p>
 <br/>
 

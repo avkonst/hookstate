@@ -1,5 +1,5 @@
 ---
-id: hookstate-2-released
+slug: hookstate-2-released
 title: Hookstate 2.0 released
 author: avkonst
 # author_title: Front End Engineer @ Facebook
@@ -10,8 +10,8 @@ tags: [hookstate, news, releases]
 
 Hookstate 2.0 and its plugins have been released. It is now simpler, smaller and faster state management library for React.
 
-If you used Hookstate 1.x in your project, have a look into the list of [non-backward compatible changes](./migrating-to-v2).
+If you used Hookstate 1.x in your project, have a look into the list of [non-backward compatible changes](/docs/migrating-to-v2).
 
-If you are new to Hookstate, it is easy to [get started](./getting-started).
+If you are new to Hookstate, it is easy to [get started](/docs/getting-started).
 
 Enjoy!
