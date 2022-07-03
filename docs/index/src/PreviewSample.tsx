@@ -7,17 +7,17 @@ import theme from 'prism-react-renderer/themes/palenight';
 
 import { useState } from '@hookstate/core';
 
-const packageJson = require('../package.json');
-const packageDependencies = packageJson.dependencies
+// const packageJson = require('../package.json');
+// const packageDependencies = packageJson.dependencies
 
-export const VersionInfo = () => {
-    const packs = Object.keys(packageDependencies)
-        .filter(i => i.startsWith('@hookstate/'));
-    const labels = packs.map((p, i) => <code key={p}>
-        {p}: {packageDependencies[p]}<br />
-    </code>)
-    return <div style={{ paddingLeft: 20 }}>{labels}</div>;
-}
+// export const VersionInfo = () => {
+//     const packs = Object.keys(packageDependencies)
+//         .filter(i => i.startsWith('@hookstate/'));
+//     const labels = packs.map((p, i) => <code key={p}>
+//         {p}: {packageDependencies[p]}<br />
+//     </code>)
+//     return <div style={{ paddingLeft: 20 }}>{labels}</div>;
+// }
 
 const PreviewWithAsyncSource = (props: React.PropsWithChildren<{ url: string, sampleFirst?: boolean }>) => {
     const [sampleVisible, toggleVisible] = React.useState(true);
