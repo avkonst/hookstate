@@ -60,6 +60,6 @@ All these points (1-4) have disadvantages and still do not provide the same perf
 3. Access to the parent's component state via a global reference and a field's index is not ideal.
 4. State change for one field triggers execution of the selector function for every field - this is `O(n)` performance in contrast to `O(1)` offered by the scoped state.
 
-> Note: Hookstate has got other technologies built-in, which allow efficient use of a large global states across many different components without using selector functions. But this is another [performance related topic](./performance-overview).
+> Note: Hookstate has got other technologies built-in, which allow efficient use of a large global states across many different components without using selector functions. But this is another [performance related topic](./performance-intro).
 
 We consider this is the solid reason why the scoped state approach is far better than the methods used by other state management libraries.

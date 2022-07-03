@@ -11,8 +11,8 @@ tags: [hookstate, news, releases]
 Hookstate 3.0 and its plugins have been released. The new release fixes support for IE11 and simplifies the API.
 In particular, the confusing property `State.[self]` and `State.map` method are removed.
 
-If you used Hookstate 2.x in your project, have a look into the list of [non-backward compatible changes](./migrating-to-v3).
+If you used Hookstate 2.x in your project, have a look into the list of [non-backward compatible changes](/docs/migrating-to-v3).
 
-If you are new to Hookstate, it is easy to [get started](./getting-started).
+If you are new to Hookstate, it is easy to [get started](/docs/getting-started).
 
 Enjoy!

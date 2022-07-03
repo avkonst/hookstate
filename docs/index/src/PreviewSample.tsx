@@ -70,13 +70,13 @@ const PreviewWithAsyncSource = (props: React.PropsWithChildren<{ url: string, sa
 };
 
 export const PreviewSample = (props: { example?: string, sampleFirst?: boolean }) => {
-    const exampleId = props.example && ExamplesRepo.has(props.example)
-        ? props.example : 'global-getting-started';
-    const exampleMeta = ExamplesRepo.get(exampleId)!;
-
     if (typeof window === 'undefined') {
         return <>SSR</>;
     }
+
+    const exampleId = props.example && ExamplesRepo.has(props.example)
+        ? props.example : 'global-getting-started';
+    const exampleMeta = ExamplesRepo.get(exampleId)!;
     return <>
         <PreviewWithAsyncSource url={ExampleCodeUrl(exampleId)} sampleFirst={props.sampleFirst}>
             {exampleMeta}
