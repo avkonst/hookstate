@@ -12,6 +12,7 @@
 		"untracked": "plugins/Untracked",
 		"validation": "plugins/Validation",
 		"docs": "docs/index",
-		"todolist": "docs/demos/todolist"
+		"todolist": "docs/demos/todolist",
+		"website": "docs/website"
     }
 }
