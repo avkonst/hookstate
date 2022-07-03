@@ -52,6 +52,8 @@
         "cross-env": "7.0.3",
         "lodash.clonedeep": "^4.5.0",
         "lodash.isequal": "^4.5.0",
+        "jest": "^28.1.0",
+        "jest-environment-jsdom": "28.1.2",
         "npm-check-updates": "13.0.3",
         "react": "18.1.0",
         "react-dom": "18.1.0",
