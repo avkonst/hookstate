@@ -20,6 +20,7 @@
     "scripts": {
         "build": "nx run-many --target=build --all",
         "test": "nx run-many --target=test --all",
+        "test:ci": "nx run-many --target=test:ci --all",
         "update:deps": "nx run-many --target=update:deps --all",
         "clean": "nx run-many --target=clean --all",
         "release": "nx run-many --target=release --all",

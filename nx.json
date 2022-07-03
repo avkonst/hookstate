@@ -32,6 +32,12 @@
 				"projects": "dependencies"
 			}
 		],
+		"test:ci": [
+			{
+				"target": "build",
+				"projects": "dependencies"
+			}
+		],
 		"start": [
 			{
 				"target": "build",

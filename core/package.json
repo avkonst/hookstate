@@ -22,7 +22,8 @@
         "build:w": "rollup -c -w",
         "build:docs": "typedoc --plugin typedoc-plugin-markdown --hideBreadcrumbs --tsconfig ./tsconfig.json --exclude \"dist/**.js\" --gitRevision master --excludeExternals --categorizeByGroup false --readme none --hideGenerator --out dist/docs ./src/index.ts && concat-md --decrease-title-levels --dir-name-as-title dist/docs > dist/typedoc.md && rimraf dist/docs && node ./replace-in-typedoc.js && mv dist/typedoc.md ../docs/index/docs/typedoc-hookstate-core.md",
         "clean": "rimraf dist",
-        "test": "cross-env CI=1 jest --verbose --env=jsdom",
+        "test": "jest --env=jsdom",
+        "test:ci": "jest --env=jsdom && codecov -e TRAVIS_NODE_VERSION",
         "test:w": "jest --env=jsdom --watch",
         "release": "npm publish",
         "update:deps": "ncu -u"
@@ -44,6 +45,7 @@
         "@types/react": "18.0.9",
         "@types/react-dom": "18.0.5",
         "concat-md": "0.4.0",
+        "coverage": "0.4.1",
         "cross-env": "7.0.3",
         "jest": "^28.1.0",
         "npm-check-updates": "13.0.3",
