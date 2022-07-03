@@ -23,7 +23,7 @@
         "build:docs": "typedoc --plugin typedoc-plugin-markdown --hideBreadcrumbs --tsconfig ./tsconfig.typedoc.json --exclude \"dist/**.js\" --gitRevision master --includeDeclarations --excludeExternals --excludeNotExported --categorizeByGroup false --readme none --hideGenerator --mode file --out dist/docs && concat-md --decrease-title-levels --dir-name-as-title dist/docs > dist/typedoc.md && rimraf dist/docs && replace '></a>' '/>' dist/typedoc.md && replace 'Ƭ [*][*]([A-Za-z0-9]+)[*][*]: [*](.*)[*]' 'Ƭ **$1**: *`$2`*' dist/typedoc.md && replace 'Ƭ [*][*]State[*][*]: [*](.*)[*]' 'Ƭ **State**: *[StateMixin](#interfacesstatemixinmd) & `S extends object` ? `{ readonly [K in keyof Required<S>]: State<S[K]> }` : [StateMethods](#interfacesstatemethodsmd)*' dist/typedoc.md && replace '[(]statemethods.md#\\[self\\][)]' '(#self)' dist/typedoc.md && replace '[(]statemixin.md#\\[self\\][)]' '(#self-1)' dist/typedoc.md && replace '[(]statemixindestroy.md#\\[self\\][)]' '(#self-2)' dist/typedoc.md && replace '# @hookstate/core' '' dist/typedoc.md && replace '<a name=\"readmemd\"/>' '\n---\nid: typedoc-hookstate-core\ntitle: API @hookstate/core\n---' dist/typedoc.md && replace '\n\n(---)' '$1' dist/typedoc.md && mv dist/typedoc.md ../docs/index/docs/typedoc-hookstate-core.md",
         "clean": "rimraf dist",
         "test": "jest --env=jsdom",
-        "test:ci": "jest --env=jsdom && codecov -e TRAVIS_NODE_VERSION",
+        "test:ci": "jest --env=jsdom --coverage && codecov -e TRAVIS_NODE_VERSION",
         "test:w": "jest --env=jsdom --watch",
         "release": "npm publish",
         "update:deps": "ncu -u"
@@ -48,6 +48,7 @@
         "@types/node": "^17.0.35",
         "@types/react": "18.0.9",
         "@types/react-dom": "18.0.5",
+        "codecov": "3.8.3",
         "coverage": "0.4.1",
         "cross-env": "7.0.3",
         "npm-check-updates": "13.0.3",
