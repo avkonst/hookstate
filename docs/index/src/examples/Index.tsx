@@ -14,8 +14,7 @@ import { ExampleComponent as ExamplePluginLabelled } from './plugin-labelled';
 import { ExampleComponent as ExamplePluginInitial } from './plugin-initial';
 import { ExampleComponent as ExamplePluginTouched } from './plugin-touched';
 import { ExampleComponent as ExamplePluginPersistence } from './plugin-persistence';
-// TODO reenable this, disabled because breaks docusaurus build
-// import { ExampleComponent as ExamplePluginBroadcasted } from './plugin-broadcasted';
+import { ExampleComponent as ExamplePluginBroadcasted } from './plugin-broadcasted';
 import { ExampleComponent as ExamplePluginValidation } from './plugin-validation';
 import { ExampleComponent as ExamplePluginUntracked } from './plugin-untracked';
 
@@ -38,5 +37,5 @@ ExamplesRepo.set('plugin-initial', <ExamplePluginInitial />);
 ExamplesRepo.set('plugin-touched', <ExamplePluginTouched />);
 ExamplesRepo.set('plugin-validation', <ExamplePluginValidation />);
 ExamplesRepo.set('plugin-persistence', <ExamplePluginPersistence />);
-// ExamplesRepo.set('plugin-broadcasted', <ExamplePluginBroadcasted />);
+ExamplesRepo.set('plugin-broadcasted', <ExamplePluginBroadcasted />);
 ExamplesRepo.set('plugin-untracked', <ExamplePluginUntracked />);

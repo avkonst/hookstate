@@ -1,6 +1,6 @@
 import React from 'react'
 
-import { ExamplesRepo, ExampleCodeUrl } from './examples/Index';
+import BrowserOnly from '@docusaurus/BrowserOnly';
 
 import Highlight, { PrismTheme, defaultProps } from 'prism-react-renderer';
 import theme from 'prism-react-renderer/themes/palenight';
@@ -70,16 +70,19 @@ const PreviewWithAsyncSource = (props: React.PropsWithChildren<{ url: string, sa
 };
 
 export const PreviewSample = (props: { example?: string, sampleFirst?: boolean }) => {
-    if (typeof window === 'undefined') {
-        return <>SSR</>;
-    }
+    return <BrowserOnly fallback={<div>Loading...</div>}>{() => {
+        if (typeof window === 'undefined') {
+            return <>SSR</>;
+        }
+        const ExamplesRepo = require('./examples/Index').ExamplesRepo;
+        const ExampleCodeUrl = require('./examples/Index').ExampleCodeUrl;
+        const exampleId = props.example && ExamplesRepo.has(props.example)
+            ? props.example : 'global-getting-started';
+        const exampleMeta = ExamplesRepo.get(exampleId)!;
 
-    const exampleId = props.example && ExamplesRepo.has(props.example)
-        ? props.example : 'global-getting-started';
-    const exampleMeta = ExamplesRepo.get(exampleId)!;
-    return <>
-        <PreviewWithAsyncSource url={ExampleCodeUrl(exampleId)} sampleFirst={props.sampleFirst}>
+        return <PreviewWithAsyncSource url={ExampleCodeUrl(exampleId)} sampleFirst={props.sampleFirst}>
             {exampleMeta}
         </PreviewWithAsyncSource>
-    </>
+    }}
+    </BrowserOnly>
 }
