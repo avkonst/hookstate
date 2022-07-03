@@ -105,16 +105,11 @@ module.exports = {
           // Optional fields.
           anonymizeIP: true, // Should IPs be anonymized?
         },
+        sitemap: {
+          changefreq: 'weekly',
+          priority: 0.5,
+        }
       },
     ],
-  ],
-  plugins: [
-    [
-      '@docusaurus/plugin-sitemap',
-      {
-        changefreq: 'weekly',
-        priority: 0.5,
-      },
-    ],
-  ],
+  ]
 };
