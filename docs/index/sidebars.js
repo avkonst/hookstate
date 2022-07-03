@@ -8,45 +8,45 @@
 module.exports = {
     someSidebar: {
         Introduction: [
-            // 'getting-started',
+            'getting-started',
             'global-state',
-            // 'local-state',
-            // 'nested-state',
-            // 'scoped-state',
-            // 'nullable-state',
-            // 'asynchronous-state',
-            // 'recursive-state',
-            // 'exporting-state',
-            // // 'dynamic-states-store',
-            // 'using-without-statehook',
-            // // 'using-with-memo',
-            // // 'moving-from-redux-mobx',
-            // 'migrating-to-v3',
-            // 'migrating-to-v2'
+            'local-state',
+            'nested-state',
+            'scoped-state',
+            'nullable-state',
+            'asynchronous-state',
+            'recursive-state',
+            'exporting-state',
+            // 'dynamic-states-store',
+            'using-without-statehook',
+            // 'using-with-memo',
+            // 'moving-from-redux-mobx',
+            'migrating-to-v3',
+            'migrating-to-v2'
         ],
-        // Performance: [
-        //     'performance-intro',
-        //     'performance-large-state',
-        //     'performance-frequent-updates',
-        //     'performance-batched-updates',
-        //     'performance-managed-rendering',
-        //     'performance-preact',
-        // ],
-        // Extensions: [
-        //     'extensions-overview',
-        //     'extensions-initial',
-        //     'extensions-touched',
-        //     'extensions-validation',
-        //     'extensions-labelled',
-        //     'extensions-broadcasted',
-        //     'extensions-persistence',
-        //     // 'extensions-offline',
-        //     'writing-plugin'
-        // ],
-        // 'Development Tools': ['devtools'],
-        // 'API Reference': [
-        //     'typedoc-hookstate-core',
-        //     'exceptions'
-        // ],
+        Performance: [
+            'performance-intro',
+            'performance-large-state',
+            'performance-frequent-updates',
+            'performance-batched-updates',
+            'performance-managed-rendering',
+            'performance-preact',
+        ],
+        Extensions: [
+            'extensions-overview',
+            'extensions-initial',
+            'extensions-touched',
+            'extensions-validation',
+            'extensions-labelled',
+            'extensions-broadcasted',
+            'extensions-persistence',
+            // 'extensions-offline',
+            'writing-plugin'
+        ],
+        'Development Tools': ['devtools'],
+        'API Reference': [
+            'typedoc-hookstate-core',
+            'exceptions'
+        ],
     },
 };
