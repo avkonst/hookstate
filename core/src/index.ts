@@ -164,10 +164,14 @@ export interface StateMethods<S, E = {}> extends __State<S, E> {
      */
     readonly value: S;
 
+    // TODO deprecate in favor of promise
     /**
      * True if state value is not yet available (eg. equal to a promise)
      */
     readonly promised: boolean;
+
+    // TODO document
+    readonly promise: Promise<State<S, E>> | undefined;
 
     /**
      * If a state was set to a promise and the promise was rejected,
@@ -748,7 +752,7 @@ export function useHookstate<S, E>(
                 return () => {
                     value.state.onUnmount()
                     value.store.unsubscribe(value.state);
-                }    
+                }
             }, []);
 
             let state: State<StateValueAtPath, E> = value.state.self();
@@ -832,6 +836,7 @@ export function StateFragment<S, E>(
         state: __State<S, E>,
         extension: () => Extension<E>,
         children: (state: State<S, E>) => React.ReactElement,
+        suspend?: boolean,
     }
 ): never;
 /**
@@ -847,6 +852,7 @@ export function StateFragment<S, E>(
     props: {
         state: __State<S, E>,
         children: (state: State<S, E>) => React.ReactElement,
+        suspend?: boolean,
     }
 ): React.ReactElement;
 /**
@@ -862,6 +868,7 @@ export function StateFragment<S, E>(
         state: SetInitialStateAction<S>,
         extension?: () => Extension<E>,
         children: (state: State<S, E>) => React.ReactElement,
+        suspend?: boolean,
     }
 ): React.ReactElement;
 export function StateFragment<S, E>(
@@ -869,10 +876,17 @@ export function StateFragment<S, E>(
         state: State<S, E> | SetInitialStateAction<S>,
         extension?: () => Extension<E>,
         children: (state: State<S, E>) => React.ReactElement,
+        suspend?: boolean, // TODO document
     }
 ): React.ReactElement {
     const scoped = useHookstate(props.state as SetInitialStateAction<S>, props.extension);
-    return props.children(scoped);
+    return props.suspend && suspendHookstate(scoped) || props.children(scoped);
+}
+
+// TODO document
+export function suspendHookstate<S, E>(state: State<S, E>) {
+    const p = state.promise;
+    return p && React.createElement(React.lazy(() => p as Promise<any>));
 }
 
 // TODO deprecate
@@ -1877,6 +1891,8 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
                     return this.ornull
                 case 'promised':
                     return this.promised
+                case 'promise':
+                    return this.promise
                 case 'error':
                     return this.error
                 case 'get':
@@ -1917,6 +1933,11 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
     get promised(): boolean {
         this.get({ __internalAllowPromised: true }) // marks used
         return !!this.store.promise;
+    }
+
+    get promise(): Promise<State<S, E>> | undefined {
+        this.get({ __internalAllowPromised: true }) // marks used
+        return this.store.promise?.then(_ => this.self());
     }
 
     get error(): StateErrorAtRoot | undefined {

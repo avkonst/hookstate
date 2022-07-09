@@ -32,7 +32,13 @@ const App: React.FC = () => {
           </div>
           <SettingsViewer />
           <TasksTotal />
-          <TasksViewer />
+          <React.Suspense fallback={
+            <div style={{ textAlign: 'center' }}>
+              Loading initial state asynchronously...
+            </div>
+          }>
+            <TasksViewer />
+          </React.Suspense>
         </div>
       </div>
       <div style={{ flexGrow: 2 }} />
