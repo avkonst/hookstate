@@ -268,6 +268,7 @@ export interface StateMethods<S, E = {}> extends __State<S, E> {
  * which can be destroyed by a client.
  */
 export interface StateMethodsDestroy {
+    // TODO deprecate and replace by deactivate/activate within the StateMethods directly
     /**
      * Destroys an instance of a state, so
      * it can clear the allocated native resources (if any)
@@ -466,7 +467,9 @@ export function createHookstate<S, E>(
     initial: SetInitialStateAction<S>,
     extension?: () => Extension<E>
 ): State<S, E> & StateMethodsDestroy {
-    const methods = createStore(initial, extension).toMethods();
+    const store = createStore(initial);
+    store.activate(extension)
+    const methods = store.toMethods();
     const devtools = createState[DevToolsID]
     if (devtools) {
         methods.attach(devtools)
@@ -635,6 +638,7 @@ export function useHookstate<S, E>(
             // Scoped state mount
             // eslint-disable-next-line react-hooks/rules-of-hooks
             const initializer = () => {
+                // warning: this is called twice in react strict mode
                 let store = parentMethods.store
                 let onSetUsedCallback = () => setValue({
                     store: store, // immutable
@@ -671,8 +675,16 @@ export function useHookstate<S, E>(
             );
             value.source = source;
 
-            parentMethods.subscribe(value.state); // in sync here, not in effect
+            // need to subscribe in sync mode, because
+            // safari delays calling the effect giving priority to timeouts and network events,
+            // which can cause the state update
+            parentMethods.subscribe(value.state); // no-op if already subscribed
             useIsomorphicLayoutEffect(() => {
+                // warning: in strict mode, effect is called twice
+                // so need to restore subscription and reconstruct the extension
+                // after the first effect unmount callback
+                value.state.onMount() // no-op if already mounted
+                parentMethods.subscribe(value.state); // no-op if already subscribed
                 return () => {
                     value.state.onUnmount()
                     parentMethods.unsubscribe(value.state);
@@ -687,6 +699,7 @@ export function useHookstate<S, E>(
             // Global state mount or destroyed link
             // eslint-disable-next-line react-hooks/rules-of-hooks
             let initializer = () => {
+                // warning: this is called twice in react strict mode
                 let store = parentMethods.store
                 let onSetUsedCallback = () => setValue({
                     store: store, // immutable
@@ -722,12 +735,20 @@ export function useHookstate<S, E>(
             );
             value.source = source;
 
-            value.store.subscribe(value.state); // in sync here, not in effect
+            // need to subscribe in sync mode, because
+            // safari delays calling the effect giving priority to timeouts and network events,
+            // which can cause the state update
+            value.store.subscribe(value.state); // no-op if already subscribed
             useIsomorphicLayoutEffect(() => {
+                // warning: in strict mode, effect is called twice
+                // so need to restore subscription and reconstruct the extension
+                // after the first effect unmount callback
+                value.state.onMount() // no-op if already mounted
+                value.store.subscribe(value.state); // no-op if already subscribed
                 return () => {
                     value.state.onUnmount()
                     value.store.unsubscribe(value.state);
-                }
+                }    
             }, []);
 
             let state: State<StateValueAtPath, E> = value.state.self();
@@ -742,7 +763,8 @@ export function useHookstate<S, E>(
         // Local state mount
         // eslint-disable-next-line react-hooks/rules-of-hooks
         let initializer = () => {
-            let store = createStore(source, extension)
+            // warning: this is called twice in react strict mode
+            let store = createStore(source)
             let onSetUsedCallback = () => setValue({
                 store: store,
                 state: state,
@@ -771,33 +793,28 @@ export function useHookstate<S, E>(
             false
         );
 
-        value.store.subscribe(value.state); // in sync here, not in effect
+        // need to subscribe in sync mode, because
+        // safari delays calling the effect giving priority to timeouts and network events,
+        // which can cause the state update
+        value.store.subscribe(value.state); // no-op if already subscribed
+        // need to attach the extension straight away
+        // because extension methods are used in render function
+        // and we can not defer it to the effect callback
+        value.store.activate(extension); // no-op if already attached
         useIsomorphicLayoutEffect(() => {
+            // warning: in strict mode, effect is called twice
+            // so need to restore subscription and reconstruct the extension
+            // after the first effect unmount callback
+            value.state.onMount() // no-op if already mounted
+            value.store.subscribe(value.state); // no-op if already subscribed
+            value.store.activate(extension); // no-op if already attached
             return () => {
                 value.state.onUnmount()
                 value.store.unsubscribe(value.state);
+                value.store.deactivate() // this will destroy the extensions
             }
         }, []);
 
-        if (configuration.isDevelopmentMode) {
-            // This is a workaround for the issue:
-            // https://github.com/avkonst/hookstate/issues/109
-            // See technical notes on React behavior here:
-            // https://github.com/apollographql/apollo-client/issues/5870#issuecomment-689098185
-            const isEffectExecutedAfterRender = React.useRef(false);
-            isEffectExecutedAfterRender.current = false; // not yet...
-
-            // TODO make this origin and not intercepted (visible in devtools)
-            useEffectOrigin(() => {
-                isEffectExecutedAfterRender.current = true; // ... and now, yes!
-                // The state is not destroyed intentionally
-                // under hot reload case.
-                return () => { isEffectExecutedAfterRender.current && value.store.destroy() }
-            });
-        } else {
-            // TODO make this origin and not intercepted (visible in devtools)
-            useEffectOrigin(() => () => value.store.destroy(), []);
-        }
         const devtools = useState[DevToolsID]
         if (devtools) {
             value.state.attach(devtools)
@@ -987,7 +1004,6 @@ const DowngradedID = Symbol('Downgraded');
 const SelfMethodsID = Symbol('ProxyMarker');
 
 const RootPath: Path = [];
-const DestroyedEdition = -1
 
 type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 
@@ -998,21 +1014,27 @@ export interface SetActionDescriptor {
 }
 
 class Store implements Subscribable {
-    private _edition = 0;
+    // > 0 means active store, < 0 means destroyed
+    // please note, in react strict mode and hot reload cases
+    // state can be reused, so we should support store resurection
+    public edition = 1;
+
     private _stateMethods: StateMethodsImpl<StateValueAtRoot, {}>;
 
     private _subscribers: Set<Subscriber> = new Set();
+
     private _setSubscribers: Set<Required<PluginCallbacks>['onSet']> = new Set();
     private _destroySubscribers: Set<Required<PluginCallbacks>['onDestroy']> = new Set();
-
     private _plugins: Map<symbol, PluginCallbacks> = new Map();
-    private _extensionMethods: {} | undefined;
+
+    private _extension?: Extension<{}>;
+    private _extensionMethods?: {};
 
     private _promise?: Promise<StateValueAtRoot>;
     private _promiseResolver?: (_: StateValueAtRoot) => void;
     private _promiseError?: StateValueAtRoot;
 
-    constructor(private _value: StateValueAtRoot, private _extension?: Extension<{}>) {
+    constructor(private _value: StateValueAtRoot) {
         if (Object(_value) === _value &&
             configuration.promiseDetector(_value)) {
             this.setPromised(_value)
@@ -1028,7 +1050,7 @@ class Store implements Subscribable {
                 false
             )
         }
-        onSetUsedStoreStateMethods[UnmountedMarker] = true
+        onSetUsedStoreStateMethods[IsUnmounted] = true
 
         this._stateMethods = new StateMethodsImpl<StateValueAtRoot, {}>(
             this,
@@ -1038,8 +1060,6 @@ class Store implements Subscribable {
             onSetUsedStoreStateMethods
         )
         this.subscribe(this._stateMethods)
-
-        this._extensionMethods = this._extension?.onInit(() => this.toMethods().self())
     }
 
     setPromised(promise: StateValueAtPath | undefined) {
@@ -1056,7 +1076,7 @@ class Store implements Subscribable {
 
         promise = promise
             .then((r: StateValueAtRoot) => {
-                if (this._promise === promise && this.edition !== DestroyedEdition) {
+                if (this._promise === promise) {
                     this._promise = undefined
                     this._promiseError = undefined
                     this._promiseResolver === undefined
@@ -1064,11 +1084,11 @@ class Store implements Subscribable {
                 }
             })
             .catch((err: StateValueAtRoot) => {
-                if (this._promise === promise && this.edition !== DestroyedEdition) {
+                if (this._promise === promise) {
                     this._promise = undefined
                     this._promiseResolver = undefined
                     this._promiseError = err
-                    this._edition += 1
+                    this.edition += 1
                     let ad = { path: RootPath };
                     this.update(ad)
                 }
@@ -1076,12 +1096,34 @@ class Store implements Subscribable {
         this._promise = promise
     }
 
-    get extension() {
-        return this._extensionMethods
+    activate(extensionFactory: (() => Extension<{}>) | undefined) {
+        if (this.edition < 0) {
+            this.edition = -this.edition
+        }
+        if (this._extension === undefined) {
+            this._extension = extensionFactory?.();
+            this._extensionMethods = this._extension?.onInit(() => this._stateMethods.self())
+        }
     }
 
-    get edition() {
-        return this._edition;
+    deactivate() {
+        // TODO remove when plugins are deprecated
+        // old plugins do not support second activation
+        let params = this._value !== none ? { state: this._value } : {};
+        this._destroySubscribers.forEach(cb => cb(params))
+
+        if (this._extension) {
+            this._extension.onDestroy?.(this._stateMethods.self())
+            delete this._extension;
+            delete this._extensionMethods;
+        }
+        if (this.edition > 0) {
+            this.edition = -this.edition
+        }
+    }
+
+    get extension() {
+        return this._extensionMethods
     }
 
     get promise() {
@@ -1104,7 +1146,7 @@ class Store implements Subscribable {
     }
 
     set(path: Path, value: StateValueAtPath, mergeValue: Partial<StateValueAtPath> | undefined): SetActionDescriptor {
-        if (this._edition < 0) {
+        if (this.edition < 0) {
             // TODO convert to console log
             throw new StateInvalidUsageError(path, ErrorId.SetStateWhenDestroyed)
         }
@@ -1233,7 +1275,7 @@ class Store implements Subscribable {
     }
 
     update(ad: SetActionDescriptor) {
-        this._extension?.onSet?.(this.toMethods().self(), ad)
+        this._extension?.onSet?.(this._stateMethods.self(), ad)
 
         const actions = new Set<() => void>();
         // check if actions descriptor can be unfolded into a number of individual update actions
@@ -1251,10 +1293,13 @@ class Store implements Subscribable {
     }
 
     afterSet(params: PluginCallbacksOnSetArgument) {
-        if (this._edition !== DestroyedEdition) {
-            this._edition += 1;
-            this._setSubscribers.forEach(cb => cb(params))
+        if (this.edition > 0) {
+            this.edition += 1;
         }
+        if (this.edition < 0) {
+            this.edition -= 1;
+        }
+        this._setSubscribers.forEach(cb => cb(params))
     }
 
     getPlugin(pluginId: symbol) {
@@ -1267,7 +1312,7 @@ class Store implements Subscribable {
             return;
         }
 
-        const pluginCallbacks = plugin.init ? plugin.init(this.toMethods().self()) : {};
+        const pluginCallbacks = plugin.init ? plugin.init(this._stateMethods.self()) : {};
         this._plugins.set(plugin.id, pluginCallbacks);
         if (pluginCallbacks.onSet) {
             this._setSubscribers.add((p) => pluginCallbacks.onSet!(p))
@@ -1290,11 +1335,7 @@ class Store implements Subscribable {
     }
 
     destroy() {
-        this._extension?.onDestroy?.(this.toMethods().self())
-
-        let params = this._value !== none ? { state: this._value } : {};
-        this._destroySubscribers.forEach(cb => cb(params))
-        this._edition = DestroyedEdition
+        this.deactivate()
     }
 
     toJSON() {
@@ -1303,10 +1344,10 @@ class Store implements Subscribable {
 }
 
 // use symbol property to allow for easier reference finding
-const ValueUnusedMarker = Symbol('ValueUnusedMarker');
+const UnusedValue = Symbol('UnusedValue');
 
 // use symbol to mark that a function has no effect anymore
-const UnmountedMarker = Symbol('UnmountedMarker');
+const IsUnmounted = Symbol('IsUnmounted');
 
 // TODO remove from the docs IE11 support
 
@@ -1318,7 +1359,7 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
     private childrenUsedPrevious: Record<string | number, StateMethodsImpl<StateValueAtPath, E>> | undefined;
     private childrenUsed: Record<string | number, StateMethodsImpl<StateValueAtPath, E>> | undefined;
     private selfUsed: State<S, E> | undefined;
-    private valueUsed: StateValueAtPath = ValueUnusedMarker;
+    private valueUsed: StateValueAtPath = UnusedValue;
 
     [__state]: (s: S, e: E) => never = () => {
         // this is impossible (from the typescript point of view) to reach 
@@ -1339,7 +1380,7 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
         this.valueSource = valueSource;
         this.valueEdition = valueEdition;
 
-        this.valueUsed = ValueUnusedMarker;
+        this.valueUsed = UnusedValue;
         delete this.downgraded;
 
         if (reset) {
@@ -1371,8 +1412,8 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
             this.valueSource = this.store.get(this.path)
             this.valueEdition = this.store.edition
 
-            if (this.valueUsed !== ValueUnusedMarker) {
-                this.valueUsed = ValueUnusedMarker
+            if (this.valueUsed !== UnusedValue) {
+                this.valueUsed = UnusedValue
                 this.get({ __internalAllowPromised: true }) // renew cache to keep it marked used
             }
         }
@@ -1393,7 +1434,7 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
         if (options?.stealth) {
             return valueSource;
         }
-        if (this.valueUsed === ValueUnusedMarker) {
+        if (this.valueUsed === UnusedValue) {
             if (Array.isArray(valueSource)) {
                 this.valueUsed = this.valueArrayImpl(valueSource as unknown as StateValueAtPath[]);
             } else if (Object(valueSource) === valueSource) {
@@ -1572,15 +1613,15 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
     }
 
     get isMounted(): boolean {
-        return !this.onSetUsed[UnmountedMarker]
+        return !this.onSetUsed[IsUnmounted]
     }
 
     onMount() {
-        delete this.onSetUsed[UnmountedMarker];
+        delete this.onSetUsed[IsUnmounted];
     }
 
     onUnmount() {
-        this.onSetUsed[UnmountedMarker] = true
+        this.onSetUsed[IsUnmounted] = true
     }
 
     onSet(ad: SetActionDescriptor, actions: Set<() => void>): boolean {
@@ -1588,7 +1629,7 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
             let isAffected = false
             if (this.downgraded
                 // TODO this condition becomes redundant when Downgraded plugins is deleted
-                && this.valueUsed !== ValueUnusedMarker) {
+                && this.valueUsed !== UnusedValue) {
                 actions.add(this.onSetUsed);
                 delete this.selfUsed;
                 isAffected = true;
@@ -1598,7 +1639,7 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
             if (nextChildKey === undefined) {
                 // There is no next child to dive into
                 // So it is this one which was updated
-                if (this.valueUsed !== ValueUnusedMarker) {
+                if (this.valueUsed !== UnusedValue) {
                     actions.add(this.onSetUsed);
                     delete this.selfUsed;
                     delete this.childrenUsed;
@@ -1899,7 +1940,7 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
             const pluginMeta = p();
             if (pluginMeta.id === DowngradedID) {
                 this.downgraded = true;
-                if (this.valueUsed !== ValueUnusedMarker) {
+                if (this.valueUsed !== UnusedValue) {
                     const currentValue = this.getUntracked(true);
                     this.valueUsed = currentValue;
                 }
@@ -2062,7 +2103,7 @@ function proxyWrap(
     });
 }
 
-function createStore<S, E>(initial: SetInitialStateAction<S>, extensions?: () => Extension<E>): Store {
+function createStore<S, E>(initial: SetInitialStateAction<S>): Store {
     let initialValue: S | Promise<S> = initial as (S | Promise<S>);
     if (typeof initial === 'function') {
         initialValue = (initial as (() => S | Promise<S>))();
@@ -2070,7 +2111,7 @@ function createStore<S, E>(initial: SetInitialStateAction<S>, extensions?: () =>
     if (Object(initialValue) === initialValue && initialValue[SelfMethodsID]) {
         throw new StateInvalidUsageError(RootPath, ErrorId.InitStateToValueFromState)
     }
-    return new Store(initialValue, extensions?.());
+    return new Store(initialValue);
 }
 
 export interface Configuration {
