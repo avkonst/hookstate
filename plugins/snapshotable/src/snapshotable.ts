@@ -10,7 +10,7 @@ import {
     Clonable,
 } from '@hookstate/core';
 
-export interface Snapshotable<K = string> {
+export interface Snapshotable<K extends string = string> {
     snapshot(key?: K,
         mode?: 'upsert' | 'insert' | 'update' | 'delete' | 'lookup'): StateValue<this> | undefined;
     rollback(key?: K): StateValue<this> | undefined;

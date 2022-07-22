@@ -1,5 +1,5 @@
 
-import { Plugin, Path, StateValueAtPath, State } from '@hookstate/core';
+import { Path, StateValueAtPath, State, StateValue, Extension } from '@hookstate/core';
 
 export type ValidationSeverity = 'error' | 'warning';
 
@@ -9,18 +9,18 @@ export interface ValidationError {
     readonly severity: ValidationSeverity;
 }
 
-export interface ValidationExtensions<S> {
-    validate(attachRule: (value: S) => boolean,
-        message: string | ((value: S) => string),
+export interface Validation<K = string> {
+    validate(rule: (value: StateValue<this>) => boolean,
+        message: string | ((value: StateValue<this>) => string),
         severity?: ValidationSeverity): void,
-    validShallow(): boolean,
-    valid(): boolean,
-    invalidShallow(): boolean,
-    invalid(): boolean,
+
+    valid(options?: { depth?: number }): boolean,
+    invalid(options?: { depth?: number }): boolean,
+
     firstError(
         filter?: (e: ValidationError) => boolean,
         depth?: number
-    ): Partial<ValidationError>,
+    ): ValidationError | undefined,
     errors(
         filter?: (e: ValidationError) => boolean,
         depth?: number,
@@ -28,32 +28,31 @@ export interface ValidationExtensions<S> {
     ): ReadonlyArray<ValidationError>,
 }
 
-const PluginID = Symbol('Validate');
+export function validation<K extends string = string>(): Extension<Validation<K>> {
+    const storeRules = {};
 
-const emptyErrors: ValidationError[] = []
+    const hidden = Symbol('hidden');
+    const emptyErrors: ValidationError[] = []
 
-interface ValidationRule {
-    readonly message: string | ((value: StateValueAtPath) => string)
-    readonly rule: (v: StateValueAtPath) => boolean
-    readonly severity: ValidationSeverity;
-}
+    interface ValidationRule {
+        readonly message: string | ((value: StateValueAtPath) => string)
+        readonly rule: (v: StateValueAtPath) => boolean
+        readonly severity: ValidationSeverity;
+    }
 
-class ValidationPluginInstance<S> {
-    private storeRules = {};
-
-    getRulesAndNested(path: Path): [ValidationRule[], string[]] {
-        let result = this.storeRules;
+    function getRulesAndNested(path: Path): [ValidationRule[], string[]] {
+        let result = storeRules;
         path.forEach(p => {
             if (typeof p === 'number') {
                 p = '*' // limitation: support only validation for each element of array
             }
             result = result && (result[p])
         });
-        return [result && result[PluginID] ? Array.from(result[PluginID].values()) : [],
-            result ? Object.keys(result) : []];
+        return [result && result[hidden] ? Array.from(result[hidden].values()) : [],
+        result ? Object.keys(result) : []];
     }
-    addRule(path: Path, r: ValidationRule) {
-        let result = this.storeRules;
+    function addRule(path: Path, r: ValidationRule) {
+        let result = storeRules;
         path.forEach((p, i) => {
             if (typeof p === 'number') {
                 p = '*' // limitation: support only validation for each element of array
@@ -61,7 +60,7 @@ class ValidationPluginInstance<S> {
             result[p] = result[p] || {}
             result = result[p]
         });
-        const existingRules: Map<string, ValidationRule> | undefined = result[PluginID];
+        const existingRules: Map<string, ValidationRule> | undefined = result[hidden];
         const newRuleFunction = r.rule.toString();
         if (existingRules) {
             if (existingRules.has(newRuleFunction)) {
@@ -72,10 +71,10 @@ class ValidationPluginInstance<S> {
         }
         const newMap: Map<string, ValidationRule> = new Map();
         newMap.set(newRuleFunction, r);
-        result[PluginID] = newMap;
+        result[hidden] = newMap;
     }
 
-    getErrors(l: State<StateValueAtPath>,
+    function getErrors(l: State<StateValueAtPath>,
         depth: number,
         filter?: (e: ValidationError) => boolean,
         first?: boolean): ReadonlyArray<ValidationError> {
@@ -87,7 +86,7 @@ class ValidationPluginInstance<S> {
             return consistentResult();
         }
 
-        const [existingRules, nestedRulesKeys] = this.getRulesAndNested(l.path);
+        const [existingRules, nestedRulesKeys] = getRulesAndNested(l.path);
         for (let i = 0; i < existingRules.length; i += 1) {
             const r = existingRules[i];
             if (!r.rule(l.value)) {
@@ -121,31 +120,13 @@ class ValidationPluginInstance<S> {
                 for (let i = 0; i < nestedInst.length; i += 1) {
                     const n = nestedInst[i];
                     result = result.concat(
-                        Validation(n as State<StateValueAtPath>)
-                            .errors(filter, depth - 1, first));
+                        (n as State<StateValueAtPath, Validation>).errors(filter, depth - 1, first));
                     if (first && result.length > 0) {
                         return result;
                     }
                 }
             }
             // validation for individual array elements is not supported, it is covered by foreach above
-            // for (let i = 0; i < nestedRulesKeys.length; i += 1) {
-            //     const k = nestedRulesKeys[i];
-            //     // Validation rule exists,
-            //     // but the corresponding nested link may not be created,
-            //     // (because it may not be inferred automatically)
-            //     // because the original array value cas miss the corresponding index
-            //     // The design choice is to skip validation in this case.
-            //     // A client can define per array level validation rule,
-            //     // where existance of the index can be cheched.
-            //     if (nestedInst[k] !== undefined) {
-            //         result = result.concat((nestedInst[k] as State<StateValueAtPath, ValidationExtensions>)
-            //             .extended.errors(filter, depth - 1, first));
-            //         if (first && result.length > 0) {
-            //             return result;
-            //         }
-            //     }
-            // }
         } else {
             for (let i = 0; i < nestedRulesKeys.length; i += 1) {
                 const k = nestedRulesKeys[i];
@@ -158,8 +139,7 @@ class ValidationPluginInstance<S> {
                 // where existance of the index can be cheched.
                 if (nestedInst[k] !== undefined) {
                     result = result.concat(
-                        Validation(nestedInst[k] as State<StateValueAtPath>)
-                            .errors(filter, depth - 1, first));
+                        (nestedInst[k] as State<StateValueAtPath, Validation>).errors(filter, depth - 1, first));
                     if (first && result.length > 0) {
                         return result;
                     }
@@ -168,56 +148,18 @@ class ValidationPluginInstance<S> {
         }
         return consistentResult();
     }
-}
 
-// tslint:disable-next-line: function-name
-export function Validation(): Plugin;
-export function Validation<S>($this: State<S>): ValidationExtensions<S>;
-export function Validation<S>($this?: State<S>): Plugin | ValidationExtensions<S> {
-    if ($this) {
-        let state = $this;
-
-        const [plugin] = state.attach(PluginID);
-        if (plugin instanceof Error) {
-            throw plugin
-        }
-        const instance = plugin as ValidationPluginInstance<S>;
-
-        const inst = instance;
-        return {
-            validate: (r, m, s) => {
-                inst.addRule(state.path, {
-                    rule: r,
-                    message: m,
-                    severity: s || 'error'
-                })
-            },
-            validShallow(): boolean {
-                return inst.getErrors(state, 1, undefined, true).length === 0
-            },
-            valid(): boolean {
-                return inst.getErrors(state, Number.MAX_SAFE_INTEGER, undefined, true).length === 0
-            },
-            invalidShallow(): boolean {
-                return inst.getErrors(state, 1, undefined, true).length !== 0
-            },
-            invalid(): boolean {
-                return inst.getErrors(state, Number.MAX_SAFE_INTEGER, undefined, true).length !== 0
-            },
-            errors: (filter, depth, first) => {
-                return inst.getErrors(state, depth === undefined ? Number.MAX_SAFE_INTEGER : depth, filter, first);
-            },
-            firstError: (filter, depth) => {
-                const r = inst.getErrors(state, depth === undefined ? Number.MAX_SAFE_INTEGER : depth, filter, true);
-                if (r.length === 0) {
-                    return {};
-                }
-                return r[0];
-            },
-        }
-    }
     return {
-        id: PluginID,
-        init: () => new ValidationPluginInstance() as {}
+        onCreate: () => ({
+            validate: (state) => (r, m, s) => addRule(state.path, {
+                rule: r,
+                message: m,
+                severity: s || 'error'
+            }),
+            valid: s => (options) => getErrors(s, options?.depth ?? Number.MAX_SAFE_INTEGER, undefined, true).length === 0,
+            invalid: s => (options) => getErrors(s, options?.depth ?? Number.MAX_SAFE_INTEGER, undefined, true).length !== 0,
+            firstError: s => (filter, depth) => getErrors(s, depth ?? Number.MAX_SAFE_INTEGER, filter, true)[0],
+            errors: s => (filter, depth, first) => getErrors(s, depth ?? Number.MAX_SAFE_INTEGER, filter, first),
+        })
     }
 }

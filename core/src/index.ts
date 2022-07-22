@@ -467,13 +467,13 @@ export interface Extension<E extends {}> {
 export function createState<S>(
     initial: SetInitialStateAction<S>
 ): State<S, {}> & StateMethodsDestroy {
-    return createHookstate(initial)
+    return createHookstate(initial) as State<S, {}> & StateMethodsDestroy
 }
 
 export function createHookstate<S, E>(
     initial: SetInitialStateAction<S>,
     extension?: () => Extension<E>
-): State<S, E> & StateMethodsDestroy {
+): State<S, E> {
     const store = createStore(initial);
     store.activate(extension)
     const methods = store.toMethods();
