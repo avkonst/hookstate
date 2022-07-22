@@ -33,8 +33,8 @@ export interface Comparable {
 export function comparable(compare: (v1: StateValueAtPath, v2: StateValueAtPath) => number): Extension<Comparable> {
     return {
         onCreate: () => ({
-            compare: (s) => (other) => compare(s.get(), other),
-            equals: (s) => (other) => compare(s.get(), other) === 0,
+            compare: (s) => (other) => compare(s.get({ noproxy: true }), other),
+            equals: (s) => (other) => compare(s.get({ noproxy: true }), other) === 0,
         })
     }
 }
@@ -62,8 +62,12 @@ export function snapshotable<K extends string = string>(): Extension<Snapshotabl
                 if (dependencies['compare'] === undefined) {
                     throw Error('State is missing Comparable extension');
                 }
-                const v = getByPath(snapshots.get(key || '___default'), s.path);
-                return (s as unknown as State<StateValueAtPath, Comparable>).compare(v) !== 0
+                let k: K | '___default' = key || '___default';
+                if (snapshots.has(k)) {
+                    const v = getByPath(snapshots.get(k), s.path);
+                    return (s as unknown as State<StateValueAtPath, Comparable>).compare(v) !== 0
+                }
+                throw Error(`Snapshot does not exist: ${k}`);
             }
             return {
                 snapshot: (s) => (key, mode) => {
