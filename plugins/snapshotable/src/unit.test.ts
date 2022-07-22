@@ -1,8 +1,8 @@
-import { useHookstate, extend } from '@hookstate/core';
+import { useHookstate, extend, clonable, comparable } from '@hookstate/core';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import React from 'react';
-import { clonable, comparable, snapshotable } from './snapshotable';
+import { snapshotable } from './snapshotable';
 
 test('snapshotable: basic test', async () => {
     let renderTimes = 0

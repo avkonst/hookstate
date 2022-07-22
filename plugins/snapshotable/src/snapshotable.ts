@@ -1,43 +1,14 @@
 
 import {
     Path,
-    Downgraded,
     Extension,
     StateValueAtPath,
     StateValueAtRoot,
     State,
-    StateMethods,
     StateValue,
-    extend,
-    createHookstate,
-    none
+    Comparable,
+    Clonable,
 } from '@hookstate/core';
-
-export interface Clonable {
-    clone(): StateValue<this>
-}
-
-export function clonable(snapshot: (v: StateValueAtPath) => StateValueAtPath): Extension<Clonable> {
-    return {
-        onCreate: (sf) => ({
-            clone: (s) => () => snapshot(s.get({ noproxy: true }))
-        })
-    }
-}
-
-export interface Comparable {
-    compare(other: StateValue<this>): number
-    equals(other: StateValue<this>): boolean
-}
-
-export function comparable(compare: (v1: StateValueAtPath, v2: StateValueAtPath) => number): Extension<Comparable> {
-    return {
-        onCreate: () => ({
-            compare: (s) => (other) => compare(s.get({ noproxy: true }), other),
-            equals: (s) => (other) => compare(s.get({ noproxy: true }), other) === 0,
-        })
-    }
-}
 
 export interface Snapshotable<K = string> {
     snapshot(key?: K,
