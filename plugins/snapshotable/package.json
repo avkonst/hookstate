@@ -1,5 +1,5 @@
 {
-    "name": "@hookstate/rollback",
+    "name": "@hookstate/snapshotable",
     "version": "3.0.1",
     "description": "Plugin for @hookstate/core to enable state snapshoting and reverting to the snapshoted / previous values.",
     "license": "MIT",
