@@ -11,7 +11,7 @@
 		"persistence": "plugins/Persistence",
 		"touched": "plugins/Touched",
 		"untracked": "plugins/Untracked",
-		"validation": "plugins/Validation",
+		"validation": "plugins/validation",
 		"docs": "docs/index",
 		"todolist": "docs/demos/todolist",
 		"strictmode": "docs/demos/strictmode"
