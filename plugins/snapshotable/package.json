@@ -1,7 +1,7 @@
 {
     "name": "@hookstate/snapshotable",
-    "version": "3.0.1",
-    "description": "Plugin for @hookstate/core to enable state snapshoting and reverting to the snapshoted / previous values.",
+    "version": "4.0.0-rc2",
+    "description": "Extension for @hookstate/core to enable state snapshoting and reverting to the snapshoted / previous values.",
     "license": "MIT",
     "author": {
         "name": "Andrey Konstantinov"
@@ -24,11 +24,11 @@
         "test": "jest --env=jsdom",
         "test:ci": "jest --env=jsdom",
         "test:w": "jest --env=jsdom --watch",
-        "release": "npm publish",
+        "release": "npm publish --access public",
         "update:deps": "ncu -u"
     },
     "peerDependencies": {
-        "@hookstate/core": "^3.0.0 || ^4.0.0"
+        "@hookstate/core": "^4.0.0-rc13"
     },
     "devDependencies": {
         "@babel/core": "7.18.6",
