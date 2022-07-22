@@ -8,7 +8,7 @@
 		"snapshotable": "plugins/snapshotable",
 		"labelled": "plugins/Labelled",
 		"logger": "plugins/Logger",
-		"localstorage": "plugins/localstorage",
+		"localstored": "plugins/localstored",
 		"touched": "plugins/Touched",
 		"untracked": "plugins/Untracked",
 		"validation": "plugins/validation",

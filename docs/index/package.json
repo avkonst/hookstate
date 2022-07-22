@@ -15,7 +15,7 @@
     "@hookstate/core": "workspace:*",
     "@hookstate/initial": "workspace:*",
     "@hookstate/labelled": "workspace:*",
-    "@hookstate/persistence": "workspace:*",
+    "@hookstate/localstored": "workspace:*",
     "@hookstate/broadcasted": "workspace:*",
     "@hookstate/touched": "workspace:*",
     "@hookstate/untracked": "workspace:*",

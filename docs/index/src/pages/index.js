@@ -59,8 +59,8 @@ const features = [
     description: (
       <>
         Extend or customize your state hooks. There are several standard plugins available:
-        initial state value, touched fields tracking, modified fields tracking,
-        state validation, persistence, and <Link to={'docs/extensions-overview'}>a lot more...</Link>
+        state snapshoting and rolling back, tracking modified fields,
+        state validation, local storage persistence and <Link to={'docs/extensions-overview'}>a lot more...</Link>
       </>
     ),
   },

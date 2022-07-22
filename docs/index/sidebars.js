@@ -39,7 +39,7 @@ module.exports = {
             'extensions-validation',
             'extensions-labelled',
             'extensions-broadcasted',
-            'extensions-persistence',
+            'extensions-localstored',
             // 'extensions-offline',
             'writing-plugin'
         ],

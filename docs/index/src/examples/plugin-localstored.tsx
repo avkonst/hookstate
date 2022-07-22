@@ -1,10 +1,11 @@
 import React from 'react';
-import { useState } from '@hookstate/core';
-import { Persistence } from '@hookstate/persistence';
+import { useHookstate } from '@hookstate/core';
+import { localstored } from '@hookstate/localstored';
 
 export const ExampleComponent = () => {
-    const state = useState([{ name: 'First Task' }])
-    state.attach(Persistence('plugin-persisted-data-key'))
+    const state = useHookstate([{ name: 'First Task' }],
+        () => localstored('state-key'))
+
     return <>
         {state.map((taskState, taskIndex) => {
             return <p key={taskIndex}>
