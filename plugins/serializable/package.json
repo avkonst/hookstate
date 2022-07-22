@@ -1,7 +1,7 @@
 {
-    "name": "@hookstate/broadcasted",
+    "name": "@hookstate/serializable",
     "version": "4.0.0-rc1",
-    "description": "Plugin for @hookstate/core to enable state synchronization across browser tabs.",
+    "description": "Plugin for @hookstate/core to enable state serialization and deserialization.",
     "license": "MIT",
     "author": {
         "name": "Andrey Konstantinov"
@@ -29,8 +29,7 @@
     },
     "dependencies": {},
     "peerDependencies": {
-        "@hookstate/core": "^4.0.0-rc13",
-        "broadcast-channel": "^4.10.0"
+        "@hookstate/core": "^4.0.0-rc13"
     },
     "devDependencies": {
         "@babel/core": "7.18.6",
@@ -48,7 +47,6 @@
         "@types/node": "^18.0.3",
         "@types/react": "18.0.15",
         "@types/react-dom": "18.0.6",
-        "broadcast-channel": "4.13.0",
         "codecov": "3.8.3",
         "coverage": "0.4.1",
         "cross-env": "7.0.3",
