@@ -5,6 +5,7 @@
 		"broadcasted": "plugins/Broadcasted",
 		"devtools": "plugins/DevTools",
 		"initial": "plugins/Initial",
+		"snapshotable": "plugins/snapshotable",
 		"labelled": "plugins/Labelled",
 		"logger": "plugins/Logger",
 		"persistence": "plugins/Persistence",
@@ -12,6 +13,7 @@
 		"untracked": "plugins/Untracked",
 		"validation": "plugins/Validation",
 		"docs": "docs/index",
-		"todolist": "docs/demos/todolist"
+		"todolist": "docs/demos/todolist",
+		"strictmode": "docs/demos/strictmode"
     }
 }

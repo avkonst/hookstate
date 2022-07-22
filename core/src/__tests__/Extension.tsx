@@ -16,7 +16,8 @@ function MyExtension(messages: string[]) {
 class MyExtensionImpl implements Extension<MyExtensionMethods> {
     constructor(private messages: string[]) {}
     
-    onInit: Extension<MyExtensionMethods>['onInit'] = (sf) => {
+    onCreate: Extension<MyExtensionMethods>['onCreate'] = (sf, em) => {
+        expect(em).toBeDefined()
         this.messages.push('onInit called')
         return {
             extensionMethod: (s) => {
@@ -177,7 +178,7 @@ function MyExtensionGlobal() {
 class MyExtensionGlobalImpl implements Extension<MyExtensionMethods> {
     constructor(private messages: string[]) {}
     
-    onInit: Extension<MyExtensionMethodsGlobal>['onInit'] = (sf) => {
+    onCreate: Extension<MyExtensionMethodsGlobal>['onCreate'] = (sf) => {
         this.messages.push('onInit called')
         let messages = this.messages;
         return {

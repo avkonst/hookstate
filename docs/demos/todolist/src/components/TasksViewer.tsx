@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTasksState, Task } from './TasksState';
-import { State, useHookstate, none } from '@hookstate/core';
+import { State, useHookstate, suspendHookstate, none, StateFragment } from '@hookstate/core';
 import { useSettingsState } from './SettingsState';
 
 function TaskEditor(props: { task: State<Task> }) {
@@ -158,13 +158,16 @@ const TaskEditorMomorized = TaskEditor
 export function TasksViewer() {
     const tasksState = useTasksState()
     
-    if (tasksState.promised) {
-        return <div style={{ textAlign: 'center' }}>
-            Loading initial state asynchronously...
-        </div>
-    }
+    // we use suspendHookstate below which integrates with React.suspense
+    // altenratively, it is possible to check if state is promised and
+    // return custom view for this case too, for example:
+    // if (tasksState.promise) {
+    //     return <div style={{ textAlign: 'center' }}>
+    //         Loading initial state asynchronously...
+    //     </div>
+    // }
     
-    return <div key="" style={{ textAlign: 'left', marginBottom: 50 }}>{
+    return suspendHookstate(tasksState) || <div key="" style={{ textAlign: 'left', marginBottom: 50 }}>{
         tasksState.map((task, i) => <TaskEditorMomorized
             key={task.id.value}
             task={task}
