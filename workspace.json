@@ -5,6 +5,7 @@
 		"broadcasted": "plugins/Broadcasted",
 		"devtools": "plugins/DevTools",
 		"initial": "plugins/Initial",
+		"rollback": "plugins/Rollback",
 		"labelled": "plugins/Labelled",
 		"logger": "plugins/Logger",
 		"persistence": "plugins/Persistence",
