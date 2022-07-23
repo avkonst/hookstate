@@ -428,7 +428,10 @@ export interface Extension<E extends {}> {
     ) => {
             readonly [K in keyof Required<E>]: (state: State<StateValueAtPath, {}>) => E[K];
         },
-    readonly onInit?: (state: State<StateValueAtRoot, {}>) => void,
+    readonly onInit?: (
+        state: State<StateValueAtRoot, {}>,
+        dependencies: Record<string, (i: State<StateValueAtPath, {}>) => any>
+    ) => void,
     readonly onPreset?: (state: State<StateValueAtPath, {}>, value: StateValueAtPath) => void,
     readonly onPremerge?: (state: State<StateValueAtPath, {}>, value: StateValueAtPath) => void,
     readonly onSet?: (state: State<StateValueAtPath, {}>, descriptor: SetActionDescriptor) => void,
@@ -597,9 +600,9 @@ export function extend<
             }
         }
         if (onInitCbs.length > 0) {
-            result.onInit = (s) => {
+            result.onInit = (s, e) => {
                 for (let cb of onInitCbs) {
-                    cb!(s);
+                    cb!(s, e);
                 }
             }
         }
@@ -1155,7 +1158,8 @@ class Store implements Subscribable {
         if (this._extension === undefined) {
             this._extension = extensionFactory?.();
             this._extensionMethods = this._extension?.onCreate?.(() => this._stateMethods.self(), {})
-            this._extension?.onInit?.(this._stateMethods.self()) // this is invoked with all extension methods activated
+            // this is invoked with all extension methods activated on the state
+            this._extension?.onInit?.(this._stateMethods.self(), this._extensionMethods || {})
         }
     }
 

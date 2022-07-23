@@ -1,1 +1,1 @@
-export * from './Broadcasted';
+export * from './broadcasted';
