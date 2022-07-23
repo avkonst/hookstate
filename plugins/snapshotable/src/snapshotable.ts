@@ -6,8 +6,6 @@ import {
     StateValueAtRoot,
     State,
     StateValue,
-    Comparable,
-    Clonable,
 } from '@hookstate/core';
 
 export interface Snapshotable<K extends string = string> {
@@ -18,10 +16,10 @@ export interface Snapshotable<K extends string = string> {
     unmodified(key?: K): boolean;
 }
 
-export function snapshotable<K extends string = string>(): Extension<Snapshotable<K>> {
-    const snapshots: Map<K | '___default', StateValueAtRoot> = new Map();
-    return {
+export function snapshotable<K extends string = string>(): () => Extension<Snapshotable<K>> {
+    return () => ({
         onCreate: (sf, dependencies) => {
+            const snapshots: Map<K | '___default', StateValueAtRoot> = new Map();
             function getByPath(v: StateValueAtRoot, path: Path) {
                 let result = v;
                 path.forEach(p => {
@@ -36,7 +34,7 @@ export function snapshotable<K extends string = string>(): Extension<Snapshotabl
                 let k: K | '___default' = key || '___default';
                 if (snapshots.has(k)) {
                     const v = getByPath(snapshots.get(k), s.path);
-                    return (s as unknown as State<StateValueAtPath, Comparable>).compare(v) !== 0
+                    return (s as unknown as State<StateValueAtPath, { compare: (v: StateValueAtPath) => number }>).compare(v) !== 0
                 }
                 throw Error(`Snapshot does not exist: ${k}`);
             }
@@ -51,7 +49,7 @@ export function snapshotable<K extends string = string>(): Extension<Snapshotabl
                         (mode === 'insert' && !snapshots.has(k)) ||
                         (mode === 'update' && snapshots.has(k))) {
                         // Clone the entire state, starting from root
-                        v = (sf() as unknown as State<StateValueAtRoot, Clonable>).clone()
+                        v = (sf() as unknown as State<StateValueAtRoot, { clone: () => StateValueAtRoot }>).clone()
                         snapshots.set(k, v)
                     } else {
                         v = snapshots.get(k)
@@ -74,5 +72,5 @@ export function snapshotable<K extends string = string>(): Extension<Snapshotabl
                 unmodified: (s) => (key) => !isModified(s, key || '___default'),
             }
         }
-    }
+    })
 }

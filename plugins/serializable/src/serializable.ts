@@ -1,13 +1,18 @@
-import { Extension } from '@hookstate/core';
+import { Extension, StateValueAtPath } from '@hookstate/core';
 
-export interface Identifiable {
-    identifier: string
+export interface Serializable {
+    serialize: () => string,
+    deserialize: (v: string) => void,
 }
 
-export function (identifier: string): Extension<Identifiable> {
-    return {
+export function serializable(
+    serialize: (v: StateValueAtPath) => string,
+    deserialize: (v: string) => StateValueAtPath
+): () => Extension<Serializable> {
+    return () => ({
         onCreate: () => ({
-            identifier: _ => identifier
+            serialize: s => () => serialize(s.get({ noproxy: true })),
+            deserialize: s => v => s.set(deserialize(v)),
         })
-    }
+    })
 }

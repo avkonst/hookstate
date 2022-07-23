@@ -2,8 +2,8 @@ import { Extension, none } from '@hookstate/core';
 
 export interface LocalStored {}
 
-export function localstored(localStorageKey: string): Extension<LocalStored> {
-    return {
+export function localstored(localStorageKey: string): () => Extension<LocalStored> {
+    return () => ({
         onCreate: (sf) => {
             const persisted = localStorage.getItem(localStorageKey);
             let state = sf()
@@ -22,5 +22,5 @@ export function localstored(localStorageKey: string): Extension<LocalStored> {
                 localStorage.setItem(localStorageKey, JSON.stringify(state.get({ noproxy: true })));
             }
         }
-    }
+    })
 }
