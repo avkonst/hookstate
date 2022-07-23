@@ -422,7 +422,7 @@ export interface Plugin {
 
 // TODO document
 export interface Extension<E extends {}> {
-    readonly onCreate: (
+    readonly onCreate?: (
         state: () => State<StateValueAtRoot, {}>,
         dependencies: Record<string, (i: State<StateValueAtPath, {}>) => any>
     ) => {
@@ -588,8 +588,10 @@ export function extend<
         let result: Writeable<Extension<{}>> = {
             onCreate: (instanceFactory, combinedMethods) => {
                 for (let ext of exts) {
-                    let extMethods = ext.onCreate(instanceFactory, combinedMethods)
-                    Object.assign(combinedMethods, extMethods)
+                    if (ext.onCreate) {
+                        let extMethods = ext.onCreate(instanceFactory, combinedMethods)
+                        Object.assign(combinedMethods, extMethods)
+                    }
                 }
                 return combinedMethods
             }
@@ -1152,7 +1154,7 @@ class Store implements Subscribable {
         }
         if (this._extension === undefined) {
             this._extension = extensionFactory?.();
-            this._extensionMethods = this._extension?.onCreate(() => this._stateMethods.self(), {})
+            this._extensionMethods = this._extension?.onCreate?.(() => this._stateMethods.self(), {})
             this._extension?.onInit?.(this._stateMethods.self()) // this is invoked with all extension methods activated
         }
     }
