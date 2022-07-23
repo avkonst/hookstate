@@ -426,9 +426,12 @@ export interface Extension<E extends {}> {
         state: () => State<StateValueAtRoot, {}>,
         dependencies: Record<string, (i: State<StateValueAtPath, {}>) => any>
     ) => {
-        readonly [K in keyof Required<E>]: (state: State<StateValueAtPath, {}>) => E[K];
-    },
-    readonly onSet?: (state: State<StateValueAtRoot, {}>, descriptor: SetActionDescriptor) => void,
+            readonly [K in keyof Required<E>]: (state: State<StateValueAtPath, {}>) => E[K];
+        },
+    readonly onInit?: (state: State<StateValueAtRoot, {}>) => void,
+    readonly onPreset?: (state: State<StateValueAtPath, {}>, value: StateValueAtPath) => void,
+    readonly onPremerge?: (state: State<StateValueAtPath, {}>, value: StateValueAtPath) => void,
+    readonly onSet?: (state: State<StateValueAtPath, {}>, descriptor: SetActionDescriptor) => void,
     readonly onDestroy?: (state: State<StateValueAtRoot, {}>) => void,
 };
 
@@ -470,9 +473,9 @@ export function createState<S>(
     return createHookstate(initial) as State<S, {}> & StateMethodsDestroy
 }
 
-export function createHookstate<S, E>(
+export function createHookstate<S, E = {}>(
     initial: SetInitialStateAction<S>,
-    extension?: () => Extension<E>
+    extension?: (_?: __State<S, {}>) => Extension<E>
 ): State<S, E> {
     const store = createStore(initial);
     store.activate(extension)
@@ -562,41 +565,75 @@ export function useState<S>(
 
 // TODO document
 export function extend<
+    S,
     E1 extends {} = {},
     E2 extends {} = {},
     E3 extends {} = {},
     E4 extends {} = {},
     E5 extends {} = {}
->(extensions: [
-    Extension<E1>, Extension<E2>?, Extension<E3>?, Extension<E4>?, Extension<E5>?
-]): Extension<E5 & E4 & E3 & E2 & E1> {
-    let exts = extensions.filter(i => i);
-    let onSetCbs = exts.map(i => i!.onSet).filter(i => i)
-    let onDestroyCbs = exts.map(i => i!.onDestroy).filter(i => i)
-    let result: Writeable<Extension<{}>> = {
-        onCreate: (instanceFactory, combinedMethods) => {
-            for (let ext of exts) {
-                let extMethods = ext!.onCreate(instanceFactory, combinedMethods)
-                Object.assign(combinedMethods, extMethods)
-            }
-            return combinedMethods
-        }
-    }
-    if (onSetCbs.length > 0) {
-        result.onSet = (s, d) => {
-            for (let cb of onSetCbs) {
-                cb!(s, d);
-            }
-        }
-    }
-    if (onDestroyCbs.length > 0) {
-        result.onDestroy = (s) => {
-            for (let cb of onDestroyCbs) {
-                cb!(s);
+>(
+    e1?: (typemarker?: __State<S, {}>) => Extension<E1>,
+    e2?: (typemarker?: __State<S, E1>) => Extension<E2>,
+    e3?: (typemarker?: __State<S, E2 & E1>) => Extension<E3>,
+    e4?: (typemarker?: __State<S, E3 & E2 & E1>) => Extension<E4>,
+    e5?: (typemarker?: __State<S, E4 & E3 & E2 & E1>) => Extension<E5>
+): (_?: __State<S, {}>) => Extension<E5 & E4 & E3 & E2 & E1> {
+    function extended(extensions: (() => Extension<{}>)[]) {
+        let exts = extensions.map(i => i());
+        let onInitCbs = exts.map(i => i.onInit).filter(i => i)
+        let onPremergeCbs = exts.map(i => i.onPremerge).filter(i => i)
+        let onPresetCbs = exts.map(i => i.onPreset).filter(i => i)
+        let onSetCbs = exts.map(i => i.onSet).filter(i => i)
+        let onDestroyCbs = exts.map(i => i.onDestroy).filter(i => i)
+        let result: Writeable<Extension<{}>> = {
+            onCreate: (instanceFactory, combinedMethods) => {
+                for (let ext of exts) {
+                    let extMethods = ext.onCreate(instanceFactory, combinedMethods)
+                    Object.assign(combinedMethods, extMethods)
+                }
+                return combinedMethods
             }
         }
+        if (onInitCbs.length > 0) {
+            result.onInit = (s) => {
+                for (let cb of onInitCbs) {
+                    cb!(s);
+                }
+            }
+        }
+        if (onPremergeCbs.length > 0) {
+            result.onPremerge = (s, d) => {
+                for (let cb of onPremergeCbs) {
+                    cb!(s, d);
+                }
+            }
+        }
+        if (onPresetCbs.length > 0) {
+            result.onPreset = (s, d) => {
+                for (let cb of onPresetCbs) {
+                    cb!(s, d);
+                }
+            }
+        }
+        if (onSetCbs.length > 0) {
+            result.onSet = (s, d) => {
+                for (let cb of onSetCbs) {
+                    cb!(s, d);
+                }
+            }
+        }
+        if (onDestroyCbs.length > 0) {
+            result.onDestroy = (s) => {
+                for (let cb of onDestroyCbs) {
+                    cb!(s);
+                }
+            }
+        }
+        return result as Extension<E1 & E2 & E3 & E4 & E5>
     }
-    return result as Extension<E1 & E2 & E3 & E4 & E5>
+    return () => extended((
+        [e1, e2, e3, e4, e5] as (() => Extension<{}>)[]
+    ).filter(i => i!))
 }
 
 /**
@@ -607,7 +644,7 @@ export function extend<
  */
 export function useHookstate<S, E>(
     source: Promise<S>,
-    extension?: () => Extension<E>
+    extension?: (_?: __State<S, {}>) => Extension<E>
 ): never;
 // TODO block this on type system level
 export function useHookstate<S, E, E2>(
@@ -625,13 +662,13 @@ export function useHookstate<S, E>(
  * Alias to [useState](#usestate) which provides a workaround
  * for [React 20613 bug](https://github.com/facebook/react/issues/20613)
  */
-export function useHookstate<S, E>(
+export function useHookstate<S, E = {}>(
     source: SetInitialStateAction<S>,
-    extension?: () => Extension<E>
+    extension?: (_?: __State<S, {}>) => Extension<E>
 ): State<S, E>;
 export function useHookstate<S, E>(
     source: SetInitialStateAction<S> | State<S, E>,
-    extension?: () => Extension<E>
+    extension?: (_?: __State<S, {}>) => Extension<E>
 ): State<S, E> {
     const parentMethods = Object(source) === source ?
         source[self] as StateMethodsImpl<S, E> | undefined :
@@ -865,7 +902,7 @@ export function StateFragment<S, E>(
 export function StateFragment<S, E>(
     props: {
         state: SetInitialStateAction<S>,
-        extension?: () => Extension<E>,
+        extension?: (_?: __State<S, {}>) => Extension<E>,
         children: (state: State<S, E>) => React.ReactElement,
         suspend?: boolean,
     }
@@ -873,7 +910,7 @@ export function StateFragment<S, E>(
 export function StateFragment<S, E>(
     props: {
         state: State<S, E> | SetInitialStateAction<S>,
-        extension?: () => Extension<E>,
+        extension?: (_?: __State<S, {}>) => Extension<E>,
         children: (state: State<S, E>) => React.ReactElement,
         suspend?: boolean, // TODO document
     }
@@ -1116,6 +1153,7 @@ class Store implements Subscribable {
         if (this._extension === undefined) {
             this._extension = extensionFactory?.();
             this._extensionMethods = this._extension?.onCreate(() => this._stateMethods.self(), {})
+            this._extension?.onInit?.(this._stateMethods.self()) // this is invoked with all extension methods activated
         }
     }
 
@@ -1285,6 +1323,14 @@ class Store implements Subscribable {
         return {
             path
         };
+    }
+
+    preset(state: State<StateValueAtPath, {}>, value: StateValueAtPath) {
+        this._extension?.onPreset?.(state, value)
+    }
+
+    premerge(state: State<StateValueAtPath, {}>, value: StateValueAtPath) {
+        this._extension?.onPremerge?.(state, value)
     }
 
     update(ad: SetActionDescriptor) {
@@ -1477,6 +1523,7 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
         return this.get()
     }
 
+    // TODO remove when attach is removed
     setUntracked(newValue: SetStateAction<S>, mergeValue?: Partial<StateValueAtPath>): Path[] {
         let r = this.setUntrackedV4(newValue, mergeValue);
         if (r) {
@@ -1485,10 +1532,13 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
         return []
     }
 
+    // TODO remove mergeValue when attach is removed
     setUntrackedV4(newValue: SetStateAction<S>, mergeValue?: Partial<StateValueAtPath>): SetActionDescriptor | null {
         if (typeof newValue === 'function') {
             newValue = (newValue as ((prevValue: S) => S))(this.getUntracked());
         }
+        this.store.preset(this.self() as unknown as State<StateValueAtPath, {}>, newValue)
+
         if (Object(newValue) === newValue && newValue[SelfMethodsID]) {
             // TODO check on read instead as it might escape as nested on set anyway
             throw new StateInvalidUsageError(this.path, ErrorId.SetStateToValueFromState)
@@ -1521,6 +1571,7 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
         if (typeof sourceValue === 'function') {
             sourceValue = (sourceValue as Function)(currentValue);
         }
+        this.store.premerge(this.self() as unknown as State<StateValueAtPath, {}>, sourceValue)
 
         if (Array.isArray(currentValue)) {
             if (Array.isArray(sourceValue)) {
