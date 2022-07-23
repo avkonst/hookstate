@@ -154,8 +154,8 @@ interface ServiceMessage {
 type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 
 export interface Broadcasted {
-    broadcastTopic: string,
-    broadcastLeader: boolean | undefined,
+    readonly broadcastTopic: string,
+    readonly broadcastLeader: boolean | undefined,
 }
 
 export function broadcasted<S, E>(
