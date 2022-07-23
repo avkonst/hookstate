@@ -296,6 +296,13 @@ export function broadcasted<S, E>(
                         submitValueFromState()
                     }
                 })
+                
+                if (isLeader) {
+                    // turned into a leader synchrnously,
+                    // broadcast the value, as it was skipped in the onLeader callback
+                    // because the broadcast ref was not initialized yet
+                    submitValueFromState()
+                }
 
                 requestValue()
             },
