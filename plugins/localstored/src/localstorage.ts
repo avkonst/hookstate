@@ -3,7 +3,7 @@ import { Extension, none, State, StateValueAtPath, StateValueAtRoot, __State } f
 export interface LocalStored { }
 
 export function localstored<S, E>(options?: {
-    localStorageKey?: string,
+    key?: string,
     initializer?: () => Promise<S>
 }): (typemarker?: __State<S, E>) => Extension<LocalStored> {
     return () => {
@@ -17,13 +17,13 @@ export function localstored<S, E>(options?: {
                 return {}
             },
             onInit: (state, extensionMethods) => {
-                if (options?.localStorageKey === undefined) {
+                if (options?.key === undefined) {
                     if (extensionMethods['identifier'] === undefined) {
                         throw Error('State is missing Identifiable extension')
                     }
                     key = extensionMethods['identifier'](state)
                 } else {
-                    key = options.localStorageKey
+                    key = options.key
                 }
                 if (extensionMethods['serialize'] !== undefined) {
                     serializer = extensionMethods['serialize']
