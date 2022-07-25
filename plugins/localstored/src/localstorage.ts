@@ -1,4 +1,4 @@
-import { Extension, none, State, StateValueAtPath, StateValueAtRoot, __State } from '@hookstate/core';
+import { Extension, State, StateValueAtPath, StateValueAtRoot, __State } from '@hookstate/core';
 
 export interface LocalStored { }
 
