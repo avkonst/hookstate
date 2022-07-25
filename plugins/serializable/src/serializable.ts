@@ -1,4 +1,4 @@
-import { Extension, StateValueAtPath } from '@hookstate/core';
+import { Extension, Path, StateValue, StateValueAtPath } from '@hookstate/core';
 
 export interface Serializable {
     serialize: () => string,
@@ -6,13 +6,13 @@ export interface Serializable {
 }
 
 export function serializable(
-    serialize: (v: StateValueAtPath) => string,
-    deserialize: (v: string) => StateValueAtPath
+    serialize: (path: Path, v: StateValueAtPath) => string,
+    deserialize: (path: Path, v: string) => void
 ): () => Extension<Serializable> {
     return () => ({
         onCreate: () => ({
-            serialize: s => () => serialize(s.get({ noproxy: true })),
-            deserialize: s => v => s.set(deserialize(v)),
+            serialize: s => () => serialize(s.path, s.get({ noproxy: true })),
+            deserialize: s => (v) => s.set(deserialize(s.path, v)),
         })
     })
 }
