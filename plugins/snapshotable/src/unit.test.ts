@@ -1,4 +1,6 @@
-import { useHookstate, extend, clonable, comparable } from '@hookstate/core';
+import { useHookstate, extend } from '@hookstate/core';
+import { clonable } from '@hookstate/clonable';
+import { comparable } from '@hookstate/comparable';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import React from 'react';
@@ -8,11 +10,11 @@ test('snapshotable: basic test', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        let result = useHookstate({ a: [0, 1], b: [2, 3] }, () => extend([
+        let result = useHookstate({ a: [0, 1], b: [2, 3] }, extend(
             clonable(v => JSON.parse(JSON.stringify(v))),
             comparable((v1, v2) => JSON.stringify(v1).localeCompare(JSON.stringify(v2))),
             snapshotable<'1' | '2'>()
-        ]))
+        ))
         result.snapshot(undefined, 'insert') // initial snapshot
         return result;
     });

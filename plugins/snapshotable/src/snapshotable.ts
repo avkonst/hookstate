@@ -62,8 +62,10 @@ export function snapshotable<K extends string = string>(): () => Extension<Snaps
                 rollback: (s) => (key) => {
                     let k: K | '___default' = key || '___default';
                     if (snapshots.has(k)) {
-                        const v = getByPath(snapshots.get(k), s.path);
-                        s.set(v)
+                        let v = getByPath(snapshots.get(k), s.path);
+                        s.set(v) // set for cloning
+                        v = (s as unknown as State<StateValueAtPath, { clone: () => StateValueAtRoot }>).clone()
+                        s.set(v) // set cloned, otherwise the state will keep mutation the object from snapshot
                         return v
                     }
                     return undefined
