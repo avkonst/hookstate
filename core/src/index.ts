@@ -2352,31 +2352,31 @@ function memoIntercept<P extends object>(
 }
 
 function interceptReactHooks() {
-    if (!useEffectOrigin) {
+    if (!useEffectOrigin && React['useEffect']) {
         useEffectOrigin = React['useEffect'];
         React['useEffect'] = useEffectIntercept;
     }
-    if (!useLayoutEffectOrigin) {
+    if (!useLayoutEffectOrigin && React['useLayoutEffect']) {
         useLayoutEffectOrigin = React['useLayoutEffect'];
         React['useLayoutEffect'] = useLayoutEffectIntercept;
     }
-    if (!useInsertionEffectOrigin) {
+    if (!useInsertionEffectOrigin && React['useInsertionEffect']) {
         useInsertionEffectOrigin = React['useInsertionEffect'];
         React['useInsertionEffect'] = useInsertionEffectIntercept;
     }
-    if (!useImperativeHandleOrigin) {
+    if (!useImperativeHandleOrigin && React['useImperativeHandle']) {
         useImperativeHandleOrigin = React['useImperativeHandle'];
         React['useImperativeHandle'] = useImperativeHandleIntercept;
     }
-    if (!useMemoOrigin) {
+    if (!useMemoOrigin && React['useMemo']) {
         useMemoOrigin = React['useMemo'];
         React['useMemo'] = useMemoIntercept;
     }
-    if (!useCallbackOrigin) {
+    if (!useCallbackOrigin && React['useCallback']) {
         useCallbackOrigin = React['useCallback'];
         React['useCallback'] = useCallbackIntercept;
     }
-    if (!memoOrigin) {
+    if (!memoOrigin && React['memo']) {
         memoOrigin = React['memo'];
         React['memo'] = memoIntercept;
     }
