@@ -1,6 +1,6 @@
 {
     "name": "@hookstate/comparable",
-    "version": "4.0.0-rc1",
+    "version": "4.0.0-rc2",
     "description": "Plugin for @hookstate/core to enable state values comparison.",
     "license": "MIT",
     "author": {
