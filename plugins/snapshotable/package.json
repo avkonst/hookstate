@@ -1,6 +1,6 @@
 {
     "name": "@hookstate/snapshotable",
-    "version": "4.0.0-rc3",
+    "version": "4.0.0-rc4",
     "description": "Extension for @hookstate/core to enable state snapshoting and reverting to the snapshoted / previous values.",
     "license": "MIT",
     "author": {
