@@ -1,4 +1,4 @@
-import { useHookstate, extend } from '@hookstate/core';
+import { useHookstate, extend, createHookstate, State } from '@hookstate/core';
 import { clonable } from '@hookstate/clonable';
 import { comparable } from '@hookstate/comparable';
 
@@ -122,3 +122,24 @@ test('snapshotable: basic test', async () => {
     expect(result.current.b[1].get()).toStrictEqual(3);
 
 });
+
+
+// document how to assign a state of a partial of T to a state of T
+type AType = {
+    f1?: string,
+}
+type BType = AType & {
+    f2?: number
+}
+let state = createHookstate<BType>({ f1: ' ' }, extend(
+    clonable(v => JSON.parse(JSON.stringify(v))),
+    comparable((v1, v2) => JSON.stringify(v1).localeCompare(JSON.stringify(v2))),
+    snapshotable<'1' | '2'>()
+))
+function fnn(p: State<AType>) {
+    let k = p.keys
+    p.nested('f2')
+}
+fnn(state) // this would be an error if fnn was not accepting state of Record
+
+let kk = ['a', 'b'] as Partial<('a' | 'b' | 'c')[]>
