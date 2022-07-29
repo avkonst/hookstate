@@ -19,6 +19,7 @@ test('primitive: should rerender used on promise resolve', async () => {
     });
     expect(renderTimes).toStrictEqual(2);
     expect(result.current.promised).toStrictEqual(true);
+    expect(result.current.promise?.then(i => i)).toBeTruthy();
     expect(() => result.current.keys)
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
     expect(() => result.current.get())
@@ -51,6 +52,8 @@ test('primitive: should rerender used on promise resolve immediately', async () 
     });
     expect(renderTimes).toStrictEqual(2);
     expect(result.current.promised).toStrictEqual(true);
+    let p = result.current.promise?.then(i => i.value)
+    expect(p).toBeTruthy();
     expect(() => result.current.keys)
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
     expect(() => result.current.get())
@@ -66,6 +69,7 @@ test('primitive: should rerender used on promise resolve immediately', async () 
     expect(result.current.promised).toStrictEqual(false);
     expect(result.current.error).toEqual(undefined);
     expect(result.current.get()).toEqual(100);
+    expect(await p).toEqual(100)
 });
 
 test('primitive: should rerender used on promise resolve immediately global', async () => {
@@ -140,6 +144,8 @@ test('array: should rerender used on promise resolve (global)', async () => {
     });
     expect(renderTimes).toStrictEqual(2);
     expect(result.current.promised).toStrictEqual(true);
+    let p = result.current.promise?.then(i => i.value)
+    expect(p).toBeTruthy();
     expect(() => result.current.keys)
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
     expect(() => result.current.get())
@@ -154,6 +160,8 @@ test('array: should rerender used on promise resolve (global)', async () => {
     expect(renderTimes).toStrictEqual(3);
     expect(result.current.promised).toStrictEqual(false);
     expect(result.current.get()).toEqual([100]);
+    
+    expect(await p).toEqual([100])
 });
 
 test('array: should rerender used on promise resolve (global promise)', async () => {
@@ -185,6 +193,9 @@ test('primitive: should rerender used on promise resolve manual', async () => {
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.promised).toStrictEqual(true);
+    let p = result.current.promise?.then(i => i.value)
+    expect(p).toBeTruthy();
+    
     expect(() => result.current.value)
         .toThrow('Error: HOOKSTATE-103 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-103');
     expect(() => result.current.get())
@@ -198,6 +209,8 @@ test('primitive: should rerender used on promise resolve manual', async () => {
     expect(result.current.promised).toStrictEqual(false);
     expect(result.current.value).toEqual(100);
     expect(result.current.get()).toEqual(100);
+    
+    expect(await p).toEqual(100)
 });
 
 test('primitive: should rerender used on promise resolve second', async () => {
