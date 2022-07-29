@@ -1,6 +1,6 @@
-import { createState, useHookstate } from '@hookstate/core';
+import { createHookstate, useHookstate } from '@hookstate/core';
 
-const settingsState = createState({
+const settingsState = createHookstate({
     isEditableInline: true,
     isScopedUpdateEnabled: true,
     isHighlightUpdatesEnabled: true
@@ -35,5 +35,5 @@ export function useSettingsState() {
         toggleHighlightUpdate() {
             state.isHighlightUpdatesEnabled.set(p => !p)
         }
-    })   
+    })
 }

@@ -1,4 +1,4 @@
-import { createState, Downgraded, useState } from '../';
+import { createHookstate, useState } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import { useEffect } from 'react';
@@ -158,8 +158,8 @@ test('object: should rerender only value used', async () => {
 
 test('primitive: should rerender stable (global)', async () => {
     let renderTimes = 0
-    let gs0 = createState(0)
-    let gs1 = createState(1)
+    let gs0 = createHookstate(0)
+    let gs1 = createHookstate(1)
     const { result } = renderHook(() => {
         renderTimes += 1;
         return [useState(gs0), useState(gs1)]
@@ -182,8 +182,8 @@ test('primitive: should rerender stable (global)', async () => {
 
 test('object: should rerender stable (global)', async () => {
     let renderTimes = 0
-    let gs0 = createState({a: 0, b: 0})
-    let gs1 = createState({a: 1, b: 1})
+    let gs0 = createHookstate({a: 0, b: 0})
+    let gs1 = createHookstate({a: 1, b: 1})
     const { result } = renderHook(() => {
         renderTimes += 1;
         return [useState(gs0), useState(gs1)]
@@ -234,7 +234,7 @@ test('object: should rerender stable (global)', async () => {
 
 test('object: should rerender stable with deep mutation (global)', async () => {
     let renderTimes = 0
-    let gs0 = createState({a: {b: {c: 0}, d: {}}})
+    let gs0 = createHookstate({a: {b: {c: 0}, d: {}}})
     const { result } = renderHook(() => {
         renderTimes += 1;
         return useState(gs0)
@@ -279,8 +279,8 @@ test('object: should rerender stable with deep mutation (global)', async () => {
 
 test('object: should rerender stable nested update (global)', async () => {
     let renderTimes = 0
-    let gs0 = createState({a: 0, b: 0})
-    let gs1 = createState({a: 1, b: 1})
+    let gs0 = createHookstate({a: 0, b: 0})
+    let gs1 = createHookstate({a: 1, b: 1})
     const { result } = renderHook(() => {
         renderTimes += 1;
         return [useState(gs0), useState(gs1)]
@@ -758,7 +758,7 @@ test('object: should rerender if 2 states but 1 used in useEffect', async () => 
 });
 
 test('object: should give stable reference for global state', async () => {
-    const state = createState({hello: ["hi", "world"]});
+    const state = createHookstate({hello: ["hi", "world"]});
     
     let stateHello1 = state.hello
     let stateHelloValue1 = state.hello.value
@@ -802,7 +802,7 @@ test('object: should give stable reference for global state', async () => {
 });
 
 test('object: should give stable reference for global state (set twice)', async () => {
-    const state = createState({hello: ["hi", "world"]});
+    const state = createHookstate({hello: ["hi", "world"]});
     
     let stateHello1 = state.hello
     let stateHelloValue1 = state.hello.value

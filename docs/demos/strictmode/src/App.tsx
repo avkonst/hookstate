@@ -1,4 +1,4 @@
-import { createState, State, useHookstate } from '@hookstate/core';
+import { createHookstate, State, useHookstate } from '@hookstate/core';
 import { useEffect } from 'react';
 import './App.css';
 
@@ -16,7 +16,7 @@ interface IAppState {
   items: Record<string, IItem>;
 }
 
-const appState = createState<IAppState>({
+const appState = createHookstate<IAppState>({
   items: {
     initial: {
       id: 'initial',

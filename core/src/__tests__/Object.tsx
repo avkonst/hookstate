@@ -1,4 +1,4 @@
-import { useState, createState, none } from '../';
+import { useState, createHookstate, none } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 
@@ -61,7 +61,7 @@ test('object: should not crash on valueOf', async () => {
 test('object: should rerender used null', async () => {
     let renderTimes = 0
     
-    const state = createState<{ field: string } | null>(null)
+    const state = createHookstate<{ field: string } | null>(null)
     const { result } = renderHook(() => {
         renderTimes += 1;
         return useState(state)
@@ -80,7 +80,7 @@ test('object: should rerender used null', async () => {
 test('object: should rerender used property-hiphen', async () => {
     let renderTimes = 0
     
-    const state = createState<{ 'hiphen-property': string }>({ 'hiphen-property': 'value' })
+    const state = createHookstate<{ 'hiphen-property': string }>({ 'hiphen-property': 'value' })
     const { result } = renderHook(() => {
         renderTimes += 1;
         return useState(state)
@@ -140,7 +140,7 @@ test('object: should rerender used via nested', async () => {
 
 test('object: should rerender used via nested global', async () => {
     let renderTimes = 0
-    let state = createState({
+    let state = createHookstate({
         field1: 0,
         field2: 'str'
     });
@@ -379,7 +379,7 @@ test('object: should delete property when set to none', async () => {
 });
 
 test('object: should auto save latest state for unmounted', async () => {
-    const state = createState({
+    const state = createHookstate({
         field1: 0,
         field2: 'str'
     })

@@ -1,4 +1,4 @@
-import { useState, createState, State, StateMethods } from '../';
+import { useState, createHookstate, State, StateMethods } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import React from 'react';
@@ -118,7 +118,7 @@ test('primitive: should rerender used (undefined)', async () => {
 
 test('primitive: should rerender used (global null)', async () => {
     let renderTimes = 0
-    const state = createState<number | null>(null)
+    const state = createHookstate<number | null>(null)
     const { result } = renderHook(() => {
         renderTimes += 1;
         return useState(state)
@@ -135,7 +135,7 @@ test('primitive: should rerender used (global null)', async () => {
 
 test('primitive: should rerender used (global undefined)', async () => {
     let renderTimes = 0
-    const state = createState<number | undefined>(undefined)
+    const state = createHookstate<number | undefined>(undefined)
     const { result } = renderHook(() => {
         renderTimes += 1;
         return useState(state)
@@ -200,7 +200,7 @@ test('primitive: should not rerender unused', async () => {
 });
 
 test('primitive: global state', async () => {
-    const stateInf = createState(0)
+    const stateInf = createHookstate(0)
     
     let renderTimes = 0
     const { result } = renderHook(() => {
@@ -219,7 +219,7 @@ test('primitive: global state', async () => {
 test('primitive: global state created locally', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
-        const state = createState(0)
+        const state = createHookstate(0)
         renderTimes += 1;
         return useState(state)
     });

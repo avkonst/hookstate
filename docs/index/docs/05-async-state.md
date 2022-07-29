@@ -6,7 +6,7 @@ sidebar_label: Asynchronous state
 
 import { PreviewSample } from '../src/PreviewSample'
 
-The root state can be set to a promise value, either as an initial value for [createState](typedoc-hookstate-core#createstate)/[useState](typedoc-hookstate-core#usestate) or as a subsequent value via [StateMethods.set](typedoc-hookstate-core#set) method.
+The root state can be set to a promise value, either as an initial value for [createHookstate](typedoc-hookstate-core#createhookstate)/[useState](typedoc-hookstate-core#usestate) or as a subsequent value via [StateMethods.set](typedoc-hookstate-core#set) method.
 
 ## Checking if state is loading
 
@@ -20,7 +20,7 @@ To check, if underlying promise is rejected, use [StateMethods.error](typedoc-ho
 It is also possible to postpone an action or error handling until a promise is settled, which is frequently useful with global states initialised to a promise. To enable this behavior, `action` callback of the [StateMethods.batch](typedoc-hookstate-core#batch) method should return the special symbol [postpone](typedoc-hookstate-core#const-postpone):
 
 ```tsx
-const state = createState(new Promise(...));
+const state = createHookstate(new Promise(...));
 state.batch((state) => {
     if (state.promised) {
         return postpone

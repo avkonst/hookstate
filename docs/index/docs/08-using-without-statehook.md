@@ -18,7 +18,7 @@ And the following components are identical in behavior:
 Functional component:
 
 ```tsx
-const globalState = createState('');
+const globalState = createHookstate('');
 
 const MyComponent = () => {
     const state = useState(globalState);
@@ -30,7 +30,7 @@ const MyComponent = () => {
 Functional component without a hook:
 
 ```tsx
-const globalState = createState('');
+const globalState = createHookstate('');
 
 const MyComponent = () => <StateFragment state={globalState}>{
     state => <input value={state.value}
@@ -41,7 +41,7 @@ const MyComponent = () => <StateFragment state={globalState}>{
 Class-based component:
 
 ```tsx
-const globalState = createState('');
+const globalState = createHookstate('');
 
 class MyComponent extends React.Component {
     render() {

@@ -916,7 +916,7 @@ has got more features.
 
 When a state is used by only one component, and maybe it's children,
 it is recommended to use *local* state instead of *global*,
-which is created by [createState](#createstate).
+which is created by [createHookstate](#createhookstate).
 
 *Local* (per component) state is created when a component is mounted
 and automatically destroyed when a component is unmounted.

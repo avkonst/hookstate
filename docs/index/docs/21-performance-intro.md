@@ -20,7 +20,7 @@ Legend:
 
 State:
 ```tsx
-const globalState = createState({ A: 0, B: 0 })
+const globalState = createHookstate({ A: 0, B: 0 })
 ```
 
 Actions:

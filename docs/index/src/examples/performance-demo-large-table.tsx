@@ -16,7 +16,7 @@ const MatrixView = (props: {
     const totalColumns = props.totalColumns;
     // we use local per component state,
     // but the same result would be for the global state
-    // if it was created by createState
+    // if it was created by createHookstate
     const matrixState = useState(
         Array.from(Array(totalRows).keys())
             .map(i => Array.from(Array(totalColumns).keys()).map(j => 0)));

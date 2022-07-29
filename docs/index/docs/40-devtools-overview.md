@@ -42,7 +42,7 @@ In order to label a state use the following:
 ```tsx
 import { DevTools } from '@hookstate/core'
 ...
-state = createState(...)
+state = createHookstate(...)
 DevTools(state).label('my-state')
 // Or:
 state = useState(...)

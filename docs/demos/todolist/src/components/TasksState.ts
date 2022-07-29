@@ -1,4 +1,4 @@
-import { createState, useHookstate } from '@hookstate/core';
+import { createHookstate, useHookstate } from '@hookstate/core';
 
 export interface Task {
     id: string;
@@ -6,7 +6,7 @@ export interface Task {
     done: boolean;
 }
 
-const state = createState<Task[]>(new Promise((resolve, reject) => {
+const state = createHookstate<Task[]>(new Promise((resolve, reject) => {
     // Emulate asynchronous loading of the initial state data.
     // The real application would run some fetch request,
     // to get the initial data from a server.

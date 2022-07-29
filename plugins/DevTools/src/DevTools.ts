@@ -1,5 +1,5 @@
 import {
-    createState,
+    createHookstate,
     useState,
     StateValueAtRoot,
     StateValueAtPath,
@@ -39,50 +39,50 @@ function DevToolsInitializeInternal() {
         !('__REDUX_DEVTOOLS_EXTENSION__' in window)) {
         return;
     }
-    
+
     const IsDevelopment = !process.env.NODE_ENV || process.env.NODE_ENV === 'development';
     const PluginIdMonitored = Symbol('DevToolsMonitored')
     const PluginIdPersistedSettings = Symbol('PersistedSettings')
-    
+
     let MonitoredStatesLogger = (_: string) => { /* */ };
     const MonitoredStatesLabel = '@hookstate/devtools: settings';
-    SettingsState = createState(() => {
-            // localStorage is not available under react native
-            const p = typeof window !== 'undefined' && window.localStorage &&
-                // read persisted if we can
-                window.localStorage.getItem(MonitoredStatesLabel)
-            if (!p) {
-                return {
-                    monitored: [MonitoredStatesLabel],
-                    callstacksDepth: IsDevelopment ? 30 : 0
+    SettingsState = createHookstate(() => {
+        // localStorage is not available under react native
+        const p = typeof window !== 'undefined' && window.localStorage &&
+            // read persisted if we can
+            window.localStorage.getItem(MonitoredStatesLabel)
+        if (!p) {
+            return {
+                monitored: [MonitoredStatesLabel],
+                callstacksDepth: IsDevelopment ? 30 : 0
+            }
+        }
+        return JSON.parse(p) as Settings
+    }).attach(() => ({
+        id: PluginIdPersistedSettings,
+        init: () => ({
+            onSet: p => {
+                let v = p.state;
+                // verify what is coming, because it can be anything from devtools
+                if (!v || !v.monitored || !Array.isArray(v.monitored)) {
+                    v = v || {}
+                    v.monitored = [MonitoredStatesLabel]
+                } else if (!v.monitored.includes(MonitoredStatesLabel)) {
+                    v.monitored.push(MonitoredStatesLabel)
+                }
+                const depth = Number(v.callstacksDepth);
+                v.callstacksDepth = Number.isInteger(depth) && depth >= 0 ? depth : IsDevelopment ? 30 : 0;
+                if (typeof window !== 'undefined' && window.localStorage) {
+                    // persist if we can
+                    window.localStorage.setItem(MonitoredStatesLabel, JSON.stringify(v))
+                }
+                if (v !== p.state) {
+                    SettingsState.set(v)
                 }
             }
-            return JSON.parse(p) as Settings
-        }).attach(() => ({
-            id: PluginIdPersistedSettings,
-            init: () => ({
-                onSet: p => {
-                    let v = p.state;
-                    // verify what is coming, because it can be anything from devtools
-                    if (!v || !v.monitored || !Array.isArray(v.monitored)) {
-                        v = v || {}
-                        v.monitored = [MonitoredStatesLabel]
-                    } else if (!v.monitored.includes(MonitoredStatesLabel)) {
-                        v.monitored.push(MonitoredStatesLabel)
-                    }
-                    const depth = Number(v.callstacksDepth);
-                    v.callstacksDepth = Number.isInteger(depth) && depth >= 0 ? depth : IsDevelopment ? 30 : 0;
-                    if (typeof window !== 'undefined' && window.localStorage) {
-                        // persist if we can
-                        window.localStorage.setItem(MonitoredStatesLabel, JSON.stringify(v))
-                    }
-                    if (v !== p.state) {
-                        SettingsState.set(v)
-                    }
-                }
-            })
-        }));
-    
+        })
+    }));
+
     let lastUnlabelledId = 0;
     function getLabel(isGlobal?: boolean) {
         function defaultLabel() {
@@ -94,7 +94,7 @@ function DevToolsInitializeInternal() {
             // so return more readable default labels
             return defaultLabel()
         }
-        
+
         let dummyError: { stack?: string } = {}
         if ('stackTraceLimit' in Error && 'captureStackTrace' in Error) {
             const oldLimit = Error.stackTraceLimit
@@ -114,7 +114,7 @@ function DevToolsInitializeInternal() {
             .replace(/\s*[(].*/, '')
             .replace(/\s*at\s*/, '')
     }
-    
+
     function createReduxDevToolsLogger(
         lnk: State<StateValueAtRoot>, assignedId: string, onBreakpoint: () => void) {
         let fromRemote = false;
@@ -191,7 +191,7 @@ function DevToolsInitializeInternal() {
                 }
             })
         )
-    
+
         // tslint:disable-next-line: no-any
         const dispatch = (action: any, alt?: () => void) => {
             if (!fromRemote) {
@@ -207,11 +207,11 @@ function DevToolsInitializeInternal() {
         }
         return dispatch;
     }
-    
+
     function isMonitored(assignedId: string, globalOrLabeled?: boolean) {
         return SettingsState.value.monitored.includes(assignedId) || globalOrLabeled
     }
-    
+
     function DevToolsInternal(isGlobal?: boolean): Plugin {
         return ({
             id: DevToolsID,
@@ -227,7 +227,7 @@ function DevToolsInitializeInternal() {
                 } else {
                     MonitoredStatesLogger(`CREATE '${assignedName}' (unmonitored)`)
                 }
-    
+
                 return {
                     // tslint:disable-next-line: no-any
                     log(str: string, data?: any) {
@@ -284,12 +284,12 @@ function DevToolsInitializeInternal() {
             }
         } as Plugin)
     }
-    
+
     SettingsState.attach(DevToolsInternal)
     DevTools(SettingsState).label(MonitoredStatesLabel)
     MonitoredStatesLogger = (str) => DevTools(SettingsState).log(str)
-    
+
     useState[DevToolsID] = DevToolsInternal
-    createState[DevToolsID] = () => DevToolsInternal(true)
+    createHookstate[DevToolsID] = () => DevToolsInternal(true)
 };
 DevToolsInitializeInternal() // attach on load
