@@ -70,7 +70,15 @@ test('snapshotable: basic test', async () => {
     expect(result.current.modified()).toStrictEqual(true)
     expect(result.current.unmodified()).toStrictEqual(false)
 
-    expect(result.current.b.snapshot('1')).toStrictEqual([2, 3]) // should take full object snapshot
+    expect(() => result.current.b.snapshot('1'))
+        .toThrow('Creating a new snapshot from a nested state is not allowed.')
+
+    result.current.snapshot('1')
+    act(() => {
+        result.current.b[0].set(-2);
+        expect(result.current.b.snapshot('1')).toStrictEqual([-2, 3]) // should take full object snapshot
+        result.current.b[0].set(2);
+    });
 
     act(() => {
         result.current.a[0].rollback();
@@ -105,11 +113,12 @@ test('snapshotable: basic test', async () => {
 
     act(() => {
         result.current.rollback();
+        result.current.b.rollback('1');
     });
     expect(renderTimes).toStrictEqual(5);
     expect(result.current.a[0].get()).toStrictEqual(0);
     expect(result.current.a[1].get()).toStrictEqual(1);
-    expect(result.current.b[0].get()).toStrictEqual(2);
+    expect(result.current.b[0].get()).toStrictEqual(-2);
     expect(result.current.b[1].get()).toStrictEqual(3);
 
     act(() => {
@@ -118,7 +127,7 @@ test('snapshotable: basic test', async () => {
     expect(renderTimes).toStrictEqual(5);
     expect(result.current.a[0].get()).toStrictEqual(0);
     expect(result.current.a[1].get()).toStrictEqual(1);
-    expect(result.current.b[0].get()).toStrictEqual(2);
+    expect(result.current.b[0].get()).toStrictEqual(-2);
     expect(result.current.b[1].get()).toStrictEqual(3);
 
 });

@@ -1,13 +1,13 @@
 import { StateValue, StateValueAtPath, Extension } from '@hookstate/core';
 
 export interface Clonable {
-    clone(): StateValue<this>
+    clone(options?: { stealth?: boolean }): StateValue<this>
 }
 
 export function clonable(snapshot: (v: StateValueAtPath) => StateValueAtPath): () => Extension<Clonable> {
     return () => ({
         onCreate: () => ({
-            clone: (s) => () => snapshot(s.get({ noproxy: true }))
+            clone: (s) => (o) => snapshot(s.get({ noproxy: true, stealth: o?.stealth }))
         })
     })
 }
