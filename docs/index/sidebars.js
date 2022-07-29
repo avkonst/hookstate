@@ -21,8 +21,7 @@ module.exports = {
             'using-without-statehook',
             // 'using-with-memo',
             // 'moving-from-redux-mobx',
-            'migrating-to-v3',
-            'migrating-to-v2'
+            'migrating-to-v4'
         ],
         Performance: [
             'performance-intro',

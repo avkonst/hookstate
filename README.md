@@ -39,6 +39,36 @@
   </a>
 </p>
 
-## Support
+## Preface
+
+Hookstate is a modern alternative to Redux, Mobx, Recoil, etc. It is simple to learn, easy to use, extensible, very flexible and capable to address all state management needs of large scalable applications. It has got impressive performance and predictable behavior.
 
 **Any questions? Just ask by raising a github ticket.**
+
+## Why Hookstate
+
+[hookstate.js.org](https://hookstate.js.org)
+
+## Migrating to version 4
+
+[hookstate.js.org/docs/migrating-to-v4](https://hookstate.js.org/docs/migrating-to-v4)
+
+## Documentation / Code samples
+
+[hookstate.js.org/docs/getting-started](https://hookstate.js.org/docs/getting-started)
+
+## Demo application
+
+[hookstate.js.org/demo-todolist](https://hookstate.js.org/demo-todolist)
+
+## Development tools
+
+[hookstate.js.org/docs/devtools](https://hookstate.js.org/docs/devtools)
+
+## Plugins / Extensions
+
+[hookstate.js.org/docs/extensions-overview](https://hookstate.js.org/docs/extensions-overview)
+
+## API reference
+
+[hookstate.js.org/docs/typedoc-hookstate-core](https://hookstate.js.org/docs/typedoc-hookstate-core)
