@@ -63,7 +63,7 @@ export const none = Symbol('none') as StateValueAtPath;
 export type InferredStateKeysType<S> =
     S extends ReadonlyArray<infer _> ? ReadonlyArray<number> :
     S extends null ? undefined :
-    S extends object ? ReadonlyArray<keyof S> :
+    S extends object ? ReadonlyArray<string> :
     undefined;
 
 /**
