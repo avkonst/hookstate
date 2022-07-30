@@ -15,25 +15,3 @@ export function initializable<S, E>(initializer: (s: State<S, E>) => (s: State<S
         }
     })
 }
-
-// TODO document this sample
-// // creating reusable combo
-// let e = () => extend(
-//     clonable(v => v),
-//     clonable(v => v),
-//     // clonable(v => v),
-//     // clonable(v => v),
-//     initializable(s => {
-//         return ''
-//     })
-// )();
-// // double initialize
-// let a = createHookstate([1], extend(e, initializable(s => {
-//     s.initialized
-//     return ''
-// })))
-// a.initialized
-
-// let b = createHookstate([1], initializable(s => {
-//     return s.get()
-// }))
