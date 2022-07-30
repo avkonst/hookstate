@@ -1,6 +1,6 @@
 {
     "name": "@hookstate/localstored",
-    "version": "4.0.0-rc1",
+    "version": "4.0.0-rc3",
     "description": "Plugin for @hookstate/core to enable persistence of managed data states to browser's local storage.",
     "license": "MIT",
     "author": {
@@ -29,7 +29,7 @@
     },
     "dependencies": {},
     "peerDependencies": {
-        "@hookstate/core": "^4.0.0-rc13"
+        "@hookstate/core": "^4.0.0-rc17"
     },
     "devDependencies": {
         "@babel/core": "7.18.6",

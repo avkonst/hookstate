@@ -1,6 +1,6 @@
 {
   "name": "@hookstate/docs",
-  "version": "0.0.0",
+  "version": "4.0.0-rc2",
   "private": true,
   "scripts": {
     "start": "docusaurus start --no-open --host 0.0.0.0",
