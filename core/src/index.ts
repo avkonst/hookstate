@@ -921,11 +921,11 @@ export function StateFragment<S, E>(
     }
 ): React.ReactElement {
     const scoped = useHookstate(props.state as SetInitialStateAction<S>, props.extension);
-    return props.suspend && suspendHookstate(scoped) || props.children(scoped);
+    return props.suspend && suspend(scoped) || props.children(scoped);
 }
 
 // TODO document
-export function suspendHookstate<S, E>(state: State<S, E>) {
+export function suspend<S, E>(state: State<S, E>) {
     const p = state.promise;
     return p && React.createElement(React.lazy(() => p as Promise<any>));
 }
