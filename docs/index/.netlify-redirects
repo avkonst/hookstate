@@ -21,11 +21,11 @@ https://hookstate.netlify.com/* https://hookstate.js.org/:splat 301!
 /global-multiple-consumers-statefragment /docs/using-without-statehook
 /plugin-initial /docs/extensions-initial
 /plugin-initial-statefragment /docs/extensions-initial
-/plugin-touched /docs/extensions-touched
+/plugin-touched /docs/extensions
 /plugin-persistence /docs/extensions-persistence
 /docs/extensions-persistence /docs/extensions-localstored
 /plugin-validation /docs/extensions-validation
-/plugin-untracked /docs/performance-managed-rendering
+/plugin-untracked /docs/extensions
 
 # the application handles routes internally, including non-existing pages
 /* /index.html 200​

@@ -1,9 +1,17 @@
 import React, { useEffect } from 'react';
-import { useHookstate, State, Downgraded } from '@hookstate/core';
+import { useHookstate, State, Extension } from '@hookstate/core';
 
-const TableCell = (props: { cellState: State<number> }) => {
-    const state = useHookstate(props.cellState);
-    return <>{state.value.toString(16)}</>;
+const TableCell = (props: { cell: State<number> }) => {
+    const scopedState = useHookstate(props.cell);
+    return <>{scopedState.value.toString(16)}</>;
+}
+
+type StatsExtension = {
+    stats: {
+        totalSum: number;
+        totalCalls: number;
+        startTime: number;
+    };
 }
 
 const MatrixView = (props: {
@@ -12,14 +20,37 @@ const MatrixView = (props: {
     interval: number,
     callsPerInterval: number
 }) => {
-    const totalRows = props.totalRows;
-    const totalColumns = props.totalColumns;
-    // we use local per component state,
-    // but the same result would be for the global state
-    // if it was created by hookstate
-    const matrixState = useHookstate(
-        Array.from(Array(totalRows).keys())
-            .map(i => Array.from(Array(totalColumns).keys()).map(j => 0)));
+    const matrix = useHookstate(
+        () => Array.from(Array(props.totalRows).keys())
+            .map(i => Array.from(Array(props.totalColumns).keys()).map(j => 0)),
+        () => {
+            const stats = {
+                totalSum: 0,
+                totalCalls: 0,
+                startTime: (new Date()).getTime()
+            };
+            
+            let previous = 0;
+            return {
+                onCreate: () => ({
+                    stats: () => stats
+                }),
+                onPreset: (s) => {
+                    if (s.path.length === 2) {
+                        previous = s.get({ stealth: true });
+                    }
+                },
+                onSet: (s) => {
+                    if (s.path.length === 2) {
+                        // new value can be only number in this example
+                        // and path can contain only 2 elements: row and column indexes
+                        stats.totalSum += s.value - previous;
+                    }
+                    stats.totalCalls += 1;
+                }
+            } as Extension<StatsExtension>
+        }
+    );
     // schedule interval updates
     useEffect(() => {
         const t = setInterval(() => {
@@ -29,17 +60,17 @@ const MatrixView = (props: {
                 return Math.floor(Math.random() * (max - min)) + min;
             }
             for (let i = 0; i < props.callsPerInterval; i += 1) {
-                matrixState
-                    [randomInt(0, totalRows)]
-                    [randomInt(0, totalColumns)]
+                matrix
+                    [randomInt(0, props.totalRows)]
+                    [randomInt(0, props.totalColumns)]
                     .set(p => p + randomInt(0, 5))
             }
         }, props.interval)
         return () => clearInterval(t);
-    })
+    }, [props.interval, props.callsPerInterval, props.totalRows, props.totalColumns])
 
     return <div style={{ overflow: 'scroll' }}>
-        <PerformanceMeter matrixState={matrixState} />
+        <PerformanceMeter matrix={matrix} />
         <table
             style={{
                 border: 'solid',
@@ -50,11 +81,11 @@ const MatrixView = (props: {
             }}
         >
             <tbody>
-                {matrixState.map((rowState, rowIndex: number) =>
+                {matrix.map((rowState, rowIndex: number) =>
                     <tr key={rowIndex}>
                         {rowState.map((cellState, columnIndex) =>
                             <td key={columnIndex}>
-                                <TableCell cellState={cellState}/>
+                                <TableCell cell={cellState}/>
                             </td>
                         )}
                     </tr>
@@ -65,99 +96,75 @@ const MatrixView = (props: {
 }
 
 export const ExampleComponent = () => {
-    const settingsState = useHookstate({
-        totalRows: 50,
-        totalColumns: 50,
+    const settings = useHookstate({
+        rows: 50,
+        columns: 50,
         rate: 50,
         timer: 10
     })
-    const settings = {
-        totalRows: settingsState.totalRows.value,
-        totalColumns: settingsState.totalColumns.value,
-        rate: settingsState.rate.value,
-        timer: settingsState.timer.value,
-        setRows: (f: (p: number) => number) => settingsState.totalRows.set(f),
-        setColumns: (f: (p: number) => number) => settingsState.totalColumns.set(f),
-        setRate: (f: (p: number) => number) => settingsState.rate.set(f),
-        setTimer: (f: (p: number) => number) => settingsState.timer.set(f),
-    };
-
     return <>
         <div>
-            <p><span>Total rows: {settings.totalRows} </span>
+            <p><span>Total rows: {settings.rows.value} </span>
                 <button onClick={() =>
-                    settings.setRows(p => (p - 10) || 10)}>-10</button>
+                    settings.rows.set(p => (p - 10) || 10)}>-10</button>
                 <button onClick={() =>
-                    settings.setRows(p => p + 10)}>+10</button></p>
-            <p><span>Total columns: {settings.totalColumns} </span>
+                    settings.rows.set(p => p + 10)}>+10</button></p>
+            <p><span>Total columns: {settings.columns.value} </span>
                 <button onClick={() =>
-                    settings.setColumns(p => (p - 10) || 10)}>-10</button>
+                    settings.columns.set(p => (p - 10) || 10)}>-10</button>
                 <button onClick={() =>
-                    settings.setColumns(p => p + 10)}>+10</button></p>
-            <p>Total cells: {settings.totalColumns * settings.totalRows}</p>
-            <p><span>Cells to update per timer interval: {settings.rate} </span>
+                    settings.columns.set(p => p + 10)}>+10</button></p>
+            <p>Total cells: {settings.columns.value * settings.rows.value}</p>
+            <p><span>Cells to update per timer interval: {settings.rate.value} </span>
                 <button onClick={() =>
-                    settings.setRate(p => (p - 1) || 1)}>-1</button>
+                    settings.rate.set(p => (p - 1) || 1)}>-1</button>
                 <button onClick={() =>
-                    settings.setRate(p => p + 1)}>+1</button>
+                    settings.rate.set(p => p + 1)}>+1</button>
                 <button onClick={() =>
-                    settings.setRate(p => p > 10 ? (p - 10) : 1)}>-10</button>
+                    settings.rate.set(p => p > 10 ? (p - 10) : 1)}>-10</button>
                 <button onClick={() =>
-                    settings.setRate(p => p + 10)}>+10</button>
+                    settings.rate.set(p => p + 10)}>+10</button>
                 </p>
-            <p><span>Timer interval in ms: {settings.timer} </span>
+            <p><span>Timer interval in ms: {settings.timer.value} </span>
                 <button onClick={() =>
-                    settings.setTimer(p => p > 1 ? (p - 1) : 1)}>-1</button>
+                    settings.timer.set(p => p > 1 ? (p - 1) : 1)}>-1</button>
                 <button onClick={() =>
-                    settings.setTimer(p => p + 1)}>+1</button>
+                    settings.timer.set(p => p + 1)}>+1</button>
                 <button onClick={() =>
-                    settings.setTimer(p => p > 10 ? (p - 10) : 1)}>-10</button>
+                    settings.timer.set(p => p > 10 ? (p - 10) : 1)}>-10</button>
                 <button onClick={() =>
-                    settings.setTimer(p => p + 10)}>+10</button>
+                    settings.timer.set(p => p + 10)}>+10</button>
                 </p>
         </div>
         <MatrixView
             key={Math.random()}
-            totalRows={settings.totalRows}
-            totalColumns={settings.totalColumns}
-            interval={settings.timer}
-            callsPerInterval={settings.rate}
+            totalRows={settings.rows.value}
+            totalColumns={settings.columns.value}
+            interval={settings.timer.value}
+            callsPerInterval={settings.rate.value}
         />
     </>;
 }
 
-const PerformanceViewPluginID = Symbol('PerformanceViewPlugin');
-function PerformanceMeter(props: { matrixState: State<number[][]> }) {
-    const stats = React.useRef({
-        totalSum: 0,
-        totalCalls: 0,
-        startTime: (new Date()).getTime()
-    })
-    const elapsedMs = () => (new Date()).getTime() - stats.current.startTime;
+function PerformanceMeter(props: { matrix: State<number[][], StatsExtension> }) {
+    let stats = props.matrix.stats;
+    const elapsedMs = () => (new Date()).getTime() - stats.startTime;
     const elapsed = () => Math.floor(elapsedMs() / 1000);
-    const rate = Math.floor(stats.current.totalCalls / elapsedMs() * 1000);
-    const scopedState = useHookstate(props.matrixState)
-    scopedState.attach(() => ({
-            id: PerformanceViewPluginID,
-            init: () => ({
-                onSet: (p) => {
-                    if (p.path.length === 2) {
-                        // new value can be only number in this example
-                        // and path can contain only 2 elements: row and column indexes
-                        stats.current.totalSum += p.value - p.previous;
-                    }
-                    stats.current.totalCalls += 1;
-                }
-            })
-        }))
-    // mark the value of the whole matrix as 'used' by this component
-    scopedState.attach(Downgraded);
-    scopedState.get();
+    const rate = Math.floor(stats.totalCalls / elapsedMs() * 1000);
+    
+    // this makes rerendering this component every 200ms
+    let forceRerender = useHookstate(1);
+    useEffect(() => {
+        const interval = setInterval(() => {
+            forceRerender.set(p => p + 1)
+        }, 200)
+        return () => clearInterval(interval)
+    }, [])
 
     return <>
         <p><span>Elapsed: {elapsed()}s</span></p>
-        <p><span>Total cells sum: {stats.current.totalSum}</span></p>
-        <p><span>Total matrix state updates: {stats.current.totalCalls}</span></p>
+        <p><span>Total cells sum: {stats.totalSum}</span></p>
+        <p><span>Total matrix state updates: {stats.totalCalls}</span></p>
         <p><span>Average update rate: {rate}cells/s</span></p>
     </>;
 }

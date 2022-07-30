@@ -33,13 +33,11 @@ module.exports = {
         ],
         Extensions: [
             'extensions-overview',
-            'extensions-initial',
-            'extensions-touched',
             'extensions-validation',
-            'extensions-labelled',
+            'extensions-snapshotable',
             'extensions-broadcasted',
             'extensions-localstored',
-            // 'extensions-offline',
+            'extensions-identifiable',
             'writing-plugin'
         ],
         'Development Tools': ['devtools'],

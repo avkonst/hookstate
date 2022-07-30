@@ -10,13 +10,11 @@ import { ExampleComponent as ExamplePerformanceLargeTable } from './performance-
 import { ExampleComponent as ExamplePerformanceLargeForm } from './performance-demo-large-form';
 import { ExampleComponent as ExampleGlobalMultipleConsumersStateFragment } from './global-multiple-consumers-statefragment';
 
-import { ExampleComponent as ExamplePluginLabelled } from './plugin-labelled';
-import { ExampleComponent as ExamplePluginInitial } from './plugin-initial';
-import { ExampleComponent as ExamplePluginTouched } from './plugin-touched';
+import { ExampleComponent as ExamplePluginIdentifiable } from './plugin-identifiable';
+import { ExampleComponent as ExamplePluginSnapshotable } from './plugin-snapshotable';
 import { ExampleComponent as ExamplePluginLocalstored } from './plugin-localstored';
 import { ExampleComponent as ExamplePluginBroadcasted } from './plugin-broadcasted';
 import { ExampleComponent as ExamplePluginValidation } from './plugin-validation';
-import { ExampleComponent as ExamplePluginUntracked } from './plugin-untracked';
 
 const baseUrl = 'https://raw.githubusercontent.com/avkonst/hookstate/master/docs/index/src/examples/'
 
@@ -32,10 +30,9 @@ ExamplesRepo.set('local-complex-tree-structure', <ExampleLocalComplexTreeStructu
 ExamplesRepo.set('performance-demo-large-table', <ExamplePerformanceLargeTable />);
 ExamplesRepo.set('performance-demo-large-form', <ExamplePerformanceLargeForm />);
 ExamplesRepo.set('global-multiple-consumers-statefragment', <ExampleGlobalMultipleConsumersStateFragment />);
-ExamplesRepo.set('plugin-labelled', <ExamplePluginLabelled />);
-ExamplesRepo.set('plugin-initial', <ExamplePluginInitial />);
-ExamplesRepo.set('plugin-touched', <ExamplePluginTouched />);
+
+ExamplesRepo.set('plugin-labelled', <ExamplePluginIdentifiable />);
+ExamplesRepo.set('plugin-initial', <ExamplePluginSnapshotable />);
 ExamplesRepo.set('plugin-validation', <ExamplePluginValidation />);
 ExamplesRepo.set('plugin-localstored', <ExamplePluginLocalstored />);
 ExamplesRepo.set('plugin-broadcasted', <ExamplePluginBroadcasted />);
-ExamplesRepo.set('plugin-untracked', <ExamplePluginUntracked />);

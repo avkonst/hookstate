@@ -5,7 +5,7 @@ import { validation } from '@hookstate/validation';
 interface Task { name: string }
 
 export const ExampleComponent = () => {
-    const state = useHookstate([{ name: 'First Task' }, { name: 'Second Task' }] as Task[], () => validation())
+    const state = useHookstate([{ name: 'First Task' }, { name: 'Second Task' }] as Task[], validation())
     
     // configure rules
     state.validate(tasks => tasks.length >= 3,

@@ -20,7 +20,7 @@ return <>{JSON.stringify(state.data.value)}</>
 
 ## Untracked plugin
 
-This is a plugin for advanced usecases. It allows to get and set a state without triggering rerendering. It also allows to trigger rerendering even when a state has not been updated. You should understand what you are doing if you decide to use this plugin. Below is the demo of the plugin.
+TODO update for Hookstate 4
 
-<PreviewSample example="plugin-untracked" />
+This is a plugin for advanced usecases. It allows to get and set a state without triggering rerendering. It also allows to trigger rerendering even when a state has not been updated. You should understand what you are doing if you decide to use this plugin. Below is the demo of the plugin.
 

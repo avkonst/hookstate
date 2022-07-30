@@ -158,10 +158,10 @@ export interface Broadcasted {
     readonly broadcastLeader: boolean | undefined,
 }
 
-export function broadcasted<S, E>(
+export function broadcasted<S, E>(options?: {
     topic?: string, // if undefined, reads topic ID from the Identifiable extension
     onLeader?: (link: State<S, Broadcasted & E>, wasFollower: boolean) => void
-): (typemarker?: __State<S, E>) => Extension<Broadcasted> {
+}): (typemarker?: __State<S, E>) => Extension<Broadcasted> {
     return () => {
         let topicId: string;
         let broadcastRef: BroadcastChannelHandle<BroadcastMessage | ServiceMessage> | undefined = undefined;
@@ -214,8 +214,8 @@ export function broadcasted<S, E>(
                 }
             },
             onInit: (state, extensionMethods) => {
-                if (topic) {
-                    topicId = topic
+                if (options?.topic) {
+                    topicId = options.topic
                 } else {
                     if (extensionMethods['identifier'] === undefined) {
                         throw Error('State is missing Identifiable extension')
@@ -290,8 +290,8 @@ export function broadcasted<S, E>(
                     const wasFollower = isLeader === false
                     isLeader = true;
 
-                    if (onLeader) {
-                        onLeader(stateAccessor() as unknown as State<S, Broadcasted & E>, wasFollower)
+                    if (options?.onLeader) {
+                        options.onLeader(stateAccessor() as unknown as State<S, Broadcasted & E>, wasFollower)
                     } else if (!wasFollower) {
                         submitValueFromState()
                     }

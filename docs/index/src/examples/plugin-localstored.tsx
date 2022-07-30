@@ -4,7 +4,12 @@ import { localstored } from '@hookstate/localstored';
 
 export const ExampleComponent = () => {
     const state = useHookstate([{ name: 'First Task' }],
-        () => localstored('state-key'))
+        localstored({
+            // key is optional,
+            // if it is not defined, the extension requires and
+            // uses the identifier from the @hookstate/identifiable
+            key: 'state-key'
+        }))
 
     return <>
         {state.map((taskState, taskIndex) => {

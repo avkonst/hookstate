@@ -308,7 +308,11 @@ export interface __State<S, E> {
 // TODO document, give example how to use in extension method signatures
 export type StateValue<V> = V extends __State<(infer S), (infer _)> ? S : V
 // TODO document, give example how to use in extension method signatures
-export type StateExtension<V> = V extends __State<(infer _), (infer E)> ? E : V
+export type StateExtension<V> = V extends __State<(infer _), (infer E)>
+    ? E
+    : DeepReturnType<V> extends Extension<(infer I)>
+    ? I : V
+export type DeepReturnType<V> = V extends () => (infer R) ? DeepReturnType<R> : V;
 
 /**
  * Type of a result of [hookstate](#hookstate) and [useHookstate](#useHookstate) functions
