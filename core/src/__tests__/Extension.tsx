@@ -42,8 +42,8 @@ class MyExtensionImpl implements Extension<MyExtensionMethods> {
     onInit?: Extension<MyExtensionMethods>['onInit'] = (s) => {
         this.messages.push(`onInit called, [${s.path}]: ${JSON.stringify(s.get({ noproxy: true }))}`)
     };
-    onSet?: Extension<MyExtensionMethods>['onSet'] = (p, ad) => {
-        this.messages.push(`onSet called, [${ad.path}]: ${JSON.stringify(p.get({ noproxy: true }))}, ${JSON.stringify(ad.actions)}`)
+    onSet?: Extension<MyExtensionMethods>['onSet'] = (s, ad) => {
+        this.messages.push(`onSet called, [${ad.path}]: ${JSON.stringify(s.get({ noproxy: true }))}, ${JSON.stringify(ad.actions)}`)
     };
     onPreset?: Extension<MyExtensionMethods>['onPreset'] = (s, v) => {
         this.messages.push(`onPreset called, [${s.path}]: ${JSON.stringify(s.get({ noproxy: true }))}, ${JSON.stringify(v)}`)
@@ -51,8 +51,8 @@ class MyExtensionImpl implements Extension<MyExtensionMethods> {
     onPremerge?: Extension<MyExtensionMethods>['onPremerge'] = (s, v) => {
         this.messages.push(`onPremerge called, [${s.path}]: ${JSON.stringify(s.get({ noproxy: true }))}, ${JSON.stringify(v)}`)
     };
-    onDestroy?: Extension<MyExtensionMethods>['onDestroy'] = (p) => {
-        this.messages.push(`onDestroy called, ${JSON.stringify(p.get({ noproxy: true }))}`)
+    onDestroy?: Extension<MyExtensionMethods>['onDestroy'] = (s) => {
+        this.messages.push(`onDestroy called, ${JSON.stringify(s.get({ noproxy: true }))}`)
     };
 }
     
@@ -97,7 +97,7 @@ test('extension: common flow callbacks', async () => {
     });
     expect(renderTimes).toStrictEqual(3);
     expect(messages).toEqual([
-        'onPreset called, [0,f1]: 0, 1', 'onSet called, [0,f1]: [{"f1":1,"f2":"str2"}], undefined'])
+        'onPreset called, [0,f1]: 0, 1', 'onSet called, [0,f1]: 1, undefined'])
     messages.splice(0, messages.length);
 
     expect(result.current.get()[0].f1).toStrictEqual(1);
@@ -113,7 +113,7 @@ test('extension: common flow callbacks', async () => {
     expect(messages).toEqual([
         'onPremerge called, [0]: {\"f1\":1,\"f2\":\"str2\"}, {\"f1\":2}',
         'onPreset called, [0]: {\"f1\":2,\"f2\":\"str2\"}, {\"f1\":2,\"f2\":\"str2\"}',
-        'onSet called, [0]: [{"f1":2,"f2":"str2"}], {"f1":"U"}'])
+        'onSet called, [0]: {\"f1\":2,\"f2\":\"str2\"}, {\"f1\":\"U\"}'])
     messages.splice(0, messages.length);
 
     expect(result.current.get()[0].f1).toStrictEqual(2);
@@ -169,7 +169,7 @@ test('extension: common flow callbacks', async () => {
         [
             'onPremerge called, [0,f2]: \"str3\", \"str2\"',
             'onPreset called, [0,f2]: \"str3\", \"str3str2\"',
-            'onSet called, [0,f2]: [{"f1":0,"f2":"str3str2"}], undefined']);
+            'onSet called, [0,f2]: \"str3str2\", undefined']);
     messages.splice(0, messages.length);
 
     expect(result.current.get()[0].f2).toStrictEqual('str3str2');
@@ -180,7 +180,7 @@ test('extension: common flow callbacks', async () => {
     expect(result.current.get()[0].f2).toStrictEqual('str5');
     expect(messages).toEqual([
         'onPreset called, [0,f2]: \"str3str2\", \"str5\"',
-        'onSet called, [0,f2]: [{"f1":0,"f2":"str5"}], undefined'])
+        'onSet called, [0,f2]: \"str5\", undefined'])
     messages.splice(0, messages.length);
 
     expect(renderTimes).toStrictEqual(7);
@@ -249,8 +249,8 @@ class MyExtensionGlobalImpl implements Extension<MyExtensionMethods> {
     onInit?: Extension<MyExtensionMethods>['onInit'] = (s) => {
         this.messages.push(`onInit called, [${s.path}]: ${JSON.stringify(s.get({ noproxy: true }))}`)
     };
-    onSet?: Extension<{}>['onSet'] = (p, ad) => {
-        this.messages.push(`onSet called, [${ad.path}]: ${JSON.stringify(p.get({ noproxy: true }))}, ${JSON.stringify(ad.actions)}`)
+    onSet?: Extension<{}>['onSet'] = (s, ad) => {
+        this.messages.push(`onSet called, [${ad.path}]: ${JSON.stringify(s.get({ noproxy: true }))}, ${JSON.stringify(ad.actions)}`)
     };
     onPreset?: Extension<MyExtensionMethods>['onPreset'] = (s, v) => {
         this.messages.push(`onPreset called, [${s.path}]: ${JSON.stringify(s.get({ noproxy: true }))}, ${JSON.stringify(v)}`)
@@ -258,8 +258,8 @@ class MyExtensionGlobalImpl implements Extension<MyExtensionMethods> {
     onPremerge?: Extension<MyExtensionMethods>['onPremerge'] = (s, v) => {
         this.messages.push(`onPremerge called, [${s.path}]: ${JSON.stringify(s.get({ noproxy: true }))}, ${JSON.stringify(v)}`)
     };
-    onDestroy?: Extension<{}>['onDestroy'] = (p) => {
-        this.messages.push(`onDestroy called, ${JSON.stringify(p.get({ noproxy: true }))}`)
+    onDestroy?: Extension<{}>['onDestroy'] = (s) => {
+        this.messages.push(`onDestroy called, ${JSON.stringify(s.get({ noproxy: true }))}`)
     };
 }
 
@@ -305,7 +305,7 @@ test('extension: common flow callbacks global state', async () => {
     });
     expect(renderTimes).toStrictEqual(3);
     expect(messages).toEqual([
-        'onPreset called, [0,f1]: 0, 1', 'onSet called, [0,f1]: [{"f1":1,"f2":"str2"}], undefined'])
+        'onPreset called, [0,f1]: 0, 1', 'onSet called, [0,f1]: 1, undefined'])
     messages.splice(0, messages.length)
 
     expect(result.current.get()[0].f1).toStrictEqual(1);
@@ -321,7 +321,7 @@ test('extension: common flow callbacks global state', async () => {
     expect(messages).toEqual([
         'onPremerge called, [0]: {\"f1\":1,\"f2\":\"str2\"}, {\"f1\":2}',
         'onPreset called, [0]: {\"f1\":2,\"f2\":\"str2\"}, {\"f1\":2,\"f2\":\"str2\"}',
-        'onSet called, [0]: [{"f1":2,"f2":"str2"}], {"f1":"U"}'])
+        'onSet called, [0]: {\"f1\":2,\"f2\":\"str2\"}, {\"f1\":\"U\"}'])
     messages.splice(0, messages.length)
 
     expect(result.current.get()[0].f1).toStrictEqual(2);
@@ -377,7 +377,7 @@ test('extension: common flow callbacks global state', async () => {
         [
             'onPremerge called, [0,f2]: \"str3\", \"str2\"',
             'onPreset called, [0,f2]: \"str3\", \"str3str2\"',
-            'onSet called, [0,f2]: [{"f1":0,"f2":"str3str2"}], undefined']);
+            'onSet called, [0,f2]: \"str3str2\", undefined']);
     messages.splice(0, messages.length)
 
     expect(result.current.get()[0].f2).toStrictEqual('str3str2');
@@ -388,7 +388,7 @@ test('extension: common flow callbacks global state', async () => {
     expect(result.current.get()[0].f2).toStrictEqual('str5');
     expect(messages).toEqual([
         'onPreset called, [0,f2]: \"str3str2\", \"str5\"',
-        'onSet called, [0,f2]: [{"f1":0,"f2":"str5"}], undefined'])
+        'onSet called, [0,f2]: \"str5\", undefined'])
     messages.splice(0, messages.length)
 
     expect(renderTimes).toStrictEqual(7);

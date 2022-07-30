@@ -165,7 +165,7 @@ export function broadcasted<S, E>(options?: {
     return () => {
         let topicId: string;
         let broadcastRef: BroadcastChannelHandle<BroadcastMessage | ServiceMessage> | undefined = undefined;
-        let stateAccessor: () => State<StateValueAtRoot>;
+        let stateAtRoot: State<StateValueAtRoot>;
 
         let isBroadcastEnabled = true;
         let isLeader: boolean | undefined = undefined;
@@ -173,7 +173,7 @@ export function broadcasted<S, E>(options?: {
         let instanceId = generateUniqueId();
 
         function submitValueFromState(dst?: string) {
-            let state = stateAccessor()
+            let state = stateAtRoot
             submitValue(
                 (state.promised || state.error !== undefined)
                     ? { path: [] }
@@ -206,8 +206,8 @@ export function broadcasted<S, E>(options?: {
         }
 
         return {
-            onCreate: (sf) => {
-                stateAccessor = sf
+            onCreate: (s) => {
+                stateAtRoot = s
                 return {
                     broadcastTopic: () => topicId,
                     broadcastLeader: () => isLeader
@@ -249,7 +249,7 @@ export function broadcasted<S, E>(options?: {
                         return;
                     }
 
-                    const rootState = stateAccessor()
+                    const rootState = stateAtRoot
                     if (message.path.length === 0 || !rootState.promised) {
                         if (message.dstInstance && message.dstInstance !== instanceId) {
                             return;
@@ -291,12 +291,12 @@ export function broadcasted<S, E>(options?: {
                     isLeader = true;
 
                     if (options?.onLeader) {
-                        options.onLeader(stateAccessor() as unknown as State<S, Broadcasted & E>, wasFollower)
+                        options.onLeader(stateAtRoot as unknown as State<S, Broadcasted & E>, wasFollower)
                     } else if (!wasFollower) {
                         submitValueFromState()
                     }
                 })
-                
+
                 if (isLeader) {
                     // turned into a leader synchrnously,
                     // broadcast the value, as it was skipped in the onLeader callback

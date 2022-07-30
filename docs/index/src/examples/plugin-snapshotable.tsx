@@ -6,10 +6,8 @@ import { Initializable, initializable } from '@hookstate/initializable';
 import { Snapshotable, snapshotable } from '@hookstate/snapshotable';
 
 // define hookstate extension which is composed of a number of standard extensions
-function extensions<S, E>(
-    rerender: () => void // the defined extension accepts construction parameter
-) {
-    return extend<S, E, Clonable, Comparable, Snapshotable<'second'>, Initializable>(
+function extensions<S, E>() {
+    return extend<S, E, Clonable, Comparable, Snapshotable<'second', Clonable>, Initializable>(
         clonable(
             // basic cloning, you may use lodash deep clone, instead
             // or a custom cloner, if there a state holds
@@ -26,9 +24,16 @@ function extensions<S, E>(
         // if generic type is ommited, the snapshot key can be any string
         // otherwise, only those names which are provided
         snapshotable<'second'>({
-            // by default changes to snapshots are not tracked
-            // so, manually trigger rerender when snapshot is taken
-            onSnapshot: rerender
+            snapshotExtensions: () => ({
+                // TODO replace by new logging extension
+                onCreate: (s) => {
+                    console.log('snapshot created:', JSON.stringify(s.get()))
+                    return {}
+                },
+                onSet: (s) => {
+                    console.log('snapshot updated at path:', s.path, JSON.stringify(s.get({ stealth: true })))
+                }
+            })
         }),
         initializable((s) => {
             // optional one off initialization after a state is created
@@ -44,7 +49,7 @@ type Extended = InferStateExtensionType<typeof extensions>
 export const ExampleComponent = () => {
     const state = useHookstate(
         ['First Task', 'Second Task'],
-        extensions(() => {})
+        extensions()
     )
     
     return <>

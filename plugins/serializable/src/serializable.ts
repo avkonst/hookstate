@@ -1,4 +1,4 @@
-import { Extension, Path, StateValue, StateValueAtPath } from '@hookstate/core';
+import { Extension, Path, StateValueAtPath } from '@hookstate/core';
 
 export interface Serializable {
     serialize: () => string,

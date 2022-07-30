@@ -79,7 +79,7 @@ export type InferStateOrnullType<S, E> =
 
 // TODO deprecated
 export type InferredStateOrnullType<S, E> = InferStateOrnullType<S, E>
-    
+
 /**
  * For plugin developers only.
  * An instance to manipulate the state in more controlled way.
@@ -361,6 +361,9 @@ export type StateValueAtPath = any; //tslint:disable-line: no-any
  */
 export type StateErrorAtRoot = any; //tslint:disable-line: no-any
 
+// TODO document
+export type StateExtensionUnknown = Record<string, any>; //tslint:disable-line: no-any
+
 /**
  * For plugin developers only.
  * PluginCallbacks.onSet argument type.
@@ -432,19 +435,19 @@ export interface Plugin {
 // TODO document
 export interface Extension<E extends {}> {
     readonly onCreate?: (
-        state: () => State<StateValueAtRoot, {}>,
-        dependencies: Record<string, (i: State<StateValueAtPath, {}>) => any>
+        state: State<StateValueAtRoot, {}>,
+        extensionsCallbacks: Record<string, (i: State<StateValueAtPath, StateExtensionUnknown>) => any>
     ) => {
-            readonly [K in keyof Required<E>]: (state: State<StateValueAtPath, {}>) => E[K];
+            readonly [K in keyof Required<E>]: (state: State<StateValueAtPath, StateExtensionUnknown>) => E[K];
         },
     readonly onInit?: (
-        state: State<StateValueAtRoot, {}>,
-        dependencies: Record<string, (i: State<StateValueAtPath, {}>) => any>
+        state: State<StateValueAtRoot, StateExtensionUnknown>,
+        extensionsCallbacks: Record<string, (i: State<StateValueAtPath, StateExtensionUnknown>) => any>
     ) => void,
-    readonly onPreset?: (state: State<StateValueAtPath, {}>, value: StateValueAtPath) => void,
-    readonly onPremerge?: (state: State<StateValueAtPath, {}>, value: StateValueAtPath) => void,
-    readonly onSet?: (state: State<StateValueAtPath, {}>, descriptor: SetActionDescriptor) => void,
-    readonly onDestroy?: (state: State<StateValueAtRoot, {}>) => void,
+    readonly onPreset?: (state: State<StateValueAtPath, StateExtensionUnknown>, value: StateValueAtPath) => void,
+    readonly onPremerge?: (state: State<StateValueAtPath, StateExtensionUnknown>, value: StateValueAtPath) => void,
+    readonly onSet?: (state: State<StateValueAtPath, StateExtensionUnknown>, descriptor: SetActionDescriptor) => void,
+    readonly onDestroy?: (state: State<StateValueAtRoot, StateExtensionUnknown>) => void,
 };
 
 // TODO deprecate
@@ -1090,6 +1093,9 @@ type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 
 // TODO document move
 export interface SetActionDescriptor {
+    // path to update / rerender,
+    // migth be not the same as the part of state methods
+    // for example, when a new index is added to array
     path: Path,
     actions?: Record<string | number, "I" | "U" | "D">
 }
@@ -1100,7 +1106,7 @@ class Store implements Subscribable {
     // state can be reused, so we should support store resurection
     public edition = 1;
 
-    private _stateMethods: StateMethodsImpl<StateValueAtRoot, {}>;
+    private _stateMethods: StateMethodsImpl<StateValueAtRoot, StateExtensionUnknown>;
 
     private _subscribers: Set<Subscriber> = new Set();
 
@@ -1161,7 +1167,7 @@ class Store implements Subscribable {
                     this._promise = undefined
                     this._promiseError = undefined
                     this._promiseResolver === undefined
-                    this.update(this.set(RootPath, r, undefined))
+                    this.update(this._stateMethods.self(), this.set(RootPath, r, undefined))
                 }
             })
             .catch((err: StateValueAtRoot) => {
@@ -1171,7 +1177,7 @@ class Store implements Subscribable {
                     this._promiseError = err
                     this.edition += 1
                     let ad = { path: RootPath };
-                    this.update(ad)
+                    this.update(this._stateMethods.self(), ad)
                 }
             })
         this._promise = promise
@@ -1183,7 +1189,7 @@ class Store implements Subscribable {
         }
         if (this._extension === undefined) {
             this._extension = extensionFactory?.();
-            this._extensionMethods = this._extension?.onCreate?.(() => this._stateMethods.self(), {})
+            this._extensionMethods = this._extension?.onCreate?.(this._stateMethods.self(), {})
             // this is invoked with all extension methods activated on the state
             this._extension?.onInit?.(this._stateMethods.self(), this._extensionMethods || {})
         }
@@ -1357,16 +1363,16 @@ class Store implements Subscribable {
         };
     }
 
-    preset(state: State<StateValueAtPath, {}>, value: StateValueAtPath) {
+    preset(state: State<StateValueAtPath, StateExtensionUnknown>, value: StateValueAtPath) {
         this._extension?.onPreset?.(state, value)
     }
 
-    premerge(state: State<StateValueAtPath, {}>, value: StateValueAtPath) {
+    premerge(state: State<StateValueAtPath, StateExtensionUnknown>, value: StateValueAtPath) {
         this._extension?.onPremerge?.(state, value)
     }
 
-    update(ad: SetActionDescriptor) {
-        this._extension?.onSet?.(this._stateMethods.self(), ad)
+    update(state: State<StateValueAtPath, StateExtensionUnknown>, ad: SetActionDescriptor) {
+        this._extension?.onSet?.(state, ad)
 
         const actions = new Set<() => void>();
         // check if actions descriptor can be unfolded into a number of individual update actions
@@ -1586,7 +1592,7 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
     set(newValue: SetStateAction<S>) {
         let ad = this.setUntrackedV4(newValue);
         if (ad) {
-            this.store.update(ad);
+            this.store.update(this.self() as State<StateValueAtPath, StateExtensionUnknown>, ad);
         }
     }
 
@@ -1677,7 +1683,7 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
     merge(sourceValue: SetPartialStateAction<S>) {
         let r = this.mergeUntrackedV4(sourceValue);
         if (r) {
-            this.store.update(r)
+            this.store.update(this.self() as State<StateValueAtPath, StateExtensionUnknown>, r)
         }
     }
 
@@ -1687,7 +1693,7 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
 
     rerender(paths: Path[]) {
         for (let path of paths) {
-            this.store.update({ path })
+            this.store.update(this.self() as State<StateValueAtPath, StateExtensionUnknown>, { path })
         }
     }
 

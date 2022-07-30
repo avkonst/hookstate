@@ -12,7 +12,7 @@ import {
 
 export type SnapshotMode = 'upsert' | 'insert' | 'update' | 'delete' | 'lookup';
 
-export interface Snapshotable<K extends string = string> {
+export interface Snapshotable<K extends string = string, E = {}> {
     snapshot(key?: K, mode?: SnapshotMode): State<InferStateValueType<this>> | undefined;
     rollback(key?: K): State<InferStateValueType<this>> | undefined;
     modified(key?: K): boolean;
@@ -20,7 +20,7 @@ export interface Snapshotable<K extends string = string> {
 }
 
 export function snapshotable<K extends string = string>(options?: {
-    onSnapshot?: (s: State<StateValueAtPath>, key: K | undefined, mode: SnapshotMode) => void
+    snapshotExtensions?: () => Extension<{}>
 }): () => Extension<Snapshotable<K>> {
     return () => ({
         onCreate: (_, dependencies) => {
@@ -55,23 +55,21 @@ export function snapshotable<K extends string = string>(options?: {
                         throw Error('State is missing Clonable extension');
                     }
                     let k: K | '___default' = key || '___default';
-                    let stateAtPath = undefined;
+                    let stateAtPath: State<StateValueAtPath> | undefined = undefined;
                     let snap = snapshots.get(k)
                     if (mode === 'upsert' ||
                         (mode === 'insert' && !snap) ||
                         (mode === 'update' && snap)) {
                         let v = dependencies['clone'](s)({ stealth: true })
-                        if (s.path.length === 0) {
-                            // Root state snapshot case
-                            stateAtPath = hookstate(v)
-                            snapshots.set(k, stateAtPath)
-                        } else if (snap) {
-                            // Nested state snapshot case
+                        if (snap) {
                             stateAtPath = getByPath(snap, s.path)
                             if (!stateAtPath) {
                                 throw Error(`Snapshot does not have nested value by path '${s.path.join('/')}' to update`);
                             }
                             stateAtPath.set(v)
+                        } else if (s.path.length === 0) {
+                            stateAtPath = hookstate(v, options?.snapshotExtensions)
+                            snapshots.set(k, stateAtPath)
                         } else {
                             throw Error('Creating a new snapshot from a nested state is not allowed.');
                         }
@@ -88,7 +86,6 @@ export function snapshotable<K extends string = string>(options?: {
                         }
                         stateAtPath = getByPath(snap, s.path) // lookup by path
                     }
-                    options?.onSnapshot?.(s, key, mode)
                     return stateAtPath
                 },
                 rollback: (s) => (key) => {
