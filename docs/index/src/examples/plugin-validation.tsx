@@ -23,7 +23,7 @@ export const ExampleComponent = () => {
             What is the first error or warning?: <u>{JSON.stringify(state.firstError(), null, 4)}</u> <br/>
             What is the first error (ignoring warnings and nested errors)?: <u>{
                 JSON.stringify(state.firstError(
-                    i => i.severity === 'error', 1))}</u> <br/>
+                    i => i.severity === 'error', 1), null, 4)}</u> <br/>
         </p>
         {state.map((taskState, taskIndex) => {
             // attaching validation to any element in the array applies it to every
