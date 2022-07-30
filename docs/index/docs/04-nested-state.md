@@ -47,7 +47,7 @@ when a property name is unknown at compile time and comes as a variable of type 
 example, if you have got the state defined as the following, which allows for dynamic names of nested properties:
 
 ```tsx
-const dictionaryState = createHookstate<Record<string, number>>({})
+const dictionaryState = hookstate<Record<string, number>>({})
 function NestedStateByName(props: { stateKey: string }) {
     const state = useHookstate(dictionaryState)
     ...
@@ -70,7 +70,7 @@ However, if your dynamic property name is from a set of names which are known at
 and do not collide with state methods, you would be able to use property access by index syntax. For example:
 
 ```tsx
-const dictionaryState = createHookstate<Record<string, number>>({})
+const dictionaryState = hookstate<Record<string, number>>({})
 function NestedStateByName(props: {
         // note: compiler knows allowed names
         stateKey: 'property1' | 'property2'

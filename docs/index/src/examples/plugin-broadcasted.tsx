@@ -1,5 +1,5 @@
 import React from 'react';
-import { useHookstate, createHookstate } from '@hookstate/core';
+import { useHookstate, hookstate } from '@hookstate/core';
 import { Broadcasted } from '@hookstate/broadcasted';
 
 export const ExampleComponent = () => {

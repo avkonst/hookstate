@@ -46,7 +46,7 @@ function MyStateWatchPlugin() {
 Now it can be attached to a state:
 
 ```tsx
-const state = createHookstate(...);
+const state = hookstate(...);
 state.attach(MyStateWatchPlugin)
 ```
 
@@ -65,7 +65,7 @@ If your plugin requires to react only on certain sub-state updates,
 you can use `path` field from the callback arguments to filter out events of no interest. 
 
 ```tsx
-const state = createHookstate(...);
+const state = hookstate(...);
 // behaves exactly the same as state.attach(MyStateWatchPlugin)
 state.a.b.attach(MyStateWatchPlugin)
 ```

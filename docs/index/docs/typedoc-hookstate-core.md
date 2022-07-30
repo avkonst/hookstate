@@ -46,7 +46,7 @@ title: API @hookstate/core
 - [Downgraded](#downgraded)
 - [StateFragment](#statefragment)
 - [configure](#configure)
-- [createHookstate](#createhookstate)
+- [hookstate](#hookstate)
 - [createState](#createstate)
 - [extend](#extend)
 - [hookMemo](#hookmemo)
@@ -442,9 +442,9 @@ ___
 
 ___
 
-### createHookstate
+### hookstate
 
-▸ **createHookstate**<`S`, `E`\>(`initial`, `extension?`): [`State`](#state)<`S`, `E`\> & [`StateMethodsDestroy`](#interfacesstatemethodsdestroymd)
+▸ **hookstate**<`S`, `E`\>(`initial`, `extension?`): [`State`](#state)<`S`, `E`\> & [`StateMethodsDestroy`](#interfacesstatemethodsdestroymd)
 
 #### Type parameters
 
@@ -916,7 +916,7 @@ has got more features.
 
 When a state is used by only one component, and maybe it's children,
 it is recommended to use *local* state instead of *global*,
-which is created by [createHookstate](#createhookstate).
+which is created by [hookstate](#hookstate).
 
 *Local* (per component) state is created when a component is mounted
 and automatically destroyed when a component is unmounted.

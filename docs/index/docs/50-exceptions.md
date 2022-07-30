@@ -86,7 +86,7 @@ More information about [asynchronous states](./asynchronous-state).
 Happens when state is set after destroy. Typically it may happen when a component is unmounted but leaves asynchronous operations running, which trigger state updates when awaited finally.
 
 ```tsx
-const state = createHookstate(...)
+const state = hookstate(...)
 state.destroy()
 state.set(...) // <== Error!
 ```

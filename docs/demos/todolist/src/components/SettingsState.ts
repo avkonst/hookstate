@@ -1,6 +1,6 @@
-import { createHookstate, useHookstate } from '@hookstate/core';
+import { hookstate, useHookstate } from '@hookstate/core';
 
-const settingsState = createHookstate({
+const settingsState = hookstate({
     isEditableInline: true,
     isScopedUpdateEnabled: true,
     isHighlightUpdatesEnabled: true

@@ -1,4 +1,4 @@
-import { useHookstate, createHookstate, none } from '../';
+import { useHookstate, hookstate, none } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 
@@ -74,7 +74,7 @@ test('primitive: should rerender used on promise resolve immediately', async () 
 
 test('primitive: should rerender used on promise resolve immediately global', async () => {
     let renderTimes = 0
-    let state = createHookstate(async () => {
+    let state = hookstate(async () => {
         return 100
     });
     const { result } = renderHook(() => {
@@ -128,7 +128,7 @@ test('array: should rerender used on promise resolve', async () => {
 
 test('array: should rerender used on promise resolve (global)', async () => {
     let renderTimes = 0
-    const state = createHookstate([0])
+    const state = hookstate([0])
     const { result } = renderHook(() => {
         renderTimes += 1;
         return useHookstate(state)
@@ -166,7 +166,7 @@ test('array: should rerender used on promise resolve (global)', async () => {
 
 test('array: should rerender used on promise resolve (global promise)', async () => {
     let renderTimes = 0
-    const state = createHookstate(new Promise<number[]>(resolve => setTimeout(() => {
+    const state = hookstate(new Promise<number[]>(resolve => setTimeout(() => {
         act(() => resolve([100]))
     }, 500)))
     const { result } = renderHook(() => {
@@ -374,7 +374,7 @@ test('primitive: should rerender used on promise resolve init', async () => {
 test('primitive: should rerender used on promise resolve init global', async () => {
     let renderTimes = 0
 
-    const stateInf = createHookstate(new Promise<number>(resolve => setTimeout(() => {
+    const stateInf = hookstate(new Promise<number>(resolve => setTimeout(() => {
         act(() => resolve(100))
     }, 500)))
 
@@ -400,7 +400,7 @@ test('primitive: should rerender used on promise resolve init global', async () 
 test('primitive: should rerender used on promise reject init global', async () => {
     let renderTimes = 0
 
-    const stateInf = createHookstate(new Promise<number>((resolve, reject) => setTimeout(() => {
+    const stateInf = hookstate(new Promise<number>((resolve, reject) => setTimeout(() => {
         act(() => reject('some error init global'))
     }, 500)))
 
@@ -431,7 +431,7 @@ test('primitive: should rerender used on promise reject init global', async () =
 test('primitive: should set after promise reject', async () => {
     let renderTimes = 0
 
-    const stateInf = createHookstate(new Promise<number>((resolve, reject) => setTimeout(() => {
+    const stateInf = hookstate(new Promise<number>((resolve, reject) => setTimeout(() => {
         act(() => reject('some error init global'))
     }, 500)))
 

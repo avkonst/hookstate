@@ -4,7 +4,7 @@ import { useHookstate, State } from '@hookstate/core';
 export const ExampleComponent = () => {
     // we use local per component state,
     // but the same result would be for the global state
-    // if it was created by createHookstate
+    // if it was created by hookstate
     const state = useHookstate(Array.from(Array(5000).keys()).map(i => `Field #${i + 1} value`));
     return <>
         <JsonDump state={state} />

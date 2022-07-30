@@ -1,8 +1,8 @@
 import React from 'react';
-import { createHookstate, useHookstate, State } from '@hookstate/core';
+import { hookstate, useHookstate, State } from '@hookstate/core';
 
 // internal variables
-const globalState = createHookstate(0);
+const globalState = hookstate(0);
 const wrapState = (s: State<number>) => ({
     get: () => s.value,
     increment: () => s.set(p => p + 1)

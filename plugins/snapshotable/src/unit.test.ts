@@ -1,4 +1,4 @@
-import { useHookstate, extend, createHookstate, State } from '@hookstate/core';
+import { useHookstate, extend, hookstate, State } from '@hookstate/core';
 import { clonable } from '@hookstate/clonable';
 import { comparable } from '@hookstate/comparable';
 

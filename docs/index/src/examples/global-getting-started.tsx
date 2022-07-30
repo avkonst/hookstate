@@ -1,7 +1,7 @@
 import React from 'react';
-import { createHookstate, useHookstate } from '@hookstate/core';
+import { hookstate, useHookstate } from '@hookstate/core';
 
-const globalState = createHookstate(0);
+const globalState = hookstate(0);
 
 setInterval(() => globalState.set(p => p + 1), 3000)
 

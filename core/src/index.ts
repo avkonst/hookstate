@@ -41,7 +41,7 @@ export type SetPartialStateAction<S> =
     React.SetStateAction<S>;
 
 /**
- * Type of an argument of [createHookstate](#createhookstate) and [useHookstate](#useHookstate).
+ * Type of an argument of [hookstate](#hookstate) and [useHookstate](#useHookstate).
  * 
  * @typeparam S Type of a value of a state
  */
@@ -311,7 +311,7 @@ export type StateValue<V> = V extends __State<(infer S), (infer _)> ? S : V
 export type StateExtension<V> = V extends __State<(infer _), (infer E)> ? E : V
 
 /**
- * Type of a result of [createHookstate](#createhookstate) and [useHookstate](#useHookstate) functions
+ * Type of a result of [hookstate](#hookstate) and [useHookstate](#useHookstate) functions
  * 
  * @typeparam S Type of a value of a state
  * 
@@ -473,10 +473,17 @@ export interface Extension<E extends {}> {
 export function createState<S>(
     initial: SetInitialStateAction<S>
 ): State<S, {}> & StateMethodsDestroy {
-    return createHookstate(initial) as State<S, {}> & StateMethodsDestroy
+    return hookstate(initial) as State<S, {}> & StateMethodsDestroy
 }
 
-export function createHookstate<S, E = {}>(
+// TODO deprecated
+export function createHookstate<S>(
+    initial: SetInitialStateAction<S>
+): State<S, {}> {
+    return hookstate(initial) as State<S, {}> & StateMethodsDestroy
+}
+
+export function hookstate<S, E = {}>(
     initial: SetInitialStateAction<S>,
     extension?: (_?: __State<S, {}>) => Extension<E>
 ): State<S, E> {
@@ -502,7 +509,7 @@ export function useState<S>(
 ): never;
 /**
  * Enables a functional React component to use a state,
- * either created by [createHookstate](#createhookstate) (*global* state) or
+ * either created by [hookstate](#hookstate) (*global* state) or
  * derived from another call to [useHookstate](#useHookstate) (*scoped* state).
  *
  * The `useHookstate` forces a component to rerender every time, when:
@@ -539,7 +546,7 @@ export function useState<S>(
  *
  * When a state is used by only one component, and maybe it's children,
  * it is recommended to use *local* state instead of *global*,
- * which is created by [createHookstate](#createhookstate).
+ * which is created by [hookstate](#hookstate).
  *
  * *Local* (per component) state is created when a component is mounted
  * and automatically destroyed when a component is unmounted.

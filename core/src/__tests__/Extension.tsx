@@ -1,4 +1,4 @@
-import { useHookstate, createHookstate, Plugin, DevToolsID, DevTools, DevToolsExtensions, PluginCallbacks, extend, StateValueAtPath, State, Extension, SetActionDescriptor, StateErrorAtRoot, StateValue, StateMethodsDestroy } from '../';
+import { useHookstate, hookstate, Plugin, DevToolsID, DevTools, DevToolsExtensions, PluginCallbacks, extend, StateValueAtPath, State, Extension, SetActionDescriptor, StateErrorAtRoot, StateValue, StateMethodsDestroy } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 
@@ -263,7 +263,7 @@ class MyExtensionGlobalImpl implements Extension<MyExtensionMethods> {
     };
 }
 
-const stateInf = createHookstate([{
+const stateInf = hookstate([{
     f1: 0,
     f2: 'str'
 }], () => MyExtensionGlobal())

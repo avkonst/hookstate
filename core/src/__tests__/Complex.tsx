@@ -1,4 +1,4 @@
-import { useHookstate, createHookstate, none } from '../';
+import { useHookstate, hookstate, none } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 
@@ -179,7 +179,7 @@ test('complex: should delete property when set to none', async () => {
 });
 
 test('complex: should auto save latest state for unmounted', async () => {
-    const state = createHookstate([{
+    const state = hookstate([{
         field1: 0,
         field2: 'str'
     }])
