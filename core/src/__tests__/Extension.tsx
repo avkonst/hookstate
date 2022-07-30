@@ -1,11 +1,11 @@
-import { useHookstate, hookstate, Plugin, DevToolsID, DevTools, DevToolsExtensions, PluginCallbacks, extend, StateValueAtPath, State, Extension, SetActionDescriptor, StateErrorAtRoot, StateValue, StateMethodsDestroy } from '../';
+import { useHookstate, hookstate, Plugin, DevToolsID, DevTools, DevToolsExtensions, PluginCallbacks, extend, StateValueAtPath, State, Extension, SetActionDescriptor, StateErrorAtRoot, InferStateValueType, StateMethodsDestroy } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 
 interface MyExtensionMethods {
     extensionMethod(): number,
-    extensionMethodWithArg(cb: (v: StateValue<this>) => number): number,
-    extensionMethodSetValue(v: StateValue<this>): void,
+    extensionMethodWithArg(cb: (v: InferStateValueType<this>) => number): number,
+    extensionMethodSetValue(v: InferStateValueType<this>): void,
     extensionProp: this
 }
 
@@ -207,8 +207,8 @@ test('extension: common flow callbacks', async () => {
 
 interface MyExtensionMethodsGlobal {
     extensionMethod(): number,
-    extensionMethodWithArg(cb: (v: StateValue<this>) => number): number,
-    extensionMethodSetValue(v: StateValue<this>): void,
+    extensionMethodWithArg(cb: (v: InferStateValueType<this>) => number): number,
+    extensionMethodSetValue(v: InferStateValueType<this>): void,
     extensionProp: this,
     messages: string[],
 }

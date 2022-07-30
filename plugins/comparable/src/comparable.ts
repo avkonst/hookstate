@@ -1,8 +1,8 @@
-import { Extension, StateValue, StateValueAtPath } from '@hookstate/core';
+import { Extension, InferStateValueType, StateValueAtPath } from '@hookstate/core';
 
 export interface Comparable {
-    compare(other: StateValue<this>): number
-    equals(other: StateValue<this>): boolean
+    compare(other: InferStateValueType<this>): number
+    equals(other: InferStateValueType<this>): boolean
 }
 
 export function comparable(compare: (v1: StateValueAtPath, v2: StateValueAtPath) => number): () => Extension<Comparable> {

@@ -5,95 +5,102 @@ import {
     StateValueAtPath,
     StateValueAtRoot,
     State,
-    StateValue,
+    InferStateValueType,
+    __State,
+    hookstate,
 } from '@hookstate/core';
 
+export type SnapshotMode = 'upsert' | 'insert' | 'update' | 'delete' | 'lookup';
+
 export interface Snapshotable<K extends string = string> {
-    snapshot(key?: K,
-        mode?: 'upsert' | 'insert' | 'update' | 'delete' | 'lookup'): StateValue<this> | undefined;
-    rollback(key?: K): StateValue<this> | undefined;
+    snapshot(key?: K, mode?: SnapshotMode): State<InferStateValueType<this>> | undefined;
+    rollback(key?: K): State<InferStateValueType<this>> | undefined;
     modified(key?: K): boolean;
     unmodified(key?: K): boolean;
 }
 
-export function snapshotable<K extends string = string>(): () => Extension<Snapshotable<K>> {
+export function snapshotable<K extends string = string>(options?: {
+    onSnapshot?: (s: State<StateValueAtPath>, key: K | undefined, mode: SnapshotMode) => void
+}): () => Extension<Snapshotable<K>> {
     return () => ({
         onCreate: (_, dependencies) => {
-            const snapshots: Map<K | '___default', StateValueAtRoot> = new Map();
-            function getByPath(v: StateValueAtRoot, path: Path) {
-                let result = v;
-                path.forEach(p => {
-                    result = result && result[p];
-                });
-                return result;
-            }
-            function setByPath(valueAtRoot: StateValueAtRoot, path: Path, valueAtPath: StateValueAtPath) {
-                if (path.length === 0) {
-                    throw Error('Internal error: expected nested state')
-                }
-                let result = valueAtRoot;
-                for (let i = 0; i < path.length - 1; i += 1) {
-                    let p = path[i]
-                    if (Object(result[p]) !== result[p]) {
-                        throw Error(`Snapshot does not have nested value by path '${path.join('/')}' to update`);
+            const snapshots: Map<K | '___default', State<StateValueAtRoot>> = new Map();
+            function getByPath(stateAtRoot: State<StateValueAtRoot>, path: Path) {
+                let stateAtPath = stateAtRoot;
+                for (let p of path) {
+                    let v = stateAtPath.get({ stealth: true })
+                    if (Object(v) !== v) {
+                        return undefined
                     }
-                    result = result && result[p];
-                }
-                result[path[path.length - 1]] = valueAtPath
+                    stateAtPath = stateAtPath.nested(p);
+                };
+                return stateAtPath;
             }
             function isModified(s: State<StateValueAtPath>, key: K | '___default') {
                 if (dependencies['compare'] === undefined) {
                     throw Error('State is missing Comparable extension');
                 }
                 let k: K | '___default' = key || '___default';
-                if (snapshots.has(k)) {
-                    const v = getByPath(snapshots.get(k), s.path);
-                    return dependencies['compare'](s)(v) !== 0
+                let snap = snapshots.get(k)
+                if (!snap) {
+                    throw Error(`Snapshot does not exist: ${k}`);
                 }
-                throw Error(`Snapshot does not exist: ${k}`);
+                const stateAtPath = getByPath(snap, s.path);
+                return dependencies['compare'](s)(stateAtPath && stateAtPath.get({ stealth: true })) !== 0
             }
             return {
-                snapshot: (s) => (key, mode) => {
+                snapshot: (s) => (key, mod) => {
+                    const mode = mod || 'upsert'
                     if (dependencies['clone'] === undefined) {
                         throw Error('State is missing Clonable extension');
                     }
                     let k: K | '___default' = key || '___default';
-                    let v = undefined;
-                    if (mode === undefined || mode === 'upsert' ||
-                        (mode === 'insert' && !snapshots.has(k)) ||
-                        (mode === 'update' && snapshots.has(k))) {
+                    let stateAtPath = undefined;
+                    let snap = snapshots.get(k)
+                    if (mode === 'upsert' ||
+                        (mode === 'insert' && !snap) ||
+                        (mode === 'update' && snap)) {
+                        let v = dependencies['clone'](s)({ stealth: true })
                         if (s.path.length === 0) {
                             // Root state snapshot case
-                            // Clone the entire state, starting from root
-                            v = dependencies['clone'](s)({ stealth: true })
-                            snapshots.set(k, v)
-                        } else if (snapshots.has(k)) {
+                            stateAtPath = hookstate(v)
+                            snapshots.set(k, stateAtPath)
+                        } else if (snap) {
                             // Nested state snapshot case
-                            v = dependencies['clone'](s)({ stealth: true })
-                            setByPath(snapshots.get(k), s.path, v)
+                            stateAtPath = getByPath(snap, s.path)
+                            if (!stateAtPath) {
+                                throw Error(`Snapshot does not have nested value by path '${s.path.join('/')}' to update`);
+                            }
+                            stateAtPath.set(v)
                         } else {
                             throw Error('Creating a new snapshot from a nested state is not allowed.');
                         }
                     } else {
-                        v = snapshots.get(k)
+                        let snap = snapshots.get(k)
+                        if (!snap) {
+                            return undefined
+                        }
                         if (mode === 'delete') {
                             if (s.path.length !== 0) {
                                 throw Error('Deleting a snapshot from a nested state is not allowed.');
                             }
                             snapshots.delete(k) // delete at root only
                         }
-                        v = getByPath(v, s.path) // lookup by path
+                        stateAtPath = getByPath(snap, s.path) // lookup by path
                     }
-                    return v
+                    options?.onSnapshot?.(s, key, mode)
+                    return stateAtPath
                 },
                 rollback: (s) => (key) => {
                     let k: K | '___default' = key || '___default';
-                    if (snapshots.has(k)) {
-                        let v = getByPath(snapshots.get(k), s.path);
-                        s.set(v) // set for cloning // TODO get rid of this workaround
-                        v = (s as unknown as State<StateValueAtPath, { clone: () => StateValueAtRoot }>).clone()
-                        s.set(v) // set cloned, otherwise the state will keep mutation the object from snapshot
-                        return v
+                    let snap = snapshots.get(k)
+                    if (snap) {
+                        let stateAtPath = getByPath(snap, s.path);
+                        // get cloned, otherwise the state will keep mutation the object from snapshot
+                        let tmpState = hookstate(stateAtPath && stateAtPath.get({ stealth: true }));
+                        let valueAtPathCloned = dependencies['clone'](tmpState)({ stealth: true })
+                        s.set(valueAtPathCloned)
+                        return stateAtPath
                     }
                     return undefined
                 },

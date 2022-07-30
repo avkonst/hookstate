@@ -13,7 +13,7 @@ test('snapshotable: basic test', async () => {
         let result = useHookstate({ a: [0, 1], b: [2, 3] }, extend(
             clonable(v => JSON.parse(JSON.stringify(v))),
             comparable((v1, v2) => JSON.stringify(v1).localeCompare(JSON.stringify(v2))),
-            snapshotable<'1' | '2'>()
+            snapshotable()
         ))
         result.snapshot(undefined, 'insert') // initial snapshot
         return result;
@@ -76,7 +76,7 @@ test('snapshotable: basic test', async () => {
     result.current.snapshot('1')
     act(() => {
         result.current.b[0].set(-2);
-        expect(result.current.b.snapshot('1')).toStrictEqual([-2, 3]) // should take full object snapshot
+        expect(result.current.b.snapshot('1')?.value).toStrictEqual([-2, 3]) // should take full object snapshot
         result.current.b[0].set(2);
     });
 
@@ -103,7 +103,7 @@ test('snapshotable: basic test', async () => {
     expect(result.current.unmodified()).toStrictEqual(true)
 
     act(() => {
-        result.current.a.rollback('1');
+        expect(result.current.a.rollback('1')?.value).toStrictEqual([2, 1]);
     });
     expect(renderTimes).toStrictEqual(4);
     expect(result.current.a[0].get()).toStrictEqual(2);
@@ -122,7 +122,7 @@ test('snapshotable: basic test', async () => {
     expect(result.current.b[1].get()).toStrictEqual(3);
 
     act(() => {
-        result.current.rollback('2'); // should do nothing as there was no such a snapshot
+        expect(result.current.rollback('2')).toStrictEqual(undefined); // should do nothing as there was no such a snapshot
     });
     expect(renderTimes).toStrictEqual(5);
     expect(result.current.a[0].get()).toStrictEqual(0);

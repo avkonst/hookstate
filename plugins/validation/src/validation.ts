@@ -1,5 +1,5 @@
 
-import { Path, StateValueAtPath, State, StateValue, Extension } from '@hookstate/core';
+import { Path, StateValueAtPath, State, InferStateValueType, Extension } from '@hookstate/core';
 
 export type ValidationSeverity = 'error' | 'warning';
 
@@ -10,8 +10,8 @@ export interface ValidationError {
 }
 
 export interface Validation<K = string> {
-    validate(rule: (value: StateValue<this>) => boolean,
-        message: string | ((value: StateValue<this>) => string),
+    validate(rule: (value: InferStateValueType<this>) => boolean,
+        message: string | ((value: InferStateValueType<this>) => string),
         severity?: ValidationSeverity): void,
 
     valid(options?: { depth?: number }): boolean,

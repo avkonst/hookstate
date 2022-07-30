@@ -60,21 +60,26 @@ export const none = Symbol('none') as StateValueAtPath;
  * 
  * @typeparam S Type of a value of a state
  */
-export type InferredStateKeysType<S> =
+export type InferStateKeysType<S> =
     S extends ReadonlyArray<infer _> ? ReadonlyArray<number> :
     S extends null ? undefined :
     S extends object ? ReadonlyArray<string> :
     undefined;
 
+// TODO deprecate
+export type InferredStateKeysType<S> = InferStateKeysType<S>;
 /**
  * Return type of [StateMethods.map()](#map).
  * 
  * @typeparam S Type of a value of a state
  */
-export type InferredStateOrnullType<S, E> =
+export type InferStateOrnullType<S, E> =
     S extends undefined ? undefined :
     S extends null ? null : State<S, E>;
 
+// TODO deprecated
+export type InferredStateOrnullType<S, E> = InferStateOrnullType<S, E>
+    
 /**
  * For plugin developers only.
  * An instance to manipulate the state in more controlled way.
@@ -139,7 +144,7 @@ export interface StateMethods<S, E = {}> extends __State<S, E> {
      * an array of numbers, not strings like with `Object.keys`.
      * 2. if `state.value` is not an object, the returned result will be undefined.
      */
-    readonly keys: InferredStateKeysType<S>;
+    readonly keys: InferStateKeysType<S>;
 
     /**
      * Unwraps and returns the underlying state value referred by
@@ -244,7 +249,7 @@ export interface StateMethods<S, E = {}> extends __State<S, E> {
      * 
      * [Learn more...](https://hookstate.js.org/docs/nullable-state)
      */
-    ornull: InferredStateOrnullType<S, E>;
+    ornull: InferStateOrnullType<S, E>;
 
     // TODO deprecate
     /**
@@ -306,13 +311,13 @@ export interface __State<S, E> {
 }
 
 // TODO document, give example how to use in extension method signatures
-export type StateValue<V> = V extends __State<(infer S), (infer _)> ? S : V
+export type InferStateValueType<V> = DeepReturnType<V> extends __State<(infer S), (infer _)> ? S : V
 // TODO document, give example how to use in extension method signatures
-export type StateExtension<V> = V extends __State<(infer _), (infer E)>
+export type InferStateExtensionType<V> = DeepReturnType<V> extends __State<(infer _), (infer E)>
     ? E
     : DeepReturnType<V> extends Extension<(infer I)>
     ? I : V
-export type DeepReturnType<V> = V extends () => (infer R) ? DeepReturnType<R> : V;
+export type DeepReturnType<V> = V extends (...args: any) => (infer R) ? DeepReturnType<R> : V;
 
 /**
  * Type of a result of [hookstate](#hookstate) and [useHookstate](#useHookstate) functions
@@ -487,6 +492,15 @@ export function createHookstate<S>(
     return hookstate(initial) as State<S, {}> & StateMethodsDestroy
 }
 
+// TODO block this on type system level
+export function hookstate<S, E, E2>(
+    source: __State<S, E>,
+    extension?: () => Extension<E2>
+): never;
+export function hookstate<S, E = {}>(
+    initial: SetInitialStateAction<S>,
+    extension?: (_?: __State<S, {}>) => Extension<E>
+): State<S, E>;
 export function hookstate<S, E = {}>(
     initial: SetInitialStateAction<S>,
     extension?: (_?: __State<S, {}>) => Extension<E>
@@ -580,18 +594,19 @@ export function useState<S>(
 // TODO document
 export function extend<
     S,
+    E,
     E1 extends {} = {},
     E2 extends {} = {},
     E3 extends {} = {},
     E4 extends {} = {},
     E5 extends {} = {}
 >(
-    e1?: (typemarker?: __State<S, {}>) => Extension<E1>,
-    e2?: (typemarker?: __State<S, E1>) => Extension<E2>,
-    e3?: (typemarker?: __State<S, E2 & E1>) => Extension<E3>,
-    e4?: (typemarker?: __State<S, E3 & E2 & E1>) => Extension<E4>,
-    e5?: (typemarker?: __State<S, E4 & E3 & E2 & E1>) => Extension<E5>
-): (_?: __State<S, {}>) => Extension<E5 & E4 & E3 & E2 & E1> {
+    e1?: (_?: __State<S, E>) => Extension<E1>,
+    e2?: (_?: __State<S, E1>) => Extension<E2>,
+    e3?: (_?: __State<S, E2 & E1>) => Extension<E3>,
+    e4?: (_?: __State<S, E3 & E2 & E1>) => Extension<E4>,
+    e5?: (_?: __State<S, E4 & E3 & E2 & E1>) => Extension<E5>
+): (_?: __State<S, E>) => Extension<E5 & E4 & E3 & E2 & E1> {
     function extended(extensions: (() => Extension<{}>)[]) {
         let exts = extensions.map(i => i());
         let onInitCbs = exts.map(i => i.onInit).filter(i => i)
@@ -1772,16 +1787,16 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
         return updated;
     }
 
-    get keys(): InferredStateKeysType<S> {
+    get keys(): InferStateKeysType<S> {
         const value = this.get()
         if (Array.isArray(value)) {
             return Object.keys(value).map(i => Number(i)).filter(i => Number.isInteger(i)) as
-                unknown as InferredStateKeysType<S>;
+                unknown as InferStateKeysType<S>;
         }
         if (Object(value) === value) {
-            return Object.keys(value) as unknown as InferredStateKeysType<S>;
+            return Object.keys(value) as unknown as InferStateKeysType<S>;
         }
-        return undefined as InferredStateKeysType<S>;
+        return undefined as InferStateKeysType<S>;
     }
 
     child(key: number | string) {
@@ -2013,12 +2028,12 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
         return this.store.promiseError;
     }
 
-    get ornull(): InferredStateOrnullType<S, E> {
+    get ornull(): InferStateOrnullType<S, E> {
         const value = this.get()
         if (value === null || value === undefined) {
-            return value as unknown as InferredStateOrnullType<S, E>;
+            return value as unknown as InferStateOrnullType<S, E>;
         }
-        return this.self() as InferredStateOrnullType<S, E>;
+        return this.self() as InferStateOrnullType<S, E>;
     }
 
     attach(plugin: () => Plugin): State<S, E>

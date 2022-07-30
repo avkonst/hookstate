@@ -24,8 +24,8 @@ title: API @hookstate/core
 
 ### Type aliases
 
-- [InferredStateKeysType](#inferredstatekeystype)
-- [InferredStateOrnullType](#inferredstateornulltype)
+- [InferStateKeysType](#inferredstatekeystype)
+- [InferStateOrnullType](#inferredstateornulltype)
 - [Path](#path)
 - [SetInitialStateAction](#setinitialstateaction)
 - [SetPartialStateAction](#setpartialstateaction)
@@ -61,9 +61,9 @@ title: API @hookstate/core
 
 ## Type aliases
 
-### InferredStateKeysType
+### InferStateKeysType
 
-Ƭ **InferredStateKeysType**<`S`\>: `S` extends `ReadonlyArray`<infer \_\> ? `ReadonlyArray`<`number`\> : `S` extends ``null`` ? `undefined` : `S` extends `object` ? `ReadonlyArray`<keyof `S`\> : `undefined`
+Ƭ **InferStateKeysType**<`S`\>: `S` extends `ReadonlyArray`<infer \_\> ? `ReadonlyArray`<`number`\> : `S` extends ``null`` ? `undefined` : `S` extends `object` ? `ReadonlyArray`<keyof `S`\> : `undefined`
 
 Return type of [StateMethods.keys](#readonly-keys).
 
@@ -79,9 +79,9 @@ Return type of [StateMethods.keys](#readonly-keys).
 
 ___
 
-### InferredStateOrnullType
+### InferStateOrnullType
 
-Ƭ **InferredStateOrnullType**<`S`, `E`\>: `S` extends `undefined` ? `undefined` : `S` extends ``null`` ? ``null`` : [`State`](#state)<`S`, `E`\>
+Ƭ **InferStateOrnullType**<`S`, `E`\>: `S` extends `undefined` ? `undefined` : `S` extends ``null`` ? ``null`` : [`State`](#state)<`S`, `E`\>
 
 Return type of [StateMethods.map()](#map).
 
@@ -1565,7 +1565,7 @@ ___
 
 #### keys
 
-• `Readonly` **keys**: [`InferredStateKeysType`](#inferredstatekeystype)<`S`\>
+• `Readonly` **keys**: [`InferStateKeysType`](#inferredstatekeystype)<`S`\>
 
 Return the keys of nested states.
 For a given state of [State](#state) type,
@@ -1583,7 +1583,7 @@ ___
 
 #### ornull
 
-• **ornull**: [`InferredStateOrnullType`](#inferredstateornulltype)<`S`, `E`\>
+• **ornull**: [`InferStateOrnullType`](#inferredstateornulltype)<`S`, `E`\>
 
 If state value is null or undefined, returns state value.
 Otherwise, it returns this state instance but

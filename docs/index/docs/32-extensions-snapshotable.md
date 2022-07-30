@@ -1,11 +1,11 @@
 ---
 id: extensions-snapshotable
-title: Tracking modified state
-sidebar_label: Initial state
+title: State snapshotting and restoring
+sidebar_label: Snapshotable state
 ---
 
 import { PreviewSample } from '../src/PreviewSample'
 
-The `Initial` plugin allows to track modified fields.
+The `@hookstate/snapshotable` plugin allows to take state stanshots and restore from it.
 
 <PreviewSample example="plugin-snapshotable" />

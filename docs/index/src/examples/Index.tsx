@@ -31,8 +31,8 @@ ExamplesRepo.set('performance-demo-large-table', <ExamplePerformanceLargeTable /
 ExamplesRepo.set('performance-demo-large-form', <ExamplePerformanceLargeForm />);
 ExamplesRepo.set('global-multiple-consumers-statefragment', <ExampleGlobalMultipleConsumersStateFragment />);
 
-ExamplesRepo.set('plugin-labelled', <ExamplePluginIdentifiable />);
-ExamplesRepo.set('plugin-initial', <ExamplePluginSnapshotable />);
+ExamplesRepo.set('plugin-identifiable', <ExamplePluginIdentifiable />);
+ExamplesRepo.set('plugin-snapshotable', <ExamplePluginSnapshotable />);
 ExamplesRepo.set('plugin-validation', <ExamplePluginValidation />);
 ExamplesRepo.set('plugin-localstored', <ExamplePluginLocalstored />);
 ExamplesRepo.set('plugin-broadcasted', <ExamplePluginBroadcasted />);

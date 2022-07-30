@@ -80,7 +80,7 @@ export const PreviewSample = (props: { example?: string, sampleFirst?: boolean }
             ? props.example : 'global-getting-started';
         const exampleMeta = ExamplesRepo.get(exampleId)!;
 
-        return <PreviewWithAsyncSource url={ExampleCodeUrl(exampleId)} sampleFirst={props.sampleFirst}>
+        return <PreviewWithAsyncSource url={ExampleCodeUrl(exampleId)} sampleFirst={props.sampleFirst ?? true}>
             {exampleMeta}
         </PreviewWithAsyncSource>
     }}

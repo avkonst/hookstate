@@ -1,39 +1,52 @@
 import React from 'react';
-import { useHookstate, State, extend, StateExtension, __State, Extension } from '@hookstate/core';
-import { clonable } from '@hookstate/clonable';
-import { comparable } from '@hookstate/comparable';
-import { initializable } from '@hookstate/initializable';
-import { snapshotable } from '@hookstate/snapshotable';
+import { useHookstate, State, extend, InferStateExtensionType, __State, Extension } from '@hookstate/core';
+import { Clonable, clonable } from '@hookstate/clonable';
+import { Comparable, comparable } from '@hookstate/comparable';
+import { Initializable, initializable } from '@hookstate/initializable';
+import { Snapshotable, snapshotable } from '@hookstate/snapshotable';
 
-// define hookstate extension which is composed of a number of other extensions
-const extensions = extend(
-    clonable(
-        // basic cloning, you may use lodash deep clone, instead
-        // or a custom cloner, if there a state holds
-        // values of custom classes
-        v => JSON.parse(JSON.stringify(v))),
-    comparable(
-        // basic comparison, you may use lodash comparison, instead
-        // or a custom compare implementation, if there a state holds
-        // values of custom classes
-        (v1, v2) => JSON.stringify(v1).localeCompare(JSON.stringify(v2))),
-    // if generic type is ommited, the snapshot key can be any string
-    // otherwise, only those names which are provided
-    snapshotable<'latest'>(),
-    initializable((s) => {
-        // optional one off initialization after a state is created
-        s.snapshot('latest') // take the initial snapshot
-    })
-)
+// define hookstate extension which is composed of a number of standard extensions
+function extensions<S, E>(
+    rerender: () => void // the defined extension accepts construction parameter
+) {
+    return extend<S, E, Clonable, Comparable, Snapshotable<'second'>, Initializable>(
+        clonable(
+            // basic cloning, you may use lodash deep clone, instead
+            // or a custom cloner, if there a state holds
+            // values of custom classes
+            v => (v === undefined) ? undefined : JSON.parse(JSON.stringify(v))),
+        comparable(
+            // basic comparison, you may use lodash comparison, instead
+            // or a custom compare implementation, if there a state holds
+            // values of custom classes
+            (v1, v2) => {
+                // String is to handle v1 === undefined
+                return String(JSON.stringify(v1)).localeCompare(JSON.stringify(v2))
+            }),
+        // if generic type is ommited, the snapshot key can be any string
+        // otherwise, only those names which are provided
+        snapshotable<'second'>({
+            // by default changes to snapshots are not tracked
+            // so, manually trigger rerender when snapshot is taken
+            onSnapshot: rerender
+        }),
+        initializable((s) => {
+            // optional one off initialization after a state is created
+            s.snapshot() // take the initial snapshot with default key
+            s.snapshot('second') // take the initial snapshot with 'second' key
+        })
+    )
+}
 
 // inter type defintion of extension methods
-type Extended = StateExtension<typeof extensions>
+type Extended = InferStateExtensionType<typeof extensions>
 
 export const ExampleComponent = () => {
     const state = useHookstate(
         ['First Task', 'Second Task'],
-        () => extensions()
+        extensions(() => {})
     )
+    
     return <>
         <ModifiedStatus state={state} />
         {state.map((taskState, taskIndex) =>
@@ -41,28 +54,65 @@ export const ExampleComponent = () => {
         )}
         <p><button onClick={() => state.merge(['Untitled'])}>
             Add task
-        </button></p>
+        </button>
+        </p>
     </>
 }
 
 function TaskEditor(props: { taskState: State<string, Extended> }) {
-    const taskState = useHookstate(props.taskState);
+    const state = useHookstate(props.taskState);
+    
+    // subscribe to snapshot updates, so modified() result is renrender when snapshot is changed
+    const defaultSnapshot = useHookstate(state.snapshot(undefined, 'lookup')).get({ noproxy: true })
+    const secondSnapshot = useHookstate(state.snapshot('second', 'lookup')).get({ noproxy: true })
+
     return <p>
-        Last render at: {(new Date()).toISOString()} <br/>
-        Is this task modified: {taskState.modified().toString()} <br/>
         <input
-            value={taskState.get()}
-            onChange={e => taskState.set(e.target.value)}
-        />
+            value={state.get()}
+            onChange={e => state.set(e.target.value)}
+        /><br/>
+        Modified (vs the default snapshot)?: {state.modified().toString()} <br/>
+        Modified (vs the second snapshot)?: {state.modified('second').toString()} <br/>
+        Rollback to: 
+        <button disabled={defaultSnapshot === undefined} onClick={() => state.rollback()}>
+            the <b>default</b> snapshot
+        </button>
+        <button disabled={secondSnapshot === undefined} onClick={() => state.rollback('second')}>
+            the <b>second</b> snapshot
+        </button><br />
+        Capture as: 
+        <button onClick={() => state.snapshot()}>
+            the <b>default</b> snapshot
+        </button>
+        <button onClick={() => state.snapshot('second')}>
+            the <b>second</b> snapshot
+        </button>
     </p>
 }
 
 function ModifiedStatus(props: { state: State<string[], Extended> }) {
-    const modified = useHookstate(props.state).modified()
-        
+    const state = useHookstate(props.state)
+    
+    // subscribe to snapshot updates, so modified() result is renrender when snapshot is changed
+    useHookstate(state.snapshot(undefined, 'lookup')).get({ noproxy: true })
+    useHookstate(state.snapshot('second', 'lookup')).get({ noproxy: true })
+    
     return <p>
-        Last render at: {(new Date()).toISOString()} <br/>
-        Is whole current state modified (vs the initial): {modified.toString()} <br/>
-        The <b>initial</b> state: {JSON.stringify(props.state.get())}
+        Whole state modified (vs the default snapshot)?: {state.modified().toString()} <br/>
+        Whole state modified (vs the second snapshot)?: {state.modified('second').toString()} <br />
+        Rollback to: 
+        <button onClick={() => state.rollback()}>
+            the <b>default</b> snapshot
+        </button>
+        <button onClick={() => state.rollback('second')}>
+            the <b>second</b> snapshot
+        </button><br />
+        Capture as: 
+        <button onClick={() => state.snapshot()}>
+            the <b>default</b> snapshot
+        </button>
+        <button onClick={() => state.snapshot('second')}>
+            the <b>second</b> snapshot
+        </button>
     </p>;
 }
