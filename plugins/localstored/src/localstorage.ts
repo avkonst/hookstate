@@ -10,10 +10,10 @@ export function localstored<S, E>(options?: {
         let key: string;
         let serializer: (s: State<StateValueAtPath>) => () => string;
         let deserializer: (s: State<StateValueAtPath>) => (v: string) => void;
-        let stateAccessor: () => State<StateValueAtRoot, {}>
+        let stateAtRoot: State<StateValueAtRoot, {}>
         return {
-            onCreate: (sf) => {
-                stateAccessor = sf;
+            onCreate: (s) => {
+                stateAtRoot = s;
                 return {}
             },
             onInit: (state, extensionMethods) => {
@@ -48,15 +48,14 @@ export function localstored<S, E>(options?: {
                     })
                 }
             },
-            onSet: (s, d) => {
-                // save the entire state from the root
-                // smarter implementations could implement partial state saves
-                // to save only the nested state set (see unused parameter s in onSet)
-                let state = stateAccessor()
-                if (state.promised || s.error !== undefined) {
+            onSet: (s) => {
+                if (s.promised || s.error !== undefined) {
                     localStorage.removeItem(key)
                 } else {
-                    localStorage.setItem(key, serializer(state)());
+                    // save the entire state from the root
+                    // smarter implementations could implement partial state saving,
+                    // which would save only the nested state set (parameter `s` in onSet)
+                    localStorage.setItem(key, serializer(stateAtRoot)());
                 }
             }
         }
