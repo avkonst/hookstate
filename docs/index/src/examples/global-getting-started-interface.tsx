@@ -1,5 +1,5 @@
 import React from 'react';
-import { createHookstate, useState, State } from '@hookstate/core';
+import { createHookstate, useHookstate, State } from '@hookstate/core';
 
 // internal variables
 const globalState = createHookstate(0);
@@ -10,7 +10,7 @@ const wrapState = (s: State<number>) => ({
 
 // The following 2 functions can be exported now:
 export const accessGlobalState = () => wrapState(globalState)
-export const useGlobalState = () => wrapState(useState(globalState))
+export const useGlobalState = () => wrapState(useHookstate(globalState))
 
 // And here is how it can be used outside of a component ...
 setInterval(() => accessGlobalState().increment(), 3000)

@@ -49,7 +49,7 @@ example, if you have got the state defined as the following, which allows for dy
 ```tsx
 const dictionaryState = createHookstate<Record<string, number>>({})
 function NestedStateByName(props: { stateKey: string }) {
-    const state = useState(dictionaryState)
+    const state = useHookstate(dictionaryState)
     ...
 }
 ```
@@ -75,7 +75,7 @@ function NestedStateByName(props: {
         // note: compiler knows allowed names
         stateKey: 'property1' | 'property2'
     }) {
-    const state = useState(dictionaryState)
+    const state = useHookstate(dictionaryState)
     // so access by index works, which would be equivalent to:
     // state.nested(props.stateKey).value
     return <>{state[props.stateKey].value}</>
@@ -91,7 +91,7 @@ Below, you will find more about available methods for managing nested states.
 Let's consider the following state:
 
 ```tsx
-const state = useState({ a: 1, b: 2 })
+const state = useHookstate({ a: 1, b: 2 })
 ```
 
 One of the state methods is `set`, which is used to set the new state value.
@@ -113,7 +113,7 @@ Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) in the API re
 Let's consider the following state:
 
 ```tsx
-const state = useState({ a: 1, b: 2 })
+const state = useHookstate({ a: 1, b: 2 })
 ```
 
 `state.keys` returns an array of names of existing properties. It is equivalent to `Object.keys(state)` or `Object.keys(state.value)`.
@@ -129,7 +129,7 @@ Learn more about [StateMethods.keys](typedoc-hookstate-core.md#readonly-keys) in
 For a given state:
 
 ```tsx
-const state = useState({ a: 1, b: 2 })
+const state = useHookstate({ a: 1, b: 2 })
 ```
 
 The most efficient and recommended methods to update a nested property are the following: 
@@ -163,7 +163,7 @@ Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) and [StateMet
 For a given state:
 
 ```tsx
-const state = useState<{ a: number, b?: number }>({ a: 1 }) // notice b property is optional
+const state = useHookstate<{ a: number, b?: number }>({ a: 1 }) // notice b property is optional
 ```
 
 The recommended methods to add a new nested property are the following: 
@@ -200,7 +200,7 @@ Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) and [StateMet
 For a given state:
 
 ```tsx
-const state = useState<{ a: number, b?: number }>({ a: 1, b: 2 }) // notice b property is optional
+const state = useHookstate<{ a: number, b?: number }>({ a: 1, b: 2 }) // notice b property is optional
 ```
 
 The recommended methods to delete a property are the following: 
@@ -232,7 +232,7 @@ Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) and [StateMet
 For a given state:
 
 ```tsx
-const state = useState<Record<string, number>>({ a: 1, b: 2 })
+const state = useHookstate<Record<string, number>>({ a: 1, b: 2 })
 ```
 
 The recommended method to swap properties is the following: 
@@ -260,7 +260,7 @@ Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) and [StateMet
 You may have noticed the usage of [StateMethods.merge](typedoc-hookstate-core.md#merge) above. This does a partial update to the state and can insert, update and delete properties all in one call:
 
 ```tsx
-const state = useState<Record<string, number>>({
+const state = useHookstate<Record<string, number>>({
     propertyToUpdate: 1,
     propertyToDelete: 2
 })
@@ -280,7 +280,7 @@ Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) and [StateMet
 Let's consider the following state:
 
 ```tsx
-const state = useState([1, 2])
+const state = useHookstate([1, 2])
 ```
 
 Use `set` state methods to set new state value:
@@ -302,7 +302,7 @@ Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) in the API re
 Let's consider the following state:
 
 ```tsx
-const state = useState([1, 2])
+const state = useHookstate([1, 2])
 ```
 
 `state.keys` returns an array of numbers of existing indexes. It is equivalent to `Object.keys(state)` or `Object.keys(state.value)` but includes only indexes as numbers (not as strings, like for an object state).
@@ -318,7 +318,7 @@ Learn more about [StateMethods.keys](typedoc-hookstate-core.md#keys) in the API 
 For a given state:
 
 ```tsx
-const state = useState([1, 2])
+const state = useHookstate([1, 2])
 ```
 
 The most efficient and recommended methods to update a nested element are the following: 
@@ -351,7 +351,7 @@ Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) and [StateMet
 To a given state:
 
 ```tsx
-const state = useState([1000])
+const state = useHookstate([1000])
 ```
 
 The recommended methods to add new element are the following: 
@@ -381,7 +381,7 @@ Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) and [StateMet
 From a given state:
 
 ```tsx
-const state = useState([1000, 2000, 3000])
+const state = useHookstate([1000, 2000, 3000])
 ```
 
 The recommended methods to delete an element are the following: 
@@ -411,7 +411,7 @@ Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) and [StateMet
 For a given state:
 
 ```tsx
-const state = useState([1000, 2000])
+const state = useHookstate([1000, 2000])
 ```
 
 The recommended method to append another array is the following: 
@@ -426,7 +426,7 @@ Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) and [StateMet
 For a given state:
 
 ```tsx
-const state = useState([1000, 2000])
+const state = useHookstate([1000, 2000])
 ```
 
 The recommended method to swap elements is the following: 
@@ -454,7 +454,7 @@ Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) and [StateMet
 Use the `Array.prototype.splice` function to remove, replace or delete elements. In particular, this can be used to prepend new elements to an array value:
 
 ```tsx
-const state = useState([3000, 4000])
+const state = useHookstate([3000, 4000])
 state.set(p => {
     p.splice(0, 0, 1000, 2000);
     return p;
@@ -466,7 +466,7 @@ state.set(p => {
 You may have noticed the usage of [StateMethods.merge](typedoc-hookstate-core.md#merge) above. This does a partial update to the state and can insert, update and delete array elements all in one call:
 
 ```tsx
-const state = useState([1000, 2000, 3000])
+const state = useHookstate([1000, 2000, 3000])
 state.merge({
     0: 2,
     1: none,
@@ -483,7 +483,7 @@ Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) and [StateMet
 For a given state:
 
 ```tsx
-const state = useState("Hello ")
+const state = useHookstate("Hello ")
 ```
 
 The recommended method to append another string is the following: 

@@ -1,9 +1,9 @@
 import React from 'react';
-import { useState, State } from '@hookstate/core';
+import { useHookstate, State } from '@hookstate/core';
 import { Labelled } from '@hookstate/labelled';
 
 export const ExampleComponent = () => {
-    const state = useState(['First Task', 'Second Task'])
+    const state = useHookstate(['First Task', 'Second Task'])
     state.attach(Labelled('todo-editor'));
     return <>
         {state.map((taskState, taskIndex) =>
@@ -16,7 +16,7 @@ export const ExampleComponent = () => {
 }
 
 function TaskEditor(props: { taskState: State<string> }) {
-    const taskState = useState(props.taskState);
+    const taskState = useHookstate(props.taskState);
     return <p>
         State label: {Labelled(taskState)} <br/>
         <input

@@ -1,14 +1,14 @@
-import { useState } from '../';
+import { useHookstate } from '../';
 
 import { renderHook } from '@testing-library/react-hooks';
 
 test('error: should not allow set to another state value', async () => {
     const state1 = renderHook(() => {
-        return useState({ prop1: [0, 0] })
+        return useHookstate({ prop1: [0, 0] })
     });
 
     const state2 = renderHook(() => {
-        return useState({ prop2: [0, 0] })
+        return useHookstate({ prop2: [0, 0] })
     });
 
     expect(() => {
@@ -19,11 +19,11 @@ test('error: should not allow set to another state value', async () => {
 
 test('error: should not allow create state from another state value', async () => {
     const state1 = renderHook(() => {
-        return useState({ prop1: [0, 0] })
+        return useHookstate({ prop1: [0, 0] })
     });
 
     const state2 = renderHook(() => {
-        return useState(state1.result.current.get().prop1)
+        return useHookstate(state1.result.current.get().prop1)
     })
 
     expect(state2.result.error?.message)
@@ -33,15 +33,15 @@ test('error: should not allow create state from another state value', async () =
 
 test('error: should not allow create state from another state value (nested)', async () => {
     const state1 = renderHook(() => {
-        return useState({ prop1: [0, 0] })
+        return useHookstate({ prop1: [0, 0] })
     });
 
     const state2 = renderHook(() => {
-        return useState(state1.result.current)
+        return useHookstate(state1.result.current)
     })
 
     const state3 = renderHook(() => {
-        return useState(state2.result.current.prop1.get())
+        return useHookstate(state2.result.current.prop1.get())
     })
 
     expect(state3.result.error?.message)
@@ -51,7 +51,7 @@ test('error: should not allow create state from another state value (nested)', a
 
 test('error: should not allow serialization of statelink', async () => {
     const state1 = renderHook(() => {
-        return useState({ prop1: [0, 0] })
+        return useHookstate({ prop1: [0, 0] })
     });
     
     expect(() => JSON.stringify(state1))

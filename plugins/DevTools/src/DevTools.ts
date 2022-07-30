@@ -1,5 +1,5 @@
 import {
-    createHookstate,
+    createState,
     useState,
     StateValueAtRoot,
     StateValueAtPath,
@@ -46,7 +46,7 @@ function DevToolsInitializeInternal() {
 
     let MonitoredStatesLogger = (_: string) => { /* */ };
     const MonitoredStatesLabel = '@hookstate/devtools: settings';
-    SettingsState = createHookstate(() => {
+    SettingsState = createState(() => {
         // localStorage is not available under react native
         const p = typeof window !== 'undefined' && window.localStorage &&
             // read persisted if we can
@@ -290,6 +290,6 @@ function DevToolsInitializeInternal() {
     MonitoredStatesLogger = (str) => DevTools(SettingsState).log(str)
 
     useState[DevToolsID] = DevToolsInternal
-    createHookstate[DevToolsID] = () => DevToolsInternal(true)
+    createState[DevToolsID] = () => DevToolsInternal(true)
 };
 DevToolsInitializeInternal() // attach on load

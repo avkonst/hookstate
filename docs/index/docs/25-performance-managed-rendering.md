@@ -11,7 +11,7 @@ import { PreviewSample } from '../src/PreviewSample'
 This plugin allows to opt out from usage tracking. [Performance overview section](./performance-intro) explains what effect it makes. You rarely need to use it as it is purely explicit optimisation technique. Most common application for this is to disable usage tracking for a large object before submitting it to JSON serializer or table dump. For example:
 
 ```tsx
-const state = useState({ data: some_very_large_object, otherDate: ... })
+const state = useHookstate({ data: some_very_large_object, otherDate: ... })
 // disable state usage tracking only for 'data' property
 // and it's children
 state.data.attach(Downgraded)

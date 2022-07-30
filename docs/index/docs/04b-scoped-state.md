@@ -29,7 +29,7 @@ const taskState = props.taskState;
 by
 
 ```tsx
-const taskState = useState(props.taskState);
+const taskState = useHookstate(props.taskState);
 ```
 
 You can see what effect the scoped state makes in the following interactive example. Set / unset `use the scoped state` checkbox and try editing the fields in the form. Colors will change to show which components are re-rendered:

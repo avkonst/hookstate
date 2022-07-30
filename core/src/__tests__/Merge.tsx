@@ -1,4 +1,4 @@
-import { useState, none } from '../';
+import { useHookstate, none } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 
@@ -6,7 +6,7 @@ test('primitive: should rerender used after merge update', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState(1)
+        return useHookstate(1)
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.get()).toStrictEqual(1);
@@ -22,7 +22,7 @@ test('string: should rerender used after merge update', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState('str')
+        return useHookstate('str')
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.get()).toStrictEqual('str');
@@ -38,7 +38,7 @@ test('object: should rerender used after merge update', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState({
+        return useHookstate({
             field1: 1,
             field2: 2,
             field3: 3,
@@ -62,7 +62,7 @@ test('object: should rerender used after merge insert', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState<Record<string, number>>({
+        return useHookstate<Record<string, number>>({
             field1: 1,
             field2: 2,
             field3: 3,
@@ -87,7 +87,7 @@ test('object: should rerender used after merge delete', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState<Record<string, number>>({
+        return useHookstate<Record<string, number>>({
             field1: 1,
             field2: 2,
             field3: 3,
@@ -111,7 +111,7 @@ test('object: should rerender used after merge complex', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState<Record<string, number>>({
+        return useHookstate<Record<string, number>>({
             field1: 1,
             field2: 2,
             field3: 3,
@@ -139,7 +139,7 @@ test('object: should not rerender unused after merge update', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState<Record<string, number>>({
+        return useHookstate<Record<string, number>>({
             field1: 1,
             field2: 2,
             field3: 3,
@@ -163,7 +163,7 @@ test('array: should rerender used after merge update', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState([1, 2, 3, 4, 5, 6])
+        return useHookstate([1, 2, 3, 4, 5, 6])
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current[0].get()).toStrictEqual(1);
@@ -180,7 +180,7 @@ test('array: should rerender used after merge insert', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState([1, 2, 3, 4, 5, 6]);
+        return useHookstate([1, 2, 3, 4, 5, 6]);
     })
     expect(renderTimes).toStrictEqual(1);
     expect(result.current[0].get()).toStrictEqual(1);
@@ -197,7 +197,7 @@ test('array: should rerender used after merge concat', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState([1, 2, 3, 4, 5, 6]);
+        return useHookstate([1, 2, 3, 4, 5, 6]);
     })
     expect(renderTimes).toStrictEqual(1);
     expect(result.current[0].get()).toStrictEqual(1);
@@ -215,11 +215,11 @@ test('array: should rerender used after merge concat (scoped)', async () => {
     let renderTimesNested = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState([1, 2, 3, 4, 5, 6]);
+        return useHookstate([1, 2, 3, 4, 5, 6]);
     })
     const nested = renderHook(() => {
         renderTimesNested += 1;
-        return useState(result.current);
+        return useHookstate(result.current);
     })
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.keys).toStrictEqual([0, 1, 2, 3, 4, 5]);
@@ -237,7 +237,7 @@ test('array: should rerender used after merge delete', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState([1, 2, 3, 4, 5, 6])
+        return useHookstate([1, 2, 3, 4, 5, 6])
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current[0].get()).toStrictEqual(1);
@@ -255,7 +255,7 @@ test('array: should rerender used after merge complex', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState([1, 2, 3, 4, 5, 6])
+        return useHookstate([1, 2, 3, 4, 5, 6])
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current[0].get()).toStrictEqual(1);
@@ -273,7 +273,7 @@ test('array: should not rerender unused after merge update', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState([1, 2, 3, 4, 5, 6])
+        return useHookstate([1, 2, 3, 4, 5, 6])
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current[0].get()).toStrictEqual(1);

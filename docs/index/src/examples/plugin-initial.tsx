@@ -1,9 +1,9 @@
 import React from 'react';
-import { useState, State } from '@hookstate/core';
+import { useHookstate, State } from '@hookstate/core';
 import { Initial } from '@hookstate/initial';
 
 export const ExampleComponent = () => {
-    const state = useState(['First Task', 'Second Task'])
+    const state = useHookstate(['First Task', 'Second Task'])
     state.attach(Initial); // enable the plugin
     return <>
         <ModifiedStatus state={state} />
@@ -17,7 +17,7 @@ export const ExampleComponent = () => {
 }
 
 function TaskEditor(props: { taskState: State<string> }) {
-    const taskState = useState(props.taskState);
+    const taskState = useHookstate(props.taskState);
     return <p>
         Last render at: {(new Date()).toISOString()} <br/>
         Is this task modified: {Initial(taskState).modified().toString()} <br/>
@@ -29,7 +29,7 @@ function TaskEditor(props: { taskState: State<string> }) {
 }
 
 function ModifiedStatus(props: { state: State<string[]> }) {
-    const modified = Initial(useState(props.state)).modified()
+    const modified = Initial(useHookstate(props.state)).modified()
         
     return <p>
         Last render at: {(new Date()).toISOString()} <br/>

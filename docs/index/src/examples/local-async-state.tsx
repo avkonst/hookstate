@@ -1,11 +1,11 @@
 import React from 'react';
-import { useState } from '@hookstate/core';
+import { useHookstate } from '@hookstate/core';
 
 export const ExampleComponent = () => {
     const resourcePath = 'https://raw.githubusercontent.com/avkonst/hookstate/master/CNAME';
     const fetchResource = () => fetch(resourcePath)
         .then(r => r.text())
-    const state = useState(fetchResource);
+    const state = useHookstate(fetchResource);
     
     if (state.promised) {
         return <p>Loading {resourcePath}</p>;

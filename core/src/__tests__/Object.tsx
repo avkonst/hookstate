@@ -1,4 +1,4 @@
-import { useState, createHookstate, none } from '../';
+import { useHookstate, createHookstate, none } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 
@@ -6,7 +6,7 @@ test('object: should rerender used', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState({
+        return useHookstate({
             field1: 0,
             field2: 'str'
         })
@@ -27,7 +27,7 @@ test('object: should not crash on toString', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState({
+        return useHookstate({
             field1: 0,
             field2: 'str'
         })
@@ -46,7 +46,7 @@ test('object: should not crash on valueOf', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState({
+        return useHookstate({
             field1: 0,
             field2: 'str'
         })
@@ -64,7 +64,7 @@ test('object: should rerender used null', async () => {
     const state = createHookstate<{ field: string } | null>(null)
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState(state)
+        return useHookstate(state)
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.value?.field).toStrictEqual(undefined);
@@ -83,7 +83,7 @@ test('object: should rerender used property-hiphen', async () => {
     const state = createHookstate<{ 'hiphen-property': string }>({ 'hiphen-property': 'value' })
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState(state)
+        return useHookstate(state)
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.value['hiphen-property']).toStrictEqual('value');
@@ -100,7 +100,7 @@ test('object: should rerender used (boolean-direct)', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState({
+        return useHookstate({
             field1: true,
             field2: 'str'
         })
@@ -121,7 +121,7 @@ test('object: should rerender used via nested', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState({
+        return useHookstate({
             field1: 0,
             field2: 'str'
         })
@@ -146,7 +146,7 @@ test('object: should rerender used via nested global', async () => {
     });
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState(state.field1)
+        return useHookstate(state.field1)
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.get()).toStrictEqual(0);
@@ -170,7 +170,7 @@ test('object: should rerender used via nested function', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState({} as { field1?: number })
+        return useHookstate({} as { field1?: number })
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.nested("field1").value).toStrictEqual(undefined);
@@ -190,7 +190,7 @@ test('object: should not rerender used symbol properties', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState({
+        return useHookstate({
             field1: 0,
             field2: 'str'
         })
@@ -219,7 +219,7 @@ test('object: should rerender used when set to the same', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState({
+        return useHookstate({
             field: 1
         })
     });
@@ -239,7 +239,7 @@ test('object: should rerender when keys used', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState<{field: number, optional?: number} | null>({
+        return useHookstate<{field: number, optional?: number} | null>({
             field: 1
         })
     });
@@ -269,7 +269,7 @@ test('object: should rerender unused when new element', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState({
+        return useHookstate({
             field1: 0,
             field2: 'str'
         })
@@ -298,7 +298,7 @@ test('object: should not rerender unused property', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState({
+        return useHookstate({
             field1: 0,
             field2: 'str'
         })
@@ -316,7 +316,7 @@ test('object: should not rerender unused self', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState({
+        return useHookstate({
             field1: 0,
             field2: 'str'
         })
@@ -333,7 +333,7 @@ test('object: should delete property when set to none', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState({
+        return useHookstate({
             field1: 0,
             field2: 'str',
             field3: true
@@ -386,7 +386,7 @@ test('object: should auto save latest state for unmounted', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState(state)
+        return useHookstate(state)
     });
     const unmountedLink = state
     expect(unmountedLink.field1.get()).toStrictEqual(0);
@@ -404,7 +404,7 @@ test('object: should set to null', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState<{} | null>({})
+        return useHookstate<{} | null>({})
     });
 
     const _unused = result.current.get()
@@ -419,7 +419,7 @@ test('object: should denull', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState<{} | null>({})
+        return useHookstate<{} | null>({})
     });
 
     const state = result.current.ornull
@@ -436,7 +436,7 @@ test('object: should return nested state with conflict name', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState<{ value: number }>({ value: 0 })
+        return useHookstate<{ value: number }>({ value: 0 })
     });
 
     expect(result.current.nested('value').value).toEqual(0)
@@ -453,7 +453,7 @@ test('object: should return downgraded value for custom object classes', async (
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState(new Date("2022-06-15"))
+        return useHookstate(new Date("2022-06-15"))
     });
 
     expect(result.current.value.getMonth()).toEqual(5)

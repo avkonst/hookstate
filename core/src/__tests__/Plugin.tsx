@@ -1,4 +1,4 @@
-import { useState, createHookstate, Plugin, DevToolsID, DevTools, DevToolsExtensions, PluginCallbacks } from '../';
+import { useHookstate, createHookstate, Plugin, DevToolsID, DevTools, DevToolsExtensions, PluginCallbacks } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 
@@ -10,7 +10,7 @@ test('plugin: common flow callbacks', async () => {
     const messages: string[] = []
     const { result, unmount } = renderHook(() => {
         renderTimes += 1;
-        return useState([{
+        return useHookstate([{
             f1: 0,
             f2: 'str'
         }]).attach(() => ({
@@ -183,7 +183,7 @@ test('plugin: common flow callbacks global state', async () => {
     let renderTimes = 0
     const { result, unmount } = renderHook(() => {
         renderTimes += 1;
-        return useState(stateInf)
+        return useHookstate(stateInf)
     });
 
     expect(DevTools(result.current).label('should not be labelled')).toBeUndefined();
@@ -249,7 +249,7 @@ test('plugin: common flow callbacks global state', async () => {
 
 test('plugin: common flow callbacks devtools', async () => {
     const messages: string[] = []
-    useState[DevToolsID] = () => ({
+    useHookstate[DevToolsID] = () => ({
         id: DevToolsID,
         init: (l) => {
             let label: string | undefined = undefined;
@@ -275,7 +275,7 @@ test('plugin: common flow callbacks devtools', async () => {
         let renderTimes = 0
         const { result, unmount } = renderHook(() => {
             renderTimes += 1;
-            return useState([{
+            return useHookstate([{
                 f1: 0,
                 f2: 'str'
             }])
@@ -329,7 +329,7 @@ test('plugin: common flow callbacks devtools', async () => {
         expect(messages.slice(5)).toEqual([])
 
     } finally {
-        delete useState[DevToolsID];
+        delete useHookstate[DevToolsID];
     }
 });
 
@@ -366,7 +366,7 @@ test('plugin: common flow callbacks global state devtools', async () => {
         let renderTimes = 0
         const { result, unmount } = renderHook(() => {
             renderTimes += 1;
-            return useState(stateRef)
+            return useHookstate(stateRef)
         });
         expect(renderTimes).toStrictEqual(1);
         expect(messages).toEqual(

@@ -11,15 +11,15 @@ import { PreviewSample } from '../src/PreviewSample'
 Happens when new state is created with an initial value, which is a value of another state.
 
 ```tsx
-const state1 = useState(...)
-const state2 = useState(state1.value) // <== Error!
+const state1 = useHookstate(...)
+const state2 = useHookstate(state1.value) // <== Error!
 ```
 
 If you would like to create a state from a clone of a state, you may do something along this line:
 
 ```tsx
-const state1 = useState(...)
-const state2 = useState(
+const state1 = useHookstate(...)
+const state2 = useHookstate(
     // simplest way to clone an object
     JSON.parse(JSON.stringify(state1.value)))
 ```
@@ -29,16 +29,16 @@ const state2 = useState(
 Happens when state is set to a new value, which is a value of another state.
 
 ```tsx
-const state1 = useState(...)
-const state2 = useState(...)
+const state1 = useHookstate(...)
+const state2 = useHookstate(...)
 state2.set(state1.value) // <== Error!
 ```
 
 If you would like to set state value from a clone of a state, you may do something along this line:
 
 ```tsx
-const state1 = useState(...)
-const state2 = useState(...)
+const state1 = useHookstate(...)
+const state2 = useHookstate(...)
 state2.set(
     // simplest way to clone an object
     JSON.parse(JSON.stringify(state1.value)))
@@ -49,7 +49,7 @@ state2.set(
 Happens when state is read (used) when its underlying promise has not been resolved or rejected yet.
 
 ```tsx
-const state = useState(new Promise(...))
+const state = useHookstate(new Promise(...))
 state.value // <== Error!
 state.keys // <== Error!
 state.map(...) // <== Error!
@@ -63,7 +63,7 @@ More information about [asynchronous states](./asynchronous-state).
 Happens when state is written (set or merged) when its underlying promise has not been resolved or rejected yet.
 
 ```tsx
-const state = useState(new Promise(...))
+const state = useHookstate(new Promise(...))
 state.set(...) // <== Error!
 state.merge(...) // <== Error!
 ```
@@ -75,7 +75,7 @@ More information about [asynchronous states](./asynchronous-state).
 Happens when nested state is set to a promise. Nested state does not support asynchronous state separately from a root state.
 
 ```tsx
-const state = useState({ prop: ... })
+const state = useHookstate({ prop: ... })
 state.prop.set(new Promise(...)) // <== Error!
 ```
 
@@ -92,7 +92,7 @@ state.set(...) // <== Error!
 ```
 
 ```tsx
-const state = useState(...)
+const state = useHookstate(...)
 React.useEffect(() => {
     setTimeout(() => {
         state.set(...)
@@ -106,10 +106,10 @@ React.useEffect(() => {
 Happens when state property is read when underlying state value is a primitive value.
 
 ```tsx
-const state = useState(1)
+const state = useHookstate(1)
 state.prop // <== Error!
 
-const state = useState({ child: 1 })
+const state = useHookstate({ child: 1 })
 state.child.prop // <== Error!
 ```
 
@@ -118,14 +118,14 @@ state.child.prop // <== Error!
 Happens when state is serialized to JSON.
 
 ```tsx
-const state = useState(...)
+const state = useHookstate(...)
 JSON.stringify(state) // <== Error!
 ```
 
 You likely intended to serialize state value instead:
 
 ```tsx
-const state = useState(...)
+const state = useHookstate(...)
 JSON.stringify(state.value)
 ```
 
@@ -134,14 +134,14 @@ JSON.stringify(state.value)
 Happens when state methods instance is serialized to JSON.
 
 ```tsx
-const state = useState(...)
+const state = useHookstate(...)
 JSON.stringify(state) // <== Error!
 ```
 
 You likely intended to serialize state value instead:
 
 ```tsx
-const state = useState(...)
+const state = useHookstate(...)
 JSON.stringify(state.value)
 ```
 
@@ -152,14 +152,14 @@ Happens when a plugin attempts to get its own instance from a state, where the p
 Using [Initial](./extensions-initial) plugin as an example:
 
 ```tsx
-const state = useState(...)
+const state = useHookstate(...)
 Initial(state) // <== Error!
 ```
 
 Correct way:
 
 ```tsx
-const state = useState(...)
+const state = useHookstate(...)
 state.attach(Initial)
 Initial(state)
 ```
@@ -169,14 +169,14 @@ Initial(state)
 Happens when state property is set via direct assignment.
 
 ```tsx
-const state = useState(...)
+const state = useHookstate(...)
 state.prop = 'some value' // <== Error!
 ```
 
 Correct way:
 
 ```tsx
-const state = useState(...)
+const state = useHookstate(...)
 state.prop.set('some value')
 ```
 
@@ -185,14 +185,14 @@ state.prop.set('some value')
 Happens when state value property is set via direct assignment.
 
 ```tsx
-const state = useState(...)
+const state = useHookstate(...)
 state.value.prop = 'some value' // <== Error!
 ```
 
 Correct way:
 
 ```tsx
-const state = useState(...)
+const state = useHookstate(...)
 state.prop.set('some value')
 ```
 
@@ -201,7 +201,7 @@ state.prop.set('some value')
 Setting prototype for a state is not supported.
 
 ```tsx
-const state = useState(...)
+const state = useHookstate(...)
 Object.setPrototypeOf(state, ...) // <== Error!
 ```
 
@@ -210,7 +210,7 @@ Object.setPrototypeOf(state, ...) // <== Error!
 Setting prototype for a state value is not supported.
 
 ```tsx
-const state = useState(...)
+const state = useHookstate(...)
 Object.setPrototypeOf(state.value, ...) // <== Error!
 ```
 
@@ -219,7 +219,7 @@ Object.setPrototypeOf(state.value, ...) // <== Error!
 Preventing extensions for a state is not supported.
 
 ```tsx
-const state = useState(...)
+const state = useHookstate(...)
 Object.preventExtensions(state) // <== Error!
 ```
 
@@ -229,7 +229,7 @@ Object.preventExtensions(state) // <== Error!
 Preventing extensions for a state value is not supported.
 
 ```tsx
-const state = useState(...)
+const state = useHookstate(...)
 Object.preventExtensions(state.value) // <== Error!
 ```
 
@@ -238,14 +238,14 @@ Object.preventExtensions(state.value) // <== Error!
 Defining new property directly on a state is not supported.
 
 ```tsx
-const state = useState(...)
+const state = useHookstate(...)
 Object.defineProperty(state, 'prop', ...) // <== Error!
 ```
 
 You likely intended the following instead:
 
 ```tsx
-const state = useState(...)
+const state = useHookstate(...)
 state.prop.set(...)
 ```
 
@@ -254,14 +254,14 @@ state.prop.set(...)
 Defining new property directly on a state value is not supported.
 
 ```tsx
-const state = useState(...)
+const state = useHookstate(...)
 Object.defineProperty(state.value, 'prop', ...) // <== Error!
 ```
 
 You likely intended the following instead:
 
 ```tsx
-const state = useState(...)
+const state = useHookstate(...)
 state.prop.set(...)
 ```
 
@@ -270,15 +270,15 @@ state.prop.set(...)
 Delete operator is not supported for a state object.
 
 ```tsx
-const state = useState(...)
+const state = useHookstate(...)
 delete state.prop // <== Error!
 ```
 
 You likely intended the following instead:
 
 ```tsx
-import { none, useState } from '@hookstate/core'
-const state = useState(...)
+import { none, useHookstate } from '@hookstate/core'
+const state = useHookstate(...)
 state.prop.set(none)
 ```
 
@@ -287,15 +287,15 @@ state.prop.set(none)
 Delete operator is not supported for a state value object.
 
 ```tsx
-const state = useState(...)
+const state = useHookstate(...)
 delete state[self.value].prop // <== Error!
 ```
 
 You likely intended the following instead:
 
 ```tsx
-import { none, useState } from '@hookstate/core'
-const state = useState(...)
+import { none, useHookstate } from '@hookstate/core'
+const state = useHookstate(...)
 state.prop.set(none)
 ```
 
@@ -304,7 +304,7 @@ state.prop.set(none)
 New operator is not supported for a state object.
 
 ```tsx
-const state = useState(...)
+const state = useHookstate(...)
 new state.prop // <== Error!
 ```
 
@@ -313,7 +313,7 @@ new state.prop // <== Error!
 New operator is not supported for a state value object.
 
 ```tsx
-const state = useState(...)
+const state = useHookstate(...)
 new state.value.prop // <== Error!
 ```
 
@@ -322,7 +322,7 @@ new state.value.prop // <== Error!
 State object is not callable.
 
 ```tsx
-const state = useState(...)
+const state = useHookstate(...)
 state() // <== Error!
 state.prop() // <== Error!
 ```
@@ -332,7 +332,7 @@ state.prop() // <== Error!
 State value object is not callable.
 
 ```tsx
-const state = useState(...)
+const state = useHookstate(...)
 state.value() // <== Error!
 state.value.prop() // <== Error!
 ```

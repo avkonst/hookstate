@@ -5,7 +5,7 @@ import BrowserOnly from '@docusaurus/BrowserOnly';
 import Highlight, { PrismTheme, defaultProps } from 'prism-react-renderer';
 import theme from 'prism-react-renderer/themes/palenight';
 
-import { useState } from '@hookstate/core';
+import { useHookstate } from '@hookstate/core';
 
 // const packageJson = require('../package.json');
 // const packageDependencies = packageJson.dependencies
@@ -21,7 +21,7 @@ import { useState } from '@hookstate/core';
 
 const PreviewWithAsyncSource = (props: React.PropsWithChildren<{ url: string, sampleFirst?: boolean }>) => {
     const [sampleVisible, toggleVisible] = React.useState(true);
-    const code = useState(() => fetch(props.url).then(r => r.text()))
+    const code = useHookstate(() => fetch(props.url).then(r => r.text()))
 
     let codeString = ''
     if (code.promised) {

@@ -12,7 +12,7 @@ you can batch updates together. Batched updates trigger rerendering only once fo
 Use [StateMethods.batch](typedoc-hookstate-core#batch) method with batch context argument to activate batching:
 
 ```tsx
-const state = useState({ a: 0, b: 0 })
+const state = useHookstate({ a: 0, b: 0 })
 return <button onClick={() => {
     state.batch(
         // this function is executed as a batch

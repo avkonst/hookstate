@@ -1,11 +1,11 @@
 import React from 'react';
-import { useState, State } from '@hookstate/core';
+import { useHookstate, State } from '@hookstate/core';
 
 export const ExampleComponent = () => {
     // we use local per component state,
     // but the same result would be for the global state
     // if it was created by createHookstate
-    const state = useState(Array.from(Array(5000).keys()).map(i => `Field #${i + 1} value`));
+    const state = useHookstate(Array.from(Array(5000).keys()).map(i => `Field #${i + 1} value`));
     return <>
         <JsonDump state={state} />
         {state.map((taskState, taskIndex) =>
@@ -15,7 +15,7 @@ export const ExampleComponent = () => {
 }
 
 function FieldEditor(props: { fieldState: State<string> }) {
-    const scopedState = useState(props.fieldState);
+    const scopedState = useHookstate(props.fieldState);
     return <p>
         Last render at: {(new Date()).toISOString()} <input
             value={scopedState.get()}
@@ -25,7 +25,7 @@ function FieldEditor(props: { fieldState: State<string> }) {
 }
 
 function JsonDump(props: { state: State<string[]> }) {
-    const state = useState(props.state);
+    const state = useHookstate(props.state);
     return <p>
         Last render at: {(new Date()).toISOString()} (<b>JSON dump of the first 10 fields</b>)
         :<br />{JSON.stringify(state.get().slice(0, 10), undefined, 4)}

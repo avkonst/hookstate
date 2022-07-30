@@ -66,11 +66,11 @@ function Ex1_Parent_GlobalStateNotHooked() {
     </>
 }
 function Ex1_Child_GlobalStateHooked_AUsed() {
-    const state = useState(globalState)
+    const state = useHookstate(globalState)
     return <p>{state.A.value}</p>
 }
 function Ex1_Child_GlobalStateHooked_BUsed_Downgraded() {
-    const state = useState(globalState)
+    const state = useHookstate(globalState)
     state.attach(Downgraded)
     return <p>{state.B.value}</p>
 }
@@ -81,7 +81,7 @@ The parent hooks the state and passes nested to children.
 Children do NOT USE scoped state
 ```tsx
 function Ex2_Parent_GlobalStateHooked() {
-    const state = useState(globalState)
+    const state = useHookstate(globalState)
     return <>
         <Ex2_Child_PropsState_AUsed state={state.A}/>
         <Ex2_Child_PropsState_BUsed_Downgraded state={state.B}/>
@@ -103,18 +103,18 @@ The parent hooks the state and passes nested to children.
 Children USE scoped state.
 ```tsx
 function Ex3_Parent_GlobalStateHooked() {
-    const state = useState(globalState)
+    const state = useHookstate(globalState)
     return <>
         <Ex3_Child_PropsState_AUsed_Scoped state={state.A}/>
         <Ex3_Child_PropsState_BUsed_Scoped_Downgraded state={state.B}/>
     </>
 }
 function Ex3_Child_PropsState_AUsed_Scoped(props: { state: State<number> }) {
-    const state = useState(props.state)
+    const state = useHookstate(props.state)
     return <p>{state.value}</p>
 }
 function Ex3_Child_PropsState_BUsed_Scoped_Downgraded(props: { state: State<number> }) {
-    const state = useState(props.state)
+    const state = useHookstate(props.state)
     state.attach(Downgraded)
     return <p>{state.value}</p>
 }
@@ -125,14 +125,14 @@ The parent hooks the state and passes nested to children.
 Once child USES scoped state, another does NOT.
 ```tsx
 function Ex4_Parent_GlobalStateHooked() {
-    const state = useState(globalState)
+    const state = useHookstate(globalState)
     return <>
         <Ex4_Child_PropsState_AUsed_Scoped state={state.A}/>
         <Ex4_Child_PropsState_BUsed state={state.B}/>
     </>
 }
 function Ex4_Child_PropsState_AUsed_Scoped(props: { state: State<number> }) {
-    const state = useState(props.state)
+    const state = useHookstate(props.state)
     return <p>{state.value}</p>
 }
 function Ex4_Child_PropsState_BUsed(props: { state: State<number> }) {
@@ -145,7 +145,7 @@ Example 5:
 A component hooks the state but does not use it.
 ```tsx
 function Ex5_Component_GlobalStateHooked_NotUsed() {
-    const state = useState(globalState)
+    const state = useHookstate(globalState)
     return <></>
 }
 ```
@@ -154,7 +154,7 @@ Example 6:
 A component hooks the state and uses only an object without reading it's properties.
 ```tsx
 function Ex6_Component_GlobalStateHooked_ObjUsed() {
-    const state = useState(globalState)
+    const state = useHookstate(globalState)
     const unused = state.value
     return <></>
 }
@@ -164,7 +164,7 @@ Example 7:
 A component hooks the state and uses object's keys.
 ```tsx
 function Ex7_Component_GlobalStateHooked_KeysUsed() {
-    const state = useState(globalState)
+    const state = useHookstate(globalState)
     const unused = state.keys
     return <></>
 }

@@ -41,7 +41,7 @@ export type SetPartialStateAction<S> =
     React.SetStateAction<S>;
 
 /**
- * Type of an argument of [createHookstate](#createhookstate) and [useState](#usestate).
+ * Type of an argument of [createHookstate](#createhookstate) and [useHookstate](#useHookstate).
  * 
  * @typeparam S Type of a value of a state
  */
@@ -122,7 +122,7 @@ export interface StateMethods<S, E = {}> extends __State<S, E> {
      * in the state. For example:
      *
      * ```tsx
-     * const state = useState([{ name: 'First Task' }])
+     * const state = useHookstate([{ name: 'First Task' }])
      * state.path IS []
      * state[0].path IS [0]
      * state.[0].name.path IS [0, 'name']
@@ -153,7 +153,7 @@ export interface StateMethods<S, E = {}> extends __State<S, E> {
      * like in the following examples, but value does:
      *
      * ```tsx
-     * const state = useState<number | undefined>(0)
+     * const state = useHookstate<number | undefined>(0)
      * const myvalue: number = state.value
      *      ? state.value + 1
      *      : 0; // <-- compiles
@@ -311,7 +311,7 @@ export type StateValue<V> = V extends __State<(infer S), (infer _)> ? S : V
 export type StateExtension<V> = V extends __State<(infer _), (infer E)> ? E : V
 
 /**
- * Type of a result of [createHookstate](#createhookstate) and [useState](#usestate) functions
+ * Type of a result of [createHookstate](#createhookstate) and [useHookstate](#useHookstate) functions
  * 
  * @typeparam S Type of a value of a state
  * 
@@ -467,7 +467,7 @@ export interface Extension<E extends {}> {
  * which can be used directly to get and set state value
  * outside of React components.
  * When you need to use the state in a functional `React` component,
- * pass the created state to [useState](#usestate) function and
+ * pass the created state to [useHookstate](#useHookstate) function and
  * use the returned result in the component's logic.
  */
 export function createState<S>(
@@ -495,7 +495,7 @@ export function createHookstate<S, E = {}>(
  * @warning Initializing a local state to a promise without using 
  * an initializer callback function, which returns a Promise,
  * is almost always a mistake. So, it is blocked.
- * Use `useState(() => your_promise)` instead of `useState(your_promise)`.
+ * Use `useHookstate(() => your_promise)` instead of `useHookstate(your_promise)`.
  */
 export function useState<S>(
     source: Promise<S>
@@ -503,9 +503,9 @@ export function useState<S>(
 /**
  * Enables a functional React component to use a state,
  * either created by [createHookstate](#createhookstate) (*global* state) or
- * derived from another call to [useState](#usestate) (*scoped* state).
+ * derived from another call to [useHookstate](#useHookstate) (*scoped* state).
  *
- * The `useState` forces a component to rerender every time, when:
+ * The `useHookstate` forces a component to rerender every time, when:
  * - a segment/part of the state data is updated *AND only if*
  * - this segment was **used** by the component during or after the latest rendering.
  *
@@ -515,13 +515,13 @@ export function useState<S>(
  * Setting the state value/property to the same value is also considered as an update.
  *
  * A component can use one or many states,
- * i.e. you may call `useState` multiple times for multiple states.
+ * i.e. you may call `useHookstate` multiple times for multiple states.
  *
  * The same state can be used by multiple different components.
  *
  * @param source a reference to the state to hook into
  *
- * The `useState` is a hook and should follow React's rules of hooks.
+ * The `useHookstate` is a hook and should follow React's rules of hooks.
  *
  * @returns an instance of [State](#state),
  * which **must be** used within the component (during rendering
@@ -532,8 +532,8 @@ export function useState<S>(
 ): State<S, {}>;
 /**
  * This function enables a functional React component to use a state,
- * created per component by [useState](#usestate) (*local* state).
- * In this case `useState` behaves similarly to `React.useState`,
+ * created per component by [useHookstate](#useHookstate) (*local* state).
+ * In this case `useHookstate` behaves similarly to `React.useState`,
  * but the returned instance of [State](#state)
  * has got more features.
  *
@@ -545,7 +545,7 @@ export function useState<S>(
  * and automatically destroyed when a component is unmounted.
  *
  * The same as with the usage of a *global* state,
- * `useState` forces a component to rerender when:
+ * `useHookstate` forces a component to rerender when:
  * - a segment/part of the state data is updated *AND only if*
  * - this segment was **used** by the component during or after the latest rendering.
  *
@@ -657,14 +657,14 @@ export function useHookstate<S, E, E2>(
     extension: () => Extension<E2>
 ): never;
 /**
- * Alias to [useState](#usestate) which provides a workaround
+ * Alias to [useHookstate](#useHookstate) which provides a workaround
  * for [React 20613 bug](https://github.com/facebook/react/issues/20613)
  */
 export function useHookstate<S, E>(
     source: __State<S, E>
 ): State<S, E>;
 /**
- * Alias to [useState](#usestate) which provides a workaround
+ * Alias to [useHookstate](#useHookstate) which provides a workaround
  * for [React 20613 bug](https://github.com/facebook/react/issues/20613)
  */
 export function useHookstate<S, E = {}>(

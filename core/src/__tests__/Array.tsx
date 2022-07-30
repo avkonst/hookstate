@@ -1,4 +1,4 @@
-import { none, useState } from '../';
+import { none, useHookstate } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 
@@ -6,7 +6,7 @@ test('array: should rerender used', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState([0, 5])
+        return useHookstate([0, 5])
     });
     expect(result.current.get()[0]).toStrictEqual(0);
 
@@ -26,7 +26,7 @@ test('array: should rerender used (length)', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState([0, 5])
+        return useHookstate([0, 5])
     });
     expect(result.current.length).toStrictEqual(2);
 
@@ -46,7 +46,7 @@ test('array: should rerender used (iterated)', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState([0, 5])
+        return useHookstate([0, 5])
     });
     expect(result.current.find(i => false)).toStrictEqual(undefined);
 
@@ -70,7 +70,7 @@ test('array: should not rerender used length unchanged', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState([0, 5])
+        return useHookstate([0, 5])
     });
 
     expect(result.current.get().length).toStrictEqual(2);
@@ -90,7 +90,7 @@ test('array: should rerender used length changed', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState([0, 5])
+        return useHookstate([0, 5])
     });
 
     expect(result.current.get().length).toStrictEqual(2);
@@ -114,7 +114,7 @@ test('array: should rerender when keys used', async () => {
         const value = [0, 1];
         // tslint:disable-next-line: no-string-literal
         value['poluted'] = 1;
-        return useState<number[]>([0, 1])
+        return useHookstate<number[]>([0, 1])
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.keys).toEqual([0, 1]);
@@ -136,7 +136,7 @@ test('array: should not rerender used undefined properties', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState([0, 5])
+        return useHookstate([0, 5])
     });
 
     expect(result.current.get().length).toStrictEqual(2);
@@ -165,7 +165,7 @@ test('array: should not rerender used symbol properties', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState([0, 5])
+        return useHookstate([0, 5])
     });
 
     expect('length' in result.current.get()).toStrictEqual(true);
@@ -199,7 +199,7 @@ test('array: should rerender used via nested', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState([0, 0])
+        return useHookstate([0, 0])
     });
     expect(result.current[0].get()).toStrictEqual(0);
 
@@ -219,7 +219,7 @@ test('array: should rerender used when set to the same', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState([0, 5])
+        return useHookstate([0, 5])
     });
     expect(result.current.get()).toEqual([0, 5]);
 
@@ -238,7 +238,7 @@ test('array: should rerender unused when new element', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState([0, 5])
+        return useHookstate([0, 5])
     });
 
     act(() => {
@@ -258,7 +258,7 @@ test('array: should not rerender unused property', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState([0, 0])
+        return useHookstate([0, 0])
     });
     expect(result.current.get()[1]).toStrictEqual(0);
 
@@ -277,7 +277,7 @@ test('array: should not rerender unused self', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState([0, 0])
+        return useHookstate([0, 0])
     });
 
     act(() => {
@@ -295,7 +295,7 @@ test('array: should not crash on getOwnPropertyDescriptor length', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState([0, 0])
+        return useHookstate([0, 0])
     });
 
     expect(Object.getOwnPropertyDescriptor(result.current, 'length')).toBeTruthy()
@@ -307,7 +307,7 @@ test('array: should not crash on getOwnPropertyDescriptor length after promise',
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState(none)
+        return useHookstate(none)
     });
     
     act(() => result.current.set([0, 0]))
@@ -332,7 +332,7 @@ test('array: should not crash on getOwnPropertyDescriptor length turned to objec
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState<any>([0, 0])
+        return useHookstate<any>([0, 0])
     });
     
     expect(Object.getOwnPropertyDescriptor(result.current, 'length')).toBeTruthy()

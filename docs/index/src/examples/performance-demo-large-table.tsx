@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
-import { useState, State, Downgraded } from '@hookstate/core';
+import { useHookstate, State, Downgraded } from '@hookstate/core';
 
 const TableCell = (props: { cellState: State<number> }) => {
-    const state = useState(props.cellState);
+    const state = useHookstate(props.cellState);
     return <>{state.value.toString(16)}</>;
 }
 
@@ -17,7 +17,7 @@ const MatrixView = (props: {
     // we use local per component state,
     // but the same result would be for the global state
     // if it was created by createHookstate
-    const matrixState = useState(
+    const matrixState = useHookstate(
         Array.from(Array(totalRows).keys())
             .map(i => Array.from(Array(totalColumns).keys()).map(j => 0)));
     // schedule interval updates
@@ -65,7 +65,7 @@ const MatrixView = (props: {
 }
 
 export const ExampleComponent = () => {
-    const settingsState = useState({
+    const settingsState = useHookstate({
         totalRows: 50,
         totalColumns: 50,
         rate: 50,
@@ -136,7 +136,7 @@ function PerformanceMeter(props: { matrixState: State<number[][]> }) {
     const elapsedMs = () => (new Date()).getTime() - stats.current.startTime;
     const elapsed = () => Math.floor(elapsedMs() / 1000);
     const rate = Math.floor(stats.current.totalCalls / elapsedMs() * 1000);
-    const scopedState = useState(props.matrixState)
+    const scopedState = useHookstate(props.matrixState)
     scopedState.attach(() => ({
             id: PerformanceViewPluginID,
             init: () => ({

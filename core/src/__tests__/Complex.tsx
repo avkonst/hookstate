@@ -1,4 +1,4 @@
-import { useState, createHookstate, none } from '../';
+import { useHookstate, createHookstate, none } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 
@@ -6,7 +6,7 @@ test('complex: should rerender used', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState([{
+        return useHookstate([{
             field1: 0,
             field2: 'str'
         }])
@@ -27,7 +27,7 @@ test('complex: should rerender used via nested', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState([{
+        return useHookstate([{
             field1: 0,
             field2: 'str'
         }])
@@ -48,7 +48,7 @@ test('complex: should rerender used when set to the same', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState([{
+        return useHookstate([{
             field: 1
         }])
     });
@@ -68,7 +68,7 @@ test('complex: should rerender unused when new element', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState([{
+        return useHookstate([{
             field1: 0,
             field2: 'str'
         }])
@@ -97,7 +97,7 @@ test('complex: should not rerender unused property', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState([{
+        return useHookstate([{
             field1: 0,
             field2: 'str'
         }])
@@ -115,7 +115,7 @@ test('complex: should not rerender unused self', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState([{
+        return useHookstate([{
             field1: 0,
             field2: 'str'
         }])
@@ -132,7 +132,7 @@ test('complex: should delete property when set to none', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState([{
+        return useHookstate([{
             field1: 0,
             field2: 'str',
             field3: true
@@ -186,7 +186,7 @@ test('complex: should auto save latest state for unmounted', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState(state)
+        return useHookstate(state)
     });
     const unmountedLink = state[0]
     expect(unmountedLink.field1.get()).toStrictEqual(0);

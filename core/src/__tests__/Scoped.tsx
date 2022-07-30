@@ -1,4 +1,4 @@
-import { useState, Downgraded } from '../';
+import { useHookstate, Downgraded } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 
@@ -7,7 +7,7 @@ test('object: should rerender used via scoped updates by child', async () => {
     let childRenderTimes = 0
     const parent = renderHook(() => {
         parentRenderTimes += 1;
-        return useState({
+        return useHookstate({
             fieldUsedByParent: 0,
             fieldUsedByChild: 100,
             fieldUsedByBoth: 200
@@ -15,7 +15,7 @@ test('object: should rerender used via scoped updates by child', async () => {
     });
     const child = renderHook(() => {
         childRenderTimes += 1;
-        return useState(parent.result.current)
+        return useHookstate(parent.result.current)
     });
     expect(parent.result.current.fieldUsedByParent.get()).toStrictEqual(0);
     expect(parent.result.current.fieldUsedByBoth.get()).toStrictEqual(200);
@@ -62,7 +62,7 @@ test('object: should rerender used via scoped updates by parent', async () => {
     let childRenderTimes = 0
     const parent = renderHook(() => {
         parentRenderTimes += 1;
-        return useState({
+        return useHookstate({
             fieldUsedByParent: 0,
             fieldUsedByChild: 100,
             fieldUsedByBoth: 200
@@ -70,7 +70,7 @@ test('object: should rerender used via scoped updates by parent', async () => {
     });
     const child = renderHook(() => {
         childRenderTimes += 1;
-        return useState(parent.result.current)
+        return useHookstate(parent.result.current)
     });
     expect(parent.result.current.fieldUsedByParent.get()).toStrictEqual(0);
     expect(parent.result.current.fieldUsedByBoth.get()).toStrictEqual(200);
@@ -117,7 +117,7 @@ test('object: should rerender used via scoped updates by parent (disabled tracki
     let childRenderTimes = 0
     const parent = renderHook(() => {
         parentRenderTimes += 1;
-        let r =  useState({
+        let r =  useHookstate({
             fieldUsedByParent: 0,
             fieldUsedByChild: 100,
             fieldUsedByBoth: 200
@@ -127,7 +127,7 @@ test('object: should rerender used via scoped updates by parent (disabled tracki
     });
     const child = renderHook(() => {
         childRenderTimes += 1;
-        return useState(parent.result.current)
+        return useHookstate(parent.result.current)
     });
     expect(parent.result.current.fieldUsedByParent.get()).toStrictEqual(0);
     expect(parent.result.current.fieldUsedByBoth.get()).toStrictEqual(200);
@@ -174,7 +174,7 @@ test('object: should support late disabled tracking', async () => {
     let childRenderTimes = 0
     const parent = renderHook(() => {
         parentRenderTimes += 1;
-        let r = useState({ field: 0 });
+        let r = useHookstate({ field: 0 });
         r.field.get(); // mark traced and used
         r.get({ noproxy: true });
         return r;
@@ -183,7 +183,7 @@ test('object: should support late disabled tracking', async () => {
         childRenderTimes += 1;
         // child creates a state from value from parent
         // without downgraded it should crash
-        return useState(parent.result.current.get({ noproxy: true }))
+        return useHookstate(parent.result.current.get({ noproxy: true }))
     });
     expect(parentRenderTimes).toStrictEqual(1);
     expect(childRenderTimes).toStrictEqual(1);

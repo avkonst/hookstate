@@ -1,4 +1,4 @@
-import { useState, createHookstate, none } from '../';
+import { useHookstate, createHookstate, none } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 
@@ -6,7 +6,7 @@ test('primitive: should rerender used on promise resolve', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState(0)
+        return useHookstate(0)
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.get()).toStrictEqual(0);
@@ -41,7 +41,7 @@ test('primitive: should rerender used on promise resolve immediately', async () 
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState(0)
+        return useHookstate(0)
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.get()).toStrictEqual(0);
@@ -79,7 +79,7 @@ test('primitive: should rerender used on promise resolve immediately global', as
     });
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState(state)
+        return useHookstate(state)
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.promised).toStrictEqual(true);
@@ -97,7 +97,7 @@ test('array: should rerender used on promise resolve', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState([0])
+        return useHookstate([0])
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current[0].get()).toStrictEqual(0);
@@ -131,7 +131,7 @@ test('array: should rerender used on promise resolve (global)', async () => {
     const state = createHookstate([0])
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState(state)
+        return useHookstate(state)
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current[0].get()).toStrictEqual(0);
@@ -171,7 +171,7 @@ test('array: should rerender used on promise resolve (global promise)', async ()
     }, 500)))
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState(state)
+        return useHookstate(state)
     });
     expect(renderTimes).toStrictEqual(1);
 
@@ -189,7 +189,7 @@ test('primitive: should rerender used on promise resolve manual', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState(none)
+        return useHookstate(none)
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.promised).toStrictEqual(true);
@@ -217,7 +217,7 @@ test('primitive: should rerender used on promise resolve second', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState(() => new Promise<number>(resolve => setTimeout(() => {
+        return useHookstate(() => new Promise<number>(resolve => setTimeout(() => {
             act(() => resolve(100))
         }, 500)))
     });
@@ -254,7 +254,7 @@ test('primitive: should rerender used on promise resolved', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState(0)
+        return useHookstate(0)
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.get()).toStrictEqual(0);
@@ -283,7 +283,7 @@ test('primitive: should rerender used on promise reject', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState(0)
+        return useHookstate(0)
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.get()).toStrictEqual(0);
@@ -319,7 +319,7 @@ test('primitive: should rerender used on promise rejected', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState(0)
+        return useHookstate(0)
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.get()).toStrictEqual(0);
@@ -352,7 +352,7 @@ test('primitive: should rerender used on promise resolve init', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState(() => new Promise<number>(resolve => setTimeout(() => {
+        return useHookstate(() => new Promise<number>(resolve => setTimeout(() => {
             act(() => resolve(100))
         }, 500)))
     });
@@ -380,7 +380,7 @@ test('primitive: should rerender used on promise resolve init global', async () 
 
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState(stateInf)
+        return useHookstate(stateInf)
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.promised).toStrictEqual(true);
@@ -406,7 +406,7 @@ test('primitive: should rerender used on promise reject init global', async () =
 
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState(stateInf)
+        return useHookstate(stateInf)
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.promised).toStrictEqual(true);
@@ -437,7 +437,7 @@ test('primitive: should set after promise reject', async () => {
 
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState(stateInf)
+        return useHookstate(stateInf)
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.promised).toStrictEqual(true);

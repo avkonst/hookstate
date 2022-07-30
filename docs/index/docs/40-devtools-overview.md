@@ -45,7 +45,7 @@ import { DevTools } from '@hookstate/core'
 state = createHookstate(...)
 DevTools(state).label('my-state')
 // Or:
-state = useState(...)
+state = useHookstate(...)
 DevTools(state).label('my-state')
 ```
 
@@ -133,7 +133,7 @@ Click 'Persist' button (bottom row) in the development tools.
 It is possible to log custom data to the development tools:
 
 ```tsx
-const state = useState(...)
+const state = useHookstate(...)
 ...
 DevTools(state).log('this is custom log', myData)
 ```

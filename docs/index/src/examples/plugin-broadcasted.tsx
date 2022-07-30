@@ -1,9 +1,9 @@
 import React from 'react';
-import { useState, createHookstate } from '@hookstate/core';
+import { useHookstate, createHookstate } from '@hookstate/core';
 import { Broadcasted } from '@hookstate/broadcasted';
 
 export const ExampleComponent = () => {
-    const state = useState([{ name: 'First Task' }])
+    const state = useHookstate([{ name: 'First Task' }])
     state.attach(Broadcasted('my-sync-channel-topic', () => {
         window.console.log('This tab is a leader now')
         // attach persistence, remote synchronization plugins,

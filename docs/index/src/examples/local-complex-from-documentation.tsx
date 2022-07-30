@@ -1,10 +1,10 @@
 import React from 'react';
-import { useState, State } from '@hookstate/core';
+import { useHookstate, State } from '@hookstate/core';
 
 interface Task { name: string; priority?: number }
 
 export const ExampleComponent = () => {
-    const state: State<Task[]> = useState([{ name: 'First Task' }] as Task[]);
+    const state: State<Task[]> = useHookstate([{ name: 'First Task' }] as Task[]);
     return <>
         {state.map((taskState: State<Task>, taskIndex) =>
             <TaskEditor key={taskIndex} taskState={taskState} />

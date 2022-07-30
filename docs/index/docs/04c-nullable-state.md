@@ -16,7 +16,7 @@ Typescript will fail a compilation if you attempt to work with nested states of 
 interface Task { name: string, priority?: number }
 
 const MyComponent = () => {
-    const state = useState<Task | null>(null)
+    const state = useHookstate<Task | null>(null)
     
     // JS - runtime error, TS - compilation error
     state.name.value

@@ -6,7 +6,7 @@ sidebar_label: Asynchronous state
 
 import { PreviewSample } from '../src/PreviewSample'
 
-The root state can be set to a promise value, either as an initial value for [createHookstate](typedoc-hookstate-core#createhookstate)/[useState](typedoc-hookstate-core#usestate) or as a subsequent value via [StateMethods.set](typedoc-hookstate-core#set) method.
+The root state can be set to a promise value, either as an initial value for [createHookstate](typedoc-hookstate-core#createhookstate)/[useHookstate](typedoc-hookstate-core#usehookstate) or as a subsequent value via [State.set](typedoc-hookstate-core#set) method.
 
 ## Checking if state is loading
 

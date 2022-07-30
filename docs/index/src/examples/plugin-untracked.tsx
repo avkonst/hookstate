@@ -1,9 +1,9 @@
 import React from 'react';
-import { useState } from '@hookstate/core';
+import { useHookstate } from '@hookstate/core';
 import { Untracked } from '@hookstate/untracked';
 
 export const ExampleComponent = () => {
-    const state = useState({ renders: 0, counter1: 0, counter2: 0 })
+    const state = useHookstate({ renders: 0, counter1: 0, counter2: 0 })
     state.attach(Untracked); // enable the plugin
 
     // this one will not trigger rerender,

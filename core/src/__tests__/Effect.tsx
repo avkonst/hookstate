@@ -1,4 +1,4 @@
-import { createHookstate, useState } from '../';
+import { createHookstate, useHookstate } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import { useEffect } from 'react';
@@ -7,7 +7,7 @@ test('primitive: should rerender stable', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return [useState(0), useState(1)]
+        return [useHookstate(0), useHookstate(1)]
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current[0].get()).toStrictEqual(0);
@@ -29,7 +29,7 @@ test('object: should rerender stable', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return [useState({a: 0, b: 0}), useState({a: 1, b: 1})]
+        return [useHookstate({a: 0, b: 0}), useHookstate({a: 1, b: 1})]
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current[0].a.get()).toStrictEqual(0);
@@ -79,7 +79,7 @@ test('object: should rerender stable nested update', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return [useState({a: 0, b: 0}), useState({a: 1, b: 1})]
+        return [useHookstate({a: 0, b: 0}), useHookstate({a: 1, b: 1})]
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current[0].a.get()).toStrictEqual(0);
@@ -129,7 +129,7 @@ test('object: should rerender only value used', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        let state = useState<{a: {b: number}} | undefined>({a: {b: 0}});
+        let state = useHookstate<{a: {b: number}} | undefined>({a: {b: 0}});
         state.get() // use only object level value
         return state;
     });
@@ -162,7 +162,7 @@ test('primitive: should rerender stable (global)', async () => {
     let gs1 = createHookstate(1)
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return [useState(gs0), useState(gs1)]
+        return [useHookstate(gs0), useHookstate(gs1)]
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current[0].get()).toStrictEqual(0);
@@ -186,7 +186,7 @@ test('object: should rerender stable (global)', async () => {
     let gs1 = createHookstate({a: 1, b: 1})
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return [useState(gs0), useState(gs1)]
+        return [useHookstate(gs0), useHookstate(gs1)]
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current[0].a.get()).toStrictEqual(0);
@@ -237,7 +237,7 @@ test('object: should rerender stable with deep mutation (global)', async () => {
     let gs0 = createHookstate({a: {b: {c: 0}, d: {}}})
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState(gs0)
+        return useHookstate(gs0)
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.a.get().b.c).toStrictEqual(0);
@@ -283,7 +283,7 @@ test('object: should rerender stable nested update (global)', async () => {
     let gs1 = createHookstate({a: 1, b: 1})
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return [useState(gs0), useState(gs1)]
+        return [useHookstate(gs0), useHookstate(gs1)]
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current[0].a.get()).toStrictEqual(0);
@@ -332,11 +332,11 @@ test('object: should rerender stable nested update (global)', async () => {
 test('primitive: should rerender stable (scoped)', async () => {
     let renderTimes = 0
     const p = renderHook(() => {
-        return [useState(0), useState(1)]
+        return [useHookstate(0), useHookstate(1)]
     });
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return [useState(p.result.current[0]), useState(p.result.current[1])]
+        return [useHookstate(p.result.current[0]), useHookstate(p.result.current[1])]
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current[0].get()).toStrictEqual(0);
@@ -357,11 +357,11 @@ test('primitive: should rerender stable (scoped)', async () => {
 test('object: should rerender stable (scoped)', async () => {
     let renderTimes = 0
     const p = renderHook(() => {
-        return [useState({a: 0, b: 0}), useState({a: 1, b: 1})]
+        return [useHookstate({a: 0, b: 0}), useHookstate({a: 1, b: 1})]
     });
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return [useState(p.result.current[0]), useState(p.result.current[1])]
+        return [useHookstate(p.result.current[0]), useHookstate(p.result.current[1])]
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current[0].a.get()).toStrictEqual(0);
@@ -411,8 +411,8 @@ test('object: should rerender stable (scoped, parent rerender)', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        let p = [useState({a: 0, b: 0}), useState({a: 1, b: 1})]
-        return [useState(p[0]), useState(p[1]), p[0], p[1]]
+        let p = [useHookstate({a: 0, b: 0}), useHookstate({a: 1, b: 1})]
+        return [useHookstate(p[0]), useHookstate(p[1]), p[0], p[1]]
     });
     expect(renderTimes).toStrictEqual(1);
 
@@ -529,11 +529,11 @@ test('object: should rerender stable (scoped, parent rerender)', async () => {
 test('object: should rerender stable nested update (scoped)', async () => {
     let renderTimes = 0
     const p = renderHook(() => {
-        return [useState({a: 0, b: 0}), useState({a: 1, b: 1})]
+        return [useHookstate({a: 0, b: 0}), useHookstate({a: 1, b: 1})]
     });
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return [useState(p.result.current[0]), useState(p.result.current[1])]
+        return [useHookstate(p.result.current[0]), useHookstate(p.result.current[1])]
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current[0].a.get()).toStrictEqual(0);
@@ -584,7 +584,7 @@ test('object: should rerender if used in useEffect', async () => {
     let effectTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1
-        let state = useState({a: 0, b: 0})
+        let state = useHookstate({a: 0, b: 0})
         useEffect(() => {
             effectTimes += 1
             // mark used either first or both
@@ -620,7 +620,7 @@ test('object: should rerender if nested object used in useEffect', async () => {
     let effectTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1
-        let state = useState({a: 0, b: { c: 0, d: 0 }})
+        let state = useHookstate({a: 0, b: { c: 0, d: 0 }})
         useEffect(() => {
             effectTimes += 1
             // mark used either first or both
@@ -649,7 +649,7 @@ test('object: should rerender if nested object used and updated in useEffect', a
     let effectTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1
-        let state = useState({a: 0, b: { c: 0, d: 0 }})
+        let state = useHookstate({a: 0, b: { c: 0, d: 0 }})
         useEffect(() => {
             effectTimes += 1
             // mark used either first or both
@@ -684,8 +684,8 @@ test('object: should rerender if 2 states used in useEffect', async () => {
     let effectTimes = 0
     const result = renderHook(() => {
         renderTimes += 1
-        let state1 = useState({a: 0})
-        let state2 = useState({a: 0})
+        let state1 = useHookstate({a: 0})
+        let state2 = useHookstate({a: 0})
         useEffect(() => {
             effectTimes += 1
             // mark used either first or both
@@ -732,8 +732,8 @@ test('object: should rerender if 2 states but 1 used in useEffect', async () => 
     let effectTimes = 0
     const result = renderHook(() => {
         renderTimes += 1
-        let state1 = useState({a: 0})
-        let state2 = useState({a: 0})
+        let state1 = useHookstate({a: 0})
+        let state2 = useHookstate({a: 0})
         useEffect(() => {
             effectTimes += 1
             state2.get().a

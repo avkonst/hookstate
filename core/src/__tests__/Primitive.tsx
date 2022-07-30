@@ -1,4 +1,4 @@
-import { useState, createHookstate, State, StateMethods } from '../';
+import { useHookstate, createHookstate, State, StateMethods } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 import React from 'react';
@@ -7,7 +7,7 @@ test('primitive: should rerender used', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState(0)
+        return useHookstate(0)
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.get()).toStrictEqual(0);
@@ -23,7 +23,7 @@ test('primitive: should not rerender used if set to the same', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        let r: StateMethods<number> = useState(0)
+        let r: StateMethods<number> = useHookstate(0)
         return r
     });
     expect(renderTimes).toStrictEqual(1);
@@ -40,7 +40,7 @@ test('primitive: should not rerender used if set to the same (null)', async () =
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState(null)
+        return useHookstate(null)
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.get()).toStrictEqual(null);
@@ -56,7 +56,7 @@ test('primitive: should not rerender used if set to the same (undefined)', async
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState(undefined)
+        return useHookstate(undefined)
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.get()).toStrictEqual(undefined);
@@ -72,7 +72,7 @@ test('primitive: should rerender used (boolean)', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState(true)
+        return useHookstate(true)
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.get()).toStrictEqual(true);
@@ -88,7 +88,7 @@ test('primitive: should rerender used (null)', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState<number | null>(null)
+        return useHookstate<number | null>(null)
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.get()).toStrictEqual(null);
@@ -104,7 +104,7 @@ test('primitive: should rerender used (undefined)', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState<number | undefined>(undefined)
+        return useHookstate<number | undefined>(undefined)
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.get()).toStrictEqual(undefined);
@@ -121,7 +121,7 @@ test('primitive: should rerender used (global null)', async () => {
     const state = createHookstate<number | null>(null)
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState(state)
+        return useHookstate(state)
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.get()).toStrictEqual(null);
@@ -138,7 +138,7 @@ test('primitive: should rerender used (global undefined)', async () => {
     const state = createHookstate<number | undefined>(undefined)
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState(state)
+        return useHookstate(state)
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.get()).toStrictEqual(undefined);
@@ -154,7 +154,7 @@ test('primitive: should not rerender used when set to the same', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1
-        return useState(0)
+        return useHookstate(0)
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.get()).toStrictEqual(0);
@@ -170,7 +170,7 @@ test('primitive: should rerender when keys used', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState('value')
+        return useHookstate('value')
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.keys).toEqual(undefined);
@@ -186,7 +186,7 @@ test('primitive: should not rerender unused', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState(0)
+        return useHookstate(0)
     });
     expect(renderTimes).toStrictEqual(1);
 
@@ -205,7 +205,7 @@ test('primitive: global state', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useState(stateInf)
+        return useHookstate(stateInf)
     });
 
     expect(result.current.get()).toStrictEqual(0);
@@ -221,7 +221,7 @@ test('primitive: global state created locally', async () => {
     const { result } = renderHook(() => {
         const state = createHookstate(0)
         renderTimes += 1;
-        return useState(state)
+        return useHookstate(state)
     });
 
     expect(result.current.get()).toStrictEqual(0);
@@ -236,7 +236,7 @@ test('primitive: stale state should auto refresh', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        const r = useState(0)
+        const r = useHookstate(0)
         React.useEffect(() => {
             // simulated subscription, long running process
             const timer = setInterval(() => {
@@ -275,7 +275,7 @@ test('primitive: state value should be the latest', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        const r = useState(0)
+        const r = useHookstate(0)
         React.useEffect(() => {
             act(() => {
                 r.set(r.get() + 1) // 0 + 1
