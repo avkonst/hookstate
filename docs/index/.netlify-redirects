@@ -19,9 +19,9 @@ https://hookstate.netlify.com/* https://hookstate.js.org/:splat 301!
 /performance-demo-large-table /docs/performance-frequent-updates
 /performance-demo-large-form /docs/performance-large-state
 /global-multiple-consumers-statefragment /docs/using-without-statehook
-/plugin-initial /docs/extensions-initial
-/plugin-initial-statefragment /docs/extensions-initial
-/plugin-touched /docs/extensions
+/plugin-initial /docs/extensions-snapshotable
+/plugin-initial-statefragment /docs/extensions-snapshotable
+/plugin-touched /docs/extensions-snapshotable
 /plugin-persistence /docs/extensions-persistence
 /docs/extensions-persistence /docs/extensions-localstored
 /plugin-validation /docs/extensions-validation

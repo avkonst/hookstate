@@ -19,8 +19,8 @@ export const ExampleComponent = () => {
             Is this task list valid?: <u>{state.valid().toString()}</u> <br/>
             Is this task list valid (ignoring nested errors)?: <u>
                 {state.valid({ depth: 1 }).toString()}</u> <br/>
-            What are the errors and warnings?: <u>{JSON.stringify(state.errors())}</u> <br/>
-            What is the first error or warning?: <u>{JSON.stringify(state.firstError())}</u> <br/>
+            What are the errors and warnings?: <u>{JSON.stringify(state.errors(), null, 4)}</u> <br/>
+            What is the first error or warning?: <u>{JSON.stringify(state.firstError(), null, 4)}</u> <br/>
             What is the first error (ignoring warnings and nested errors)?: <u>{
                 JSON.stringify(state.firstError(
                     i => i.severity === 'error', 1))}</u> <br/>

@@ -147,9 +147,11 @@ JSON.stringify(state.value)
 
 ## HOOKSTATE-120
 
-Happens when a plugin attempts to get its own instance from a state, where the plugin has not been attached before.
+Deprecated in Hookstate 4.
 
-Using [Initial](./extensions-initial) plugin as an example:
+For Hookstate 3, it happens when a plugin attempts to get its own instance from a state, where the plugin has not been attached before.
+
+Using the Initial plugin as an example:
 
 ```tsx
 const state = useHookstate(...)

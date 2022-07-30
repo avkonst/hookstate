@@ -70,7 +70,7 @@ const state = hookstate(...);
 state.a.b.attach(MyStateWatchPlugin)
 ```
 
-A plugin may provide additional extension methods, like the [Initial](./extensions-initial) plugin, for example.
+A plugin may provide additional extension methods, like the [Snapshotable](./extensions-snapshotable) plugin, for example.
 The best place for extension methods is alongside with the callback functions:
 
 ```tsx
@@ -111,6 +111,6 @@ This is usually wrapped by an overloaded plugin function itself, so it can be us
 MyStateWatchPlugin(state).doSomething()
 ```
 
-Check out how the [Initial](./extensions-initial) plugin does it, for example.
+Check out how the [Snapshotable](./extensions-snapshotable) plugin does it, for example.
 
 In case of any issues, just raise a ticket on Github.
