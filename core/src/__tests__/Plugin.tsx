@@ -1,4 +1,4 @@
-import { useHookstate, createHookstate, Plugin, DevToolsID, DevTools, DevToolsExtensions, PluginCallbacks } from '../';
+import { useState, createState, Plugin, DevToolsID, DevTools, DevToolsExtensions, PluginCallbacks } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 
@@ -10,7 +10,7 @@ test('plugin: common flow callbacks', async () => {
     const messages: string[] = []
     const { result, unmount } = renderHook(() => {
         renderTimes += 1;
-        return useHookstate([{
+        return useState([{
             f1: 0,
             f2: 'str'
         }]).attach(() => ({
@@ -155,7 +155,7 @@ test('plugin: common flow callbacks', async () => {
     expect(messages.slice(8)).toEqual([])
 });
 
-const stateInf = createHookstate([{
+const stateInf = createState([{
     f1: 0,
     f2: 'str'
 }])
@@ -183,7 +183,7 @@ test('plugin: common flow callbacks global state', async () => {
     let renderTimes = 0
     const { result, unmount } = renderHook(() => {
         renderTimes += 1;
-        return useHookstate(stateInf)
+        return useState(stateInf)
     });
 
     expect(DevTools(result.current).label('should not be labelled')).toBeUndefined();
@@ -249,7 +249,7 @@ test('plugin: common flow callbacks global state', async () => {
 
 test('plugin: common flow callbacks devtools', async () => {
     const messages: string[] = []
-    useHookstate[DevToolsID] = () => ({
+    useState[DevToolsID] = () => ({
         id: DevToolsID,
         init: (l) => {
             let label: string | undefined = undefined;
@@ -275,7 +275,7 @@ test('plugin: common flow callbacks devtools', async () => {
         let renderTimes = 0
         const { result, unmount } = renderHook(() => {
             renderTimes += 1;
-            return useHookstate([{
+            return useState([{
                 f1: 0,
                 f2: 'str'
             }])
@@ -329,13 +329,13 @@ test('plugin: common flow callbacks devtools', async () => {
         expect(messages.slice(5)).toEqual([])
 
     } finally {
-        delete useHookstate[DevToolsID];
+        delete useState[DevToolsID];
     }
 });
 
 test('plugin: common flow callbacks global state devtools', async () => {
     const messages: string[] = []
-    createHookstate[DevToolsID] = () => ({
+    createState[DevToolsID] = () => ({
         id: DevToolsID,
         init: (state) => {
             let label: string | undefined = undefined;
@@ -358,7 +358,7 @@ test('plugin: common flow callbacks global state devtools', async () => {
     } as Plugin)
 
     try {
-        const stateRef = createHookstate([{
+        const stateRef = createState([{
             f1: 0,
             f2: 'str'
         }])
@@ -366,7 +366,7 @@ test('plugin: common flow callbacks global state devtools', async () => {
         let renderTimes = 0
         const { result, unmount } = renderHook(() => {
             renderTimes += 1;
-            return useHookstate(stateRef)
+            return useState(stateRef)
         });
         expect(renderTimes).toStrictEqual(1);
         expect(messages).toEqual(
@@ -429,6 +429,6 @@ test('plugin: common flow callbacks global state devtools', async () => {
         expect(renderTimes).toStrictEqual(3);
         expect(messages.slice(7)).toEqual([])
     } finally {
-        delete createHookstate[DevToolsID]
+        delete createState[DevToolsID]
     }
 });

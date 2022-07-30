@@ -1,4 +1,4 @@
-import { useHookstate, createHookstate, Plugin, DevToolsID, DevTools, DevToolsExtensions, PluginCallbacks, useHookstate, extend, StateValueAtPath, State, Extension, SetActionDescriptor, StateErrorAtRoot, StateValue, StateMethodsDestroy } from '../';
+import { useHookstate, createHookstate, Plugin, DevToolsID, DevTools, DevToolsExtensions, PluginCallbacks, extend, StateValueAtPath, State, Extension, SetActionDescriptor, StateErrorAtRoot, StateValue, StateMethodsDestroy } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 

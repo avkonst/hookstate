@@ -1962,6 +1962,7 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
                 case 'attach':
                     return (p: symbol) => this.attach(p)
                 case 'destroy': // TODO move destroy to the state, otherwise State type hides this well existing property
+                    // TODO when depreacted update hookstate-106 exception docs
                     return () => this.destroy()
                 default:
                     // check if extension method
@@ -2228,15 +2229,15 @@ export function configure(config: Partial<Configuration>) {
         // so it is always set to memoIntercept
         React['memo'] = memoOrigin as any;
     } else {
-        React['useEffect'] = useEffectIntercept;
-        React['useLayoutEffect'] = useLayoutEffectIntercept;
-        React['useInsertionEffect'] = useInsertionEffectIntercept;
-        React['useImperativeHandle'] = useImperativeHandleIntercept;
-        React['useMemo'] = useMemoIntercept;
-        React['useCallback'] = useCallbackIntercept;
+        React['useEffect'] = useHookstateEffect;
+        React['useLayoutEffect'] = useHookstateLayoutEffect;
+        React['useInsertionEffect'] = useHookstateInsertionEffect;
+        React['useImperativeHandle'] = useHookstateImperativeHandle;
+        React['useMemo'] = useHookstateMemo;
+        React['useCallback'] = useHookstateCallback;
         // the following does not make an effect as memo calls happen on module load
         // so it is always set to memoIntercept
-        React['memo'] = memoIntercept as any;
+        React['memo'] = hookstateMemo as any;
         if (configuration.interceptDependencyListsMode === 'development'
             && configuration.isDevelopmentMode) {
             configuration.hiddenInterceptDependencyListsModeDebug = true;
@@ -2261,62 +2262,38 @@ function reconnectDependencies(deps?: React.DependencyList, fromIntercept?: bool
 }
 
 let useEffectOrigin: (effect: React.EffectCallback, deps?: React.DependencyList) => void;
-export function useHookEffect(effect: React.EffectCallback, deps?: React.DependencyList) {
+export function useHookstateEffect(effect: React.EffectCallback, deps?: React.DependencyList) {
     reconnectDependencies(deps)
-    return useEffectOrigin(effect, deps)
-}
-function useEffectIntercept(effect: React.EffectCallback, deps?: React.DependencyList) {
-    reconnectDependencies(deps, true)
     return useEffectOrigin(effect, deps)
 }
 
 let useLayoutEffectOrigin: (effect: React.EffectCallback, deps?: React.DependencyList) => void;
-export function useHookLayoutEffect(effect: React.EffectCallback, deps?: React.DependencyList) {
+export function useHookstateLayoutEffect(effect: React.EffectCallback, deps?: React.DependencyList) {
     reconnectDependencies(deps)
-    return useLayoutEffectOrigin(effect, deps)
-}
-function useLayoutEffectIntercept(effect: React.EffectCallback, deps?: React.DependencyList) {
-    reconnectDependencies(deps, true)
     return useLayoutEffectOrigin(effect, deps)
 }
 
 let useInsertionEffectOrigin: (effect: React.EffectCallback, deps?: React.DependencyList) => void;
-export function useHookInsertionEffect(effect: React.EffectCallback, deps?: React.DependencyList) {
+export function useHookstateInsertionEffect(effect: React.EffectCallback, deps?: React.DependencyList) {
     reconnectDependencies(deps)
-    return useInsertionEffectOrigin(effect, deps)
-}
-function useInsertionEffectIntercept(effect: React.EffectCallback, deps?: React.DependencyList) {
-    reconnectDependencies(deps, true)
     return useInsertionEffectOrigin(effect, deps)
 }
 
 let useImperativeHandleOrigin: <T, R extends T>(ref: React.Ref<T> | undefined, init: () => R, deps?: React.DependencyList) => void;
-export function useHookImperativeHandle<T, R extends T>(ref: React.Ref<T> | undefined, init: () => R, deps?: React.DependencyList): void {
+export function useHookstateImperativeHandle<T, R extends T>(ref: React.Ref<T> | undefined, init: () => R, deps?: React.DependencyList): void {
     reconnectDependencies(deps)
-    return useImperativeHandleOrigin(ref, init, deps)
-}
-function useImperativeHandleIntercept<T, R extends T>(ref: React.Ref<T> | undefined, init: () => R, deps?: React.DependencyList): void {
-    reconnectDependencies(deps, true)
     return useImperativeHandleOrigin(ref, init, deps)
 }
 
 let useMemoOrigin: <T>(factory: () => T, deps: React.DependencyList | undefined) => T;
-export function useHookMemo<T>(factory: () => T, deps: React.DependencyList | undefined): T {
+export function useHookstateMemo<T>(factory: () => T, deps: React.DependencyList | undefined): T {
     reconnectDependencies(deps)
-    return useMemoOrigin(factory, deps)
-}
-function useMemoIntercept<T>(factory: () => T, deps: React.DependencyList | undefined): T {
-    reconnectDependencies(deps, true)
     return useMemoOrigin(factory, deps)
 }
 
 let useCallbackOrigin: <T extends Function>(callback: T, deps: React.DependencyList) => T;
-export function useHookCallback<T extends Function>(callback: T, deps: React.DependencyList): T {
+export function useHookstateCallback<T extends Function>(callback: T, deps: React.DependencyList): T {
     reconnectDependencies(deps)
-    return useCallbackOrigin(callback, deps)
-}
-function useCallbackIntercept<T extends Function>(callback: T, deps: React.DependencyList): T {
-    reconnectDependencies(deps, true)
     return useCallbackOrigin(callback, deps)
 }
 
@@ -2324,11 +2301,11 @@ let memoOrigin: <P extends object>(
     Component: React.FunctionComponent<P>,
     propsAreEqual?: (prevProps: Readonly<P>, nextProps: Readonly<P>) => boolean
 ) => React.NamedExoticComponent<P>;
-export function hookMemo<T extends React.ComponentType<any>>(
+export function hookstateMemo<T extends React.ComponentType<any>>(
     Component: T,
     propsAreEqual?: (prevProps: Readonly<React.ComponentProps<T>>, nextProps: Readonly<React.ComponentProps<T>>) => boolean
 ): React.MemoExoticComponent<T>;
-export function hookMemo<P extends object>(
+export function hookstateMemo<P extends object>(
     Component: React.FunctionComponent<P>,
     propsAreEqual?: (prevProps: Readonly<P>, nextProps: Readonly<P>) => boolean
 ): React.NamedExoticComponent<P> {
@@ -2337,48 +2314,35 @@ export function hookMemo<P extends object>(
         return (propsAreEqual || shallowEqual)(prevProps, nextProps)
     })
 }
-function memoIntercept<T extends React.ComponentType<any>>(
-    Component: T,
-    propsAreEqual?: (prevProps: Readonly<React.ComponentProps<T>>, nextProps: Readonly<React.ComponentProps<T>>) => boolean
-): React.MemoExoticComponent<T>;
-function memoIntercept<P extends object>(
-    Component: React.FunctionComponent<P>,
-    propsAreEqual?: (prevProps: Readonly<P>, nextProps: Readonly<P>) => boolean
-): React.NamedExoticComponent<P> {
-    return memoOrigin(Component, (prevProps, nextProps) => {
-        reconnectDependencies(Object.keys(nextProps).map(i => nextProps[i]), true)
-        return (propsAreEqual || shallowEqual)(prevProps, nextProps)
-    })
-}
 
 function interceptReactHooks() {
     if (!useEffectOrigin && React['useEffect']) {
         useEffectOrigin = React['useEffect'];
-        React['useEffect'] = useEffectIntercept;
+        React['useEffect'] = useHookstateEffect;
     }
     if (!useLayoutEffectOrigin && React['useLayoutEffect']) {
         useLayoutEffectOrigin = React['useLayoutEffect'];
-        React['useLayoutEffect'] = useLayoutEffectIntercept;
+        React['useLayoutEffect'] = useHookstateLayoutEffect;
     }
     if (!useInsertionEffectOrigin && React['useInsertionEffect']) {
         useInsertionEffectOrigin = React['useInsertionEffect'];
-        React['useInsertionEffect'] = useInsertionEffectIntercept;
+        React['useInsertionEffect'] = useHookstateInsertionEffect;
     }
     if (!useImperativeHandleOrigin && React['useImperativeHandle']) {
         useImperativeHandleOrigin = React['useImperativeHandle'];
-        React['useImperativeHandle'] = useImperativeHandleIntercept;
+        React['useImperativeHandle'] = useHookstateImperativeHandle;
     }
     if (!useMemoOrigin && React['useMemo']) {
         useMemoOrigin = React['useMemo'];
-        React['useMemo'] = useMemoIntercept;
+        React['useMemo'] = useHookstateMemo;
     }
     if (!useCallbackOrigin && React['useCallback']) {
         useCallbackOrigin = React['useCallback'];
-        React['useCallback'] = useCallbackIntercept;
+        React['useCallback'] = useHookstateCallback;
     }
     if (!memoOrigin && React['memo']) {
         memoOrigin = React['memo'];
-        React['memo'] = memoIntercept;
+        React['memo'] = hookstateMemo;
     }
 }
 interceptReactHooks()
