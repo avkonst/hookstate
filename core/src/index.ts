@@ -1451,12 +1451,15 @@ const IsUnmounted = Symbol('IsUnmounted');
 class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy, Subscribable, Subscriber {
     private subscribers: Set<Subscriber> | undefined;
 
-    private downgraded: boolean | undefined;
     private childrenCreated: Record<string | number, StateMethodsImpl<StateValueAtPath, E>> | undefined;
     private childrenUsedPrevious: Record<string | number, StateMethodsImpl<StateValueAtPath, E>> | undefined;
     private childrenUsed: Record<string | number, StateMethodsImpl<StateValueAtPath, E>> | undefined;
-    private selfUsed: State<S, E> | undefined;
+
+    private valueUsedNoProxy: boolean | undefined;
+    private valueUsedNoProxyPrevious: boolean | undefined;
     private valueUsed: StateValueAtPath = UnusedValue;
+
+    private selfUsed: State<S, E> | undefined;
 
     [__state]: (s: S, e: E) => never = () => {
         // this is impossible (from the typescript point of view) to reach 
@@ -1476,17 +1479,17 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
         this.path = path;
         this.valueSource = valueSource;
         this.valueEdition = valueEdition;
-
         this.valueUsed = UnusedValue;
-        delete this.downgraded;
 
         if (reset) {
             delete this.selfUsed;
             delete this.childrenCreated
             delete this.childrenUsedPrevious
         } else {
+            this.valueUsedNoProxyPrevious = this.valueUsedNoProxy;
             this.childrenUsedPrevious = this.childrenUsed;
         }
+        delete this.valueUsedNoProxy;
         delete this.childrenUsed
 
         // We should not delete subscribers as these are self cleaned up when unmounted
@@ -1498,6 +1501,19 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
     }
 
     reconnect() {
+        // Mark it's as used, because it is used in a dependency list
+        // (we are making it's value used implicitly, so rerender is triggered).
+        // Otherwise, no rerender => no effects running, even when a value is changed.
+        // This is marking the state used a bit more than it might be really used
+        // in the effect callback. More optimized / precise implementation would be
+        // to remember useSelf as previous (similar to childrenUsed),
+        // but it is a lot more complicated and the benefit is not worth the complexity.
+        // So, mark it used.
+        // We also using it without proxy if it wass used without proxy during the
+        // previous render, because otherwise children usage might be not traced completely
+        // and so will not result in renreder if children are updated.
+        // This is covered by some tests, but there are so many possible corner cases...
+        this.get({ __internalAllowPromised: true, noproxy: this.valueUsedNoProxyPrevious })
         this.childrenUsed = {
             ...this.childrenUsedPrevious,
             ...this.childrenUsed
@@ -1539,7 +1555,7 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
                     this.valueUsed = this.valueObjectImpl(valueSource as unknown as object);
                 } else {
                     // any other object except Object, for example Date
-                    this.downgraded = true
+                    this.valueUsedNoProxy = true
                     this.valueUsed = valueSource;
                 }
             } else {
@@ -1547,7 +1563,7 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
             }
         }
         if (options?.noproxy) {
-            this.downgraded = true
+            this.valueUsedNoProxy = true
             return valueSource;
         }
         return this.valueUsed as S;
@@ -1729,7 +1745,7 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
     onSet(ad: SetActionDescriptor, actions: Set<() => void>): boolean {
         const update = () => {
             let isAffected = false
-            if (this.downgraded
+            if (this.valueUsedNoProxy
                 // TODO this condition becomes redundant when Downgraded plugins is deleted
                 && this.valueUsed !== UnusedValue) {
                 actions.add(this.onSetUsed);
@@ -1838,9 +1854,9 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
             )
             this.childrenCreated[key] = r;
         }
-        if (this.downgraded) {
+        if (this.valueUsedNoProxy) {
             // TODO this is redundant when Downgraded plugin is deleted
-            r.downgraded = true;
+            r.valueUsedNoProxy = true;
         }
         this.childrenUsed[key] = r;
         return r;
@@ -2049,7 +2065,7 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
         if (typeof p === 'function') {
             const pluginMeta = p();
             if (pluginMeta.id === DowngradedID) {
-                this.downgraded = true;
+                this.valueUsedNoProxy = true;
                 if (this.valueUsed !== UnusedValue) {
                     const currentValue = this.getUntracked(true);
                     this.valueUsed = currentValue;
@@ -2251,25 +2267,27 @@ export function configure(config: Partial<Configuration>) {
 
     if (configuration.interceptDependencyListsMode === 'never') {
         configuration.hiddenInterceptDependencyListsModeDebug = false;
-        React['useEffect'] = useEffectOrigin;
-        React['useLayoutEffect'] = useLayoutEffectOrigin;
-        React['useInsertionEffect'] = useInsertionEffectOrigin;
-        React['useImperativeHandle'] = useImperativeHandleOrigin;
-        React['useMemo'] = useMemoOrigin;
-        React['useCallback'] = useCallbackOrigin;
+        React['useEffect'] = React['useEffect'] && useEffectOrigin;
+        React['useLayoutEffect'] = React['useLayoutEffect'] && useLayoutEffectOrigin;
+        React['useInsertionEffect'] = React['useInsertionEffect'] && useInsertionEffectOrigin;
+        React['useImperativeHandle'] = React['useImperativeHandle'] && useImperativeHandleOrigin;
+        React['useMemo'] = React['useMemo'] && useMemoOrigin;
+        React['useCallback'] = React['useCallback'] && useCallbackOrigin;
         // the following does not make an effect as memo calls happen on module load
         // so it is always set to memoIntercept
-        React['memo'] = memoOrigin as any;
+        React['memo'] = React['memo'] && memoOrigin as any;
     } else {
-        React['useEffect'] = useHookstateEffect;
-        React['useLayoutEffect'] = useHookstateLayoutEffect;
-        React['useInsertionEffect'] = useHookstateInsertionEffect;
-        React['useImperativeHandle'] = useHookstateImperativeHandle;
-        React['useMemo'] = useHookstateMemo;
-        React['useCallback'] = useHookstateCallback;
+        // do not intercept if a hook is not defined in React
+        // otherwise, it will enable 3rd party libs thinking the react runs at version 18
+        React['useEffect'] = React['useEffect'] && useEffectIntercept;
+        React['useLayoutEffect'] = React['useLayoutEffect'] && useLayoutEffectIntercept;
+        React['useInsertionEffect'] = React['useLayoutEffect'] && useInsertionEffectIntercept;
+        React['useImperativeHandle'] = React['useImperativeHandle'] && useImperativeHandleIntercept;
+        React['useMemo'] = React['useMemo'] && useMemoIntercept;
+        React['useCallback'] = React['useCallback'] && useCallbackIntercept;
         // the following does not make an effect as memo calls happen on module load
         // so it is always set to memoIntercept
-        React['memo'] = hookstateMemo as any;
+        React['memo'] = React['memo'] && memoIntercept as any;
         if (configuration.interceptDependencyListsMode === 'development'
             && configuration.isDevelopmentMode) {
             configuration.hiddenInterceptDependencyListsModeDebug = true;
@@ -2298,10 +2316,18 @@ export function useHookstateEffect(effect: React.EffectCallback, deps?: React.De
     reconnectDependencies(deps)
     return useEffectOrigin(effect, deps)
 }
+function useEffectIntercept(effect: React.EffectCallback, deps?: React.DependencyList) {
+    reconnectDependencies(deps, true)
+    return useEffectOrigin(effect, deps)
+}
 
 let useLayoutEffectOrigin: (effect: React.EffectCallback, deps?: React.DependencyList) => void;
 export function useHookstateLayoutEffect(effect: React.EffectCallback, deps?: React.DependencyList) {
     reconnectDependencies(deps)
+    return useLayoutEffectOrigin(effect, deps)
+}
+function useLayoutEffectIntercept(effect: React.EffectCallback, deps?: React.DependencyList) {
+    reconnectDependencies(deps, true)
     return useLayoutEffectOrigin(effect, deps)
 }
 
@@ -2310,10 +2336,18 @@ export function useHookstateInsertionEffect(effect: React.EffectCallback, deps?:
     reconnectDependencies(deps)
     return useInsertionEffectOrigin(effect, deps)
 }
+function useInsertionEffectIntercept(effect: React.EffectCallback, deps?: React.DependencyList) {
+    reconnectDependencies(deps, true)
+    return useInsertionEffectOrigin(effect, deps)
+}
 
 let useImperativeHandleOrigin: <T, R extends T>(ref: React.Ref<T> | undefined, init: () => R, deps?: React.DependencyList) => void;
 export function useHookstateImperativeHandle<T, R extends T>(ref: React.Ref<T> | undefined, init: () => R, deps?: React.DependencyList): void {
     reconnectDependencies(deps)
+    return useImperativeHandleOrigin(ref, init, deps)
+}
+function useImperativeHandleIntercept<T, R extends T>(ref: React.Ref<T> | undefined, init: () => R, deps?: React.DependencyList): void {
+    reconnectDependencies(deps, true)
     return useImperativeHandleOrigin(ref, init, deps)
 }
 
@@ -2322,10 +2356,18 @@ export function useHookstateMemo<T>(factory: () => T, deps: React.DependencyList
     reconnectDependencies(deps)
     return useMemoOrigin(factory, deps)
 }
+export function useMemoIntercept<T>(factory: () => T, deps: React.DependencyList | undefined): T {
+    reconnectDependencies(deps, true)
+    return useMemoOrigin(factory, deps)
+}
 
 let useCallbackOrigin: <T extends Function>(callback: T, deps: React.DependencyList) => T;
 export function useHookstateCallback<T extends Function>(callback: T, deps: React.DependencyList): T {
     reconnectDependencies(deps)
+    return useCallbackOrigin(callback, deps)
+}
+function useCallbackIntercept<T extends Function>(callback: T, deps: React.DependencyList): T {
+    reconnectDependencies(deps, true)
     return useCallbackOrigin(callback, deps)
 }
 
@@ -2346,38 +2388,51 @@ export function hookstateMemo<P extends object>(
         return (propsAreEqual || shallowEqual)(prevProps, nextProps)
     })
 }
+function memoIntercept<T extends React.ComponentType<any>>(
+    Component: T,
+    propsAreEqual?: (prevProps: Readonly<React.ComponentProps<T>>, nextProps: Readonly<React.ComponentProps<T>>) => boolean
+): React.MemoExoticComponent<T>;
+function memoIntercept<P extends object>(
+    Component: React.FunctionComponent<P>,
+    propsAreEqual?: (prevProps: Readonly<P>, nextProps: Readonly<P>) => boolean
+): React.NamedExoticComponent<P> {
+    return memoOrigin(Component, (prevProps, nextProps) => {
+        reconnectDependencies(Object.keys(nextProps).map(i => nextProps[i]), true)
+        return (propsAreEqual || shallowEqual)(prevProps, nextProps)
+    })
+}
 
 function interceptReactHooks() {
     if (!useEffectOrigin && React['useEffect']) {
         useEffectOrigin = React['useEffect'];
-        React['useEffect'] = useHookstateEffect;
+        React['useEffect'] = useEffectIntercept;
     }
     if (!useLayoutEffectOrigin && React['useLayoutEffect']) {
         useLayoutEffectOrigin = React['useLayoutEffect'];
-        React['useLayoutEffect'] = useHookstateLayoutEffect;
+        React['useLayoutEffect'] = useLayoutEffectIntercept;
     }
     if (!useInsertionEffectOrigin && React['useInsertionEffect']) {
         useInsertionEffectOrigin = React['useInsertionEffect'];
-        React['useInsertionEffect'] = useHookstateInsertionEffect;
+        React['useInsertionEffect'] = useInsertionEffectIntercept;
     }
     if (!useImperativeHandleOrigin && React['useImperativeHandle']) {
         useImperativeHandleOrigin = React['useImperativeHandle'];
-        React['useImperativeHandle'] = useHookstateImperativeHandle;
+        React['useImperativeHandle'] = useImperativeHandleIntercept;
     }
     if (!useMemoOrigin && React['useMemo']) {
         useMemoOrigin = React['useMemo'];
-        React['useMemo'] = useHookstateMemo;
+        React['useMemo'] = useMemoIntercept;
     }
     if (!useCallbackOrigin && React['useCallback']) {
         useCallbackOrigin = React['useCallback'];
-        React['useCallback'] = useHookstateCallback;
+        React['useCallback'] = useCallbackIntercept;
     }
     if (!memoOrigin && React['memo']) {
         memoOrigin = React['memo'];
-        React['memo'] = hookstateMemo;
+        React['memo'] = memoIntercept;
     }
 }
-interceptReactHooks()
+interceptReactHooks() // TODO defer invoking it until state is created, so the configure had a chance to set it up first
 
 // Do not try to use useLayoutEffect if DOM not available (SSR)
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffectOrigin! : useEffectOrigin!;

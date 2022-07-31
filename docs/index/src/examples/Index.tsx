@@ -16,6 +16,8 @@ import { ExampleComponent as ExamplePluginLocalstored } from './plugin-localstor
 import { ExampleComponent as ExamplePluginBroadcasted } from './plugin-broadcasted';
 import { ExampleComponent as ExamplePluginValidation } from './plugin-validation';
 
+import { ExampleComponent as ExampleWithUseEffect } from './with-use-effect';
+
 const baseUrl = 'https://raw.githubusercontent.com/avkonst/hookstate/master/docs/index/src/examples/'
 
 export const ExampleCodeUrl = (id: string) => `${baseUrl}${id}.tsx`;
@@ -36,3 +38,5 @@ ExamplesRepo.set('plugin-snapshotable', <ExamplePluginSnapshotable />);
 ExamplesRepo.set('plugin-validation', <ExamplePluginValidation />);
 ExamplesRepo.set('plugin-localstored', <ExamplePluginLocalstored />);
 ExamplesRepo.set('plugin-broadcasted', <ExamplePluginBroadcasted />);
+
+ExamplesRepo.set('with-use-effect', <ExampleWithUseEffect />);

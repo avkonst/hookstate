@@ -17,6 +17,7 @@ module.exports = {
             'asynchronous-state',
             'recursive-state',
             'exporting-state',
+            'state-with-useeffect',
             // 'dynamic-states-store',
             'using-without-statehook',
             // 'using-with-memo',

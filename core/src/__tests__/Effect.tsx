@@ -598,20 +598,20 @@ test('object: should rerender if used in useEffect', async () => {
     act(() => {
         result.current.b.set(p => p + 1);
     });
-    expect(renderTimes).toStrictEqual(1);
-    expect(effectTimes).toStrictEqual(1);
-
-    act(() => {
-        result.current.a.set(p => p + 1);
-    });
     expect(renderTimes).toStrictEqual(2);
     expect(effectTimes).toStrictEqual(2);
 
     act(() => {
-        result.current.b.set(p => p + 1);
+        result.current.a.set(p => p + 1);
     });
     expect(renderTimes).toStrictEqual(3);
     expect(effectTimes).toStrictEqual(3);
+
+    act(() => {
+        result.current.b.set(p => p + 1);
+    });
+    expect(renderTimes).toStrictEqual(4);
+    expect(effectTimes).toStrictEqual(4);
 
 });
 
@@ -850,4 +850,188 @@ test('object: should give stable reference for global state (set twice)', async 
     expect(stateHelloWorld2 == state.hello[1]).toBeTruthy();
     expect(stateHelloWorldValue2 == stateHelloWorld2.value).toBeTruthy();
     expect(stateHelloWorldValue2 == state.hello[1].value).toBeTruthy();
+});
+
+test('object: should rerender if 1 state used in 2 useEffect', async () => {
+    let renderTimes = 0
+    let effectTimes1 = 0
+    let effectTimes2 = 0
+    const result = renderHook(() => {
+        renderTimes += 1
+        let state = useHookstate({ f1: { a: 0 }, f2: { a: 0 } })
+        let state1 = state.f1
+        let state2 = state.f2
+        useEffect(() => {
+            effectTimes1 += 1
+            state1.get().a
+        }, [state1])
+        useEffect(() => {
+            effectTimes2 += 1
+            state2.get().a
+        }, [state2])
+        return [state1, state2];
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(effectTimes1).toStrictEqual(1);
+    expect(effectTimes2).toStrictEqual(1);
+
+    act(() => {
+        result.result.current[0].a.set(p => p + 1);
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(effectTimes1).toStrictEqual(2);
+    expect(effectTimes2).toStrictEqual(1);
+
+    // update the second time to reproduce the loss of previous value
+    act(() => {
+        result.result.current[0].a.set(p => p + 1);
+    });
+    expect(renderTimes).toStrictEqual(3);
+    expect(effectTimes1).toStrictEqual(3);
+    expect(effectTimes2).toStrictEqual(1);
+
+    act(() => {
+        result.result.current[1].a.set(p => p + 1);
+    });
+    expect(renderTimes).toStrictEqual(4);
+    expect(effectTimes1).toStrictEqual(3);
+    expect(effectTimes2).toStrictEqual(2);
+});
+
+test('object: should rerender if 1 state used in 2 useEffect (noproxy)', async () => {
+    let renderTimes = 0
+    let effectTimes1 = 0
+    let effectTimes2 = 0
+    const result = renderHook(() => {
+        renderTimes += 1
+        let state = useHookstate({ f1: { a: 0 }, f2: { a: 0 } })
+        let state1 = state.f1
+        let state2 = state.f2
+        useEffect(() => {
+            effectTimes1 += 1
+            state1.get({ noproxy: true }).a
+        }, [state1])
+        useEffect(() => {
+            effectTimes2 += 1
+            state2.get({ noproxy: true }).a
+        }, [state2])
+        return [state1, state2];
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(effectTimes1).toStrictEqual(1);
+    expect(effectTimes2).toStrictEqual(1);
+
+    act(() => {
+        result.result.current[0].a.set(p => p + 1);
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(effectTimes1).toStrictEqual(2);
+    expect(effectTimes2).toStrictEqual(1);
+
+    // update the second time to reproduce the loss of previous value
+    act(() => {
+        result.result.current[0].a.set(p => p + 1);
+    });
+    expect(renderTimes).toStrictEqual(3);
+    expect(effectTimes1).toStrictEqual(3);
+    expect(effectTimes2).toStrictEqual(1);
+
+    act(() => {
+        result.result.current[1].a.set(p => p + 1);
+    });
+    expect(renderTimes).toStrictEqual(4);
+    expect(effectTimes1).toStrictEqual(3);
+    expect(effectTimes2).toStrictEqual(2);
+});
+
+test('object: should rerender if 1 state used in 2 useEffect', async () => {
+    let renderTimes = 0
+    let effectTimes1 = 0
+    let effectTimes2 = 0
+    const result = renderHook(() => {
+        renderTimes += 1
+        let state = useHookstate({ f1: 1, f2: 1 })
+        let state1 = state.f1
+        let state2 = state.f2
+        useEffect(() => {
+            effectTimes1 += 1
+            state1.get()
+        }, [state1])
+        useEffect(() => {
+            effectTimes2 += 1
+            state2.get()
+        }, [state2])
+        return [state1, state2];
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(effectTimes1).toStrictEqual(1);
+    expect(effectTimes2).toStrictEqual(1);
+
+    act(() => {
+        result.result.current[0].set(p => p + 1);
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(effectTimes1).toStrictEqual(2);
+    expect(effectTimes2).toStrictEqual(1);
+
+    // update the second time to reproduce the loss of previous value
+    act(() => {
+        result.result.current[0].set(p => p + 1);
+    });
+    expect(renderTimes).toStrictEqual(3);
+    expect(effectTimes1).toStrictEqual(3);
+    expect(effectTimes2).toStrictEqual(1);
+
+    act(() => {
+        result.result.current[1].set(p => p + 1);
+    });
+    expect(renderTimes).toStrictEqual(4);
+    expect(effectTimes1).toStrictEqual(3);
+    expect(effectTimes2).toStrictEqual(2);
+});
+
+test('object: should rerender if 1 state used in 2 useEffect (scopped state)', async () => {
+    let renderTimes = 0
+    let effectTimes1 = 0
+    let effectTimes2 = 0
+    const result = renderHook(() => {
+        renderTimes += 1
+        let state = useHookstate({ f1: 1, f2: 1 })
+        let state1 = useHookstate(state.f1)
+        let state2 = useHookstate(state.f2)
+        useEffect(() => {
+            effectTimes1 += 1
+            state1.get()
+        }, [state1])
+        useEffect(() => {
+            effectTimes2 += 1
+            state2.get()
+        }, [state2])
+        return [state1, state2];
+    });
+    expect(renderTimes).toStrictEqual(1);
+    expect(effectTimes1).toStrictEqual(1);
+    expect(effectTimes2).toStrictEqual(1);
+
+    act(() => {
+        result.result.current[0].set(p => p + 1);
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(effectTimes1).toStrictEqual(2);
+    expect(effectTimes2).toStrictEqual(1);
+
+    // update the second time to reproduce the loss of previous value
+    act(() => {
+        result.result.current[0].set(p => p + 1);
+    });
+    expect(renderTimes).toStrictEqual(3);
+    expect(effectTimes1).toStrictEqual(3);
+    expect(effectTimes2).toStrictEqual(1);
+
+    act(() => {
+        result.result.current[1].set(p => p + 1);
+    });
+    expect(renderTimes).toStrictEqual(4);
+    expect(effectTimes1).toStrictEqual(3);
+    expect(effectTimes2).toStrictEqual(2);
 });
