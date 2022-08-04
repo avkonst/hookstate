@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useHookstate, State, Extension } from '@hookstate/core';
+import { useHookstate, State } from '@hookstate/core';
 
 const TableCell = (props: { cell: State<number> }) => {
     const scopedState = useHookstate(props.cell);
@@ -48,7 +48,7 @@ const MatrixView = (props: {
                     }
                     stats.totalCalls += 1;
                 }
-            } as Extension<StatsExtension>
+            }
         }
     );
     // schedule interval updates

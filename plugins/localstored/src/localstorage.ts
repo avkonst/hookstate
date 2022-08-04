@@ -1,11 +1,11 @@
-import { Extension, State, StateValueAtPath, StateValueAtRoot, __State } from '@hookstate/core';
+import { ExtensionFactory, State, StateValueAtPath, StateValueAtRoot } from '@hookstate/core';
 
 export interface LocalStored { }
 
 export function localstored<S, E>(options?: {
     key?: string,
     initializer?: () => Promise<S>
-}): (typemarker?: __State<S, E>) => Extension<LocalStored> {
+}): ExtensionFactory<S, E, LocalStored> {
     return () => {
         let key: string;
         let serializer: (s: State<StateValueAtPath>) => () => string;

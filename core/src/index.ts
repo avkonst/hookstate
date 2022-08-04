@@ -315,7 +315,7 @@ export type InferStateValueType<V> = DeepReturnType<V> extends __State<(infer S)
 // TODO document, give example how to use in extension method signatures
 export type InferStateExtensionType<V> = DeepReturnType<V> extends __State<(infer _), (infer E)>
     ? E
-    : DeepReturnType<V> extends Extension<(infer I)>
+    : DeepReturnType<V> extends Extension<(infer _), (infer I)>
     ? I : V
 export type DeepReturnType<V> = V extends (...args: any) => (infer R) ? DeepReturnType<R> : V;
 
@@ -343,6 +343,7 @@ export type State<S, E = {}> = StateMethods<S, E> & E & (
  * @hidden
  * @ignore
  */
+// TODO remove export when plugins API is removed
 export type StateValueAtRoot = any; //tslint:disable-line: no-any
 /**
  * For plugin developers only.
@@ -433,22 +434,24 @@ export interface Plugin {
 }
 
 // TODO document
-export interface Extension<E extends {}> {
+export interface Extension<S, E extends {}> {
     readonly onCreate?: (
-        state: State<StateValueAtRoot, {}>,
+        state: State<S, {}>,
         extensionsCallbacks: Record<string, (i: State<StateValueAtPath, StateExtensionUnknown>) => any>
     ) => {
             readonly [K in keyof Required<E>]: (state: State<StateValueAtPath, StateExtensionUnknown>) => E[K];
         },
     readonly onInit?: (
-        state: State<StateValueAtRoot, StateExtensionUnknown>,
+        state: State<S, StateExtensionUnknown>,
         extensionsCallbacks: Record<string, (i: State<StateValueAtPath, StateExtensionUnknown>) => any>
     ) => void,
     readonly onPreset?: (state: State<StateValueAtPath, StateExtensionUnknown>, value: StateValueAtPath) => void,
     readonly onPremerge?: (state: State<StateValueAtPath, StateExtensionUnknown>, value: StateValueAtPath) => void,
     readonly onSet?: (state: State<StateValueAtPath, StateExtensionUnknown>, descriptor: SetActionDescriptor) => void,
-    readonly onDestroy?: (state: State<StateValueAtRoot, StateExtensionUnknown>) => void,
+    readonly onDestroy?: (state: State<S, StateExtensionUnknown>) => void,
 };
+
+export type ExtensionFactory<S, I, E> = (typemarker?: __State<S, I>) => Extension<S, E>
 
 // TODO deprecate
 /**
@@ -496,20 +499,20 @@ export function createHookstate<S>(
 }
 
 // TODO block this on type system level
-export function hookstate<S, E, E2>(
+export function hookstate<S, E = {}>(
     source: __State<S, E>,
-    extension?: () => Extension<E2>
+    extension?: ExtensionFactory<S, E, StateExtensionUnknown>
 ): never;
 export function hookstate<S, E = {}>(
     initial: SetInitialStateAction<S>,
-    extension?: (_?: __State<S, {}>) => Extension<E>
+    extension?: ExtensionFactory<S, {}, E>
 ): State<S, E>;
 export function hookstate<S, E = {}>(
     initial: SetInitialStateAction<S>,
-    extension?: (_?: __State<S, {}>) => Extension<E>
+    extension?: ExtensionFactory<S, {}, E>
 ): State<S, E> {
     const store = createStore(initial);
-    store.activate(extension)
+    store.activate(extension as ExtensionFactory<StateValueAtRoot, {}, {}>)
     const methods = store.toMethods();
     const devtools = createState[DevToolsID]
     if (devtools) {
@@ -604,20 +607,20 @@ export function extend<
     E4 extends {} = {},
     E5 extends {} = {}
 >(
-    e1?: (_?: __State<S, E>) => Extension<E1>,
-    e2?: (_?: __State<S, E1>) => Extension<E2>,
-    e3?: (_?: __State<S, E2 & E1>) => Extension<E3>,
-    e4?: (_?: __State<S, E3 & E2 & E1>) => Extension<E4>,
-    e5?: (_?: __State<S, E4 & E3 & E2 & E1>) => Extension<E5>
-): (_?: __State<S, E>) => Extension<E5 & E4 & E3 & E2 & E1> {
-    function extended(extensions: (() => Extension<{}>)[]) {
+    e1?: ExtensionFactory<S, E, E1>,
+    e2?: ExtensionFactory<S, E1 & E, E2>,
+    e3?: ExtensionFactory<S, E2 & E1 & E, E3>,
+    e4?: ExtensionFactory<S, E3 & E2 & E1 & E, E4>,
+    e5?: ExtensionFactory<S, E4 & E3 & E2 & E1 & E, E5>
+): ExtensionFactory<S, E, E5 & E4 & E3 & E2 & E1> {
+    function extended(extensions: (ExtensionFactory<S, E, {}>)[]) {
         let exts = extensions.map(i => i());
         let onInitCbs = exts.map(i => i.onInit).filter(i => i)
         let onPremergeCbs = exts.map(i => i.onPremerge).filter(i => i)
         let onPresetCbs = exts.map(i => i.onPreset).filter(i => i)
         let onSetCbs = exts.map(i => i.onSet).filter(i => i)
         let onDestroyCbs = exts.map(i => i.onDestroy).filter(i => i)
-        let result: Writeable<Extension<{}>> = {
+        let result: Writeable<Extension<S, {}>> = {
             onCreate: (instanceFactory, combinedMethods) => {
                 for (let ext of exts) {
                     if (ext.onCreate) {
@@ -663,10 +666,10 @@ export function extend<
                 }
             }
         }
-        return result as Extension<E1 & E2 & E3 & E4 & E5>
+        return result as Extension<S, E1 & E2 & E3 & E4 & E5>
     }
     return () => extended((
-        [e1, e2, e3, e4, e5] as (() => Extension<{}>)[]
+        [e1, e2, e3, e4, e5] as ExtensionFactory<S, E, {}>[]
     ).filter(i => i!))
 }
 
@@ -676,20 +679,20 @@ export function extend<
  * is almost always a mistake. So, it is blocked.
  * Use `useHookstate(() => your_promise)` instead of `useHookstate(your_promise)`.
  */
-export function useHookstate<S, E>(
+export function useHookstate<S, E = {}>(
     source: Promise<S>,
-    extension?: (_?: __State<S, {}>) => Extension<E>
+    extension?: ExtensionFactory<S, {}, E>
 ): never;
 // TODO block this on type system level
-export function useHookstate<S, E, E2>(
+export function useHookstate<S, E = {}>(
     source: __State<S, E>,
-    extension: () => Extension<E2>
+    extension: ExtensionFactory<S, E, StateExtensionUnknown>
 ): never;
 /**
  * Alias to [useHookstate](#useHookstate) which provides a workaround
  * for [React 20613 bug](https://github.com/facebook/react/issues/20613)
  */
-export function useHookstate<S, E>(
+export function useHookstate<S, E = {}>(
     source: __State<S, E>
 ): State<S, E>;
 /**
@@ -698,11 +701,11 @@ export function useHookstate<S, E>(
  */
 export function useHookstate<S, E = {}>(
     source: SetInitialStateAction<S>,
-    extension?: (_?: __State<S, {}>) => Extension<E>
+    extension?: ExtensionFactory<S, {}, E>
 ): State<S, E>;
-export function useHookstate<S, E>(
+export function useHookstate<S, E = {}>(
     source: SetInitialStateAction<S> | State<S, E>,
-    extension?: (_?: __State<S, {}>) => Extension<E>
+    extension?: ExtensionFactory<S, {}, E>
 ): State<S, E> {
     const parentMethods = Object(source) === source ?
         source[self] as StateMethodsImpl<S, E> | undefined :
@@ -874,14 +877,14 @@ export function useHookstate<S, E>(
         // need to attach the extension straight away
         // because extension methods are used in render function
         // and we can not defer it to the effect callback
-        value.store.activate(extension); // no-op if already attached
+        value.store.activate(extension as ExtensionFactory<StateValueAtRoot, {}, {}>); // no-op if already attached
         useIsomorphicLayoutEffect(() => {
             // warning: in strict mode, effect is called twice
             // so need to restore subscription and reconstruct the extension
             // after the first effect unmount callback
             value.state.onMount() // no-op if already mounted
             value.store.subscribe(value.state); // no-op if already subscribed
-            value.store.activate(extension); // no-op if already attached
+            value.store.activate(extension as ExtensionFactory<StateValueAtRoot, {}, {}>); // no-op if already attached
             return () => {
                 value.state.onUnmount()
                 value.store.unsubscribe(value.state);
@@ -904,7 +907,7 @@ export function useHookstate<S, E>(
 export function StateFragment<S, E>(
     props: {
         state: __State<S, E>,
-        extension: () => Extension<E>,
+        extension: ExtensionFactory<S, E, StateExtensionUnknown>,
         children: (state: State<S, E>) => React.ReactElement,
         suspend?: boolean,
     }
@@ -936,7 +939,7 @@ export function StateFragment<S, E>(
 export function StateFragment<S, E>(
     props: {
         state: SetInitialStateAction<S>,
-        extension?: (_?: __State<S, {}>) => Extension<E>,
+        extension?: ExtensionFactory<S, {}, E>,
         children: (state: State<S, E>) => React.ReactElement,
         suspend?: boolean,
     }
@@ -944,7 +947,7 @@ export function StateFragment<S, E>(
 export function StateFragment<S, E>(
     props: {
         state: State<S, E> | SetInitialStateAction<S>,
-        extension?: (_?: __State<S, {}>) => Extension<E>,
+        extension?: ExtensionFactory<S, {}, E>,
         children: (state: State<S, E>) => React.ReactElement,
         suspend?: boolean, // TODO document
     }
@@ -1114,7 +1117,7 @@ class Store implements Subscribable {
     private _destroySubscribers: Set<Required<PluginCallbacks>['onDestroy']> = new Set();
     private _plugins: Map<symbol, PluginCallbacks> = new Map();
 
-    private _extension?: Extension<{}>;
+    private _extension?: Extension<StateValueAtRoot, {}>;
     private _extensionMethods?: {};
 
     private _promise?: Promise<StateValueAtRoot>;
@@ -1183,7 +1186,7 @@ class Store implements Subscribable {
         this._promise = promise
     }
 
-    activate(extensionFactory: (() => Extension<{}>) | undefined) {
+    activate(extensionFactory: ExtensionFactory<StateValueAtRoot, {}, {}> | undefined) {
         if (this.edition < 0) {
             this.edition = -this.edition
         }

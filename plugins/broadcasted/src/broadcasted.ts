@@ -2,14 +2,10 @@ import { BroadcastChannel, createLeaderElection } from 'broadcast-channel';
 import {
     Path,
     StateValueAtPath,
-    Plugin,
-    PluginCallbacks,
     StateValueAtRoot,
     none,
-    PluginCallbacksOnSetArgument,
     State,
-    Extension,
-    __State
+    ExtensionFactory
 } from '@hookstate/core';
 
 type OnLeaderSubscriber = () => void
@@ -161,7 +157,7 @@ export interface Broadcasted {
 export function broadcasted<S, E>(options?: {
     topic?: string, // if undefined, reads topic ID from the Identifiable extension
     onLeader?: (link: State<S, Broadcasted & E>, wasFollower: boolean) => void
-}): (typemarker?: __State<S, E>) => Extension<Broadcasted> {
+}): ExtensionFactory<S, E, Broadcasted> {
     return () => {
         let topicId: string;
         let broadcastRef: BroadcastChannelHandle<BroadcastMessage | ServiceMessage> | undefined = undefined;

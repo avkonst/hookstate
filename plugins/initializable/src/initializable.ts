@@ -1,9 +1,9 @@
-import { Extension, State, __State } from '@hookstate/core';
+import { ExtensionFactory, State } from '@hookstate/core';
 
 export interface Initializable {}
 
 export function initializable<S, E>(initializer: (s: State<S, E>) => (void | ((s: State<S, E>) => void))):
-    (_?: __State<S, E>) => Extension<Initializable> {
+    ExtensionFactory<S, E, Initializable> {
     let uninitializer: ((s: State<S, E>) => void) | void = undefined;
     return () => ({
         onInit: (s) => {

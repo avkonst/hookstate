@@ -1,5 +1,5 @@
 
-import { Path, StateValueAtPath, State, InferStateValueType, Extension } from '@hookstate/core';
+import { Path, StateValueAtPath, State, InferStateValueType, ExtensionFactory } from '@hookstate/core';
 
 export type ValidationSeverity = 'error' | 'warning';
 
@@ -28,7 +28,7 @@ export interface Validation {
     ): ReadonlyArray<ValidationError>,
 }
 
-export function validation(): () => Extension<Validation> {
+export function validation<S, E>(): ExtensionFactory<S, E, Validation> {
     return () => ({
         onCreate: () => {
             const storeRules = {};

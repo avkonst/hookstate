@@ -1,27 +1,26 @@
 
 import {
     Path,
-    Extension,
     StateValueAtPath,
     StateValueAtRoot,
     State,
     InferStateValueType,
-    __State,
     hookstate,
+    ExtensionFactory,
 } from '@hookstate/core';
 
 export type SnapshotMode = 'upsert' | 'insert' | 'update' | 'delete' | 'lookup';
 
-export interface Snapshotable<K extends string = string, E = {}> {
+export interface Snapshotable<K extends string = string> {
     snapshot(key?: K, mode?: SnapshotMode): State<InferStateValueType<this>> | undefined;
     rollback(key?: K): State<InferStateValueType<this>> | undefined;
     modified(key?: K): boolean;
     unmodified(key?: K): boolean;
 }
 
-export function snapshotable<K extends string = string>(options?: {
-    snapshotExtensions?: () => Extension<{}>
-}): () => Extension<Snapshotable<K>> {
+export function snapshotable<S, E, K extends string = string>(options?: {
+    snapshotExtensions?: ExtensionFactory<S, {}, {}>
+}): ExtensionFactory<S, E, Snapshotable<K>> {
     return () => ({
         onCreate: (_, dependencies) => {
             const snapshots: Map<K | '___default', State<StateValueAtRoot>> = new Map();
