@@ -8,6 +8,7 @@ https://hookstate.netlify.com/* https://hookstate.js.org/:splat 301!
 
 # the demo sample app handles routes internally, including non-existing pages
 /demo-todolist/* /demo-todolist/index.html 200​
+/demo/* /demo-todolist/index.html 200​
 
 # route old code sample links:
 /global-getting-started /docs/global-state
