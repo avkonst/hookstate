@@ -1,5 +1,5 @@
 import React from 'react';
-import { useHookstate, State, extend, InferStateExtensionType, __State, Extension } from '@hookstate/core';
+import { useHookstate, State, extend, InferStateExtensionType } from '@hookstate/core';
 import { Clonable, clonable } from '@hookstate/clonable';
 import { Comparable, comparable } from '@hookstate/comparable';
 import { Initializable, initializable } from '@hookstate/initializable';
@@ -7,7 +7,7 @@ import { Snapshotable, snapshotable } from '@hookstate/snapshotable';
 
 // define hookstate extension which is composed of a number of standard extensions
 function extensions<S, E>() {
-    return extend<S, E, Clonable, Comparable, Snapshotable<'second', Clonable>, Initializable>(
+    return extend<S, E, Clonable, Comparable, Snapshotable<'second'>, Initializable>(
         clonable(
             // basic cloning, you may use lodash deep clone, instead
             // or a custom cloner, if there a state holds

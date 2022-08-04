@@ -1,4 +1,4 @@
-import { ExtensionFactory, State, StateValueAtPath, StateValueAtRoot } from '@hookstate/core';
+import { ExtensionFactory, State } from '@hookstate/core';
 
 export interface LocalStored { }
 
@@ -8,15 +8,12 @@ export function localstored<S, E>(options?: {
 }): ExtensionFactory<S, E, LocalStored> {
     return () => {
         let key: string;
-        let serializer: (s: State<StateValueAtPath>) => () => string;
-        let deserializer: (s: State<StateValueAtPath>) => (v: string) => void;
-        let stateAtRoot: State<StateValueAtRoot, {}>
+        let serializer: (s: State<S, E>) => () => string;
+        let deserializer: (s: State<S, E>) => (v: string) => void;
+        let stateAtRoot: State<S, E>
         return {
-            onCreate: (s) => {
-                stateAtRoot = s;
-                return {}
-            },
             onInit: (state, extensionMethods) => {
+                stateAtRoot = state;
                 if (options?.key === undefined) {
                     if (extensionMethods['identifier'] === undefined) {
                         throw Error('State is missing Identifiable extension')

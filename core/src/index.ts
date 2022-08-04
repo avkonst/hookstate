@@ -315,8 +315,8 @@ export type InferStateValueType<V> = DeepReturnType<V> extends __State<(infer S)
 // TODO document, give example how to use in extension method signatures
 export type InferStateExtensionType<V> = DeepReturnType<V> extends __State<(infer _), (infer E)>
     ? E
-    : DeepReturnType<V> extends Extension<(infer _), (infer I)>
-    ? I : V
+    : DeepReturnType<V> extends Extension<(infer _), (infer _), (infer E)>
+    ? E : V
 export type DeepReturnType<V> = V extends (...args: any) => (infer R) ? DeepReturnType<R> : V;
 
 /**
@@ -363,7 +363,7 @@ export type StateValueAtPath = any; //tslint:disable-line: no-any
 export type StateErrorAtRoot = any; //tslint:disable-line: no-any
 
 // TODO document
-export type StateExtensionUnknown = Record<string, any>; //tslint:disable-line: no-any
+export type StateExtensionUnknown = any; //tslint:disable-line: no-any
 
 /**
  * For plugin developers only.
@@ -434,24 +434,24 @@ export interface Plugin {
 }
 
 // TODO document
-export interface Extension<S, E extends {}> {
+export interface Extension<S, I, E> {
     readonly onCreate?: (
         state: State<S, {}>,
-        extensionsCallbacks: Record<string, (i: State<StateValueAtPath, StateExtensionUnknown>) => any>
+        extensionsCallbacks: Record<string, (i: State<StateValueAtPath, E & I>) => any>
     ) => {
-            readonly [K in keyof Required<E>]: (state: State<StateValueAtPath, StateExtensionUnknown>) => E[K];
+            readonly [K in keyof Required<E>]: (state: State<StateValueAtPath, E & I>) => E[K];
         },
     readonly onInit?: (
-        state: State<S, StateExtensionUnknown>,
-        extensionsCallbacks: Record<string, (i: State<StateValueAtPath, StateExtensionUnknown>) => any>
+        state: State<S, E & I>,
+        extensionsCallbacks: Record<string, (i: State<StateValueAtPath, E & I>) => any>
     ) => void,
-    readonly onPreset?: (state: State<StateValueAtPath, StateExtensionUnknown>, value: StateValueAtPath) => void,
-    readonly onPremerge?: (state: State<StateValueAtPath, StateExtensionUnknown>, value: StateValueAtPath) => void,
-    readonly onSet?: (state: State<StateValueAtPath, StateExtensionUnknown>, descriptor: SetActionDescriptor) => void,
-    readonly onDestroy?: (state: State<S, StateExtensionUnknown>) => void,
+    readonly onPreset?: (state: State<StateValueAtPath, E & I>, value: StateValueAtPath) => void,
+    readonly onPremerge?: (state: State<StateValueAtPath, E & I>, value: StateValueAtPath) => void,
+    readonly onSet?: (state: State<StateValueAtPath, E & I>, descriptor: SetActionDescriptor) => void,
+    readonly onDestroy?: (state: State<S, E & I>) => void,
 };
 
-export type ExtensionFactory<S, I, E> = (typemarker?: __State<S, I>) => Extension<S, E>
+export type ExtensionFactory<S, I, E> = (typemarker?: __State<S, I>) => Extension<S, I, E>
 
 // TODO deprecate
 /**
@@ -512,7 +512,7 @@ export function hookstate<S, E = {}>(
     extension?: ExtensionFactory<S, {}, E>
 ): State<S, E> {
     const store = createStore(initial);
-    store.activate(extension as ExtensionFactory<StateValueAtRoot, {}, {}>)
+    store.activate(extension as ExtensionFactory<StateValueAtRoot, {}, StateExtensionUnknown>)
     const methods = store.toMethods();
     const devtools = createState[DevToolsID]
     if (devtools) {
@@ -620,7 +620,7 @@ export function extend<
         let onPresetCbs = exts.map(i => i.onPreset).filter(i => i)
         let onSetCbs = exts.map(i => i.onSet).filter(i => i)
         let onDestroyCbs = exts.map(i => i.onDestroy).filter(i => i)
-        let result: Writeable<Extension<S, {}>> = {
+        let result: Writeable<Extension<S, E, {}>> = {
             onCreate: (instanceFactory, combinedMethods) => {
                 for (let ext of exts) {
                     if (ext.onCreate) {
@@ -666,10 +666,10 @@ export function extend<
                 }
             }
         }
-        return result as Extension<S, E1 & E2 & E3 & E4 & E5>
+        return result as Extension<S, E, E1 & E2 & E3 & E4 & E5>
     }
     return () => extended((
-        [e1, e2, e3, e4, e5] as ExtensionFactory<S, E, {}>[]
+        [e1, e2, e3, e4, e5] as ExtensionFactory<S, E, StateExtensionUnknown>[]
     ).filter(i => i!))
 }
 
@@ -877,14 +877,14 @@ export function useHookstate<S, E = {}>(
         // need to attach the extension straight away
         // because extension methods are used in render function
         // and we can not defer it to the effect callback
-        value.store.activate(extension as ExtensionFactory<StateValueAtRoot, {}, {}>); // no-op if already attached
+        value.store.activate(extension as ExtensionFactory<StateValueAtRoot, {}, StateExtensionUnknown>); // no-op if already attached
         useIsomorphicLayoutEffect(() => {
             // warning: in strict mode, effect is called twice
             // so need to restore subscription and reconstruct the extension
             // after the first effect unmount callback
             value.state.onMount() // no-op if already mounted
             value.store.subscribe(value.state); // no-op if already subscribed
-            value.store.activate(extension as ExtensionFactory<StateValueAtRoot, {}, {}>); // no-op if already attached
+            value.store.activate(extension as ExtensionFactory<StateValueAtRoot, {}, StateExtensionUnknown>); // no-op if already attached
             return () => {
                 value.state.onUnmount()
                 value.store.unsubscribe(value.state);
@@ -1117,7 +1117,7 @@ class Store implements Subscribable {
     private _destroySubscribers: Set<Required<PluginCallbacks>['onDestroy']> = new Set();
     private _plugins: Map<symbol, PluginCallbacks> = new Map();
 
-    private _extension?: Extension<StateValueAtRoot, {}>;
+    private _extension?: Extension<StateValueAtRoot, {}, {}>;
     private _extensionMethods?: {};
 
     private _promise?: Promise<StateValueAtRoot>;
@@ -1186,7 +1186,7 @@ class Store implements Subscribable {
         this._promise = promise
     }
 
-    activate(extensionFactory: ExtensionFactory<StateValueAtRoot, {}, {}> | undefined) {
+    activate(extensionFactory: ExtensionFactory<StateValueAtRoot, {}, StateExtensionUnknown> | undefined) {
         if (this.edition < 0) {
             this.edition = -this.edition
         }

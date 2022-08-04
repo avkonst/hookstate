@@ -7,6 +7,7 @@ import {
     InferStateValueType,
     hookstate,
     ExtensionFactory,
+    StateExtensionUnknown
 } from '@hookstate/core';
 
 export type SnapshotMode = 'upsert' | 'insert' | 'update' | 'delete' | 'lookup';
@@ -18,7 +19,7 @@ export interface Snapshotable<K extends string = string> {
     unmodified(key?: K): boolean;
 }
 
-export function snapshotable<S, E, K extends string = string>(options?: {
+export function snapshotable<K extends string = string, S = StateValueAtPath, E = StateExtensionUnknown>(options?: {
     snapshotExtensions?: ExtensionFactory<S, {}, {}>
 }): ExtensionFactory<S, E, Snapshotable<K>> {
     return () => ({
@@ -35,7 +36,7 @@ export function snapshotable<S, E, K extends string = string>(options?: {
                 };
                 return stateAtPath;
             }
-            function isModified(s: State<StateValueAtPath>, key: K | '___default') {
+            function isModified(s: State<StateValueAtPath, StateExtensionUnknown>, key: K | '___default') {
                 if (dependencies['compare'] === undefined) {
                     throw Error('State is missing Comparable extension');
                 }
@@ -93,7 +94,7 @@ export function snapshotable<S, E, K extends string = string>(options?: {
                     if (snap) {
                         let stateAtPath = getByPath(snap, s.path);
                         // get cloned, otherwise the state will keep mutation the object from snapshot
-                        let tmpState = hookstate(stateAtPath && stateAtPath.get({ stealth: true }));
+                        let tmpState = hookstate<StateValueAtPath, StateExtensionUnknown>(stateAtPath && stateAtPath.get({ stealth: true }));
                         let valueAtPathCloned = dependencies['clone'](tmpState)({ stealth: true })
                         s.set(valueAtPathCloned)
                         return stateAtPath

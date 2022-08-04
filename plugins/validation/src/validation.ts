@@ -1,5 +1,5 @@
 
-import { Path, StateValueAtPath, State, InferStateValueType, ExtensionFactory } from '@hookstate/core';
+import { Path, StateValueAtPath, State, InferStateValueType, ExtensionFactory, StateExtensionUnknown } from '@hookstate/core';
 
 export type ValidationSeverity = 'error' | 'warning';
 
@@ -76,7 +76,7 @@ export function validation<S, E>(): ExtensionFactory<S, E, Validation> {
                 result[hidden] = newMap;
             }
 
-            function getErrors(l: State<StateValueAtPath>,
+            function getErrors(l: State<StateValueAtPath, StateExtensionUnknown>,
                 depth: number,
                 filter?: (e: ValidationError) => boolean,
                 first?: boolean): ReadonlyArray<ValidationError> {
