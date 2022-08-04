@@ -1,4 +1,4 @@
-import { useHookstate, hookstate, Plugin, DevToolsID, DevTools, DevToolsExtensions, PluginCallbacks, extend, StateValueAtPath, State, Extension, SetActionDescriptor, StateErrorAtRoot, InferStateValueType, StateMethodsDestroy } from '../';
+import { useHookstate, hookstate, Plugin, DevToolsID, DevTools, DevToolsExtensions, PluginCallbacks, extend, StateValueAtPath, State, Extension, SetActionDescriptor, StateErrorAtRoot, InferStateValueType, StateMethodsDestroy, ExtensionFactory } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 
@@ -9,51 +9,47 @@ interface MyExtensionMethods {
     extensionProp: this
 }
 
-function MyExtension(messages: string[]) {
-    return new MyExtensionImpl(messages) as Extension<MyExtensionMethods>
-}
-
-class MyExtensionImpl implements Extension<MyExtensionMethods> {
-    constructor(private messages: string[]) {}
-    
-    onCreate: Extension<MyExtensionMethods>['onCreate'] = (sf, em) => {
-        expect(em).toBeDefined()
-        this.messages.push('onCreate called')
-        return {
-            extensionMethod: (s) => {
-                return () => this.messages.push(`onExtension called: ${s.path.join('/')}`)
-            },
-            extensionMethodWithArg: (s) => {
-                return (cb) => {
-                    let r = cb(s.value);
-                    this.messages.push(`onExtensionWithArg called: ${s.path.join('/')}, cb: ${r}`)
-                    return r;
+function MyExtension<S, E>(messages: string[]): ExtensionFactory<S, E, MyExtensionMethods> {
+    return () => ({
+        onCreate: (sf, em) => {
+            expect(em).toBeDefined()
+            messages.push('onCreate called')
+            return {
+                extensionMethod: (s) => {
+                    return () => messages.push(`onExtension called: ${s.path.join('/')}`)
+                },
+                extensionMethodWithArg: (s) => {
+                    return (cb) => {
+                        let r = cb(s.value);
+                        messages.push(`onExtensionWithArg called: ${s.path.join('/')}, cb: ${r}`)
+                        return r;
+                    }
+                },
+                extensionMethodSetValue: (s) => {
+                    return (v) => s.set(v)
+                },
+                extensionProp: (s) => {
+                    messages.push(`onExtensionProp called: ${s.path.join('/')}`)
+                    return s as any
                 }
-            },
-            extensionMethodSetValue: (s) => {
-                return (v) => s.set(v)
-            },
-            extensionProp: (s) => {
-                this.messages.push(`onExtensionProp called: ${s.path.join('/')}`)
-                return s as any
             }
-        }
-    };
-    onInit?: Extension<MyExtensionMethods>['onInit'] = (s) => {
-        this.messages.push(`onInit called, [${s.path}]: ${JSON.stringify(s.get({ noproxy: true }))}`)
-    };
-    onSet?: Extension<MyExtensionMethods>['onSet'] = (s, ad) => {
-        this.messages.push(`onSet called, [${ad.path}]: ${JSON.stringify(s.get({ noproxy: true }))}, ${JSON.stringify(ad.actions)}`)
-    };
-    onPreset?: Extension<MyExtensionMethods>['onPreset'] = (s, v) => {
-        this.messages.push(`onPreset called, [${s.path}]: ${JSON.stringify(s.get({ noproxy: true }))}, ${JSON.stringify(v)}`)
-    };
-    onPremerge?: Extension<MyExtensionMethods>['onPremerge'] = (s, v) => {
-        this.messages.push(`onPremerge called, [${s.path}]: ${JSON.stringify(s.get({ noproxy: true }))}, ${JSON.stringify(v)}`)
-    };
-    onDestroy?: Extension<MyExtensionMethods>['onDestroy'] = (s) => {
-        this.messages.push(`onDestroy called, ${JSON.stringify(s.get({ noproxy: true }))}`)
-    };
+        },
+        onInit: (s) => {
+            messages.push(`onInit called, [${s.path}]: ${JSON.stringify(s.get({ noproxy: true }))}`)
+        },
+        onSet: (s, ad) => {
+            messages.push(`onSet called, [${ad.path}]: ${JSON.stringify(s.get({ noproxy: true }))}, ${JSON.stringify(ad.actions)}`)
+        },
+        onPreset: (s, v) => {
+            messages.push(`onPreset called, [${s.path}]: ${JSON.stringify(s.get({ noproxy: true }))}, ${JSON.stringify(v)}`)
+        },
+        onPremerge: (s, v) => {
+            messages.push(`onPremerge called, [${s.path}]: ${JSON.stringify(s.get({ noproxy: true }))}, ${JSON.stringify(v)}`)
+        },
+        onDestroy: (s) => {
+            messages.push(`onDestroy called, ${JSON.stringify(s.get({ noproxy: true }))}`)
+        },
+    })
 }
     
 test('extension: common flow callbacks', async () => {
@@ -64,7 +60,7 @@ test('extension: common flow callbacks', async () => {
         return useHookstate([{
             f1: 0,
             f2: 'str'
-        }], extend(() => MyExtension(messages)))
+        }], extend(MyExtension(messages)))
     });
 
     expect(DevTools(result.current).label('should not be labelled')).toBeUndefined();
@@ -213,60 +209,56 @@ interface MyExtensionMethodsGlobal {
     messages: string[],
 }
 
-function MyExtensionGlobal() {
-    return new MyExtensionGlobalImpl([]) as Extension<MyExtensionMethodsGlobal>
-}
-
-class MyExtensionGlobalImpl implements Extension<MyExtensionMethods> {
-    constructor(private messages: string[]) {}
-    
-    onCreate: Extension<MyExtensionMethodsGlobal>['onCreate'] = (sf) => {
-        this.messages.push('onCreate called')
-        let messages = this.messages;
-        return {
-            extensionMethod: (s) => {
-                return () => this.messages.push(`onExtension called: ${s.path.join('/')}`)
-            },
-            extensionMethodWithArg: (s) => {
-                return (cb) => {
-                    let r = cb(s.value);
-                    this.messages.push(`onExtensionWithArg called: ${s.path.join('/')}, cb: ${r}`)
-                    return r;
+function MyExtensionGlobal<S, E>(): ExtensionFactory<S, E, MyExtensionMethodsGlobal> {
+    let messages: string[] = []
+    return () => ({
+        onCreate: (sf) => {
+            messages.push('onCreate called')
+            return {
+                extensionMethod: (s) => {
+                    return () => messages.push(`onExtension called: ${s.path.join('/')}`)
+                },
+                extensionMethodWithArg: (s) => {
+                    return (cb) => {
+                        let r = cb(s.value);
+                        messages.push(`onExtensionWithArg called: ${s.path.join('/')}, cb: ${r}`)
+                        return r;
+                    }
+                },
+                extensionMethodSetValue: (s) => {
+                    return (v) => s.set(v)
+                },
+                extensionProp: (s) => {
+                    messages.push(`onExtensionProp called: ${s.path.join('/')}`)
+                    return s as any
+                },
+                messages: (s) => {
+                    return messages
                 }
-            },
-            extensionMethodSetValue: (s) => {
-                return (v) => s.set(v)
-            },
-            extensionProp: (s) => {
-                this.messages.push(`onExtensionProp called: ${s.path.join('/')}`)
-                return s as any
-            },
-            messages: (s) => {
-                return messages
             }
-        }
-    };
-    onInit?: Extension<MyExtensionMethods>['onInit'] = (s) => {
-        this.messages.push(`onInit called, [${s.path}]: ${JSON.stringify(s.get({ noproxy: true }))}`)
-    };
-    onSet?: Extension<{}>['onSet'] = (s, ad) => {
-        this.messages.push(`onSet called, [${ad.path}]: ${JSON.stringify(s.get({ noproxy: true }))}, ${JSON.stringify(ad.actions)}`)
-    };
-    onPreset?: Extension<MyExtensionMethods>['onPreset'] = (s, v) => {
-        this.messages.push(`onPreset called, [${s.path}]: ${JSON.stringify(s.get({ noproxy: true }))}, ${JSON.stringify(v)}`)
-    };
-    onPremerge?: Extension<MyExtensionMethods>['onPremerge'] = (s, v) => {
-        this.messages.push(`onPremerge called, [${s.path}]: ${JSON.stringify(s.get({ noproxy: true }))}, ${JSON.stringify(v)}`)
-    };
-    onDestroy?: Extension<{}>['onDestroy'] = (s) => {
-        this.messages.push(`onDestroy called, ${JSON.stringify(s.get({ noproxy: true }))}`)
-    };
+        },
+        onInit: (s) => {
+            messages.push(`onInit called, [${s.path}]: ${JSON.stringify(s.get({ noproxy: true }))}`)
+        },
+        onSet: (s, ad) => {
+            messages.push(`onSet called, [${ad.path}]: ${JSON.stringify(s.get({ noproxy: true }))}, ${JSON.stringify(ad.actions)}`)
+        },
+        onPreset: (s, v) => {
+            messages.push(`onPreset called, [${s.path}]: ${JSON.stringify(s.get({ noproxy: true }))}, ${JSON.stringify(v)}`)
+        },
+        onPremerge: (s, v) => {
+            messages.push(`onPremerge called, [${s.path}]: ${JSON.stringify(s.get({ noproxy: true }))}, ${JSON.stringify(v)}`)
+        },
+        onDestroy: (s) => {
+            messages.push(`onDestroy called, ${JSON.stringify(s.get({ noproxy: true }))}`)
+        },
+    })
 }
 
 const stateInf = hookstate([{
     f1: 0,
     f2: 'str'
-}], () => MyExtensionGlobal())
+}], MyExtensionGlobal())
 
 test('extension: common flow callbacks global state', async () => {
     let renderTimes = 0
