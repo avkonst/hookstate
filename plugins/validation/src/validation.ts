@@ -9,7 +9,7 @@ export interface ValidationError {
     readonly severity: ValidationSeverity;
 }
 
-export interface Validation<K = string> {
+export interface Validation {
     validate(rule: (value: InferStateValueType<this>) => boolean,
         message: string | ((value: InferStateValueType<this>) => string),
         severity?: ValidationSeverity): void,
@@ -28,7 +28,7 @@ export interface Validation<K = string> {
     ): ReadonlyArray<ValidationError>,
 }
 
-export function validation<K extends string = string>(): () => Extension<Validation<K>> {
+export function validation(): () => Extension<Validation> {
     return () => ({
         onCreate: () => {
             const storeRules = {};
