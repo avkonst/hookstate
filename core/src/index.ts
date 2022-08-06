@@ -736,6 +736,11 @@ export function useHookstate<S, E = {}>(
                 }
             };
             const [value, setValue] = React.useState(initializer);
+
+            if (value.store !== parentMethods.store || !Object.hasOwn(value, 'source')) {
+                throw new StateInvalidUsageError(parentMethods.path, ErrorId.InitStateStoreSwitchover)
+            }
+
             // TODO move to a class hide props on prototype level
             // hide props from development tools
             Object.defineProperty(value, 'store', { enumerable: false });
@@ -797,6 +802,11 @@ export function useHookstate<S, E = {}>(
                 }
             }
             const [value, setValue] = React.useState(initializer);
+            
+            if (value.store !== parentMethods.store || !Object.hasOwn(value, 'source')) {
+                throw new StateInvalidUsageError(parentMethods.path, ErrorId.InitStateStoreSwitchover)
+            }
+            
             // hide props from development tools
             Object.defineProperty(value, 'store', { enumerable: false });
             Object.defineProperty(value, 'state', { enumerable: false });
@@ -859,6 +869,11 @@ export function useHookstate<S, E = {}>(
             }
         }
         const [value, setValue] = React.useState(initializer);
+        
+        if (Object.hasOwn(value, 'source')) {
+            throw new StateInvalidUsageError(RootPath, ErrorId.InitStateStoreSwitchover)
+        }
+        
         // hide props from development tools
         Object.defineProperty(value, 'store', { enumerable: false });
         Object.defineProperty(value, 'state', { enumerable: false });
@@ -1048,6 +1063,8 @@ enum ErrorId {
 
     // TODO document
     GetProperty_Function = 110,
+    // TODO document
+    InitStateStoreSwitchover = 111,
 
     GetUnknownPlugin = 120,
 
