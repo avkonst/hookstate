@@ -307,7 +307,7 @@ export type __KeysOfType<T, U, B = false> = {
 
 export const __state = Symbol('__state')
 export interface __State<S, E> {
-    [__state]: (s: S, e: E) => never
+    [__state](): [S, E]
 }
 
 // TODO document, give example how to use in extension method signatures
@@ -737,7 +737,7 @@ export function useHookstate<S, E = {}>(
             };
             const [value, setValue] = React.useState(initializer);
 
-            if (value.store !== parentMethods.store || !Object.hasOwn(value, 'source')) {
+            if (value.store !== parentMethods.store || !('source' in value)) {
                 throw new StateInvalidUsageError(parentMethods.path, ErrorId.InitStateStoreSwitchover)
             }
 
@@ -802,11 +802,11 @@ export function useHookstate<S, E = {}>(
                 }
             }
             const [value, setValue] = React.useState(initializer);
-            
-            if (value.store !== parentMethods.store || !Object.hasOwn(value, 'source')) {
+
+            if (value.store !== parentMethods.store || !('source' in value)) {
                 throw new StateInvalidUsageError(parentMethods.path, ErrorId.InitStateStoreSwitchover)
             }
-            
+
             // hide props from development tools
             Object.defineProperty(value, 'store', { enumerable: false });
             Object.defineProperty(value, 'state', { enumerable: false });
@@ -869,11 +869,11 @@ export function useHookstate<S, E = {}>(
             }
         }
         const [value, setValue] = React.useState(initializer);
-        
-        if (Object.hasOwn(value, 'source')) {
+
+        if ('source' in value) {
             throw new StateInvalidUsageError(RootPath, ErrorId.InitStateStoreSwitchover)
         }
-        
+
         // hide props from development tools
         Object.defineProperty(value, 'store', { enumerable: false });
         Object.defineProperty(value, 'state', { enumerable: false });
@@ -1082,9 +1082,6 @@ enum ErrorId {
     Construct_Value = 212,
     Apply_State = 213,
     Apply_Value = 214,
-
-    // TODO document
-    InternalError = 0,
 }
 
 class StateInvalidUsageError extends Error {
@@ -1481,10 +1478,8 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
 
     private selfUsed: State<S, E> | undefined;
 
-    [__state]: (s: S, e: E) => never = () => {
-        // this is impossible (from the typescript point of view) to reach 
-        // to this function and call it from the client side
-        throw new StateInvalidUsageError(this.path, ErrorId.InternalError)
+    [__state](): [S, E] {
+        return [this.get(), this.self() as E]
     };
 
     constructor(
