@@ -20,7 +20,7 @@ export interface Snapshotable<K extends string = string> {
 }
 
 export function snapshotable<K extends string = string, S = StateValueAtPath, E = StateExtensionUnknown>(options?: {
-    snapshotExtensions?: ExtensionFactory<S, {}, {}>
+    snapshotExtensions?: (key: string) => ExtensionFactory<S, {}, {}>
 }): ExtensionFactory<S, E, Snapshotable<K>> {
     return () => ({
         onCreate: (_, dependencies) => {
@@ -68,7 +68,7 @@ export function snapshotable<K extends string = string, S = StateValueAtPath, E 
                             }
                             stateAtPath.set(v)
                         } else if (s.path.length === 0) {
-                            stateAtPath = hookstate(v, options?.snapshotExtensions)
+                            stateAtPath = hookstate(v, options?.snapshotExtensions?.(k))
                             snapshots.set(k, stateAtPath)
                         } else {
                             throw Error('Creating a new snapshot from a nested state is not allowed.');

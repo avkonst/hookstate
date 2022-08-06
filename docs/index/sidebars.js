@@ -39,6 +39,7 @@ module.exports = {
             'extensions-broadcasted',
             'extensions-localstored',
             'extensions-identifiable',
+            'extensions-subscribable',
             'writing-plugin'
         ],
         'Development Tools': ['devtools'],

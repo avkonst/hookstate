@@ -1,0 +1,69 @@
+{
+    "name": "@hookstate/logged",
+    "version": "4.0.0-rc1",
+    "description": "Plugin for @hookstate/core to enable logging into console when state is created/updated/destroyed.",
+    "license": "MIT",
+    "author": {
+        "name": "Andrey Konstantinov"
+    },
+    "repository": {
+        "url": "https://github.com/avkonst/hookstate"
+    },
+    "bugs": {
+        "url": "https://github.com/avkonst/hookstate/issues"
+    },
+    "homepage": "https://github.com/avkonst/hookstate",
+    "main": "dist/index.js",
+    "module": "dist/index.es.js",
+    "jsnext:main": "dist/index.es.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "build": "rollup -c",
+        "build:w": "rollup -c -w",
+        "clean": "rimraf dist",
+        "test": "jest --env=jsdom",
+        "test:ci": "jest --env=jsdom",
+        "test:w": "jest --env=jsdom --watch",
+        "release": "npm publish --access public",
+        "update:deps": "ncu -u"
+    },
+    "dependencies": {},
+    "peerDependencies": {
+        "@hookstate/core": "^4.0.0-rc18"
+    },
+    "devDependencies": {
+        "@babel/core": "7.18.6",
+        "@babel/runtime": "7.18.6",
+        "@hookstate/core": "workspace:*",
+        "@rollup/plugin-babel": "5.3.1",
+        "@rollup/plugin-commonjs": "22.0.1",
+        "@rollup/plugin-node-resolve": "13.3.0",
+        "@rollup/plugin-url": "7.0.0",
+        "@testing-library/react": "13.3.0",
+        "@testing-library/react-hooks": "8.0.1",
+        "@types/jest": "28.1.4",
+        "@types/lodash.clonedeep": "4.5.7",
+        "@types/lodash.isequal": "4.5.6",
+        "@types/node": "^18.0.3",
+        "@types/react": "18.0.15",
+        "@types/react-dom": "18.0.6",
+        "codecov": "3.8.3",
+        "coverage": "0.4.1",
+        "cross-env": "7.0.3",
+        "jest": "28.1.2",
+        "jest-environment-jsdom": "28.1.2",
+        "npm-check-updates": "15.2.1",
+        "react": "18.2.0",
+        "react-dom": "18.2.0",
+        "react-test-renderer": "18.2.0",
+        "rimraf": "3.0.2",
+        "rollup": "2.76.0",
+        "rollup-plugin-peer-deps-external": "2.2.4",
+        "rollup-plugin-typescript2": "0.32.1",
+        "tslib": "^2.4.0",
+        "typescript": "4.7.4"
+    },
+    "files": [
+        "dist"
+    ]
+}

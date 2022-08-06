@@ -1,7 +1,7 @@
 import { ExtensionFactory, Path, StateValueAtPath } from '@hookstate/core';
 
 export interface Serializable {
-    serialize: () => string,
+    serialize: (options?: { stealth?: boolean }) => string,
     deserialize: (v: string) => void,
 }
 
@@ -11,7 +11,7 @@ export function serializable<S, E>(
 ): ExtensionFactory<S, E, Serializable> {
     return () => ({
         onCreate: () => ({
-            serialize: s => () => serialize(s.path, s.get({ noproxy: true })),
+            serialize: s => (options) => serialize(s.path, s.get({ noproxy: true, stealth: options?.stealth })),
             deserialize: s => (v) => s.set(deserialize(s.path, v)),
         })
     })

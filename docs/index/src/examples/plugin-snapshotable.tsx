@@ -1,9 +1,11 @@
 import React from 'react';
 import { useHookstate, State, extend, InferStateExtensionType } from '@hookstate/core';
+import { identifiable } from '@hookstate/identifiable';
 import { Clonable, clonable } from '@hookstate/clonable';
 import { Comparable, comparable } from '@hookstate/comparable';
 import { Initializable, initializable } from '@hookstate/initializable';
 import { Snapshotable, snapshotable } from '@hookstate/snapshotable';
+import { logged } from '@hookstate/logged';
 
 // define hookstate extension which is composed of a number of standard extensions
 function extensions<S, E>() {
@@ -24,16 +26,8 @@ function extensions<S, E>() {
         // if generic type is ommited, the snapshot key can be any string
         // otherwise, only those names which are provided
         snapshotable<'second'>({
-            snapshotExtensions: () => ({
-                // TODO replace by new logging extension
-                onCreate: (s) => {
-                    console.log('snapshot created:', JSON.stringify(s.get()))
-                    return {}
-                },
-                onSet: (s) => {
-                    console.log('snapshot updated at path:', s.path, JSON.stringify(s.get({ stealth: true })))
-                }
-            })
+            // optionally add extensions to snapshot states
+            snapshotExtensions: (key) => extend(identifiable(key), logged())
         }),
         initializable((s) => {
             // optional one off initialization after a state is created

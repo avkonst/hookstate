@@ -11,6 +11,7 @@ import { ExampleComponent as ExamplePerformanceLargeForm } from './performance-d
 import { ExampleComponent as ExampleGlobalMultipleConsumersStateFragment } from './global-multiple-consumers-statefragment';
 
 import { ExampleComponent as ExamplePluginIdentifiable } from './plugin-identifiable';
+import { ExampleComponent as ExamplePluginSubscribable } from './plugin-subscribable';
 import { ExampleComponent as ExamplePluginSnapshotable } from './plugin-snapshotable';
 import { ExampleComponent as ExamplePluginLocalstored } from './plugin-localstored';
 import { ExampleComponent as ExamplePluginBroadcasted } from './plugin-broadcasted';
@@ -34,6 +35,7 @@ ExamplesRepo.set('performance-demo-large-form', <ExamplePerformanceLargeForm />)
 ExamplesRepo.set('global-multiple-consumers-statefragment', <ExampleGlobalMultipleConsumersStateFragment />);
 
 ExamplesRepo.set('plugin-identifiable', <ExamplePluginIdentifiable />);
+ExamplesRepo.set('plugin-subscribable', <ExamplePluginSubscribable />);
 ExamplesRepo.set('plugin-snapshotable', <ExamplePluginSnapshotable />);
 ExamplesRepo.set('plugin-validation', <ExamplePluginValidation />);
 ExamplesRepo.set('plugin-localstored', <ExamplePluginLocalstored />);
