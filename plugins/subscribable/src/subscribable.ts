@@ -2,7 +2,7 @@
 import { Path, StateValueAtPath, InferStateValueType, ExtensionFactory, State, none } from '@hookstate/core';
 
 export interface Subscribable {
-    subscribe(callback: (value: InferStateValueType<this>) => void): () => void
+    subscribe<S extends InferStateValueType<this>>(callback: (value: S) => void): () => void
 }
 
 export function subscribable<S, E>(): ExtensionFactory<S, E, Subscribable> {

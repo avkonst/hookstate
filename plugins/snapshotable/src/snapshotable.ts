@@ -13,8 +13,8 @@ import {
 export type SnapshotMode = 'upsert' | 'insert' | 'update' | 'delete' | 'lookup';
 
 export interface Snapshotable<K extends string = string> {
-    snapshot(key?: K, mode?: SnapshotMode): State<InferStateValueType<this>> | undefined;
-    rollback(key?: K): State<InferStateValueType<this>> | undefined;
+    snapshot<S extends InferStateValueType<this>>(key?: K, mode?: SnapshotMode): State<S> | undefined;
+    rollback<S extends InferStateValueType<this>>(key?: K): State<S> | undefined;
     modified(key?: K): boolean;
     unmodified(key?: K): boolean;
 }
@@ -24,9 +24,9 @@ export function snapshotable<K extends string = string, S = StateValueAtPath, E 
 }): ExtensionFactory<S, E, Snapshotable<K>> {
     return () => ({
         onCreate: (_, dependencies) => {
-            const snapshots: Map<K | '___default', State<StateValueAtRoot>> = new Map();
-            function getByPath(stateAtRoot: State<StateValueAtRoot>, path: Path) {
-                let stateAtPath = stateAtRoot;
+            const snapshots: Map<K | '___default', State<S>> = new Map();
+            function getByPath(stateAtRoot: State<S>, path: Path) {
+                let stateAtPath: State<StateValueAtPath> = stateAtRoot;
                 for (let p of path) {
                     let v = stateAtPath.get({ stealth: true })
                     if (Object(v) !== v) {
@@ -86,7 +86,7 @@ export function snapshotable<K extends string = string, S = StateValueAtPath, E 
                         }
                         stateAtPath = getByPath(snap, s.path) // lookup by path
                     }
-                    return stateAtPath
+                    return stateAtPath as State<S, StateExtensionUnknown>
                 },
                 rollback: (s) => (key) => {
                     let k: K | '___default' = key || '___default';
@@ -97,7 +97,7 @@ export function snapshotable<K extends string = string, S = StateValueAtPath, E 
                         let tmpState = hookstate<StateValueAtPath, StateExtensionUnknown>(stateAtPath && stateAtPath.get({ stealth: true }));
                         let valueAtPathCloned = dependencies['clone'](tmpState)({ stealth: true })
                         s.set(valueAtPathCloned)
-                        return stateAtPath
+                        return stateAtPath as State<S, StateExtensionUnknown>
                     }
                     return undefined
                 },

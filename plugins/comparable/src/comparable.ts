@@ -1,8 +1,8 @@
 import { ExtensionFactory, InferStateValueType, StateValueAtPath } from '@hookstate/core';
 
 export interface Comparable {
-    compare(other: InferStateValueType<this>): number
-    equals(other: InferStateValueType<this>): boolean
+    compare<S extends InferStateValueType<this>>(other: S): number
+    equals<S extends InferStateValueType<this>>(other: S): boolean
 }
 
 export function comparable<S, E>(compare: (v1: StateValueAtPath, v2: StateValueAtPath) => number): ExtensionFactory<S, E, Comparable> {

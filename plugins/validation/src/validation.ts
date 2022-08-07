@@ -10,8 +10,8 @@ export interface ValidationError {
 }
 
 export interface Validation {
-    validate(rule: (value: InferStateValueType<this>) => boolean,
-        message: string | ((value: InferStateValueType<this>) => string),
+    validate<S extends InferStateValueType<this>>(rule: (value: S) => boolean,
+        message: string | ((value: S) => string),
         severity?: ValidationSeverity): void,
 
     valid(options?: { depth?: number }): boolean,
