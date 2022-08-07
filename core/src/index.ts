@@ -307,7 +307,7 @@ export type __KeysOfType<T, U, B = false> = {
 
 export const __state = Symbol('__state')
 export interface __State<S, E> {
-    [__state](): [S, E]
+    [__state]: [S, E]
 }
 
 // TODO document, give example how to use in extension method signatures
@@ -437,13 +437,15 @@ export interface Plugin {
 export interface Extension<S, I, E> {
     readonly onCreate?: (
         state: State<S, {}>,
-        extensionsCallbacks: Record<string, (i: State<StateValueAtPath, E & I>) => any>
-    ) => {
-            readonly [K in keyof Required<E>]: (state: State<StateValueAtPath, E & I>) => E[K];
+        extensionsCallbacks: {
+            [K in keyof I]: (i: State<StateValueAtPath, E & I>) => I[K];
         },
+    ) => { readonly [K in keyof Required<E>]: (state: State<StateValueAtPath, E & I>) => E[K]; },
     readonly onInit?: (
         state: State<S, E & I>,
-        extensionsCallbacks: Record<string, (i: State<StateValueAtPath, E & I>) => any>
+        extensionsCallbacks: {
+            [K in keyof E & I]: (i: State<StateValueAtPath, E & I>) => (E & I)[K];
+        }
     ) => void,
     readonly onPreset?: (state: State<StateValueAtPath, E & I>, value: StateValueAtPath) => void,
     readonly onPremerge?: (state: State<StateValueAtPath, E & I>, value: StateValueAtPath) => void,
@@ -669,7 +671,7 @@ export function extend<
         return result as Extension<S, E, E1 & E2 & E3 & E4 & E5>
     }
     return () => extended((
-        [e1, e2, e3, e4, e5] as ExtensionFactory<S, E, StateExtensionUnknown>[]
+        [e1, e2, e3, e4, e5] as ExtensionFactory<S, E, {}>[]
     ).filter(i => i!))
 }
 
@@ -1478,7 +1480,7 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
 
     private selfUsed: State<S, E> | undefined;
 
-    [__state](): [S, E] {
+    get [__state](): [S, E] {
         return [this.get(), this.self() as E]
     };
 
