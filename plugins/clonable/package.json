@@ -1,6 +1,6 @@
 {
     "name": "@hookstate/clonable",
-    "version": "4.0.0-rc4",
+    "version": "4.0.0-rc21",
     "description": "Plugin for @hookstate/core to define state cloning capabilities.",
     "license": "MIT",
     "author": {
@@ -29,7 +29,7 @@
     },
     "dependencies": {},
     "peerDependencies": {
-        "@hookstate/core": "^4.0.0-rc18"
+        "@hookstate/core": "^4.0.0-rc21"
     },
     "devDependencies": {
         "@babel/core": "7.18.6",

@@ -1,6 +1,6 @@
 {
     "name": "@hookstate/broadcasted",
-    "version": "4.0.0-rc3",
+    "version": "4.0.0-rc21",
     "description": "Plugin for @hookstate/core to enable state synchronization across browser tabs.",
     "license": "MIT",
     "author": {
@@ -29,7 +29,7 @@
     },
     "dependencies": {},
     "peerDependencies": {
-        "@hookstate/core": "^4.0.0-rc18",
+        "@hookstate/core": "^4.0.0-rc21",
         "broadcast-channel": "^4.10.0"
     },
     "devDependencies": {
