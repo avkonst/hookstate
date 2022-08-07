@@ -40,7 +40,7 @@ module.exports = {
             'extensions-localstored',
             'extensions-identifiable',
             'extensions-subscribable',
-            'writing-plugin'
+            'writing-extension'
         ],
         'Development Tools': ['devtools'],
         'API Reference': [

@@ -16,6 +16,7 @@ import { ExampleComponent as ExamplePluginSnapshotable } from './plugin-snapshot
 import { ExampleComponent as ExamplePluginLocalstored } from './plugin-localstored';
 import { ExampleComponent as ExamplePluginBroadcasted } from './plugin-broadcasted';
 import { ExampleComponent as ExamplePluginValidation } from './plugin-validation';
+import { ExampleComponent as ExamplePluginCustom } from './plugin-custom';
 
 import { ExampleComponent as ExampleWithUseEffect } from './with-use-effect';
 
@@ -40,5 +41,7 @@ ExamplesRepo.set('plugin-snapshotable', <ExamplePluginSnapshotable />);
 ExamplesRepo.set('plugin-validation', <ExamplePluginValidation />);
 ExamplesRepo.set('plugin-localstored', <ExamplePluginLocalstored />);
 ExamplesRepo.set('plugin-broadcasted', <ExamplePluginBroadcasted />);
+
+ExamplesRepo.set('plugin-custom', <ExamplePluginCustom />);
 
 ExamplesRepo.set('with-use-effect', <ExampleWithUseEffect />);
