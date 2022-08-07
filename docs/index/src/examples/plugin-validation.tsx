@@ -1,11 +1,11 @@
 import React from 'react';
-import { useHookstate } from '@hookstate/core';
-import { validation } from '@hookstate/validation';
+import { State, useHookstate } from '@hookstate/core';
+import { Validation, validation } from '@hookstate/validation';
 
 interface Task { name: string }
 
 export const ExampleComponent = () => {
-    const state = useHookstate([{ name: 'First Task' }, { name: 'Second Task' }] as Task[], validation())
+    const state: State<Task[], Validation> = useHookstate([{ name: 'First Task' }, { name: 'Second Task' }], validation())
     
     // configure rules
     state.validate(tasks => tasks.length >= 3,
