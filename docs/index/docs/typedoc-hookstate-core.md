@@ -442,7 +442,7 @@ ___
 
 ▸ **Downgraded**(): [`Plugin`](#interfacespluginmd)
 
-A plugin which allows to opt-out from usage of Javascript proxies for
+A plugin which allows to opt-out from usage of JavaScript proxies for
 state usage tracking. It is useful for performance tuning.
 
 [Learn more...](https://hookstate.js.org/docs/performance-managed-rendering#downgraded-plugin)

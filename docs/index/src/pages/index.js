@@ -49,7 +49,7 @@ const features = [
     description: (
       <>
         Complete type inferrence for any complexity
-        of structures of managed state data. Full intellisense support tested in VS Code.
+        of structures of managed state data. Full IntelliSense support tested in VS Code.
       </>
     ),
   },
