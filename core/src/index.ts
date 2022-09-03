@@ -508,11 +508,11 @@ export function hookstate<S, E = {}>(
 export function hookstate<S, E = {}>(
     initial: SetInitialStateAction<S>,
     extension?: ExtensionFactory<S, {}, E>
-): State<S, E>;
+): State<S, E> & StateMethodsDestroy;
 export function hookstate<S, E = {}>(
     initial: SetInitialStateAction<S>,
     extension?: ExtensionFactory<S, {}, E>
-): State<S, E> {
+): State<S, E> & StateMethodsDestroy {
     const store = createStore(initial);
     store.activate(extension as ExtensionFactory<StateValueAtRoot, {}, StateExtensionUnknown>)
     const methods = store.toMethods();
