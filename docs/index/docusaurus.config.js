@@ -19,7 +19,7 @@ const config = {  title: 'Hookstate',
         // https://www.algolia.com/apps/Q8EMF8ZB58/analytics/overview
         apiKey: 'bb1f21c46b1bc0bb8dec24e99fb4c328',
         indexName: 'hookstate_js',
-        appId: 'Q8EMF8ZB58', // Optional, if you run the DocSearch crawler on your own
+        appId: 'Q8EMF8ZB58',
         // algoliaOptions: {}, // Optional, if provided by Algolia
   
         // Optional: see doc section below
