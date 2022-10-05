@@ -25,7 +25,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "tsc -p tsconfig.lib.json",
-    "build:app": "react-scripts build && cp -r build ../../index/build/demo-todolist",
+    "build:app": "react-scripts build",
     "serve": "serve build",
     "update:deps": "ncu -u"
   },
