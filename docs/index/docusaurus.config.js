@@ -16,11 +16,22 @@ const config = {  title: 'Hookstate',
       },
       algolia: {
         // analytics overview
-        // https://www.algolia.com/apps/BH4D9OD16A/analytics/overview
-        apiKey: 'dcdff324d429abfd7d47357fc6919625',
+        // https://www.algolia.com/apps/Q8EMF8ZB58/analytics/overview
+        apiKey: 'bb1f21c46b1bc0bb8dec24e99fb4c328',
         indexName: 'hookstate_js',
         appId: 'Q8EMF8ZB58', // Optional, if you run the DocSearch crawler on your own
         // algoliaOptions: {}, // Optional, if provided by Algolia
+  
+        // Optional: see doc section below
+        contextualSearch: true,
+    
+        // Optional: Algolia search parameters
+        searchParameters: {},
+  
+        // Optional: path for search page that enabled by default (`false` to disable it)
+        searchPagePath: 'search',
+  
+        //... other Algolia params
       },
       navbar: {
         title: 'Hookstate',
