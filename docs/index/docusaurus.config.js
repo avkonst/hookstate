@@ -23,7 +23,8 @@ const config = {  title: 'Hookstate',
         // algoliaOptions: {}, // Optional, if provided by Algolia
   
         // Optional: see doc section below
-        contextualSearch: true,
+        // see https://discourse.algolia.com/t/algolia-searchbar-is-not-working-with-docusaurus-v2/14659
+        contextualSearch: false,
     
         // Optional: Algolia search parameters
         searchParameters: {},
