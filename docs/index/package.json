@@ -24,6 +24,7 @@
     "@hookstate/broadcasted": "workspace:*",
     "@hookstate/validation": "workspace:*",
     "@hookstate/logged": "workspace:*",
+    "@hookstate/todolist": "workspace:*",
     "@material-ui/core": "4.12.4",
     "@material-ui/icons": "4.11.3",
     "@mdx-js/react": "1.6.22",

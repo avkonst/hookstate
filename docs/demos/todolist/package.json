@@ -3,6 +3,10 @@
   "version": "4.0.0-rc3",
   "private": true,
   "homepage": ".",
+  "main": "build/App.js",
+  "module": "build/App.es.js",
+  "jsnext:main": "build/App.es.js",
+  "types": "build/App.d.ts",
   "dependencies": {
     "@hookstate/core": "workspace:*",
     "@hookstate/devtools": "workspace:*",
@@ -20,7 +24,8 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build && cp -r build ../../index/build/demo-todolist",
+    "build": "tsc -p tsconfig.lib.json",
+    "build:app": "react-scripts build && cp -r build ../../index/build/demo-todolist",
     "serve": "serve build",
     "update:deps": "ncu -u"
   },

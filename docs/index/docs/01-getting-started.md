@@ -4,6 +4,8 @@ title: Getting started
 sidebar_label: Getting started
 ---
 
+import App from '@hookstate/todolist'
+
 ## Preface
 
 We know you will learn the Hookstate library API very quickly without reading much (if any) of the documentation. The following will help you get started in minutes:
@@ -11,9 +13,17 @@ We know you will learn the Hookstate library API very quickly without reading mu
 * **Intuitive API**. Most things will be self-explanatory. More in depth description will always be there.
 * **Code samples** in each section are self-contained, complete and interactive. So, jump to the relevant section, copy-paste a sample to your app and extend it as needed.
 * **IntelliSense by IDE.** If your project is in TypeScript, you will benefit a lot as type inference of the API functions supports any complexity of data structures of your states. Of course, you can also use it from plain JavaScript.
-* **Complete demo application**. There is a *Todo-list-like* complete [demo application](https://github.com/avkonst/hookstate/tree/master/docs/demos/todolist) built with Hookstate. It uses and demonstrates most of the core features of Hookstate. It gives an example of how to organise your project. You may follow the example or use any other module-composition structure. Here it is running in an `iframe`:
+* **Complete demo application**. There is a *Todo-list-like* complete [demo application](https://github.com/avkonst/hookstate/tree/master/docs/demos/todolist) built with Hookstate. It uses and demonstrates most of the core features of Hookstate. It gives an example of how to organise your project. You may follow the example or use any other module-composition structure. Here it is running embeded in the page:
 
-<iframe src="https://hookstate.js.org/demo-todolist" width="100%" height="700px"></iframe>
+
+<div style={{ 
+  margin: 0,
+  "-webkit-font-smoothing": "antialiased",
+  "-moz-osx-font-smoothing": "grayscale",
+  "background-color": "#282c34"
+}}>
+<App />
+</div>
 
 ## Installation and dependencies
 

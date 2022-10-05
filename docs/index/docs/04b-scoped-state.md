@@ -4,6 +4,8 @@ title: Scoped state
 sidebar_label: Scoped state
 ---
 
+import App from '@hookstate/todolist'
+
 import { PreviewSample } from '../src/PreviewSample'
 
 ## Scalable nested state
@@ -34,7 +36,14 @@ const taskState = useHookstate(props.taskState);
 
 You can see what effect the scoped state makes in the following interactive example. Set / unset `use the scoped state` checkbox and try editing the fields in the form. Colors will change to show which components are re-rendered:
 
-<iframe src="https://hookstate.js.org/demo-todolist" width="100%" height="700px"></iframe>
+<div style={{ 
+  margin: 0,
+  "-webkit-font-smoothing": "antialiased",
+  "-moz-osx-font-smoothing": "grayscale",
+  "background-color": "#282c34"
+}}>
+<App />
+</div>
 
 More detailed comparison of rerendering differences for various types of states are documented in the [performance overview](./performance-intro) page.
 

@@ -164,6 +164,7 @@ importers:
       '@hookstate/serializable': workspace:*
       '@hookstate/snapshotable': workspace:*
       '@hookstate/subscribable': workspace:*
+      '@hookstate/todolist': workspace:*
       '@hookstate/validation': workspace:*
       '@material-ui/core': 4.12.4
       '@material-ui/icons': 4.11.3
@@ -196,6 +197,7 @@ importers:
       '@hookstate/serializable': link:../../plugins/serializable
       '@hookstate/snapshotable': link:../../plugins/snapshotable
       '@hookstate/subscribable': link:../../plugins/subscribable
+      '@hookstate/todolist': link:../demos/todolist
       '@hookstate/validation': link:../../plugins/validation
       '@material-ui/core': 4.12.4_react-dom@18.2.0+react@18.2.0
       '@material-ui/icons': 4.11.3_4d6fce43f0c33072ea1875c8c237a9b7

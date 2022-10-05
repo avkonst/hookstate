@@ -6,9 +6,8 @@ https://hookstate.netlify.com/* https://hookstate.js.org/:splat 301!
 # this path is used by the app to check internet connectivity
 /checkline /version.json 200
 
-# the demo sample app handles routes internally, including non-existing pages
-/demo-todolist/* /demo-todolist/index.html 200​
-/demo/* /demo-todolist/index.html 200​
+/demo-todolist/* /docs/getting-started 200​
+/demo/* /docs/getting-started 200​
 
 # route old code sample links:
 /global-getting-started /docs/global-state
