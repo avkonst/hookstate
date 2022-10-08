@@ -13,7 +13,7 @@ There is no impact on performance in production. Development tools are activated
 
 ## Demo
 
-[Demo application](https://hookstate.js.org/demo-todolist) has got DevTools intergrated. Try it out!
+[Demo application](https://github.com/avkonst/hookstate/tree/master/docs/demos/todolist) has got DevTools intergrated. Try it out!
 
 ## Configuring monitored states
 

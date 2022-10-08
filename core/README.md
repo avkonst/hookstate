@@ -10,7 +10,7 @@
 <p align="center">
   <a href="https://hookstate.js.org">Why?</a> •
   <a href="https://hookstate.js.org/docs/getting-started">Docs / Samples</a> •
-  <a href="https://hookstate.js.org/demo-todolist">Demo application</a> •
+  <a href="https://github.com/avkonst/hookstate/tree/master/docs/demos/todolist">Demo application</a> •
   <a href="https://hookstate.js.org/docs/extensions-overview">Extensions</a> •
   <a href="https://hookstate.js.org/blog/tags/releases">Release notes</a>
 </p>

@@ -10,7 +10,7 @@
 <p align="center">
   <a href="https://hookstate.js.org">Why?</a> •
   <a href="https://hookstate.js.org/docs/getting-started">Docs / Samples</a> •
-  <a href="https://hookstate.js.org/demo-todolist">Demo application</a> •
+  <a href="https://github.com/avkonst/hookstate/tree/master/docs/demos/todolist">Demo application</a> •
   <a href="https://hookstate.js.org/docs/extensions-overview">Extensions</a> •
   <a href="https://hookstate.js.org/blog/tags/releases">Release notes</a>
 </p>
@@ -53,13 +53,14 @@ Hookstate is a modern alternative to Redux, Mobx, Recoil, etc. It is simple to l
 
 [hookstate.js.org/docs/migrating-to-v4](https://hookstate.js.org/docs/migrating-to-v4)
 
-## Documentation / Code samples
+## Documentation / Code samples / Demo applications
 
 [hookstate.js.org/docs/getting-started](https://hookstate.js.org/docs/getting-started)
 
 ## Demo application
 
-[hookstate.js.org/demo-todolist](https://hookstate.js.org/demo-todolist)
+- Running: [https://hookstate.js.org/docs/getting-started](https://hookstate.js.org/docs/getting-started)
+- Source code: [https://github.com/avkonst/hookstate/tree/master/docs/demos/todolist](https://github.com/avkonst/hookstate/tree/master/docs/demos/todolist)
 
 ## Development tools
 

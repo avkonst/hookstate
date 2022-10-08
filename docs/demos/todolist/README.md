@@ -7,7 +7,7 @@ This project can be used as a 'starter repo'.
 The source code demonstrates the usage of Hookstate in more realistic, large application than shorter [code samples and demos available online](https://hookstate.js.org/).
 We advise you to look through the shorter samples online, if you discovered the Hookstate for the first time, before studying this application.
 
-[See this application running online](https://hookstate.js.org/demo-todolist/)
+[See this application running online](https://hookstate.js.org/docs/getting-started)
 
 ## Available Scripts
 
