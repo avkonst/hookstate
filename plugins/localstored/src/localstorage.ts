@@ -29,8 +29,9 @@ export function localstored<S, E>(options?: {
         let serializer: (s: State<S, E>) => () => string;
         let deserializer: (s: State<S, E>) => (v: string) => void;
         let stateAtRoot: State<S, E>
+        let storageEngine: StoreEngine;
+        storageEngine = engine || localStorage;
         
-        const engine = engine || localStorage;
         return {
             onInit: (state, extensionMethods) => {
                 stateAtRoot = state;
@@ -55,7 +56,7 @@ export function localstored<S, E>(options?: {
 
                 // here it is synchronous, but most storages would be async
                 // this is supported too, as the state.set can be really set asynchronously
-                const response = engine.getItem(key);
+                const response = storageEngine.getItem(key);
                 Promise.resolve(response).then(persisted => {
                     if(persisted) {
                         // persisted state exists
@@ -69,13 +70,13 @@ export function localstored<S, E>(options?: {
             },
             onSet: (s) => {
                 if (s.promised || s.error !== undefined) {
-                    const response = engine.removeItem(key);
+                    const response = storageEngine.removeItem(key);
                     Promise.resolve(response).then(() => {});
                 } else {
                     // save the entire state from the root
                     // smarter implementations could implement partial state saving,
                     // which would save only the nested state set (parameter `s` in onSet)
-                    const response = engine.setItem(key, serializer(stateAtRoot)());
+                    const response = storageEngine.setItem(key, serializer(stateAtRoot)());
                     Promise.resolve(response).then(() => {});
                 }
             }
