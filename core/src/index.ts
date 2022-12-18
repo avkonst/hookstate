@@ -66,8 +66,6 @@ export type InferStateKeysType<S> =
     S extends object ? ReadonlyArray<string> :
     undefined;
 
-// TODO deprecate
-export type InferredStateKeysType<S> = InferStateKeysType<S>;
 /**
  * Return type of [StateMethods.map()](#map).
  * 
@@ -77,41 +75,7 @@ export type InferStateOrnullType<S, E> =
     S extends undefined ? undefined :
     S extends null ? null : State<S, E>;
 
-// TODO deprecated
-export type InferredStateOrnullType<S, E> = InferStateOrnullType<S, E>
 
-/**
- * For plugin developers only.
- * An instance to manipulate the state in more controlled way.
- * 
- * @typeparam S Type of a value of a state
- * 
- * [Learn more...](https://hookstate.js.org/docs/writing-plugin)
- */
-export interface PluginStateControl<S> {
-    /**
-     * Get state value, but do not leave the traces of reading it.
-     */
-    getUntracked(): S;
-    /**
-     * Set new state value, but do not trigger rerender.
-     * 
-     * @param newValue new value to set to a state.
-     */
-    setUntracked(newValue: SetStateAction<S>): Path[];
-    /**
-     * Merge new state value, but do not trigger rerender.
-     * 
-     * @param mergeValue new partial value to merge with the current state value and set.
-     */
-    mergeUntracked(mergeValue: SetPartialStateAction<S>): Path[];
-    /**
-     * Trigger rerender for hooked states, where values at the specified paths are used.
-     * 
-     * @param paths paths of the state variables to search for being used by components and rerender
-     */
-    rerender(paths: Path[]): void;
-}
 
 // TODO move __State to State definition, so StateMethods are not used directly by user
 // TODO and declare incompatible __synthetic marker, so StateMethods would become forced to be replaced by State
@@ -169,13 +133,15 @@ export interface StateMethods<S, E = {}> extends __State<S, E> {
      */
     readonly value: S;
 
-    // TODO deprecate in favor of promise
     /**
      * True if state value is not yet available (eg. equal to a promise)
      */
     readonly promised: boolean;
 
-    // TODO document
+    /**
+     * If the State is promised, this will be a defined promise
+     * which an application can use to subscribe to with 'then' callback.
+     */
     readonly promise: Promise<State<S, E>> | undefined;
 
     /**
@@ -250,40 +216,6 @@ export interface StateMethods<S, E = {}> extends __State<S, E> {
      * [Learn more...](https://hookstate.js.org/docs/nullable-state)
      */
     ornull: InferStateOrnullType<S, E>;
-
-    // TODO deprecate
-    /**
-     * Adds plugin to the state.
-     * 
-     * [Learn more...](https://hookstate.js.org/docs/extensions-overview)
-     */
-    attach(plugin: () => Plugin): State<S, E>
-
-    // TODO deprecate
-    /**
-     * For plugin developers only.
-     * It is a method to get the instance of the previously attached plugin.
-     * If a plugin has not been attached to a state,
-     * it returns an Error as the first element.
-     * A plugin may trhow an error to indicate that plugin has not been attached.
-     * 
-     * [Learn more...](https://hookstate.js.org/docs/writing-plugin)
-     */
-    attach(pluginId: symbol): [PluginCallbacks | Error, PluginStateControl<S>]
-}
-
-/**
- * Mixin for the [StateMethods](#interfacesstatemethodsmd) for a [State](#state),
- * which can be destroyed by a client.
- */
-export interface StateMethodsDestroy {
-    // TODO deprecate and replace by deactivate/activate within the StateMethods directly
-    /**
-     * Destroys an instance of a state, so
-     * it can clear the allocated native resources (if any)
-     * and can not be used anymore after it has been destroyed.
-     */
-    destroy(): void;
 }
 
 /**
@@ -332,7 +264,7 @@ export type State<S, E = {}> = StateMethods<S, E> & E & (
     S extends ReadonlyArray<(infer U)> ? ReadonlyArray<State<U, E>> :
     S extends object ? Omit<
         { readonly [K in keyof Required<S>]: State<S[K], E>; },
-        keyof StateMethods<S, E> | keyof StateMethodsDestroy | __KeysOfType<S, Function> | keyof E
+        keyof StateMethods<S, E> | __KeysOfType<S, Function> | keyof E
     > : {}
 );
 
@@ -343,7 +275,6 @@ export type State<S, E = {}> = StateMethods<S, E> & E & (
  * @hidden
  * @ignore
  */
-// TODO remove export when plugins API is removed
 export type StateValueAtRoot = any; //tslint:disable-line: no-any
 /**
  * For plugin developers only.
@@ -362,78 +293,21 @@ export type StateValueAtPath = any; //tslint:disable-line: no-any
  */
 export type StateErrorAtRoot = any; //tslint:disable-line: no-any
 
-// TODO document
+/**
+ * For plugin developers only.
+ * Type alias to highlight the places where we are dealing with unknown state extension type.
+ *
+ * @hidden
+ * @ignore
+ */
 export type StateExtensionUnknown = any; //tslint:disable-line: no-any
-
-/**
- * For plugin developers only.
- * PluginCallbacks.onSet argument type.
- */
-export interface PluginCallbacksOnSetArgument {
-    readonly path: Path,
-    readonly state?: StateValueAtRoot,
-    /**
-     * **A note about previous values and merging:**
-     * State values are muteable in Hookstate for performance reasons. This causes a side effect in the merge operation.
-     * While merging, the previous state object is mutated as the desired changes are applied. This means the value of
-     * `previous` will reflect the merged changes as well, matching the new `state` value rather than the previous
-     * state value. As a result, the `previous` property is unreliable when merge is used. The
-     * [merged](#optional-readonly-merged) property can be used to detect which values were merged in but it will not
-     * inform you whether those values are different from the previous state.
-     *
-     * As a workaround, you can replace merge calls with the immutable-style set operation like so:
-     *
-     * ```
-     * state.set(p => {
-     *     let copy = p.clone(); /// here it is up to you to define how to clone the current state
-     *     copy.field = 'new value for field';
-     *     delete copy.fieldToDelete;
-     *     return copy;
-     * })
-     * ```
-     */
-    readonly previous?: StateValueAtPath,
-    readonly value?: StateValueAtPath,
-    readonly merged?: StateValueAtPath,
-}
-
-/**
- * For plugin developers only.
- * PluginCallbacks.onDestroy argument type.
- */
-export interface PluginCallbacksOnDestroyArgument {
-    readonly state?: StateValueAtRoot,
-}
 
 /**
  * For plugin developers only.
  * Set of callbacks, a plugin may subscribe to.
  * 
- * [Learn more...](https://hookstate.js.org/docs/writing-plugin)
+ * [Learn more...](https://hookstate.js.org/docs/writing-extension)
  */
-export interface PluginCallbacks {
-    readonly onSet?: (arg: PluginCallbacksOnSetArgument) => void,
-    readonly onDestroy?: (arg: PluginCallbacksOnDestroyArgument) => void,
-};
-
-/**
- * For plugin developers only.
- * Hookstate plugin specification and factory method.
- * 
- * [Learn more...](https://hookstate.js.org/docs/writing-plugin)
- */
-export interface Plugin {
-    /**
-     * Unique identifier of a plugin.
-     */
-    readonly id: symbol;
-    /**
-     * Initializer for a plugin when it is attached for the first time.
-     */
-    readonly init?: (state: State<StateValueAtRoot, {}>) => PluginCallbacks;
-}
-
-// TODO document
 export interface Extension<S, I, E> {
     readonly onCreate?: (
         state: State<S, {}>,
@@ -455,7 +329,10 @@ export interface Extension<S, I, E> {
 
 export type ExtensionFactory<S, I, E> = (typemarker?: __State<S, I>) => Extension<S, I, E>
 
-// TODO deprecate
+export function hookstate<S, E = {}>(
+    source: __State<S, E>,
+    extension?: ExtensionFactory<S, E, StateExtensionUnknown>
+): never; // TODO block this on State type system level
 /**
  * Creates new state and returns it.
  *
@@ -463,8 +340,8 @@ export type ExtensionFactory<S, I, E> = (typemarker?: __State<S, I>) => Extensio
  *
  * When you the state is not needed anymore,
  * it should be destroyed by calling
- * `destroy()` method of the returned instance.
- * This is necessary for some plugins,
+ * `destroyHookstate()` function.
+ * This is necessary for some extensions,
  * which allocate native resources,
  * like subscription to databases, broadcast channels, etc.
  * In most cases, a global state is used during
@@ -487,119 +364,31 @@ export type ExtensionFactory<S, I, E> = (typemarker?: __State<S, I>) => Extensio
  * pass the created state to [useHookstate](#useHookstate) function and
  * use the returned result in the component's logic.
  */
-export function createState<S>(
-    initial: SetInitialStateAction<S>
-): State<S, {}> & StateMethodsDestroy {
-    return hookstate(initial) as State<S, {}> & StateMethodsDestroy
-}
-
-// TODO deprecated
-export function createHookstate<S>(
-    initial: SetInitialStateAction<S>
-): State<S, {}> {
-    return hookstate(initial) as State<S, {}> & StateMethodsDestroy
-}
-
-// TODO block this on type system level
-export function hookstate<S, E = {}>(
-    source: __State<S, E>,
-    extension?: ExtensionFactory<S, E, StateExtensionUnknown>
-): never;
-export function hookstate<S, E = {}>(
+export function hookstate<S, E extends {} = {}>(
     initial: SetInitialStateAction<S>,
     extension?: ExtensionFactory<S, {}, E>
 ): State<S, E>;
-export function hookstate<S, E = {}>(
+export function hookstate<S, E extends {} = {}>(
     initial: SetInitialStateAction<S>,
     extension?: ExtensionFactory<S, {}, E>
 ): State<S, E> {
     const store = createStore(initial);
     store.activate(extension as ExtensionFactory<StateValueAtRoot, {}, StateExtensionUnknown>)
     const methods = store.toMethods();
-    const devtools = createState[DevToolsID]
-    if (devtools) {
-        methods.attach(devtools)
-    }
-    return methods.self() as unknown as State<S, E> & StateMethodsDestroy;
+    return methods.self() as unknown as State<S, E>;
 }
 
-// TODO deprectate useState
 /**
- * @warning Initializing a local state to a promise without using 
- * an initializer callback function, which returns a Promise,
- * is almost always a mistake. So, it is blocked.
- * Use `useHookstate(() => your_promise)` instead of `useHookstate(your_promise)`.
+ * A method to destroy a global state and resources allocated by the extensions
  */
-export function useState<S>(
-    source: Promise<S>
-): never;
-/**
- * Enables a functional React component to use a state,
- * either created by [hookstate](#hookstate) (*global* state) or
- * derived from another call to [useHookstate](#useHookstate) (*scoped* state).
- *
- * The `useHookstate` forces a component to rerender every time, when:
- * - a segment/part of the state data is updated *AND only if*
- * - this segment was **used** by the component during or after the latest rendering.
- *
- * For example, if the state value is `{ a: 1, b: 2 }` and
- * a component uses only `a` property of the state, it will rerender
- * only when the whole state object is updated or when `a` property is updated.
- * Setting the state value/property to the same value is also considered as an update.
- *
- * A component can use one or many states,
- * i.e. you may call `useHookstate` multiple times for multiple states.
- *
- * The same state can be used by multiple different components.
- *
- * @param source a reference to the state to hook into
- *
- * The `useHookstate` is a hook and should follow React's rules of hooks.
- *
- * @returns an instance of [State](#state),
- * which **must be** used within the component (during rendering
- * or in effects) or it's children.
- */
-export function useState<S>(
-    source: State<S, {}>
-): State<S, {}>;
-/**
- * This function enables a functional React component to use a state,
- * created per component by [useHookstate](#useHookstate) (*local* state).
- * In this case `useHookstate` behaves similarly to `React.useState`,
- * but the returned instance of [State](#state)
- * has got more features.
- *
- * When a state is used by only one component, and maybe it's children,
- * it is recommended to use *local* state instead of *global*,
- * which is created by [hookstate](#hookstate).
- *
- * *Local* (per component) state is created when a component is mounted
- * and automatically destroyed when a component is unmounted.
- *
- * The same as with the usage of a *global* state,
- * `useHookstate` forces a component to rerender when:
- * - a segment/part of the state data is updated *AND only if*
- * - this segment was **used** by the component during or after the latest rendering.
- *
- * You can use as many local states within the same component as you need.
- *
- * @param source An initial value state.
- *
- * @returns an instance of [State](#state),
- * which **must be** used within the component (during rendering
- * or in effects) or it's children.
- */
-export function useState<S>(
-    source: SetInitialStateAction<S>
-): State<S, {}>;
-export function useState<S>(
-    source: SetInitialStateAction<S> | State<S, {}>
-): State<S, {}> {
-    return useHookstate(source as State<S, {}>);
+export function destroyHookstate<S, E>(state: __State<S, E>) {
+    (state[self] as StateMethodsImpl<S, E>).deactivate()
 }
 
-// TODO document
+/**
+ * A function combines multiple extensions into one extension and returns it
+ * Browse an example [here](https://hookstate.js.org/docs/extensions-snapshotable)
+ */
 export function extend<
     S,
     E,
@@ -681,31 +470,76 @@ export function extend<
  * is almost always a mistake. So, it is blocked.
  * Use `useHookstate(() => your_promise)` instead of `useHookstate(your_promise)`.
  */
-export function useHookstate<S, E = {}>(
+export function useHookstate<S, E extends {} = {}>(
     source: Promise<S>,
     extension?: ExtensionFactory<S, {}, E>
 ): never;
-// TODO block this on type system level
-export function useHookstate<S, E = {}>(
+export function useHookstate<S, E extends {} = {}>(
     source: __State<S, E>,
     extension: ExtensionFactory<S, E, StateExtensionUnknown>
-): never;
+): never; // TODO block this on type system level
 /**
- * Alias to [useHookstate](#useHookstate) which provides a workaround
- * for [React 20613 bug](https://github.com/facebook/react/issues/20613)
+ * Enables a functional React component to use a state,
+ * either created by [hookstate](#hookstate) (*global* state) or
+ * derived from another call to [useHookstate](#useHookstate) (*scoped* state).
+ *
+ * The `useHookstate` forces a component to rerender every time, when:
+ * - a segment/part of the state data is updated *AND only if*
+ * - this segment was **used** by the component during or after the latest rendering.
+ *
+ * For example, if the state value is `{ a: 1, b: 2 }` and
+ * a component uses only `a` property of the state, it will rerender
+ * only when the whole state object is updated or when `a` property is updated.
+ * Setting the state value/property to the same value is also considered as an update.
+ *
+ * A component can use one or many states,
+ * i.e. you may call `useHookstate` multiple times for multiple states.
+ *
+ * The same state can be used by multiple different components.
+ *
+ * @param source a reference to the state to hook into
+ *
+ * The `useHookstate` is a hook and should follow React's rules of hooks.
+ *
+ * @returns an instance of [State](#state),
+ * which **must be** used within the component (during rendering
+ * or in effects) or it's children.
  */
-export function useHookstate<S, E = {}>(
+export function useHookstate<S, E extends {} = {}>(
     source: __State<S, E>
 ): State<S, E>;
 /**
- * Alias to [useHookstate](#useHookstate) which provides a workaround
- * for [React 20613 bug](https://github.com/facebook/react/issues/20613)
+ * This function enables a functional React component to use a state,
+ * created per component by [useHookstate](#useHookstate) (*local* state).
+ * In this case `useHookstate` behaves similarly to `React.useState`,
+ * but the returned instance of [State](#state)
+ * has got more features.
+ *
+ * When a state is used by only one component, and maybe it's children,
+ * it is recommended to use *local* state instead of *global*,
+ * which is created by [hookstate](#hookstate).
+ *
+ * *Local* (per component) state is created when a component is mounted
+ * and automatically destroyed when a component is unmounted.
+ *
+ * The same as with the usage of a *global* state,
+ * `useHookstate` forces a component to rerender when:
+ * - a segment/part of the state data is updated *AND only if*
+ * - this segment was **used** by the component during or after the latest rendering.
+ *
+ * You can use as many local states within the same component as you need.
+ *
+ * @param source An initial value state.
+ *
+ * @returns an instance of [State](#state),
+ * which **must be** used within the component (during rendering
+ * or in effects) or it's children.
  */
-export function useHookstate<S, E = {}>(
+export function useHookstate<S, E extends {} = {}>(
     source: SetInitialStateAction<S>,
     extension?: ExtensionFactory<S, {}, E>
 ): State<S, E>;
-export function useHookstate<S, E = {}>(
+export function useHookstate<S, E extends {} = {}>(
     source: SetInitialStateAction<S> | State<S, E>,
     extension?: ExtensionFactory<S, {}, E>
 ): State<S, E> {
@@ -909,10 +743,6 @@ export function useHookstate<S, E = {}>(
             }
         }, []);
 
-        const devtools = useState[DevToolsID]
-        if (devtools) {
-            value.state.attach(devtools)
-        }
         let state = value.state.self();
         // expose property in development tools
         value['[hookstate(local)]'] = state; // TODO use label here, add core extension to label states
@@ -920,15 +750,14 @@ export function useHookstate<S, E = {}>(
     }
 }
 
-// TODO block on type system
-export function StateFragment<S, E>(
+export function StateFragment<S, E extends {}>(
     props: {
         state: __State<S, E>,
         extension: ExtensionFactory<S, E, StateExtensionUnknown>,
         children: (state: State<S, E>) => React.ReactElement,
         suspend?: boolean,
     }
-): never;
+): never; // TODO block on type system
 /**
  * Allows to use a state without defining a functional react component.
  * It can be also used in class-based React components. It is also
@@ -938,7 +767,7 @@ export function StateFragment<S, E>(
  * 
  * @typeparam S Type of a value of a state
  */
-export function StateFragment<S, E>(
+export function StateFragment<S, E extends {}>(
     props: {
         state: __State<S, E>,
         children: (state: State<S, E>) => React.ReactElement,
@@ -953,7 +782,7 @@ export function StateFragment<S, E>(
  * 
  * @typeparam S Type of a value of a state
  */
-export function StateFragment<S, E>(
+export function StateFragment<S, E extends {}>(
     props: {
         state: SetInitialStateAction<S>,
         extension?: ExtensionFactory<S, {}, E>,
@@ -961,7 +790,7 @@ export function StateFragment<S, E>(
         suspend?: boolean,
     }
 ): React.ReactElement;
-export function StateFragment<S, E>(
+export function StateFragment<S, E extends {}>(
     props: {
         state: State<S, E> | SetInitialStateAction<S>,
         extension?: ExtensionFactory<S, {}, E>,
@@ -979,76 +808,11 @@ export function suspend<S, E>(state: State<S, E>) {
     return p && React.createElement(React.lazy(() => p as Promise<any>));
 }
 
-// TODO deprecate
-/**
- * A plugin which allows to opt-out from usage of Javascript proxies for
- * state usage tracking. It is useful for performance tuning.
- * 
- * [Learn more...](https://hookstate.js.org/docs/performance-managed-rendering#downgraded-plugin)
- */
-export function Downgraded(): Plugin { // tslint:disable-line: function-name
-    return {
-        id: DowngradedID
-    }
-}
-
-/**
- * For plugin developers only.
- * Reserved plugin ID for developers tools extension.
- *
- * @hidden
- * @ignore
- */
-export const DevToolsID = Symbol('DevTools');
-
-/**
- * Return type of [DevTools](#devtools).
- */
-export interface DevToolsExtensions {
-    /**
-     * Assigns custom label to identify the state in the development tools
-     * @param name label for development tools
-     */
-    label(name: string): void;
-    /**
-     * Logs to the development tools
-     */
-    log(str: string, data?: any): void;    // tslint:disable-line: no-any
-}
-
-/**
- * Returns access to the development tools for a given state.
- * Development tools are delivered as optional plugins.
- * You can activate development tools from `@hookstate/devtools`package,
- * for example. If no development tools are activated,
- * it returns an instance of dummy tools, which do nothing, when called.
- * 
- * [Learn more...](https://hookstate.js.org/docs/devtools)
- * 
- * @param state A state to relate to the extension.
- * 
- * @returns Interface to interact with the development tools for a given state.
- * 
- * @typeparam S Type of a value of a state
- */
-export function DevTools<S, E>(state: State<S, E>): DevToolsExtensions {
-    const plugin = state.attach(DevToolsID);
-    if (plugin[0] instanceof Error) {
-        return EmptyDevToolsExtensions;
-    }
-    return plugin[0] as DevToolsExtensions;
-}
-
 ///
 /// INTERNAL SYMBOLS (LIBRARY IMPLEMENTATION)
 ///
 
 const self = Symbol('self')
-
-const EmptyDevToolsExtensions: DevToolsExtensions = {
-    label() { /* */ },
-    log() { /* */ }
-}
 
 enum ErrorId {
     // TODO document
@@ -1102,8 +866,6 @@ interface Subscribable {
     unsubscribe(l: Subscriber): void;
 }
 
-// TODO deprecate
-const DowngradedID = Symbol('Downgraded');
 const SelfMethodsID = Symbol('ProxyMarker');
 
 const RootPath: Path = [];
@@ -1128,10 +890,6 @@ class Store implements Subscribable {
     private _stateMethods: StateMethodsImpl<StateValueAtRoot, StateExtensionUnknown>;
 
     private _subscribers: Set<Subscriber> = new Set();
-
-    private _setSubscribers: Set<Required<PluginCallbacks>['onSet']> = new Set();
-    private _destroySubscribers: Set<Required<PluginCallbacks>['onDestroy']> = new Set();
-    private _plugins: Map<symbol, PluginCallbacks> = new Map();
 
     private _extension?: Extension<StateValueAtRoot, {}, {}>;
     private _extensionMethods?: {};
@@ -1186,7 +944,7 @@ class Store implements Subscribable {
                     this._promise = undefined
                     this._promiseError = undefined
                     this._promiseResolver === undefined
-                    this.update(this._stateMethods.self(), this.set(RootPath, r, undefined))
+                    this.update(this._stateMethods.self(), this.set(RootPath, r))
                 }
             })
             .catch((err: StateValueAtRoot) => {
@@ -1215,11 +973,6 @@ class Store implements Subscribable {
     }
 
     deactivate() {
-        // TODO remove when plugins are deprecated
-        // old plugins do not support second activation
-        let params = this._value !== none ? { state: this._value } : {};
-        this._destroySubscribers.forEach(cb => cb(params))
-
         if (this._extension) {
             this._extension.onDestroy?.(this._stateMethods.self())
             delete this._extension;
@@ -1253,7 +1006,7 @@ class Store implements Subscribable {
         return result;
     }
 
-    set(path: Path, value: StateValueAtPath, mergeValue: Partial<StateValueAtPath> | undefined): SetActionDescriptor {
+    set(path: Path, value: StateValueAtPath): SetActionDescriptor {
         if (this.edition < 0) {
             // TODO convert to console log
             throw new StateInvalidUsageError(path, ErrorId.SetStateWhenDestroyed)
@@ -1262,22 +1015,11 @@ class Store implements Subscribable {
         if (path.length === 0) {
             // Root value UPDATE case,
 
-            const onSetArg: Writeable<PluginCallbacksOnSetArgument> = {
-                path: path,
-                state: value,
-                value: value,
-                previous: this._value,
-                merged: mergeValue
-            }
             if (value === none) {
                 this.setPromised(undefined)
-                delete onSetArg.value
-                delete onSetArg.state
             } else if (Object(value) === value && configuration.promiseDetector(value)) {
                 this.setPromised(value)
                 value = none
-                delete onSetArg.value
-                delete onSetArg.state
             } else if (this._promise && !this._promiseResolver) {
                 throw new StateInvalidUsageError(path, ErrorId.SetStateWhenPromised)
             } else {
@@ -1285,11 +1027,8 @@ class Store implements Subscribable {
             }
 
             let prevValue = this._value;
-            if (prevValue === none) {
-                delete onSetArg.previous
-            }
             this._value = value;
-            this.afterSet(onSetArg)
+            this.afterSet()
 
             if (prevValue === none && this._value !== none && this._promiseResolver) {
                 this._promise = undefined
@@ -1318,33 +1057,19 @@ class Store implements Subscribable {
         if (p in target) {
             if (value !== none) {
                 // Property UPDATE case
-                let prevValue = target[p]
                 target[p] = value;
-                this.afterSet({
-                    path: path,
-                    state: this._value,
-                    value: value,
-                    previous: prevValue,
-                    merged: mergeValue
-                })
-
+                this.afterSet()
                 return {
                     path
                 };
             } else {
                 // Property DELETE case
-                let prevValue = target[p]
                 if (Array.isArray(target) && typeof p === 'number') {
                     target.splice(p, 1)
                 } else {
                     delete target[p]
                 }
-                this.afterSet({
-                    path: path,
-                    state: this._value,
-                    previous: prevValue,
-                    merged: mergeValue
-                })
+                this.afterSet()
 
                 // if an array of objects is about to loose existing property
                 // we consider it is the whole object is changed
@@ -1359,12 +1084,7 @@ class Store implements Subscribable {
         if (value !== none) {
             // Property INSERT case
             target[p] = value;
-            this.afterSet({
-                path: path,
-                state: this._value,
-                value: value,
-                merged: mergeValue
-            })
+            this.afterSet()
 
             // if an array of objects is about to be extended by new property
             // we consider it is the whole object is changed
@@ -1408,36 +1128,14 @@ class Store implements Subscribable {
         actions.forEach(a => a());
     }
 
-    afterSet(params: PluginCallbacksOnSetArgument) {
+    afterSet() {
         if (this.edition > 0) {
             this.edition += 1;
         }
         if (this.edition < 0) {
             this.edition -= 1;
         }
-        this._setSubscribers.forEach(cb => cb(params))
     }
-
-    getPlugin(pluginId: symbol) {
-        return this._plugins.get(pluginId)
-    }
-
-    register(plugin: Plugin) {
-        const existingInstance = this._plugins.get(plugin.id)
-        if (existingInstance) {
-            return;
-        }
-
-        const pluginCallbacks = plugin.init ? plugin.init(this._stateMethods.self()) : {};
-        this._plugins.set(plugin.id, pluginCallbacks);
-        if (pluginCallbacks.onSet) {
-            this._setSubscribers.add((p) => pluginCallbacks.onSet!(p))
-        }
-        if (pluginCallbacks.onDestroy) {
-            this._destroySubscribers.add((p) => pluginCallbacks.onDestroy!(p))
-        }
-    }
-
     toMethods() {
         return this._stateMethods;
     }
@@ -1448,10 +1146,6 @@ class Store implements Subscribable {
 
     unsubscribe(l: Subscriber) {
         this._subscribers.delete(l);
-    }
-
-    destroy() {
-        this.deactivate()
     }
 
     toJSON() {
@@ -1467,7 +1161,7 @@ const IsUnmounted = Symbol('IsUnmounted');
 
 // TODO remove from the docs IE11 support
 
-class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy, Subscribable, Subscriber {
+class StateMethodsImpl<S, E> implements StateMethods<S, E>, Subscribable, Subscriber {
     private subscribers: Set<Subscriber> | undefined;
 
     private childrenCreated: Record<string | number, StateMethodsImpl<StateValueAtPath, E>> | undefined;
@@ -1594,17 +1288,7 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
         return this.get()
     }
 
-    // TODO remove when attach is removed
-    setUntracked(newValue: SetStateAction<S>, mergeValue?: Partial<StateValueAtPath>): Path[] {
-        let r = this.setUntrackedV4(newValue, mergeValue);
-        if (r) {
-            return [r.path]
-        }
-        return []
-    }
-
-    // TODO remove mergeValue when attach is removed
-    setUntrackedV4(newValue: SetStateAction<S>, mergeValue?: Partial<StateValueAtPath>): SetActionDescriptor | null {
+    setUntrackedV4(newValue: SetStateAction<S>): SetActionDescriptor | null {
         if (typeof newValue === 'function') {
             newValue = (newValue as ((prevValue: S) => S))(this.getUntracked());
         }
@@ -1619,7 +1303,7 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
             // so skip this set call as it does not make an effect
             return null
         }
-        return this.store.set(this.path, newValue, mergeValue);
+        return this.store.set(this.path, newValue);
     }
 
     set(newValue: SetStateAction<S>) {
@@ -1651,14 +1335,14 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
                     ad.actions[currentValue.push(e) - 1] = "I"
                 })
                 if (Object.keys(ad.actions).length > 0) {
-                    this.setUntrackedV4(currentValue, sourceValue)
+                    this.setUntrackedV4(currentValue)
                     return ad
                 }
                 return null
             } else {
                 let ad: Required<SetActionDescriptor> = { path: this.path, actions: {} };
                 const deletedIndexes: number[] = []
-                Object.keys(sourceValue).sort().forEach(i => {
+                Object.keys(sourceValue as StateValueAtPath).sort().forEach(i => {
                     const index = Number(i);
                     const newPropValue = sourceValue[index]
                     if (newPropValue === none) {
@@ -1680,14 +1364,14 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
                     (currentValue as unknown as []).splice(p, 1)
                 })
                 if (Object.keys(ad.actions).length > 0) {
-                    this.setUntrackedV4(currentValue, sourceValue)
+                    this.setUntrackedV4(currentValue)
                     return ad
                 }
                 return null
             }
         } else if (Object(currentValue) === currentValue) {
             let ad: Required<SetActionDescriptor> = { path: this.path, actions: {} };
-            Object.keys(sourceValue).forEach(key => {
+            Object.keys(sourceValue as StateValueAtPath).forEach(key => {
                 const newPropValue = sourceValue[key]
                 if (newPropValue === none) {
                     ad.actions[key] = "D"
@@ -1702,12 +1386,12 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
                 }
             })
             if (Object.keys(ad.actions).length > 0) {
-                this.setUntrackedV4(currentValue, sourceValue)
+                this.setUntrackedV4(currentValue)
                 return ad
             }
             return null
         } else if (typeof currentValue === 'string') {
-            return this.setUntrackedV4((currentValue + String(sourceValue)) as unknown as S, sourceValue)
+            return this.setUntrackedV4((currentValue + String(sourceValue)) as unknown as S)
         } else {
             return this.setUntrackedV4(sourceValue as S)
         }
@@ -1730,8 +1414,12 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
         }
     }
 
-    destroy(): void {
-        this.store.destroy()
+    activate(extensionFactory: ExtensionFactory<any, {}, any> | undefined): void {
+        this.store.activate(extensionFactory)
+    }
+
+    deactivate(): void {
+        this.store.deactivate()
     }
 
     subscribe(l: Subscriber) {
@@ -1833,7 +1521,7 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
                 unknown as InferStateKeysType<S>;
         }
         if (Object(value) === value) {
-            return Object.keys(value) as unknown as InferStateKeysType<S>;
+            return Object.keys(value as StateValueAtPath) as unknown as InferStateKeysType<S>;
         }
         return undefined as InferStateKeysType<S>;
     }
@@ -2024,11 +1712,6 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
                     return (p: SetPartialStateAction<S>) => this.merge(p)
                 case 'nested':
                     return (p: keyof S) => nestedGetter(p)
-                case 'attach':
-                    return (p: symbol) => this.attach(p)
-                case 'destroy': // TODO move destroy to the state, otherwise State type hides this well existing property
-                    // TODO when depreacted update hookstate-106 exception docs
-                    return () => this.destroy()
                 default:
                     // check if extension method
                     let ext = this.store.extension
@@ -2073,31 +1756,6 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, StateMethodsDestroy,
             return value as unknown as InferStateOrnullType<S, E>;
         }
         return this.self() as InferStateOrnullType<S, E>;
-    }
-
-    attach(plugin: () => Plugin): State<S, E>
-    attach(pluginId: symbol): [PluginCallbacks | Error, PluginStateControl<S>]
-    attach(p: (() => Plugin) | symbol):
-        State<S, E> | [PluginCallbacks | Error, PluginStateControl<S>] {
-        if (typeof p === 'function') {
-            const pluginMeta = p();
-            if (pluginMeta.id === DowngradedID) {
-                this.valueUsedNoProxy = true;
-                if (this.valueUsed !== UnusedValue) {
-                    const currentValue = this.getUntracked(true);
-                    this.valueUsed = currentValue;
-                }
-                return this.self();
-            }
-            this.store.register(pluginMeta);
-            return this.self();
-        } else {
-            return [
-                this.store.getPlugin(p) ||
-                (new StateInvalidUsageError(this.path, ErrorId.GetUnknownPlugin, p.toString())),
-                this
-            ];
-        }
     }
 }
 

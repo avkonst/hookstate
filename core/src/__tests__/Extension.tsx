@@ -1,4 +1,4 @@
-import { useHookstate, hookstate, Plugin, DevToolsID, DevTools, DevToolsExtensions, PluginCallbacks, extend, StateValueAtPath, State, Extension, SetActionDescriptor, StateErrorAtRoot, InferStateValueType, StateMethodsDestroy, ExtensionFactory } from '../';
+import { useHookstate, hookstate, extend, InferStateValueType, ExtensionFactory, destroyHookstate } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 
@@ -51,7 +51,7 @@ function MyExtension<S, E>(messages: string[]): ExtensionFactory<S, E, MyExtensi
         },
     })
 }
-    
+
 test('extension: common flow callbacks', async () => {
     let renderTimes = 0
     const messages: string[] = []
@@ -62,9 +62,6 @@ test('extension: common flow callbacks', async () => {
             f2: 'str'
         }], extend(MyExtension(messages)))
     });
-
-    expect(DevTools(result.current).label('should not be labelled')).toBeUndefined();
-    expect(DevTools(result.current).log('should not be logged')).toBeUndefined();
 
     expect(renderTimes).toStrictEqual(1);
     expect(messages).toEqual(['onCreate called', 'onInit called, []: [{\"f1\":0,\"f2\":\"str\"}]'])
@@ -103,7 +100,7 @@ test('extension: common flow callbacks', async () => {
     messages.splice(0, messages.length);
 
     act(() => {
-        result.current[0].merge(p => ({ f1 : p.f1 + 1 }));
+        result.current[0].merge(p => ({ f1: p.f1 + 1 }));
     });
     expect(renderTimes).toStrictEqual(4);
     expect(messages).toEqual([
@@ -268,15 +265,12 @@ test('extension: common flow callbacks global state', async () => {
     });
     const messages: string[] = result.current.messages;
 
-    expect(DevTools(result.current).label('should not be labelled')).toBeUndefined();
-    expect(DevTools(result.current).log('should not be logged')).toBeUndefined();
-
     expect(renderTimes).toStrictEqual(1);
     expect(messages).toEqual(['onCreate called', 'onInit called, []: [{\"f1\":0,\"f2\":\"str\"}]'])
     expect(result.current[0].get().f1).toStrictEqual(0);
     expect(messages).toEqual(['onCreate called', 'onInit called, []: [{\"f1\":0,\"f2\":\"str\"}]'])
     messages.splice(0, messages.length)
-    
+
     act(() => {
         result.current.set([{ f1: 0, f2: 'str2' }]);
     });
@@ -307,7 +301,7 @@ test('extension: common flow callbacks global state', async () => {
     messages.splice(0, messages.length)
 
     act(() => {
-        result.current[0].merge(p => ({ f1 : p.f1 + 1 }));
+        result.current[0].merge(p => ({ f1: p.f1 + 1 }));
     });
     expect(renderTimes).toStrictEqual(4);
     expect(messages).toEqual([
@@ -391,7 +385,7 @@ test('extension: common flow callbacks global state', async () => {
     expect(messages).toEqual([]);
     messages.splice(0, messages.length);
 
-    (stateInf as unknown as StateMethodsDestroy).destroy()
+    destroyHookstate(stateInf)
     expect(messages).toEqual(['onDestroy called, [{"f1":0,"f2":"str5"}]'])
     messages.splice(0, messages.length);
 

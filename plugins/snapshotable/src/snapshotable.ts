@@ -2,7 +2,6 @@
 import {
     Path,
     StateValueAtPath,
-    StateValueAtRoot,
     State,
     InferStateValueType,
     hookstate,

@@ -87,7 +87,7 @@ Happens when state is set after destroy. Typically it may happen when a componen
 
 ```tsx
 const state = hookstate(...)
-state.destroy()
+destroyHookstate(state)
 state.set(...) // <== Error!
 ```
 

@@ -1,6 +1,6 @@
 import {
-    createState,
-    useState,
+    hookstate,
+    useHookstate,
     StateValueAtRoot,
     StateValueAtPath,
     State,
@@ -46,7 +46,7 @@ function DevToolsInitializeInternal() {
 
     let MonitoredStatesLogger = (_: string) => { /* */ };
     const MonitoredStatesLabel = '@hookstate/devtools: settings';
-    SettingsState = createState(() => {
+    SettingsState = hookstate(() => {
         // localStorage is not available under react native
         const p = typeof window !== 'undefined' && window.localStorage &&
             // read persisted if we can

@@ -1,4 +1,4 @@
-import { useHookstate, Downgraded } from '../';
+import { useHookstate } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 
