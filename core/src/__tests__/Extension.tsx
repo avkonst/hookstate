@@ -37,13 +37,16 @@ function MyExtension<S, E>(messages: string[]): ExtensionFactory<S, E, MyExtensi
         onInit: (s) => {
             messages.push(`onInit called, [${s.path}]: ${JSON.stringify(s.get({ noproxy: true }))}`)
         },
-        onSet: (s, ad) => {
+        onSet: (s, ad, r) => {
+            expect(r.path).toStrictEqual([])
             messages.push(`onSet called, [${ad.path}]: ${JSON.stringify(s.get({ noproxy: true }))}, ${JSON.stringify(ad.actions)}`)
         },
-        onPreset: (s, v) => {
+        onPreset: (s, v, r) => {
+            expect(r.path).toStrictEqual([])
             messages.push(`onPreset called, [${s.path}]: ${JSON.stringify(s.get({ noproxy: true }))}, ${JSON.stringify(v)}`)
         },
-        onPremerge: (s, v) => {
+        onPremerge: (s, v, r) => {
+            expect(r.path).toStrictEqual([])
             messages.push(`onPremerge called, [${s.path}]: ${JSON.stringify(s.get({ noproxy: true }))}, ${JSON.stringify(v)}`)
         },
         onDestroy: (s) => {
@@ -237,13 +240,16 @@ function MyExtensionGlobal<S, E>(): ExtensionFactory<S, E, MyExtensionMethodsGlo
         onInit: (s) => {
             messages.push(`onInit called, [${s.path}]: ${JSON.stringify(s.get({ noproxy: true }))}`)
         },
-        onSet: (s, ad) => {
+        onSet: (s, ad, r) => {
+            expect(r.path).toStrictEqual([])
             messages.push(`onSet called, [${ad.path}]: ${JSON.stringify(s.get({ noproxy: true }))}, ${JSON.stringify(ad.actions)}`)
         },
-        onPreset: (s, v) => {
+        onPreset: (s, v, r) => {
+            expect(r.path).toStrictEqual([])
             messages.push(`onPreset called, [${s.path}]: ${JSON.stringify(s.get({ noproxy: true }))}, ${JSON.stringify(v)}`)
         },
-        onPremerge: (s, v) => {
+        onPremerge: (s, v, r) => {
+            expect(r.path).toStrictEqual([])
             messages.push(`onPremerge called, [${s.path}]: ${JSON.stringify(s.get({ noproxy: true }))}, ${JSON.stringify(v)}`)
         },
         onDestroy: (s) => {

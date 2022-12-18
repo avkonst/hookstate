@@ -333,9 +333,9 @@ export interface Extension<S, I, E> {
             [K in keyof E & I]: (i: State<StateValueAtPath, E & I>) => (E & I)[K];
         }
     ) => void,
-    readonly onPreset?: (state: State<StateValueAtPath, E & I>, value: StateValueAtPath) => void,
-    readonly onPremerge?: (state: State<StateValueAtPath, E & I>, value: StateValueAtPath) => void,
-    readonly onSet?: (state: State<StateValueAtPath, E & I>, descriptor: SetActionDescriptor) => void,
+    readonly onPreset?: (state: State<StateValueAtPath, E & I>, value: StateValueAtPath, rootState: State<StateValueAtRoot, E & I>) => void,
+    readonly onPremerge?: (state: State<StateValueAtPath, E & I>, value: StateValueAtPath, rootState: State<StateValueAtRoot, E & I>) => void,
+    readonly onSet?: (state: State<StateValueAtPath, E & I>, descriptor: SetActionDescriptor, rootState: State<StateValueAtRoot, E & I>) => void,
     readonly onDestroy?: (state: State<S, E & I>) => void,
 };
 
@@ -442,23 +442,23 @@ export function extend<
             }
         }
         if (onPremergeCbs.length > 0) {
-            result.onPremerge = (s, d) => {
+            result.onPremerge = (s, d, r) => {
                 for (let cb of onPremergeCbs) {
-                    cb!(s, d);
+                    cb!(s, d, r);
                 }
             }
         }
         if (onPresetCbs.length > 0) {
-            result.onPreset = (s, d) => {
+            result.onPreset = (s, d, r) => {
                 for (let cb of onPresetCbs) {
-                    cb!(s, d);
+                    cb!(s, d, r);
                 }
             }
         }
         if (onSetCbs.length > 0) {
-            result.onSet = (s, d) => {
+            result.onSet = (s, d, r) => {
                 for (let cb of onSetCbs) {
-                    cb!(s, d);
+                    cb!(s, d, r);
                 }
             }
         }
@@ -1115,15 +1115,15 @@ class Store implements Subscribable {
     }
 
     preset(state: State<StateValueAtPath, StateExtensionUnknown>, value: StateValueAtPath) {
-        this._extension?.onPreset?.(state, value)
+        this._extension?.onPreset?.(state, value, this._stateMethods.self())
     }
 
     premerge(state: State<StateValueAtPath, StateExtensionUnknown>, value: StateValueAtPath) {
-        this._extension?.onPremerge?.(state, value)
+        this._extension?.onPremerge?.(state, value, this._stateMethods.self())
     }
 
     update(state: State<StateValueAtPath, StateExtensionUnknown>, ad: SetActionDescriptor) {
-        this._extension?.onSet?.(state, ad)
+        this._extension?.onSet?.(state, ad, this._stateMethods.self())
 
         const actions = new Set<() => void>();
         // check if actions descriptor can be unfolded into a number of individual update actions
