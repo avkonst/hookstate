@@ -4,7 +4,14 @@ title: Extensions overview
 sidebar_label: Overview
 ---
 
-import { PreviewSample } from '../src/PreviewSample'
+## Overview
+
+Extensions allow to extend functionality of Hookstate. An extension can:
+- provide state lifecycle callbacks and maintain its own state associated with the Hookstate State
+- add extension methods and properties to the Hookstate State object returned by `hookstate` and `useHookstate` functions
+- work identically on a global and local states
+- be combined together with other extensions via `extend` function and multiple extension can be added to the same state
+- use the functionality provided by other extensions  
 
 > Please, submit pull request if you would like your extensions included in the list.
 
