@@ -60,7 +60,7 @@ test('object: should not crash on valueOf', async () => {
 
 test('object: should rerender used null', async () => {
     let renderTimes = 0
-    
+
     const state = hookstate<{ field: string } | null>(null)
     const { result } = renderHook(() => {
         renderTimes += 1;
@@ -79,7 +79,7 @@ test('object: should rerender used null', async () => {
 
 test('object: should rerender used property-hiphen', async () => {
     let renderTimes = 0
-    
+
     const state = hookstate<{ 'hiphen-property': string }>({ 'hiphen-property': 'value' })
     const { result } = renderHook(() => {
         renderTimes += 1;
@@ -200,10 +200,10 @@ test('object: should not rerender used symbol properties', async () => {
     expect(TestSymbol in result.current).toEqual(false)
     expect(result.current.get()[TestSymbol]).toEqual(undefined)
     expect(result.current[TestSymbol]).toEqual(undefined)
-    
+
     expect(() => { (result.current.get() as any).field1 = 100 })
-    .toThrow('Error: HOOKSTATE-202 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-202')
-    
+        .toThrow('Error: HOOKSTATE-202 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-202')
+
     result.current.get()[TestSymbol] = 100
 
     expect(renderTimes).toStrictEqual(1);
@@ -239,7 +239,7 @@ test('object: should rerender when keys used', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        return useHookstate<{field: number, optional?: number} | null>({
+        return useHookstate<{ field: number, optional?: number } | null>({
             field: 1
         })
     });
@@ -304,7 +304,7 @@ test('object: should not rerender unused property', async () => {
         })
     });
     expect(renderTimes).toStrictEqual(1);
-    
+
     act(() => {
         result.current.field1.set(p => p + 1);
     });
@@ -341,7 +341,7 @@ test('object: should delete property when set to none', async () => {
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.get().field1).toStrictEqual(0);
-    
+
     act(() => {
         // deleting existing property
         result.current.field1.set(none);
@@ -355,7 +355,7 @@ test('object: should delete property when set to none', async () => {
     });
     expect(renderTimes).toStrictEqual(2);
     expect(result.current.get()).toEqual({ field2: 'str', field3: true });
-    
+
     act(() => {
         // inserting property
         result.current.field1.set(1);
@@ -464,3 +464,39 @@ test('object: should return downgraded value for custom object classes', async (
     expect(renderTimes).toStrictEqual(2);
     expect(() => (result.current as any).getMonth).toThrow('Error: HOOKSTATE-110 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-110')
 });
+
+test('object: should do destructure', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useHookstate<{ field: number, optional?: number }>({
+            field: 1
+        })
+    });
+    expect(renderTimes).toStrictEqual(1);
+
+    let {
+        field,
+        optional
+    } = result.current;
+    expect(field.get()).toEqual(1);
+    expect(optional.get()).toEqual(undefined);
+})
+
+test('object: should do destructure of nullable', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useHookstate<{ field: number, optional?: number } | null>({
+            field: 1
+        })
+    });
+    expect(renderTimes).toStrictEqual(1);
+
+    let {
+        field,
+        optional
+    } = result.current.ornull ?? {};
+    expect(field?.get()).toEqual(1);
+    expect(optional?.get()).toEqual(undefined);
+})
