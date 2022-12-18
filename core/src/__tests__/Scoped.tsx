@@ -1,4 +1,4 @@
-import { useHookstate } from '../';
+import { none, useHookstate } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 
@@ -117,7 +117,7 @@ test('object: should rerender used via scoped updates by parent (disabled tracki
     let childRenderTimes = 0
     const parent = renderHook(() => {
         parentRenderTimes += 1;
-        let r =  useHookstate({
+        let r = useHookstate({
             fieldUsedByParent: 0,
             fieldUsedByChild: 100,
             fieldUsedByBoth: 200
@@ -195,4 +195,62 @@ test('object: should support late disabled tracking', async () => {
     expect(child.result.current.field.get()).toStrictEqual(1);
     expect(parentRenderTimes).toStrictEqual(2);
     expect(childRenderTimes).toStrictEqual(1);
+});
+
+test('object: should allow set to none via child', async () => {
+    let parentRenderTimes = 0
+    let childRenderTimes = 0
+    const parent = renderHook(() => {
+        parentRenderTimes += 1;
+        return useHookstate({
+            fieldUsedByParent: 0,
+            fieldUsedByChild: 100,
+            fieldUsedByBoth: 200
+        })
+    });
+    const child = renderHook(() => {
+        childRenderTimes += 1;
+        return useHookstate(parent.result.current)
+    });
+    expect(parent.result.current.fieldUsedByParent.get()).toStrictEqual(0);
+    expect(parent.result.current.fieldUsedByBoth.get()).toStrictEqual(200);
+    expect(child.result.current.fieldUsedByChild.get()).toStrictEqual(100);
+    expect(child.result.current.fieldUsedByBoth.get()).toStrictEqual(200);
+    expect(parentRenderTimes).toStrictEqual(1);
+    expect(childRenderTimes).toStrictEqual(1);
+
+    act(() => {
+        child.result.current.fieldUsedByChild.set(none);
+    });
+    expect(parent.result.current.fieldUsedByParent.get()).toStrictEqual(0);
+    expect(parent.result.current.fieldUsedByBoth.get()).toStrictEqual(200);
+    expect(child.result.current.fieldUsedByChild.get()).toStrictEqual(undefined);
+    expect(child.result.current.fieldUsedByBoth.get()).toStrictEqual(200);
+    expect(parentRenderTimes).toStrictEqual(2);
+    expect(childRenderTimes).toStrictEqual(1);
+});
+
+test('object: should allow set to none via child without parent', async () => {
+    let parentRenderTimes = 0
+    let childRenderTimes = 0
+    const parent = renderHook(() => {
+        parentRenderTimes += 1;
+        return useHookstate({
+            fieldUsedByChild: 100,
+        })
+    });
+    const child = renderHook(() => {
+        childRenderTimes += 1;
+        return useHookstate(parent.result.current)
+    });
+    expect(child.result.current.fieldUsedByChild.get()).toStrictEqual(100);
+    expect(parentRenderTimes).toStrictEqual(1);
+    expect(childRenderTimes).toStrictEqual(1);
+
+    act(() => {
+        child.result.current.fieldUsedByChild.set(none);
+    });
+    expect(child.result.current.fieldUsedByChild.get()).toStrictEqual(undefined);
+    expect(parentRenderTimes).toStrictEqual(1);
+    expect(childRenderTimes).toStrictEqual(2);
 });
