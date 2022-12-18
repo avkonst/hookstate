@@ -165,6 +165,15 @@ state.get({ noproxy: true }).callback() // <== OK
 Please, note that this error happens only when an a value has Object class name.
 Hookstate handles correctly the cases when you call methods of instances of other classes, for example Date class.
 
+## HOOKSTATE-111
+
+Happens when a state is attempted to be reinitialized on rerender with another store source.
+This is likely a mistake in a parent calling component where a new property value is passed to a child,
+and this property value refers to a different Hookstate State then in the previous renders.
+
+This issue may also happen under Nextjs and Vite hot module reload (HMR), but it does not happen with react-scripts HMR.
+We will look in the future how to support HMR with Vite / Nextjs ([see more](https://github.com/avkonst/hookstate/issues/364)).
+
 ## HOOKSTATE-120
 
 Deprecated in Hookstate 4.

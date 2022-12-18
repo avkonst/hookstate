@@ -854,7 +854,6 @@ enum ErrorId {
     ToJson_State = 109,
 
     GetProperty_Function = 110,
-    // TODO document
     InitStateStoreSwitchover = 111,
 
     GetUnknownPlugin = 120,
