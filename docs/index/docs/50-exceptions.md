@@ -53,7 +53,8 @@ const state = useHookstate(new Promise(...))
 state.value // <== Error!
 state.keys // <== Error!
 state.map(...) // <== Error!
-state.map(...) // <== OK
+state.promised // <== OK
+state.promise.then(...) // <== OK
 ```
 
 More information about [asynchronous states](./asynchronous-state).
@@ -144,6 +145,25 @@ You likely intended to serialize state value instead:
 const state = useHookstate(...)
 JSON.stringify(state.value)
 ```
+
+## HOOKSTATE-110
+
+Happens when a state property of type function is being used and a parent object class is just Object.
+
+```tsx
+const state = useHookstate({ callback: () => {} })
+state.callback // <== Error!
+```
+
+If you would like to call a property of an object you should do the following instead:
+
+```tsx
+const state = useHookstate({ callback: () => {} })
+state.get({ noproxy: true }).callback() // <== OK
+```
+
+Please, note that this error happens only when an a value has Object class name.
+Hookstate handles correctly the cases when you call methods of instances of other classes, for example Date class.
 
 ## HOOKSTATE-120
 

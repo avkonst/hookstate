@@ -853,7 +853,6 @@ enum ErrorId {
     ToJson_Value = 108,
     ToJson_State = 109,
 
-    // TODO document
     GetProperty_Function = 110,
     // TODO document
     InitStateStoreSwitchover = 111,
