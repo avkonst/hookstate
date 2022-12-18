@@ -1,4 +1,4 @@
-import { useHookstate, hookstate, none } from '../';
+import { useHookstate, hookstate, none, isHookstateValue, isHookstate } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 
@@ -13,6 +13,15 @@ test('object: should rerender used', async () => {
     });
     expect(renderTimes).toStrictEqual(1);
     expect(result.current.get().field1).toStrictEqual(0);
+
+    expect(isHookstate(result.current)).toStrictEqual(true);
+    expect(isHookstateValue(result.current)).toStrictEqual(false);
+    expect(isHookstate(result.current.get())).toStrictEqual(false);
+    expect(isHookstateValue(result.current.get())).toStrictEqual(true);
+    expect(isHookstate(result.current.field1)).toStrictEqual(true);
+    expect(isHookstateValue(result.current.field1)).toStrictEqual(false);
+    expect(isHookstate(result.current.field1.get())).toStrictEqual(false);
+    expect(isHookstateValue(result.current.field1.get())).toStrictEqual(false);
 
     act(() => {
         result.current.field1.set(p => p + 1);

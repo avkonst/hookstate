@@ -398,6 +398,20 @@ export function destroyHookstate<S, E>(state: __State<S, E>) {
 }
 
 /**
+ * A method to check if a variable is an instance of Hookstate State
+ */
+export function isHookstate(v: any) {
+    return !!(v?.[self])
+}
+
+/**
+ * A method to check if a variable is an instance of traced (wrapped in a proxy) Hookstate Value
+ */
+export function isHookstateValue(v: any) {
+    return !!(v?.[SelfMethodsID])
+}
+
+/**
  * A function combines multiple extensions into one extension and returns it
  * Browse an example [here](https://hookstate.js.org/docs/extensions-snapshotable)
  */
