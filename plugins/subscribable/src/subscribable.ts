@@ -66,7 +66,17 @@ export function subscribable<S, E>(): ExtensionFactory<S, E, Subscribable> {
                 return;
             }
             for (let subscriber of subscribers) {
-                if (pathStartsWith(s.path, subscriber[0])) {
+                // Here is the path match logic
+                // If a state is updated at /a/b, then the following subscribers should be invoked
+                // - /
+                // - /a
+                // - /a/b (<-- this one is updated)
+                // - /a/b/c
+                // and the following should not be invoked
+                // - /a/d
+                // - /g
+                // - /g/f
+                if (pathStartsWith(s.path, subscriber[0]) || pathStartsWith(subscriber[0], s.path)) {
                     let v = getValueAtPath(subscriber[0])
                     if (v !== none) {
                         subscriber[1](v)
