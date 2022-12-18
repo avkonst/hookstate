@@ -1354,21 +1354,24 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, Subscribable, Subscr
             } else {
                 let ad: Required<SetActionDescriptor> = { path: this.path, actions: {} };
                 const deletedIndexes: number[] = []
-                Object.keys(sourceValue as StateValueAtPath).sort().forEach(i => {
-                    const index = Number(i);
-                    const newPropValue = sourceValue[index]
-                    if (newPropValue === none) {
-                        ad.actions[index] = "D"
-                        deletedIndexes.push(index)
-                    } else {
-                        if (index in currentValue) {
-                            ad.actions[index] = "U"
+                Object.keys(sourceValue as StateValueAtPath)
+                    .map(i => Number(i))
+                    .sort((a, b) => a - b)
+                    .forEach(i => {
+                        const index = Number(i);
+                        const newPropValue = sourceValue[index]
+                        if (newPropValue === none) {
+                            ad.actions[index] = "D"
+                            deletedIndexes.push(index)
                         } else {
-                            ad.actions[index] = "I"
+                            if (index in currentValue) {
+                                ad.actions[index] = "U"
+                            } else {
+                                ad.actions[index] = "I"
+                            }
+                            (currentValue as StateValueAtPath[])[index] = newPropValue
                         }
-                        (currentValue as StateValueAtPath[])[index] = newPropValue
-                    }
-                });
+                    });
                 // indexes are ascending sorted as per above
                 // so, delete one by one from the end
                 // this way index positions do not change
@@ -1487,7 +1490,7 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, Subscribable, Subscr
                             // so invalidate cache for all children after the first deleted
                             let firstDeletedIndex = Object.keys(ad.actions)
                                 .map(i => Number(i))
-                                .sort()
+                                .sort((a, b) => a - b)
                                 .find(i => ad.actions?.[i] === "D")!
                             for (let childKey in this.childrenCreated) {
                                 if (Number(childKey) >= firstDeletedIndex ||
