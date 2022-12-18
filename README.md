@@ -73,3 +73,16 @@ Hookstate is a modern alternative to Redux, Mobx, Recoil, etc. It is simple to l
 ## API reference
 
 [hookstate.js.org/docs/typedoc-hookstate-core](https://hookstate.js.org/docs/typedoc-hookstate-core)
+
+## Hookstate developers workflow
+
+This is the mono repository, which combine the Hookstate core package, extensions, docs and demo applications. `pnpm` is used as node_modules manager and `nx` as a scripts launcher. Each package defines its own rules how to build, test, etc.
+
+From the repository root directory:
+
+- `npm install -f pnpm` - install pnpm tool
+- `pnpm install` - install node_modules for all packages
+
+- `pnpm nx <script> <package>` - run script for a package as well as build dependencies if required, for example:
+  - `pnpm nx build core` - run `build` script for `core` package
+  - `pnpm nx start todolist` - run `start` script for `todolist` package as well as build for all dependencies
