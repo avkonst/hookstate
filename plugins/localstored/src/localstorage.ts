@@ -1,20 +1,9 @@
 import { ExtensionFactory, State } from '@hookstate/core';
 
-export interface getItem {
-  (key: string): Promise<string | null> | string;
-}
-export interface setItem {
-  (key: string, value: string): Promise<void> | void;
-}
-
-export interface removeItem {
-   (key: string): Promise<void> | void;
-}
-
 export interface StoreEngine {
-  getItem: getItem;
-  setItem: setItem;
-  removeItem: removeItem;
+    getItem: (key: string) => Promise<string | null> | string;
+    setItem: (key: string, value: string) => Promise<void> | void;
+    removeItem: (key: string) => Promise<void> | void;
 }
 
 export interface LocalStored { }
@@ -29,9 +18,8 @@ export function localstored<S, E>(options?: {
         let serializer: (s: State<S, E>) => () => string;
         let deserializer: (s: State<S, E>) => (v: string) => void;
         let stateAtRoot: State<S, E>
-        let storageEngine: StoreEngine;
-        storageEngine = engine || localStorage;
-        
+        let storageEngine: StoreEngine | Storage = options?.engine || localStorage;
+
         return {
             onInit: (state, extensionMethods) => {
                 stateAtRoot = state;
@@ -58,10 +46,10 @@ export function localstored<S, E>(options?: {
                 // this is supported too, as the state.set can be really set asynchronously
                 const response = storageEngine.getItem(key);
                 Promise.resolve(response).then(persisted => {
-                    if(persisted) {
+                    if (persisted) {
                         // persisted state exists
                         deserializer(state)(persisted); // this one sets the state value as well
-                    }else if(options?.initializer) {
+                    } else if (options?.initializer) {
                         options.initializer().then(s => {
                             state.set(s);
                         });
@@ -71,13 +59,13 @@ export function localstored<S, E>(options?: {
             onSet: (s) => {
                 if (s.promised || s.error !== undefined) {
                     const response = storageEngine.removeItem(key);
-                    Promise.resolve(response).then(() => {});
+                    Promise.resolve(response).then(() => { });
                 } else {
                     // save the entire state from the root
                     // smarter implementations could implement partial state saving,
                     // which would save only the nested state set (parameter `s` in onSet)
                     const response = storageEngine.setItem(key, serializer(stateAtRoot)());
-                    Promise.resolve(response).then(() => {});
+                    Promise.resolve(response).then(() => { });
                 }
             }
         }

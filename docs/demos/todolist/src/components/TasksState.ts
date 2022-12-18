@@ -1,4 +1,5 @@
 import { hookstate, useHookstate } from '@hookstate/core';
+import { devtools } from '@hookstate/devtools';
 
 export interface Task {
     id: string;
@@ -25,7 +26,7 @@ const state = hookstate(new Promise<Task[]>((resolve, reject) => {
             done: false,
         }
     ]), 3000)
-}))
+}), devtools({ key: 'tasks' }))
 
 export function useTasksState() {
     // This function exposes the state directly.

@@ -1,10 +1,11 @@
 import { hookstate, useHookstate } from '@hookstate/core';
+import { devtools } from '@hookstate/devtools';
 
 const settingsState = hookstate({
     isEditableInline: true,
     isScopedUpdateEnabled: true,
     isHighlightUpdatesEnabled: true
-})
+}, devtools({ key: 'settings' }))
 
 export function useSettingsState() {
     const state = useHookstate(settingsState)

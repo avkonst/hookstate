@@ -2,8 +2,6 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
 
-import '@hookstate/devtools';
-
 // optional, defaults are almost always right
 import { configure } from '@hookstate/core';
 configure({
