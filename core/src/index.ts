@@ -27,7 +27,7 @@ export type Path = ReadonlyArray<string | number>;
  * 
  * @typeparam S Type of a value of a state
  */
-export type SetStateAction<S> = (S | Promise<S>) | ((prevState: S) => (S | Promise<S>));
+export type SetStateAction<S> = (S | Immutable<S> | Promise<S | Immutable<S>>) | ((prevState: S) => (S | Immutable<S> | Promise<S | Immutable<S>>));
 
 /**
  * Type of an argument of [StateMethods.merge](#merge).
@@ -36,9 +36,9 @@ export type SetStateAction<S> = (S | Promise<S>) | ((prevState: S) => (S | Promi
  */
 export type SetPartialStateAction<S> =
     S extends ReadonlyArray<(infer U)> ?
-    ReadonlyArray<U> | Record<number, U> | ((prevValue: S) => (ReadonlyArray<U> | Record<number, U>)) :
-    S extends object | string ? Partial<S> | ((prevValue: S) => Partial<S>) :
-    React.SetStateAction<S>;
+    ReadonlyArray<U | Immutable<U>> | Record<number, U | Immutable<U>> | ((prevValue: S) => (ReadonlyArray<U | Immutable<U>> | Record<number, U | Immutable<U>>)) :
+    S extends object | string ? Partial<S | Immutable<S>> | ((prevValue: S) => Partial<S | Immutable<S>>) :
+    S | Immutable<S> | ((prevState: S) => (S | Immutable<S>));
 
 /**
  * Type of an argument of [hookstate](#hookstate) and [useHookstate](#useHookstate).
@@ -75,7 +75,19 @@ export type InferStateOrnullType<S, E> =
     S extends undefined ? undefined :
     S extends null ? null : State<S, E>;
 
-
+/**
+ * Makes a value deep readonly
+ */
+export type Immutable<T> =
+    T extends ImmutablePrimitive ? T :
+    T extends Array<infer U> ? ImmutableArray<U> :
+    T extends Map<infer K, infer V> ? ImmutableMap<K, V> :
+    T extends Set<infer M> ? ImmutableSet<M> : ImmutableObject<T>;
+export type ImmutablePrimitive = undefined | null | boolean | string | number | Function;
+export type ImmutableArray<T> = ReadonlyArray<Immutable<T>>;
+export type ImmutableMap<K, V> = ReadonlyMap<Immutable<K>, Immutable<V>>;
+export type ImmutableSet<T> = ReadonlySet<Immutable<T>>;
+export type ImmutableObject<T> = { readonly [K in keyof T]: Immutable<T[K]> };
 
 // TODO move __State to State definition, so StateMethods are not used directly by user
 // TODO and declare incompatible __synthetic marker, so StateMethods would become forced to be replaced by State
@@ -131,7 +143,7 @@ export interface StateMethods<S, E = {}> extends __State<S, E> {
      *      : 0; // <-- does not compile
      * ```
      */
-    readonly value: S;
+    readonly value: Immutable<S>;
 
     /**
      * True if state value is not yet available (eg. equal to a promise)
@@ -166,7 +178,7 @@ export interface StateMethods<S, E = {}> extends __State<S, E> {
      * `console.log(state.get({ stealth: true }))`.
      * If you use it, make sure you know what you are doing. 
      */
-    get(options?: { noproxy?: boolean, stealth?: boolean }): S;
+    get(options?: { noproxy?: boolean, stealth?: boolean }): Immutable<S>;
 
     /**
      * Sets new value for a state.
@@ -239,7 +251,7 @@ export type __KeysOfType<T, U, B = false> = {
 
 export const __state = Symbol('__state')
 export interface __State<S, E> {
-    [__state]: [S, E]
+    [__state]: [Immutable<S>, E]
 }
 
 // TODO document, give example how to use in extension method signatures
@@ -1174,7 +1186,7 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, Subscribable, Subscr
 
     private selfUsed: State<S, E> | undefined;
 
-    get [__state](): [S, E] {
+    get [__state](): [Immutable<S>, E] {
         return [this.get(), this.self() as E]
     };
 
@@ -1253,10 +1265,10 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, Subscribable, Subscr
         return this.valueSource;
     }
 
-    get(options?: { noproxy?: boolean, stealth?: boolean, __internalAllowPromised?: boolean }) {
+    get(options?: { noproxy?: boolean, stealth?: boolean, __internalAllowPromised?: boolean }): Immutable<S> {
         const valueSource = this.getUntracked(options?.__internalAllowPromised)
         if (options?.stealth) {
-            return valueSource;
+            return valueSource as Immutable<S>;
         }
         if (this.valueUsed === UnusedValue) {
             if (Array.isArray(valueSource)) {
@@ -1275,12 +1287,12 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, Subscribable, Subscr
         }
         if (options?.noproxy) {
             this.valueUsedNoProxy = true
-            return valueSource;
+            return valueSource as Immutable<S>;
         }
-        return this.valueUsed as S;
+        return this.valueUsed as Immutable<S>;
     }
 
-    get value(): S {
+    get value(): Immutable<S> {
         // various tools, including react dev tools and webpack import
         // inspect an object and it's properties
         // so these should not throw
@@ -1294,7 +1306,7 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, Subscribable, Subscr
         }
         this.store.preset(this.self() as unknown as State<StateValueAtPath, {}>, newValue)
 
-        if (Object(newValue) === newValue && newValue[SelfMethodsID]) {
+        if (Object(newValue) === newValue && newValue![SelfMethodsID]) {
             // TODO check on read instead as it might escape as nested on set anyway
             throw new StateInvalidUsageError(this.path, ErrorId.SetStateToValueFromState)
         }

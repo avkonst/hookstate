@@ -145,7 +145,7 @@ test('array: should not rerender used undefined properties', async () => {
     // tslint:disable-next-line: no-string-literal
     expect(result.current.get()['field']).toEqual(undefined)
     expect(result.current.get()[2]).toEqual(undefined)
-    
+
     act(() => {
         result.current[0].set(1);
     });
@@ -174,12 +174,12 @@ test('array: should not rerender used symbol properties', async () => {
 
     expect(result.current.get().length).toStrictEqual(2);
     expect(result.current.get()[TestSymbol]).toEqual(undefined)
-    expect(result.current[TestSymbol]).toEqual(undefined)
-    
-    result.current.get()[TestSymbol] = 100
+    expect(result.current[TestSymbol]).toEqual(undefined);
 
-    expect(() => { result.current.get()[0] = 100 })
-    .toThrow('Error: HOOKSTATE-202 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-202')
+    (result.current.get() as any)[TestSymbol] = 100
+
+    expect(() => { (result.current.get() as any)[0] = 100 })
+        .toThrow('Error: HOOKSTATE-202 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-202')
 
     expect(renderTimes).toStrictEqual(1);
     expect('length' in result.current.get()).toStrictEqual(true);
@@ -309,23 +309,23 @@ test('array: should not crash on getOwnPropertyDescriptor length after promise',
         renderTimes += 1;
         return useHookstate(none)
     });
-    
+
     act(() => result.current.set([0, 0]))
-    
+
     expect(Object.keys(result.current)).toStrictEqual(["0", "1"])
     // limitation: getOwnPropertyDescriptor works after keys call only
-    
+
     expect(Object.getOwnPropertyDescriptor(result.current, 'length')).toBeTruthy()
     expect(Object.getOwnPropertyNames(result.current)).toStrictEqual(["0", "1", "length"])
-    
+
     act(() => result.current.set({ a: 1 }))
-    
+
     expect(Object.keys(result.current)).toStrictEqual(["a"])
     // limitation: getOwnPropertyDescriptor works after keys call only
-    
+
     expect(Object.getOwnPropertyDescriptor(result.current, 'length')).toBeUndefined()
     expect(Object.getOwnPropertyNames(result.current)).toStrictEqual(["a"])
-    
+
 });
 
 test('array: should not crash on getOwnPropertyDescriptor length turned to object', async () => {
@@ -334,13 +334,13 @@ test('array: should not crash on getOwnPropertyDescriptor length turned to objec
         renderTimes += 1;
         return useHookstate<any>([0, 0])
     });
-    
+
     expect(Object.getOwnPropertyDescriptor(result.current, 'length')).toBeTruthy()
     expect(Object.getOwnPropertyNames(result.current)).toStrictEqual(["0", "1", "length"])
-    expect(Object.keys(result.current)).toStrictEqual(["0", "1"])    
-    
+    expect(Object.keys(result.current)).toStrictEqual(["0", "1"])
+
     act(() => result.current.set({ a: 1 }))
-    
+
     expect(Object.keys(result.current)).toStrictEqual(["a"])
     // limitation: getOwnPropertyDescriptor works after keys call only
     expect(Object.getOwnPropertyDescriptor(result.current, 'length')).toBeUndefined()

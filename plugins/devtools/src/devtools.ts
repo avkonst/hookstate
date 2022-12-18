@@ -129,11 +129,11 @@ export function devtools<S, E extends {}>(options?: { key?: string }): Extension
                     breakpoint = !breakpoint;
                 });
                 if (!state.promise) {
-                    submitToMonitor?.({ type: `CREATE`, state: { ...state.get({ noproxy: true, stealth: true }) } })
+                    submitToMonitor?.({ type: `CREATE`, state: state.get({ noproxy: true, stealth: true }) })
                 }
             },
             onSet: (state, d) => {
-                submitToMonitor?.({ state: { ...state.get({ noproxy: true, stealth: true }) }, type: `SET [${state.path.join('/')}]`, descriptor: d })
+                submitToMonitor?.({ type: `SET [${state.path.join('/')}]`, state: state.get({ noproxy: true, stealth: true }), descriptor: d })
                 if (breakpoint) {
                     // tslint:disable-next-line: no-debugger
                     debugger;

@@ -54,7 +54,7 @@ export function subscribable<S, E>(): ExtensionFactory<S, E, Subscribable> {
             function getValueAtPath(path: Path) {
                 let result = stateAtRoot.value
                 for (let p of path) {
-                    if (result === undefined) {
+                    if (result === undefined || result == null) {
                         return none
                     }
                     result = result[p]

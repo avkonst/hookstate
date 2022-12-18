@@ -201,7 +201,7 @@ test('object: should not rerender used symbol properties', async () => {
     expect(result.current.get()[TestSymbol]).toEqual(undefined)
     expect(result.current[TestSymbol]).toEqual(undefined)
     
-    expect(() => { result.current.get().field1 = 100 })
+    expect(() => { (result.current.get() as any).field1 = 100 })
     .toThrow('Error: HOOKSTATE-202 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-202')
     
     result.current.get()[TestSymbol] = 100
