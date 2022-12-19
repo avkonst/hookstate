@@ -18,21 +18,19 @@ Hookstate introduces a new concept to solve this problem. We call it **scoped st
 
 ### It is simple
 
-Scoped state is an elegant, one line solution for the problem of efficient rendering of large states. It works the same way and equally well with local and global states. The idea of the scoped state is to use deeply nested state hooks to allow Hookstate to rerender only affected by state change deeply nested children components. Let's come back to the original [nested state](/docs/nested-state) example:
-
-<PreviewSample example="local-complex-from-documentation" />
-
-To enable the **scoped state**, we would need to replace:
+Scoped state is an elegant, one line solution for the problem of efficient rendering of large states. It works the same way and equally well with local and global states. The idea of the scoped state is to use deeply nested state hooks to allow Hookstate to rerender only affected by state change deeply nested children components. If we take the original [nested state](/docs/nested-state) example, and replace the following line:
 
 ```tsx
 const taskState = props.taskState;
 ```
 
-by
+by the following:
 
 ```tsx
 const taskState = useHookstate(props.taskState);
 ```
+
+we will have scoped state enabled.
 
 You can see what effect the scoped state makes in the following interactive example. Set / unset `use the scoped state` checkbox and try editing the fields in the form. Colors will change to show which components are re-rendered:
 
