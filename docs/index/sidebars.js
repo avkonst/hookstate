@@ -28,7 +28,6 @@ module.exports = {
             'performance-large-state',
             'performance-frequent-updates',
             'performance-batched-updates',
-            'performance-managed-rendering',
             'performance-preact',
         ],
         Extensions: [
