@@ -23,14 +23,14 @@ import { shallowEqual } from './is-shallow-equal';
 export type Path = ReadonlyArray<string | number>;
 
 /**
- * Type of an argument of [StateMethods.set](#set).
+ * Type of an argument of [State.set](#set).
  * 
  * @typeparam S Type of a value of a state
  */
 export type SetStateAction<S> = (S | Immutable<S> | Promise<S | Immutable<S>>) | ((prevState: S) => (S | Immutable<S> | Promise<S | Immutable<S>>));
 
 /**
- * Type of an argument of [StateMethods.merge](#merge).
+ * Type of an argument of [State.merge](#merge).
  * 
  * @typeparam S Type of a value of a state
  */
@@ -49,14 +49,14 @@ export type SetInitialStateAction<S> = S | Promise<S> | (() => S | Promise<S>)
 
 /**
  * Special symbol which might be used to delete properties
- * from an object calling [StateMethods.set](#set) or [StateMethods.merge](#merge).
+ * from an object calling [State.set](#set) or [State.merge](#merge).
  * 
  * [Learn more...](https://hookstate.js.org/docs/nested-state#deleting-existing-element)
  */
 export const none = Symbol('none') as StateValueAtPath;
 
 /**
- * Return type of [StateMethods.keys](#readonly-keys).
+ * Return type of [State.keys](#readonly-keys).
  * 
  * @typeparam S Type of a value of a state
  */
@@ -67,7 +67,7 @@ export type InferStateKeysType<S> =
     undefined;
 
 /**
- * Return type of [StateMethods.map()](#map).
+ * Return type of [State.ornull](#ornull).
  * 
  * @typeparam S Type of a value of a state
  */
@@ -89,15 +89,12 @@ export type ImmutableMap<K, V> = ReadonlyMap<Immutable<K>, Immutable<V>>;
 export type ImmutableSet<T> = ReadonlySet<Immutable<T>>;
 export type ImmutableObject<T> = { readonly [K in keyof T]: Immutable<T[K]> };
 
-// TODO move __State to State definition, so StateMethods are not used directly by user
-// TODO and declare incompatible __synthetic marker, so StateMethods would become forced to be replaced by State
 /**
  * An interface to manage a state in Hookstate.
  * 
  * @typeparam S Type of a value of a state
  */
-export interface StateMethods<S, E = {}> extends __State<S, E> {
-    // TODO remove default value for E parameter
+export interface StateMethods<S, E> {
     /**
      * 'Javascript' object 'path' to an element relative to the root object
      * in the state. For example:
@@ -126,7 +123,7 @@ export interface StateMethods<S, E = {}> extends __State<S, E> {
      * Unwraps and returns the underlying state value referred by
      * [path](#readonly-path) of this state instance.
      *
-     * It returns the same result as [StateMethods.get](#get) method.
+     * It returns the same result as [State.get](#get) method.
      *
      * This property is more useful than [get](#get) method for the cases,
      * when a value may hold null or undefined values.
@@ -166,7 +163,7 @@ export interface StateMethods<S, E = {}> extends __State<S, E> {
      * Unwraps and returns the underlying state value referred by
      * [path](#readonly-path) of this state instance.
      *
-     * It returns the same result as [StateMethods.value](#readonly-value) method.
+     * It returns the same result as [State.value](#readonly-value) method.
      * 
      * If the additional option `noproxy` is set, the method will return
      * the original data object without wrapping it by proxy.
@@ -254,9 +251,14 @@ export interface __State<S, E> {
     [__state]: [Immutable<S>, E]
 }
 
-// TODO document, give example how to use in extension method signatures
+/**
+ * A routine which allows to extract value type of a state. Useful for extension developers.
+ */
 export type InferStateValueType<V> = DeepReturnType<V> extends __State<(infer S), (infer _)> ? S : V
-// TODO document, give example how to use in extension method signatures
+/**
+ * A routine which allows to extract extension methods / properties type of a state.
+ * Useful for extension developers.
+ */
 export type InferStateExtensionType<V> = DeepReturnType<V> extends __State<(infer _), (infer E)>
     ? E
     : DeepReturnType<V> extends Extension<(infer _), (infer _), (infer E)>
@@ -272,7 +274,7 @@ export type DeepReturnType<V> = V extends (...args: any) => (infer R) ? DeepRetu
  * [Learn more about local states...](https://hookstate.js.org/docs/local-state)
  * [Learn more about nested states...](https://hookstate.js.org/docs/nested-state)
  */
-export type State<S, E = {}> = StateMethods<S, E> & E & (
+export type State<S, E = {}> = __State<S, E> & StateMethods<S, E> & E & (
     S extends ReadonlyArray<(infer U)> ? ReadonlyArray<State<U, E>> :
     S extends object ? Omit<
         { readonly [K in keyof Required<S>]: State<S[K], E>; },
@@ -316,6 +318,21 @@ export type StateExtensionUnknown = any; //tslint:disable-line: no-any
 
 /**
  * For plugin developers only.
+ * An additional descriptor of an action mutation action applied
+ * 
+ * @hidden
+ * @ignore
+ */
+export interface SetActionDescriptor {
+    // path to update / rerender,
+    // migth be not the same as the part of state methods
+    // for example, when a new index is added to array
+    path: Path,
+    actions?: Record<string | number, "I" | "U" | "D">
+}
+
+/**
+ * For plugin developers only.
  * Set of callbacks, a plugin may subscribe to.
  * 
  * [Learn more...](https://hookstate.js.org/docs/writing-extension)
@@ -344,7 +361,7 @@ export type ExtensionFactory<S, I, E> = (typemarker?: __State<S, I>) => Extensio
 export function hookstate<S, E = {}>(
     source: __State<S, E>,
     extension?: ExtensionFactory<S, E, StateExtensionUnknown>
-): never; // TODO block this on State type system level
+): never;
 /**
  * Creates new state and returns it.
  *
@@ -503,7 +520,7 @@ export function useHookstate<S, E extends {} = {}>(
 export function useHookstate<S, E extends {} = {}>(
     source: __State<S, E>,
     extension: ExtensionFactory<S, E, StateExtensionUnknown>
-): never; // TODO block this on type system level
+): never;
 /**
  * Enables a functional React component to use a state,
  * either created by [hookstate](#hookstate) (*global* state) or
@@ -783,7 +800,7 @@ export function StateFragment<S, E extends {}>(
         children: (state: State<S, E>) => React.ReactElement,
         suspend?: boolean,
     }
-): never; // TODO block on type system
+): never;
 /**
  * Allows to use a state without defining a functional react component.
  * It can be also used in class-based React components. It is also
@@ -821,14 +838,18 @@ export function StateFragment<S, E extends {}>(
         state: State<S, E> | SetInitialStateAction<S>,
         extension?: ExtensionFactory<S, {}, E>,
         children: (state: State<S, E>) => React.ReactElement,
-        suspend?: boolean, // TODO document
+        suspend?: boolean,
     }
 ): React.ReactElement {
     const scoped = useHookstate(props.state as SetInitialStateAction<S>, props.extension);
     return props.suspend && suspend(scoped) || props.children(scoped);
 }
 
-// TODO document
+/**
+ * If state is promised, then it returns a component which integrates with React 18 Suspend feature automatically.
+ * Note, that React 18 Suspend support for data loading is still experimental,
+ * but it worked as per our experiments and testing.
+ */
 export function suspend<S, E>(state: State<S, E>) {
     const p = state.promise;
     return p && React.createElement(React.lazy(() => p as Promise<any>));
@@ -841,7 +862,6 @@ export function suspend<S, E>(state: State<S, E>) {
 const self = Symbol('self')
 
 enum ErrorId {
-    // TODO document
     StateUsedInDependencyList = 100,
 
     InitStateToValueFromState = 101,
@@ -895,15 +915,6 @@ const SelfMethodsID = Symbol('ProxyMarker');
 const RootPath: Path = [];
 
 type Writeable<T> = { -readonly [P in keyof T]: T[P] };
-
-// TODO document move
-export interface SetActionDescriptor {
-    // path to update / rerender,
-    // migth be not the same as the part of state methods
-    // for example, when a new index is added to array
-    path: Path,
-    actions?: Record<string | number, "I" | "U" | "D">
-}
 
 class Store implements Subscribable {
     // > 0 means active store, < 0 means destroyed
@@ -1182,8 +1193,6 @@ const UnusedValue = Symbol('UnusedValue');
 
 // use symbol to mark that a function has no effect anymore
 const IsUnmounted = Symbol('IsUnmounted');
-
-// TODO remove from the docs IE11 support
 
 class StateMethodsImpl<S, E> implements StateMethods<S, E>, Subscribable, Subscriber {
     private subscribers: Set<Subscriber> | undefined;
@@ -1942,21 +1951,53 @@ function createStore<S, E>(initial: SetInitialStateAction<S>): Store {
     return new Store(initialValue);
 }
 
+/**
+ * A type of an argument of the configure function
+ */
 export interface Configuration {
+    /**
+     * By default Hookstate intercepts calls to useEffect, useMemo and
+     * other functions where a dependency lists are used as arguments.
+     * This allows these hook functions to have Hookstate State objects
+     * in dependency lists and everything to work as 'expected'.
+     * 
+     * It is possible to opt-out from this mode, configuring the option to never.
+     * 
+     * Alternatively, it is possible to set it to intercept only during development,
+     * which will raise HOOKSTATE-100 error whenever Hookstate State is used in a dependency list of standard React hook function.
+     * This error can be fixed by replacing standard React hooks by Hookstate provided hooks,
+     * for example useEffect by useHookstateEffect
+     */
     interceptDependencyListsMode: 'always' | 'development' | 'never',
+    /**
+     * Defines is Hookstate is running in a development mode.
+     * Development mode enables additional checking and HMR support.
+     * By default, it detects if process.env.NODE_ENV is set to 'development'.
+     * It might not work in all environments and so expected to be provided by an application explicitly.
+     */
     isDevelopmentMode: boolean,
+    /**
+     * A callback which allows Hookstate to detect if a provided variable is a promise or not.
+     * This allows to enable Hookstate working in Angular environment when Promises are wrapped by zone.js,
+     * which breaks standard promise resolution / detection convention.
+     */
     promiseDetector: (p: any) => boolean,
 }
 let configuration: Configuration & { hiddenInterceptDependencyListsModeDebug: boolean } = {
     interceptDependencyListsMode: 'always',
-    // TODO this does not always work, so it is better if it is set by the app explictly. Document this
     isDevelopmentMode: typeof process === 'object' &&
         typeof process.env === 'object' &&
         process.env.NODE_ENV === 'development',
     promiseDetector: (p) => Promise.resolve(p) === p,
     hiddenInterceptDependencyListsModeDebug: false
 }
-// TODO document
+
+/**
+ * Configures Hookstate behavior globally. This is for special cases only, when default
+ * heuristics fail to work in a specific environment.
+ * 
+ * @param config 
+ */
 export function configure(config: Partial<Configuration>) {
     configuration = {
         interceptDependencyListsMode: config.interceptDependencyListsMode ?? configuration.interceptDependencyListsMode,
@@ -2003,7 +2044,6 @@ function reconnectDependencies(deps?: React.DependencyList, fromIntercept?: bool
             let state = (i as any)[self] as StateMethodsImpl<StateValueAtPath, {}> | undefined
             if (state) {
                 if (fromIntercept && configuration.hiddenInterceptDependencyListsModeDebug) {
-                    // TODO document this exception
                     throw new StateInvalidUsageError(state.path, ErrorId.StateUsedInDependencyList)
                 }
                 state.reconnect()

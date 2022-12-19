@@ -6,6 +6,24 @@ sidebar_label: Exceptions catalog
 
 import { PreviewSample } from '../src/PreviewSample'
 
+## HOOKSTATE-100
+
+Happens when 
+- a Hookstate State object is used in a dependency list AND
+- Hookstate is configured (via a configure function) to intercept and assert on standard Reach hooks with dependency lists only in development mode (by default, it is configured to automatically intercept always and so, this exception should not happen in the default configuration)
+
+```tsx
+const state1 = useHookstate(...)
+useEffect(() => {...}, [state1]) // <== Error in development mode!
+```
+
+To fix it, use the Hookstate provided hook functions instead:
+
+```tsx
+const state1 = useHookstate(...)
+useHookstateEffect(() => {...}, [state1]) // <== OK
+```
+
 ## HOOKSTATE-101
 
 Happens when new state is created with an initial value, which is a value of another state.

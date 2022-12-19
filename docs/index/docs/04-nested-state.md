@@ -29,7 +29,7 @@ we append new element to the state of tasks, using the `merge` method: `state.me
 ## `nested` state method
 
 You may have noticed that a state object mixes properties from the state value object (eg. `name` property from
-`taskState` state) and state methods (eg. `merge` property from [StateMethods](typedoc-hookstate-core#interfacesstatemethodsmd) interface). It is very likely that names of properties from your state objects will not collide with names of state methods.
+`taskState` state) and state methods (eg. `merge` property from [State](typedoc-hookstate-core#interfacesstatemethodsmd) interface). It is very likely that names of properties from your state objects will not collide with names of state methods.
 In other words, your objects are unlikely to have properties named, like `merge`, `set`, `get`, etc.
 However, it is more likely your objects may have properties with names like `value` or `error`, which also
 exist in state methods.
@@ -106,7 +106,7 @@ New state value can be also a function, which returns new value and accepts the 
 state.set(p => ({ a: p.a + 1, b: p.b - 1 }))
 ```
 
-Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) in the API reference.
+Learn more about [State.set](typedoc-hookstate-core.md#set) in the API reference.
 
 ### Getting names of existing properties
 
@@ -122,7 +122,7 @@ const state = useHookstate({ a: 1, b: 2 })
 const keys = state.keys // will be ['a', 'b'] for the above example
 ```
 
-Learn more about [StateMethods.keys](typedoc-hookstate-core.md#readonly-keys) in the API reference.
+Learn more about [State.keys](typedoc-hookstate-core.md#readonly-keys) in the API reference.
 
 ### Updating existing property
 
@@ -150,13 +150,13 @@ There are alternative, less efficient methods, resulting in the same mutation an
 state.set(p => ({ ...p, a: p.a + 1 }))
 ```
 
-The following sets only the property `a` but uses the current property value via the [StateMethods.value](typedoc-hookstate-core.md#readonly-value), which marks the property `a` as used by a component even if it was not used during the last rendering. In other words using nested property state in rendering or in action dispatch
+The following sets only the property `a` but uses the current property value via the [State.value](typedoc-hookstate-core.md#readonly-value), which marks the property `a` as used by a component even if it was not used during the last rendering. In other words using nested property state in rendering or in action dispatch
 has the same effect: a component is rerendered on property update.
 ```tsx
 state['a'].set(state.a.value + 1) // increments value of property a
 ```
 
-Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) and [StateMethods.merge](typedoc-hookstate-core.md#merge) in the API reference.
+Learn more about [State.set](typedoc-hookstate-core.md#set) and [State.merge](typedoc-hookstate-core.md#merge) in the API reference.
 
 ### Adding a new property
 
@@ -175,7 +175,7 @@ state['b'].set(2)
 state.merge({ b: 2 })
 ```
 
-Notice the `state` object has got **any** property defined (it is not the case in IE11),
+Notice the `state` object has got **any** property defined,
 although not every property might pass Typescript compiler check.
 We accessed non existing property `b` and set it's state.
 It represents the fact the state of `undefined` property is actually a defined state object,
@@ -191,9 +191,7 @@ as it can be potentially less efficient than the above recommended methods:
 state.set(p => ({ ...p, b: 2 }))
 ```
 
-But this is the only available method for IE11.
-
-Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) and [StateMethods.merge](typedoc-hookstate-core.md#merge) in the API reference.
+Learn more about [State.set](typedoc-hookstate-core.md#set) and [State.merge](typedoc-hookstate-core.md#merge) in the API reference.
 
 ### Deleting an existing property
 
@@ -225,7 +223,7 @@ state.set(p => {
 })
 ```
 
-Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) and [StateMethods.merge](typedoc-hookstate-core.md#merge) in the API reference.
+Learn more about [State.set](typedoc-hookstate-core.md#set) and [State.merge](typedoc-hookstate-core.md#merge) in the API reference.
 
 ### Swapping two properties
 
@@ -253,11 +251,11 @@ state.set(p => {
 })
 ```
 
-Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) and [StateMethods.merge](typedoc-hookstate-core.md#merge) in the API reference.
+Learn more about [State.set](typedoc-hookstate-core.md#set) and [State.merge](typedoc-hookstate-core.md#merge) in the API reference.
 
 ### Partial updates and deletions
 
-You may have noticed the usage of [StateMethods.merge](typedoc-hookstate-core.md#merge) above. This does a partial update to the state and can insert, update and delete properties all in one call:
+You may have noticed the usage of [State.merge](typedoc-hookstate-core.md#merge) above. This does a partial update to the state and can insert, update and delete properties all in one call:
 
 ```tsx
 const state = useHookstate<Record<string, number>>({
@@ -271,7 +269,7 @@ state.merge({
 }) // state value will be: { propertyToUpdate: 2, propertyToAdd: 1 }
 ```
 
-Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) and [StateMethods.merge](typedoc-hookstate-core.md#merge) in the API reference.
+Learn more about [State.set](typedoc-hookstate-core.md#set) and [State.merge](typedoc-hookstate-core.md#merge) in the API reference.
 
 ## Advanced mutations for an array state
 
@@ -295,7 +293,7 @@ New state value can be also a function, which returns new value taking the previ
 state.set(p => [p[0] + 1, p[1] - 1])
 ```
 
-Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) in the API reference.
+Learn more about [State.set](typedoc-hookstate-core.md#set) in the API reference.
 
 ### Getting indexes of existing elements
 
@@ -311,7 +309,7 @@ const state = useHookstate([1, 2])
 const keys = state.keys // will be [0, 1] for the above example
 ```
 
-Learn more about [StateMethods.keys](typedoc-hookstate-core.md#keys) in the API reference.
+Learn more about [State.keys](typedoc-hookstate-core.md#keys) in the API reference.
 
 ### Updating existing element
 
@@ -337,14 +335,14 @@ There are alternative less efficient methods resulting in the same mutation and 
 state.set(p => ([p[0] + 1].concat(p.slice(1))))
 ```
 
-The following sets only property `0` but uses the current property value via the [StateMethods.value](typedoc-hookstate-core.md#value), which marks the property `0` as used by a component even if it was not used during the last rendering. In other words using nested property state in rendering or in action dispatch
+The following sets only property `0` but uses the current property value via the [State.value](typedoc-hookstate-core.md#value), which marks the property `0` as used by a component even if it was not used during the last rendering. In other words using nested property state in rendering or in action dispatch
 has got the same effect: a component is rerendered on property update.
 
 ```tsx
 state[0].set(state[0].value + 1) // increments value of an element at 0
 ```
 
-Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) and [StateMethods.merge](typedoc-hookstate-core.md#merge) in the API reference.
+Learn more about [State.set](typedoc-hookstate-core.md#set) and [State.merge](typedoc-hookstate-core.md#merge) in the API reference.
 
 ### Appending a new element
 
@@ -361,7 +359,7 @@ state[state.length].set(2000)
 state.merge([2000])
 ```
 
-Notice the `state` object has got **any** index defined (it is not the case in IE11).
+Notice the `state` object has got **any** index defined.
 It allows to extend array state using the same method as for updating of an existing element.
 
 #### Avoid the following
@@ -372,9 +370,7 @@ as it can be potentially less efficient than the above recommended methods:
 state.set(p => p.concat([2000]))
 ```
 
-But this is the only method available for IE11.
-
-Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) and [StateMethods.merge](typedoc-hookstate-core.md#merge) in the API reference.
+Learn more about [State.set](typedoc-hookstate-core.md#set) and [State.merge](typedoc-hookstate-core.md#merge) in the API reference.
 
 ### Deleting an existing element
 
@@ -404,7 +400,7 @@ state.set(p => {
 })
 ```
 
-Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) and [StateMethods.merge](typedoc-hookstate-core.md#merge) in the API reference.
+Learn more about [State.set](typedoc-hookstate-core.md#set) and [State.merge](typedoc-hookstate-core.md#merge) in the API reference.
 
 ### Concatenating with another array
 
@@ -419,7 +415,7 @@ The recommended method to append another array is the following:
 state.merge([3000, 4000])
 ```
 
-Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) and [StateMethods.merge](typedoc-hookstate-core.md#merge) in the API reference.
+Learn more about [State.set](typedoc-hookstate-core.md#set) and [State.merge](typedoc-hookstate-core.md#merge) in the API reference.
 
 ### Swapping two elements
 
@@ -447,7 +443,7 @@ state.set(p => {
 })
 ```
 
-Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) and [StateMethods.merge](typedoc-hookstate-core.md#merge) in the API reference.
+Learn more about [State.set](typedoc-hookstate-core.md#set) and [State.merge](typedoc-hookstate-core.md#merge) in the API reference.
 
 ### Splicing elements
 
@@ -463,7 +459,7 @@ state.set(p => {
 
 ### Partial updates and deletions
 
-You may have noticed the usage of [StateMethods.merge](typedoc-hookstate-core.md#merge) above. This does a partial update to the state and can insert, update and delete array elements all in one call:
+You may have noticed the usage of [State.merge](typedoc-hookstate-core.md#merge) above. This does a partial update to the state and can insert, update and delete array elements all in one call:
 
 ```tsx
 const state = useHookstate([1000, 2000, 3000])
@@ -474,7 +470,7 @@ state.merge({
 }) // state value will be: [2, 3000, 4000]
 ```
 
-Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) and [StateMethods.merge](typedoc-hookstate-core.md#merge) in the API reference.
+Learn more about [State.set](typedoc-hookstate-core.md#set) and [State.merge](typedoc-hookstate-core.md#merge) in the API reference.
 
 ## Advanced mutations for a string state 
 
@@ -493,7 +489,7 @@ state.merge(" World") // state.value will be "Hello World"
 state.set(p => p + " World")
 ```
 
-Learn more about [StateMethods.set](typedoc-hookstate-core.md#set) and [StateMethods.merge](typedoc-hookstate-core.md#merge) in the API reference.
+Learn more about [State.set](typedoc-hookstate-core.md#set) and [State.merge](typedoc-hookstate-core.md#merge) in the API reference.
 
 ## Limitations for state values
 

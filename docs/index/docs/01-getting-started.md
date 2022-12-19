@@ -44,13 +44,3 @@ Hookstate consists of the core package `@hookstate/core` and optional plugins `@
 ## Browser support
 
 Hookstate supports all recent browsers and works where React works, including mobile applications and server side rendering.
-
-### IE11 support
-
-The library supports IE11 with a few exceptions for mutations of nested state, which has alternative working methods.
-The [nested state](./nested-state) section notes these exceptions.
-
-If you need to polyfill, for example for IE11, you need to make sure the following is supported by the target environment. You may checkout the existing [IE11 demo project](https://github.com/avkonst/hookstate/tree/master/docs/demos/ie11).
-- ES5, `Map` and `Set` (All are available a long time ago, including for IE11)
-- `Symbol` (You likely already have got one from the [`react-app-polyfill`](https://www.npmjs.com/package/react-app-polyfill). If you do not import [`react-app-polyfill`](https://www.npmjs.com/package/react-app-polyfill), you can get the standalone [`es6-symbol`](https://www.npmjs.com/package/es6-symbol))
-- `Number.isInteger` (Polyfill is available from [`core-js/features/number/is-integer`](https://www.npmjs.com/package/core-js))
