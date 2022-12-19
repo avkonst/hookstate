@@ -29,7 +29,7 @@ export interface Counted {
 // We implement all callbacks for the demonstration purposes,
 // but you can omit any of the callbacks you do not need to watch for.
 //
-// `extends Identifiable` for generic parameter `E` is optional depending on a plugin you write.
+// `extends Identifiable` for generic parameter `E` is optional depending on an extension you write.
 // It tells the Typescript that it can be
 // used only together with the Identifiable extension.
 //
@@ -69,7 +69,7 @@ export function countedExtension<S, E extends Identifiable>(): ExtensionFactory<
             console.log('onInit called:', JSON.stringify(rootState.value),
                 // so, at this point we can use the extension methods from the dependent extensions
                 rootState.identifier)
-            
+
             // an extension can inspect what other extension methods are added to the state
             // and opt-in to use it if necessary. For example,
             // `localstored` extension uses `serializable` extension if it is available
@@ -93,7 +93,7 @@ export function countedExtension<S, E extends Identifiable>(): ExtensionFactory<
                 // you can use it too to find out what properties of an object
                 // have been added, deleted or updated.
                 JSON.stringify(actionDescriptor))
-            
+
             // now implement the counting for our `counter` extension property
             if (!lastContext?.skipCounting) {
                 counter.set(p => p + 1)
@@ -108,13 +108,13 @@ export function countedExtension<S, E extends Identifiable>(): ExtensionFactory<
 
 // Now let's have a look how the extension can be used
 
-export const ExampleComponent = () => {    
+export const ExampleComponent = () => {
     const state = useHookstate([{ name: 'First Task' }],
         // we prepend identifiable extension
         // as it is required by our countedExtension,
         // otherwise, it will be caught by Typescript as an error
         extend(identifiable('todolist'), countedExtension()));
-    
+
     return <>
         <CounterView state={state} />
         {state.map((taskState, taskIndex) =>

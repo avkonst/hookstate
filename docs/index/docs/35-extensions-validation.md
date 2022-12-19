@@ -6,7 +6,7 @@ sidebar_label: Validated state
 
 import { PreviewSample } from '../src/PreviewSample'
 
-The `Validation` plugin allows to validate a state.
+The `Validation` extension allows to validate a state.
 
 <PreviewSample example="plugin-validation" />
 

@@ -283,7 +283,7 @@ export type State<S, E = {}> = __State<S, E> & StateMethods<S, E> & E & (
 );
 
 /**
- * For plugin developers only.
+ * For extension developers only.
  * Type alias to highlight the places where we are dealing with root state value.
  *
  * @hidden
@@ -291,7 +291,7 @@ export type State<S, E = {}> = __State<S, E> & StateMethods<S, E> & E & (
  */
 export type StateValueAtRoot = any; //tslint:disable-line: no-any
 /**
- * For plugin developers only.
+ * For extension developers only.
  * Type alias to highlight the places where we are dealing with nested state value.
  *
  * @hidden
@@ -299,7 +299,7 @@ export type StateValueAtRoot = any; //tslint:disable-line: no-any
  */
 export type StateValueAtPath = any; //tslint:disable-line: no-any
 /**
- * For plugin developers only.
+ * For extension developers only.
  * Type alias to highlight the places where we are dealing with state error.
  *
  * @hidden
@@ -308,7 +308,7 @@ export type StateValueAtPath = any; //tslint:disable-line: no-any
 export type StateErrorAtRoot = any; //tslint:disable-line: no-any
 
 /**
- * For plugin developers only.
+ * For extension developers only.
  * Type alias to highlight the places where we are dealing with unknown state extension type.
  *
  * @hidden
@@ -317,7 +317,7 @@ export type StateErrorAtRoot = any; //tslint:disable-line: no-any
 export type StateExtensionUnknown = any; //tslint:disable-line: no-any
 
 /**
- * For plugin developers only.
+ * For extension developers only.
  * An additional descriptor of an action mutation action applied
  * 
  * @hidden
@@ -332,8 +332,8 @@ export interface SetActionDescriptor {
 }
 
 /**
- * For plugin developers only.
- * Set of callbacks, a plugin may subscribe to.
+ * For extension developers only.
+ * Set of callbacks, an extension may subscribe to.
  * 
  * [Learn more...](https://hookstate.js.org/docs/writing-extension)
  */
