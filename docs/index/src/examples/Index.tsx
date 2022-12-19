@@ -6,7 +6,6 @@ import { ExampleComponent as ExampleLocalPrimitive } from './local-getting-start
 import { ExampleComponent as ExampleAsyncState } from './local-async-state';
 import { ExampleComponent as ExampleLocalComplexFromDocumentation } from './local-complex-from-documentation';
 import { ExampleComponent as ExampleLocalComplexTreeStructure } from './local-complex-tree-structure';
-import { ExampleComponent as ExamplePerformanceLargeTable } from './performance-demo-large-table';
 import { ExampleComponent as ExamplePerformanceLargeForm } from './performance-demo-large-form';
 import { ExampleComponent as ExampleGlobalMultipleConsumersStateFragment } from './global-multiple-consumers-statefragment';
 
@@ -31,7 +30,6 @@ ExamplesRepo.set('local-getting-started', <ExampleLocalPrimitive />);
 ExamplesRepo.set('local-complex-from-documentation', <ExampleLocalComplexFromDocumentation />);
 ExamplesRepo.set('local-async-state', <ExampleAsyncState />);
 ExamplesRepo.set('local-complex-tree-structure', <ExampleLocalComplexTreeStructure />);
-ExamplesRepo.set('performance-demo-large-table', <ExamplePerformanceLargeTable />);
 ExamplesRepo.set('performance-demo-large-form', <ExamplePerformanceLargeForm />);
 ExamplesRepo.set('global-multiple-consumers-statefragment', <ExampleGlobalMultipleConsumersStateFragment />);
 
