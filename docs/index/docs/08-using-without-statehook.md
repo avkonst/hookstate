@@ -1,7 +1,7 @@
 ---
 id: state-without-usestate
-title: Using state without state hook
-sidebar_label: Using state without hook
+title: Using state without useHookstate hook
+sidebar_label: Using state without useHookstate
 ---
 
 import { PreviewSample } from '../src/PreviewSample'
