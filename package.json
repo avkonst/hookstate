@@ -14,8 +14,8 @@
     },
     "homepage": "https://github.com/avkonst/hookstate",
     "engines": {
-        "node": ">=14",
-        "pnpm": ">=6.32.2"
+        "node": ">=16",
+        "pnpm": ">=7.18.2"
     },
     "scripts": {
         "build": "nx run-many --target=build --all",
