@@ -1,5 +1,5 @@
 import React from 'react';
-import { State, ExtensionFactory, useHookstate, SetStateAction, InferStateValueType, hookstate, extend, __State, InferStateExtensionType } from '@hookstate/core';
+import { State, ExtensionFactory, useHookstate, SetStateAction, InferStateValueType, hookstate, extend } from '@hookstate/core';
 import { Identifiable, identifiable } from '@hookstate/identifiable';
 
 // An example of state extension method and property,

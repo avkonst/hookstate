@@ -232,7 +232,7 @@ export interface StateMethods<S, E> {
  * to a non-strict comparison of T[key] extends U. Setting B to true performs
  * a strict type comparison of T[key] extends U & U extends T[key]
  */
-export type __KeysOfType<T, U, B = false> = {
+export type InferKeysOfType<T, U, B = false> = {
     [P in keyof T]: B extends true
     ? T[P] extends U
     ? (U extends T[P]
@@ -246,7 +246,19 @@ export type __KeysOfType<T, U, B = false> = {
 
 // type PickByType<T, U, B = false> = Pick<T, KeysOfType<T, U, B>>;
 
+/**
+ * A symbol which is used for type inference marking.
+ * 
+ * @hidden
+ * @ignore
+ */
 export const __state = Symbol('__state')
+/**
+ * An interface which is used for type inference marking.
+ * 
+ * @hidden
+ * @ignore
+ */
 export interface __State<S, E> {
     [__state]: [Immutable<S>, E]
 }
@@ -278,7 +290,7 @@ export type State<S, E = {}> = __State<S, E> & StateMethods<S, E> & E & (
     S extends ReadonlyArray<(infer U)> ? ReadonlyArray<State<U, E>> :
     S extends object ? Omit<
         { readonly [K in keyof Required<S>]: State<S[K], E>; },
-        keyof StateMethods<S, E> | __KeysOfType<S, Function> | keyof E
+        keyof StateMethods<S, E> | InferKeysOfType<S, Function> | keyof E
     > : {}
 );
 
@@ -369,7 +381,7 @@ export function hookstate<S, E = {}>(
  *
  * When you the state is not needed anymore,
  * it should be destroyed by calling
- * `destroyHookstate()` function.
+ * `destroy()` function.
  * This is necessary for some extensions,
  * which allocate native resources,
  * like subscription to databases, broadcast channels, etc.
@@ -410,7 +422,7 @@ export function hookstate<S, E extends {} = {}>(
 /**
  * A method to destroy a global state and resources allocated by the extensions
  */
-export function destroyHookstate<S, E>(state: __State<S, E>) {
+export function destroy<S, E>(state: __State<S, E>) {
     (state[self] as StateMethodsImpl<S, E>).deactivate()
 }
 
@@ -2098,7 +2110,7 @@ export function useHookstateMemo<T>(factory: () => T, deps: React.DependencyList
     reconnectDependencies(deps)
     return useMemoOrigin(factory, deps)
 }
-export function useMemoIntercept<T>(factory: () => T, deps: React.DependencyList | undefined): T {
+function useMemoIntercept<T>(factory: () => T, deps: React.DependencyList | undefined): T {
     reconnectDependencies(deps, true)
     return useMemoOrigin(factory, deps)
 }

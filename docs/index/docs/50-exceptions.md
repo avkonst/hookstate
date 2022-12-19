@@ -106,7 +106,7 @@ Happens when state is set after destroy. Typically it may happen when a componen
 
 ```tsx
 const state = hookstate(...)
-destroyHookstate(state)
+destroy(state)
 state.set(...) // <== Error!
 ```
 

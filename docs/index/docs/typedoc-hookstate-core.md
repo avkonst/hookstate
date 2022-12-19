@@ -12,11 +12,9 @@ title: API @hookstate/core
 - [Configuration](#interfacesconfigurationmd)
 - [Extension](#interfacesextensionmd)
 - [StateMethods](#interfacesstatemethodsmd)
-- [\_\_State](#interfaces_statemd)
 
 ### Type Aliases
 
-- [DeepReturnType](#deepreturntype)
 - [ExtensionFactory](#extensionfactory)
 - [Immutable](#immutable)
 - [ImmutableArray](#immutablearray)
@@ -24,6 +22,7 @@ title: API @hookstate/core
 - [ImmutableObject](#immutableobject)
 - [ImmutablePrimitive](#immutableprimitive)
 - [ImmutableSet](#immutableset)
+- [InferReturnType](#inferreturntype)
 - [InferStateExtensionType](#inferstateextensiontype)
 - [InferStateKeysType](#inferstatekeystype)
 - [InferStateOrnullType](#inferstateornulltype)
@@ -37,14 +36,13 @@ title: API @hookstate/core
 
 ### Variables
 
-- [\_\_state](#__state)
 - [none](#none)
 
 ### Functions
 
 - [StateFragment](#statefragment)
 - [configure](#configure)
-- [destroyHookstate](#destroyhookstate)
+- [destroy](#destroy)
 - [extend](#extend)
 - [hookstate](#hookstate)
 - [hookstateMemo](#hookstatememo)
@@ -58,29 +56,12 @@ title: API @hookstate/core
 - [useHookstateInsertionEffect](#usehookstateinsertioneffect)
 - [useHookstateLayoutEffect](#usehookstatelayouteffect)
 - [useHookstateMemo](#usehookstatememo)
-- [useMemoIntercept](#usememointercept)
 
 ## Type Aliases
 
-### DeepReturnType
-
-Ƭ **DeepReturnType**<`V`\>: `V` extends (...`args`: `any`) => infer R ? [`DeepReturnType`](#deepreturntype)<`R`\> : `V`
-
-#### Type parameters
-
-| Name |
-| :------ |
-| `V` |
-
-#### Defined in
-
-[index.ts:266](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L266)
-
-___
-
 ### ExtensionFactory
 
-Ƭ **ExtensionFactory**<`S`, `I`, `E`\>: (`typemarker?`: [`__State`](#interfaces_statemd)<`S`, `I`\>) => [`Extension`](#interfacesextensionmd)<`S`, `I`, `E`\>
+Ƭ **ExtensionFactory**<`S`, `I`, `E`\>: (`typemarker?`: `__State`<`S`, `I`\>) => [`Extension`](#interfacesextensionmd)<`S`, `I`, `E`\>
 
 #### Type parameters
 
@@ -98,7 +79,7 @@ ___
 
 | Name | Type |
 | :------ | :------ |
-| `typemarker?` | [`__State`](#interfaces_statemd)<`S`, `I`\> |
+| `typemarker?` | `__State`<`S`, `I`\> |
 
 ##### Returns
 
@@ -106,7 +87,7 @@ ___
 
 #### Defined in
 
-[index.ts:359](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L359)
+[index.ts:371](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L371)
 
 ___
 
@@ -203,9 +184,25 @@ ___
 
 ___
 
+### InferReturnType
+
+Ƭ **InferReturnType**<`V`\>: `V` extends (...`args`: `any`) => infer R ? [`InferReturnType`](#inferreturntype)<`R`\> : `V`
+
+#### Type parameters
+
+| Name |
+| :------ |
+| `V` |
+
+#### Defined in
+
+[index.ts:278](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L278)
+
+___
+
 ### InferStateExtensionType
 
-Ƭ **InferStateExtensionType**<`V`\>: [`DeepReturnType`](#deepreturntype)<`V`\> extends [`__State`](#interfaces_statemd)<infer \_, infer E\> ? `E` : [`DeepReturnType`](#deepreturntype)<`V`\> extends [`Extension`](#interfacesextensionmd)<infer \_, infer \_, infer E\> ? `E` : `V`
+Ƭ **InferStateExtensionType**<`V`\>: [`InferReturnType`](#inferreturntype)<`V`\> extends `__State`<infer \_, infer E\> ? `E` : [`InferReturnType`](#inferreturntype)<`V`\> extends [`Extension`](#interfacesextensionmd)<infer \_, infer \_, infer E\> ? `E` : `V`
 
 A routine which allows to extract extension methods / properties type of a state.
 Useful for extension developers.
@@ -218,7 +215,7 @@ Useful for extension developers.
 
 #### Defined in
 
-[index.ts:262](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L262)
+[index.ts:274](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L274)
 
 ___
 
@@ -269,7 +266,7 @@ ___
 
 ### InferStateValueType
 
-Ƭ **InferStateValueType**<`V`\>: [`DeepReturnType`](#deepreturntype)<`V`\> extends [`__State`](#interfaces_statemd)<infer S, infer \_\> ? `S` : `V`
+Ƭ **InferStateValueType**<`V`\>: [`InferReturnType`](#inferreturntype)<`V`\> extends `__State`<infer S, infer \_\> ? `S` : `V`
 
 A routine which allows to extract value type of a state. Useful for extension developers.
 
@@ -281,7 +278,7 @@ A routine which allows to extract value type of a state. Useful for extension de
 
 #### Defined in
 
-[index.ts:257](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L257)
+[index.ts:269](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L269)
 
 ___
 
@@ -377,7 +374,7 @@ ___
 
 ### State
 
-Ƭ **State**<`S`, `E`\>: [`__State`](#interfaces_statemd)<`S`, `E`\> & [`StateMethods`](#interfacesstatemethodsmd)<`S`, `E`\> & `E` & `S` extends `ReadonlyArray`<infer U\> ? `ReadonlyArray`<[`State`](#state)<`U`, `E`\>\> : `S` extends `object` ? `Omit`<{ readonly [K in keyof Required<S\>]: State<S[K], E\> }, keyof [`StateMethods`](#interfacesstatemethodsmd)<`S`, `E`\> \| [`__KeysOfType`](#__keysoftype)<`S`, `Function`\> \| keyof `E`\> : {}
+Ƭ **State**<`S`, `E`\>: `__State`<`S`, `E`\> & [`StateMethods`](#interfacesstatemethodsmd)<`S`, `E`\> & `E` & `S` extends `ReadonlyArray`<infer U\> ? `ReadonlyArray`<[`State`](#state)<`U`, `E`\>\> : `S` extends `object` ? `Omit`<{ readonly [K in keyof Required<S\>]: State<S[K], E\> }, keyof [`StateMethods`](#interfacesstatemethodsmd)<`S`, `E`\> \| [`__KeysOfType`](#__keysoftype)<`S`, `Function`\> \| keyof `E`\> : {}
 
 Type of a result of [hookstate](#hookstate) and [useHookstate](#useHookstate) functions
 
@@ -398,7 +395,7 @@ S Type of a value of a state
 
 #### Defined in
 
-[index.ts:277](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L277)
+[index.ts:289](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L289)
 
 ___
 
@@ -423,16 +420,6 @@ a strict type comparison of T[key] extends U & U extends T[key]
 [index.ts:235](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L235)
 
 ## Variables
-
-### \_\_state
-
-• `Const` **\_\_state**: typeof [`__state`](#__state)
-
-#### Defined in
-
-[index.ts:249](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L249)
-
-___
 
 ### none
 
@@ -467,7 +454,7 @@ from an object calling [State.set](#set) or [State.merge](#merge).
 | `props` | `Object` |
 | `props.children` | (`state`: [`State`](#state)<`S`, `E`\>) => `ReactElement`<`any`, `string` \| `JSXElementConstructor`<`any`\>\> |
 | `props.extension` | [`ExtensionFactory`](#extensionfactory)<`S`, `E`, `any`\> |
-| `props.state` | [`__State`](#interfaces_statemd)<`S`, `E`\> |
+| `props.state` | `__State`<`S`, `E`\> |
 | `props.suspend?` | `boolean` |
 
 #### Returns
@@ -499,7 +486,7 @@ S Type of a value of a state
 | :------ | :------ |
 | `props` | `Object` |
 | `props.children` | (`state`: [`State`](#state)<`S`, `E`\>) => `ReactElement`<`any`, `string` \| `JSXElementConstructor`<`any`\>\> |
-| `props.state` | [`__State`](#interfaces_statemd)<`S`, `E`\> |
+| `props.state` | `__State`<`S`, `E`\> |
 | `props.suspend?` | `boolean` |
 
 #### Returns
@@ -559,9 +546,9 @@ heuristics fail to work in a specific environment.
 
 ___
 
-### destroyHookstate
+### destroy
 
-▸ **destroyHookstate**<`S`, `E`\>(`state`): `void`
+▸ **destroy**<`S`, `E`\>(`state`): `void`
 
 A method to destroy a global state and resources allocated by the extensions
 
@@ -576,7 +563,7 @@ A method to destroy a global state and resources allocated by the extensions
 
 | Name | Type |
 | :------ | :------ |
-| `state` | [`__State`](#interfaces_statemd)<`S`, `E`\> |
+| `state` | `__State`<`S`, `E`\> |
 
 #### Returns
 
@@ -634,7 +621,7 @@ ___
 
 | Name | Type |
 | :------ | :------ |
-| `source` | [`__State`](#interfaces_statemd)<`S`, `E`\> |
+| `source` | `__State`<`S`, `E`\> |
 | `extension?` | [`ExtensionFactory`](#extensionfactory)<`S`, `E`, `any`\> |
 
 #### Returns
@@ -649,7 +636,7 @@ You can create as many global states as you need.
 
 When you the state is not needed anymore,
 it should be destroyed by calling
-`destroyHookstate()` function.
+`destroy()` function.
 This is necessary for some extensions,
 which allocate native resources,
 like subscription to databases, broadcast channels, etc.
@@ -818,7 +805,7 @@ Use `useHookstate(() => your_promise)` instead of `useHookstate(your_promise)`.
 
 | Name | Type |
 | :------ | :------ |
-| `source` | [`__State`](#interfaces_statemd)<`S`, `E`\> |
+| `source` | `__State`<`S`, `E`\> |
 | `extension` | [`ExtensionFactory`](#extensionfactory)<`S`, `E`, `any`\> |
 
 #### Returns
@@ -856,7 +843,7 @@ The same state can be used by multiple different components.
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
-| `source` | [`__State`](#interfaces_statemd)<`S`, `E`\> | a reference to the state to hook into    The `useHookstate` is a hook and should follow React's rules of hooks. |
+| `source` | `__State`<`S`, `E`\> | a reference to the state to hook into    The `useHookstate` is a hook and should follow React's rules of hooks. |
 
 #### Returns
 
@@ -1032,29 +1019,6 @@ ___
 
 `T`
 
-___
-
-### useMemoIntercept
-
-▸ **useMemoIntercept**<`T`\>(`factory`, `deps`): `T`
-
-#### Type parameters
-
-| Name |
-| :------ |
-| `T` |
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `factory` | () => `T` |
-| `deps` | `undefined` \| `DependencyList` |
-
-#### Returns
-
-`T`
-
 # Interfaces
 
 
@@ -1092,7 +1056,7 @@ for example useEffect by useHookstateEffect
 
 ##### Defined in
 
-[index.ts:1971](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L1971)
+[index.ts:1983](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L1983)
 
 ___
 
@@ -1107,7 +1071,7 @@ It might not work in all environments and so expected to be provided by an appli
 
 ##### Defined in
 
-[index.ts:1978](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L1978)
+[index.ts:1990](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L1990)
 
 ___
 
@@ -1135,15 +1099,15 @@ which breaks standard promise resolution / detection convention.
 
 ##### Defined in
 
-[index.ts:1984](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L1984)
+[index.ts:1996](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L1996)
 
 
 <a name="interfacesextensionmd"/>
 
 ## Interface: Extension<S, I, E\>
 
-For plugin developers only.
-Set of callbacks, a plugin may subscribe to.
+For extension developers only.
+Set of callbacks, an extension may subscribe to.
 
 [Learn more...](https://hookstate.js.org/docs/writing-extension)
 
@@ -1189,7 +1153,7 @@ Set of callbacks, a plugin may subscribe to.
 
 ##### Defined in
 
-[index.ts:341](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L341)
+[index.ts:353](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L353)
 
 ___
 
@@ -1213,7 +1177,7 @@ ___
 
 ##### Defined in
 
-[index.ts:356](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L356)
+[index.ts:368](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L368)
 
 ___
 
@@ -1238,7 +1202,7 @@ ___
 
 ##### Defined in
 
-[index.ts:347](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L347)
+[index.ts:359](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L359)
 
 ___
 
@@ -1264,7 +1228,7 @@ ___
 
 ##### Defined in
 
-[index.ts:354](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L354)
+[index.ts:366](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L366)
 
 ___
 
@@ -1290,7 +1254,7 @@ ___
 
 ##### Defined in
 
-[index.ts:353](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L353)
+[index.ts:365](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L365)
 
 ___
 
@@ -1316,7 +1280,7 @@ ___
 
 ##### Defined in
 
-[index.ts:355](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L355)
+[index.ts:367](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L367)
 
 
 <a name="interfacesstatemethodsmd"/>
@@ -1586,31 +1550,3 @@ Partial updates can be also done by walking the nested states and setting those.
 ##### Returns
 
 `void`
-
-
-<a name="interfaces_statemd"/>
-
-## Interface: \_\_State<S, E\>
-
-### Type parameters
-
-| Name |
-| :------ |
-| `S` |
-| `E` |
-
-### Table of contents
-
-#### Properties
-
-- [[\_\_\_state]](#[___state])
-
-### Properties
-
-#### [\_\_\_state]
-
-• **[\_\_\_state]**: [[`Immutable`](#immutable)<`S`\>, `E`]
-
-##### Defined in
-
-[index.ts:251](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L251)

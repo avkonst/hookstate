@@ -1,4 +1,4 @@
-import { useHookstate, hookstate, extend, InferStateValueType, ExtensionFactory, destroyHookstate } from '../';
+import { useHookstate, hookstate, extend, InferStateValueType, ExtensionFactory, destroy } from '../';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 
@@ -391,7 +391,7 @@ test('extension: common flow callbacks global state', async () => {
     expect(messages).toEqual([]);
     messages.splice(0, messages.length);
 
-    destroyHookstate(stateInf)
+    destroy(stateInf)
     expect(messages).toEqual(['onDestroy called, [{"f1":0,"f2":"str5"}]'])
     messages.splice(0, messages.length);
 
