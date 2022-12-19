@@ -42,4 +42,5 @@ Misleading State source switchover possible | State switchover is an error | Hoo
 State.batch | React native | State updates batching is now supported by React natively
 postpone | State.promise | It is possible to provide `then` callback for the asynchronous state.
 IE11 support | No IE11 support | Dropped legacy feature. 
+Devtools globally enabled | Devtools enabled per state | Devtools is an extension in Hookstate 4, and should be enabled on per State basis like other extensions.
  
