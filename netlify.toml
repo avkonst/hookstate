@@ -3,5 +3,5 @@
     NPM_FLAGS = "--version" # prevent Netlify npm install
 [build]
     publish = "docs/index/build"
-    command = "npm install -g pnpm@7.18.2 && pnpm i --store=node_modules/.pnpm-store --frozen-lockfile && pnpm nx build:docs core && pnpm nx build docs && pnpm nx build todolist"
+    command = "pnpm nx build:docs core && pnpm nx build docs && pnpm nx build todolist"
 #   ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF docs package.json pnpm-lock.yaml netlify.toml"
