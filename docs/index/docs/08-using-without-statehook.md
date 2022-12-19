@@ -1,5 +1,5 @@
 ---
-id: using-without-statehook
+id: state-without-usestate
 title: Using state without state hook
 sidebar_label: Using state without hook
 ---

@@ -9,6 +9,7 @@ module.exports = {
     someSidebar: {
         Introduction: [
             'getting-started',
+            'migrating-to-v4',
             'global-state',
             'local-state',
             'nested-state',
@@ -17,13 +18,10 @@ module.exports = {
             'asynchronous-state',
             'recursive-state',
             'exporting-state',
+            'state-with-non-json-objects',
             'state-with-useeffect',
-            // 'dynamic-states-store',
-            'using-without-statehook',
-            // 'using-with-memo',
-            // 'moving-from-redux-mobx',
+            'state-without-usestate',
             'server-side-rendering',
-            'migrating-to-v4'
         ],
         Performance: [
             'performance-intro',

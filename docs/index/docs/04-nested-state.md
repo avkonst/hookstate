@@ -491,9 +491,3 @@ state.set(p => p + " World")
 
 Learn more about [State.set](typedoc-hookstate-core.md#set) and [State.merge](typedoc-hookstate-core.md#merge) in the API reference.
 
-## Limitations for state values
-
-There are a few limitations for state values, which are typical for any state management library for JavaScript environment.
-
-* A state value should be a JS primitive, like string/number/etc., or `null`/`undefined` or a JS object/array containing other JS primitive properties, objects or arrays. In other words, state values with Maps, Sets, Dates will not work properly.
-* Cyclic and cross-references with the state value will not work properly.

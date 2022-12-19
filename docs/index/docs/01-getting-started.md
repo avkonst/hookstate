@@ -32,7 +32,9 @@ We know you will learn the Hookstate library API very quickly without reading mu
 - [useHookstate](typedoc-hookstate-core#usehookstate) can create a state automatically if it takes an initial value instead of a state created by [hookstate](typedoc-hookstate-core#hookstate). 
   - States created by [hookstate](typedoc-hookstate-core#hookstate) are [global states](/docs/global-state), created and destroyed by an application. 
   - States created by [useHookstate](typedoc-hookstate-core#usehookstate) are [local states](/docs/local-state), created and destroyed by React when a component is mounted / unmounted.
-- The initial provided state value becomes a mutable source of a state. It is expected to be mutated by only via Hookstate mechanisms, such as [State.set](typedoc-hookstate-core.md#set) and [State.merge](typedoc-hookstate-core.md#merge) methods.
+- The initial provided state value becomes a mutable source of a state.
+  - It is expected to be mutated by only via Hookstate mechanisms, such as [State.set](typedoc-hookstate-core.md#set) and [State.merge](typedoc-hookstate-core.md#merge) methods.
+  - The value (and its children/grandchildren properties) can be of any type. However, instances of Records/Objects are recommended instead of Maps. Also, cyclic and cross-references within the state value will not work properly.
 - States returned by [hookstate](typedoc-hookstate-core#hookstate) and [useHookstate](typedoc-hookstate-core#usehookstate) functions allow drilling down to [nested children properties](/docs/nested-state), which are also State objects and have the same API as [local](/docs/local-state) and [global](/docs/global-state) states.
 - State objects can be passed to components as properties. This effectively makes components' properties "writable".
 - A state can be uplifted to a parent component, if the same state (for example, a form state) needs to be accessed by multiple children components. In contrast to other state management libraries, state uplifting does NOT cause performance downgrade, thanks to unique Hookstate feature, called [scoped state](/docs/scoped-state).
