@@ -10,34 +10,29 @@ title: API @hookstate/core
 ### Interfaces
 
 - [Configuration](#interfacesconfigurationmd)
-- [DevToolsExtensions](#interfacesdevtoolsextensionsmd)
 - [Extension](#interfacesextensionmd)
-- [Plugin](#interfacespluginmd)
-- [PluginCallbacks](#interfacesplugincallbacksmd)
-- [PluginCallbacksOnDestroyArgument](#interfacesplugincallbacksondestroyargumentmd)
-- [PluginCallbacksOnSetArgument](#interfacesplugincallbacksonsetargumentmd)
-- [PluginStateControl](#interfacespluginstatecontrolmd)
-- [SetActionDescriptor](#interfacessetactiondescriptormd)
 - [StateMethods](#interfacesstatemethodsmd)
-- [StateMethodsDestroy](#interfacesstatemethodsdestroymd)
 - [\_\_State](#interfaces_statemd)
 
 ### Type Aliases
 
 - [DeepReturnType](#deepreturntype)
 - [ExtensionFactory](#extensionfactory)
+- [Immutable](#immutable)
+- [ImmutableArray](#immutablearray)
+- [ImmutableMap](#immutablemap)
+- [ImmutableObject](#immutableobject)
+- [ImmutablePrimitive](#immutableprimitive)
+- [ImmutableSet](#immutableset)
 - [InferStateExtensionType](#inferstateextensiontype)
 - [InferStateKeysType](#inferstatekeystype)
 - [InferStateOrnullType](#inferstateornulltype)
 - [InferStateValueType](#inferstatevaluetype)
-- [InferredStateKeysType](#inferredstatekeystype)
-- [InferredStateOrnullType](#inferredstateornulltype)
 - [Path](#path)
 - [SetInitialStateAction](#setinitialstateaction)
 - [SetPartialStateAction](#setpartialstateaction)
 - [SetStateAction](#setstateaction)
 - [State](#state)
-- [StateExtensionUnknown](#stateextensionunknown)
 - [\_\_KeysOfType](#__keysoftype)
 
 ### Variables
@@ -47,15 +42,14 @@ title: API @hookstate/core
 
 ### Functions
 
-- [DevTools](#devtools)
-- [Downgraded](#downgraded)
 - [StateFragment](#statefragment)
 - [configure](#configure)
-- [createHookstate](#createhookstate)
-- [createState](#createstate)
+- [destroyHookstate](#destroyhookstate)
 - [extend](#extend)
 - [hookstate](#hookstate)
 - [hookstateMemo](#hookstatememo)
+- [isHookstate](#ishookstate)
+- [isHookstateValue](#ishookstatevalue)
 - [suspend](#suspend)
 - [useHookstate](#usehookstate)
 - [useHookstateCallback](#usehookstatecallback)
@@ -65,7 +59,6 @@ title: API @hookstate/core
 - [useHookstateLayoutEffect](#usehookstatelayouteffect)
 - [useHookstateMemo](#usehookstatememo)
 - [useMemoIntercept](#usememointercept)
-- [useState](#usestate)
 
 ## Type Aliases
 
@@ -81,7 +74,7 @@ title: API @hookstate/core
 
 #### Defined in
 
-[index.ts:320](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L320)
+[index.ts:266](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L266)
 
 ___
 
@@ -113,13 +106,109 @@ ___
 
 #### Defined in
 
-[index.ts:454](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L454)
+[index.ts:359](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L359)
+
+___
+
+### Immutable
+
+Ƭ **Immutable**<`T`\>: `T` extends [`ImmutablePrimitive`](#immutableprimitive) ? `T` : `T` extends infer U[] ? [`ImmutableArray`](#immutablearray)<`U`\> : `T` extends `Map`<infer K, infer V\> ? [`ImmutableMap`](#immutablemap)<`K`, `V`\> : `T` extends `Set`<infer M\> ? [`ImmutableSet`](#immutableset)<`M`\> : [`ImmutableObject`](#immutableobject)<`T`\>
+
+Makes a value deep readonly
+
+#### Type parameters
+
+| Name |
+| :------ |
+| `T` |
+
+#### Defined in
+
+[index.ts:81](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L81)
+
+___
+
+### ImmutableArray
+
+Ƭ **ImmutableArray**<`T`\>: `ReadonlyArray`<[`Immutable`](#immutable)<`T`\>\>
+
+#### Type parameters
+
+| Name |
+| :------ |
+| `T` |
+
+#### Defined in
+
+[index.ts:87](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L87)
+
+___
+
+### ImmutableMap
+
+Ƭ **ImmutableMap**<`K`, `V`\>: `ReadonlyMap`<[`Immutable`](#immutable)<`K`\>, [`Immutable`](#immutable)<`V`\>\>
+
+#### Type parameters
+
+| Name |
+| :------ |
+| `K` |
+| `V` |
+
+#### Defined in
+
+[index.ts:88](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L88)
+
+___
+
+### ImmutableObject
+
+Ƭ **ImmutableObject**<`T`\>: { readonly [K in keyof T]: Immutable<T[K]\> }
+
+#### Type parameters
+
+| Name |
+| :------ |
+| `T` |
+
+#### Defined in
+
+[index.ts:90](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L90)
+
+___
+
+### ImmutablePrimitive
+
+Ƭ **ImmutablePrimitive**: `undefined` \| ``null`` \| `boolean` \| `string` \| `number` \| `Function`
+
+#### Defined in
+
+[index.ts:86](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L86)
+
+___
+
+### ImmutableSet
+
+Ƭ **ImmutableSet**<`T`\>: `ReadonlySet`<[`Immutable`](#immutable)<`T`\>\>
+
+#### Type parameters
+
+| Name |
+| :------ |
+| `T` |
+
+#### Defined in
+
+[index.ts:89](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L89)
 
 ___
 
 ### InferStateExtensionType
 
 Ƭ **InferStateExtensionType**<`V`\>: [`DeepReturnType`](#deepreturntype)<`V`\> extends [`__State`](#interfaces_statemd)<infer \_, infer E\> ? `E` : [`DeepReturnType`](#deepreturntype)<`V`\> extends [`Extension`](#interfacesextensionmd)<infer \_, infer \_, infer E\> ? `E` : `V`
+
+A routine which allows to extract extension methods / properties type of a state.
+Useful for extension developers.
 
 #### Type parameters
 
@@ -129,7 +218,7 @@ ___
 
 #### Defined in
 
-[index.ts:316](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L316)
+[index.ts:262](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L262)
 
 ___
 
@@ -137,7 +226,7 @@ ___
 
 Ƭ **InferStateKeysType**<`S`\>: `S` extends `ReadonlyArray`<infer \_\> ? `ReadonlyArray`<`number`\> : `S` extends ``null`` ? `undefined` : `S` extends `object` ? `ReadonlyArray`<`string`\> : `undefined`
 
-Return type of [StateMethods.keys](#readonly-keys).
+Return type of [State.keys](#readonly-keys).
 
 **`Typeparam`**
 
@@ -159,7 +248,7 @@ ___
 
 Ƭ **InferStateOrnullType**<`S`, `E`\>: `S` extends `undefined` ? `undefined` : `S` extends ``null`` ? ``null`` : [`State`](#state)<`S`, `E`\>
 
-Return type of [StateMethods.map()](#map).
+Return type of [State.ornull](#ornull).
 
 **`Typeparam`**
 
@@ -174,13 +263,15 @@ S Type of a value of a state
 
 #### Defined in
 
-[index.ts:76](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L76)
+[index.ts:74](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L74)
 
 ___
 
 ### InferStateValueType
 
 Ƭ **InferStateValueType**<`V`\>: [`DeepReturnType`](#deepreturntype)<`V`\> extends [`__State`](#interfaces_statemd)<infer S, infer \_\> ? `S` : `V`
+
+A routine which allows to extract value type of a state. Useful for extension developers.
 
 #### Type parameters
 
@@ -190,40 +281,7 @@ ___
 
 #### Defined in
 
-[index.ts:314](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L314)
-
-___
-
-### InferredStateKeysType
-
-Ƭ **InferredStateKeysType**<`S`\>: [`InferStateKeysType`](#inferstatekeystype)<`S`\>
-
-#### Type parameters
-
-| Name |
-| :------ |
-| `S` |
-
-#### Defined in
-
-[index.ts:70](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L70)
-
-___
-
-### InferredStateOrnullType
-
-Ƭ **InferredStateOrnullType**<`S`, `E`\>: [`InferStateOrnullType`](#inferstateornulltype)<`S`, `E`\>
-
-#### Type parameters
-
-| Name |
-| :------ |
-| `S` |
-| `E` |
-
-#### Defined in
-
-[index.ts:81](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L81)
+[index.ts:257](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L257)
 
 ___
 
@@ -275,9 +333,9 @@ ___
 
 ### SetPartialStateAction
 
-Ƭ **SetPartialStateAction**<`S`\>: `S` extends `ReadonlyArray`<infer U\> ? `ReadonlyArray`<`U`\> \| `Record`<`number`, `U`\> \| (`prevValue`: `S`) => `ReadonlyArray`<`U`\> \| `Record`<`number`, `U`\> : `S` extends `object` \| `string` ? `Partial`<`S`\> \| (`prevValue`: `S`) => `Partial`<`S`\> : `React.SetStateAction`<`S`\>
+Ƭ **SetPartialStateAction**<`S`\>: `S` extends `ReadonlyArray`<infer U\> ? `ReadonlyArray`<`U` \| [`Immutable`](#immutable)<`U`\>\> \| `Record`<`number`, `U` \| [`Immutable`](#immutable)<`U`\>\> \| (`prevValue`: `S`) => `ReadonlyArray`<`U` \| [`Immutable`](#immutable)<`U`\>\> \| `Record`<`number`, `U` \| [`Immutable`](#immutable)<`U`\>\> : `S` extends `object` \| `string` ? `Partial`<`S` \| [`Immutable`](#immutable)<`S`\>\> \| (`prevValue`: `S`) => `Partial`<`S` \| [`Immutable`](#immutable)<`S`\>\> : `S` \| [`Immutable`](#immutable)<`S`\> \| (`prevState`: `S`) => `S` \| [`Immutable`](#immutable)<`S`\>
 
-Type of an argument of [StateMethods.merge](#merge).
+Type of an argument of [State.merge](#merge).
 
 **`Typeparam`**
 
@@ -297,9 +355,9 @@ ___
 
 ### SetStateAction
 
-Ƭ **SetStateAction**<`S`\>: `S` \| `Promise`<`S`\> \| (`prevState`: `S`) => `S` \| `Promise`<`S`\>
+Ƭ **SetStateAction**<`S`\>: `S` \| [`Immutable`](#immutable)<`S`\> \| `Promise`<`S` \| [`Immutable`](#immutable)<`S`\>\> \| (`prevState`: `S`) => `S` \| [`Immutable`](#immutable)<`S`\> \| `Promise`<`S` \| [`Immutable`](#immutable)<`S`\>\>
 
-Type of an argument of [StateMethods.set](#set).
+Type of an argument of [State.set](#set).
 
 **`Typeparam`**
 
@@ -319,7 +377,7 @@ ___
 
 ### State
 
-Ƭ **State**<`S`, `E`\>: [`StateMethods`](#interfacesstatemethodsmd)<`S`, `E`\> & `E` & `S` extends `ReadonlyArray`<infer U\> ? `ReadonlyArray`<[`State`](#state)<`U`, `E`\>\> : `S` extends `object` ? `Omit`<{ readonly [K in keyof Required<S\>]: State<S[K], E\> }, keyof [`StateMethods`](#interfacesstatemethodsmd)<`S`, `E`\> \| keyof [`StateMethodsDestroy`](#interfacesstatemethodsdestroymd) \| [`__KeysOfType`](#__keysoftype)<`S`, `Function`\> \| keyof `E`\> : {}
+Ƭ **State**<`S`, `E`\>: [`__State`](#interfaces_statemd)<`S`, `E`\> & [`StateMethods`](#interfacesstatemethodsmd)<`S`, `E`\> & `E` & `S` extends `ReadonlyArray`<infer U\> ? `ReadonlyArray`<[`State`](#state)<`U`, `E`\>\> : `S` extends `object` ? `Omit`<{ readonly [K in keyof Required<S\>]: State<S[K], E\> }, keyof [`StateMethods`](#interfacesstatemethodsmd)<`S`, `E`\> \| [`__KeysOfType`](#__keysoftype)<`S`, `Function`\> \| keyof `E`\> : {}
 
 Type of a result of [hookstate](#hookstate) and [useHookstate](#useHookstate) functions
 
@@ -340,17 +398,7 @@ S Type of a value of a state
 
 #### Defined in
 
-[index.ts:331](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L331)
-
-___
-
-### StateExtensionUnknown
-
-Ƭ **StateExtensionUnknown**: `any`
-
-#### Defined in
-
-[index.ts:366](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L366)
+[index.ts:277](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L277)
 
 ___
 
@@ -372,7 +420,7 @@ a strict type comparison of T[key] extends U & U extends T[key]
 
 #### Defined in
 
-[index.ts:294](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L294)
+[index.ts:235](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L235)
 
 ## Variables
 
@@ -382,7 +430,7 @@ a strict type comparison of T[key] extends U & U extends T[key]
 
 #### Defined in
 
-[index.ts:308](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L308)
+[index.ts:249](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L249)
 
 ___
 
@@ -391,7 +439,7 @@ ___
 • `Const` **none**: `any`
 
 Special symbol which might be used to delete properties
-from an object calling [StateMethods.set](#set) or [StateMethods.merge](#merge).
+from an object calling [State.set](#set) or [State.merge](#merge).
 
 [Learn more...](https://hookstate.js.org/docs/nested-state#deleting-existing-element)
 
@@ -401,68 +449,16 @@ from an object calling [StateMethods.set](#set) or [StateMethods.merge](#merge).
 
 ## Functions
 
-### DevTools
-
-▸ **DevTools**<`S`, `E`\>(`state`): [`DevToolsExtensions`](#interfacesdevtoolsextensionsmd)
-
-Returns access to the development tools for a given state.
-Development tools are delivered as optional plugins.
-You can activate development tools from `@hookstate/devtools`package,
-for example. If no development tools are activated,
-it returns an instance of dummy tools, which do nothing, when called.
-
-[Learn more...](https://hookstate.js.org/docs/devtools)
-
-**`Typeparam`**
-
-S Type of a value of a state
-
-#### Type parameters
-
-| Name |
-| :------ |
-| `S` |
-| `E` |
-
-#### Parameters
-
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `state` | [`State`](#state)<`S`, `E`\> | A state to relate to the extension. |
-
-#### Returns
-
-[`DevToolsExtensions`](#interfacesdevtoolsextensionsmd)
-
-Interface to interact with the development tools for a given state.
-
-___
-
-### Downgraded
-
-▸ **Downgraded**(): [`Plugin`](#interfacespluginmd)
-
-A plugin which allows to opt-out from usage of JavaScript proxies for
-state usage tracking. It is useful for performance tuning.
-
-[Learn more...](https://hookstate.js.org/docs/performance-managed-rendering#downgraded-plugin)
-
-#### Returns
-
-[`Plugin`](#interfacespluginmd)
-
-___
-
 ### StateFragment
 
 ▸ **StateFragment**<`S`, `E`\>(`props`): `never`
 
 #### Type parameters
 
-| Name |
-| :------ |
-| `S` |
-| `E` |
+| Name | Type |
+| :------ | :------ |
+| `S` | `S` |
+| `E` | extends `Object` |
 
 #### Parameters
 
@@ -492,10 +488,10 @@ S Type of a value of a state
 
 #### Type parameters
 
-| Name |
-| :------ |
-| `S` |
-| `E` |
+| Name | Type |
+| :------ | :------ |
+| `S` | `S` |
+| `E` | extends `Object` |
 
 #### Parameters
 
@@ -523,10 +519,10 @@ S Type of a value of a state
 
 #### Type parameters
 
-| Name |
-| :------ |
-| `S` |
-| `E` |
+| Name | Type |
+| :------ | :------ |
+| `S` | `S` |
+| `E` | extends `Object` |
 
 #### Parameters
 
@@ -548,6 +544,9 @@ ___
 
 ▸ **configure**(`config`): `void`
 
+Configures Hookstate behavior globally. This is for special cases only, when default
+heuristics fail to work in a specific environment.
+
 #### Parameters
 
 | Name | Type |
@@ -560,80 +559,37 @@ ___
 
 ___
 
-### createHookstate
+### destroyHookstate
 
-▸ **createHookstate**<`S`\>(`initial`): [`State`](#state)<`S`, {}\>
+▸ **destroyHookstate**<`S`, `E`\>(`state`): `void`
+
+A method to destroy a global state and resources allocated by the extensions
 
 #### Type parameters
 
 | Name |
 | :------ |
 | `S` |
+| `E` |
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
-| `initial` | [`SetInitialStateAction`](#setinitialstateaction)<`S`\> |
+| `state` | [`__State`](#interfaces_statemd)<`S`, `E`\> |
 
 #### Returns
 
-[`State`](#state)<`S`, {}\>
-
-___
-
-### createState
-
-▸ **createState**<`S`\>(`initial`): [`State`](#state)<`S`, {}\> & [`StateMethodsDestroy`](#interfacesstatemethodsdestroymd)
-
-Creates new state and returns it.
-
-You can create as many global states as you need.
-
-When you the state is not needed anymore,
-it should be destroyed by calling
-`destroy()` method of the returned instance.
-This is necessary for some plugins,
-which allocate native resources,
-like subscription to databases, broadcast channels, etc.
-In most cases, a global state is used during
-whole life time of an application and would not require
-destruction. However, if you have got, for example,
-a catalog of dynamically created and destroyed global states,
-the states should be destroyed as advised above.
-
-**`Typeparam`**
-
-S Type of a value of the state
-
-#### Type parameters
-
-| Name |
-| :------ |
-| `S` |
-
-#### Parameters
-
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `initial` | [`SetInitialStateAction`](#setinitialstateaction)<`S`\> | Initial value of the state.  It can be a value OR a promise,  which asynchronously resolves to a value,  OR a function returning a value or a promise. |
-
-#### Returns
-
-[`State`](#state)<`S`, {}\> & [`StateMethodsDestroy`](#interfacesstatemethodsdestroymd)
-
-[State](#state) instance,
-which can be used directly to get and set state value
-outside of React components.
-When you need to use the state in a functional `React` component,
-pass the created state to [useHookstate](#useHookstate) function and
-use the returned result in the component's logic.
+`void`
 
 ___
 
 ### extend
 
 ▸ **extend**<`S`, `E`, `E1`, `E2`, `E3`, `E4`, `E5`\>(`e1?`, `e2?`, `e3?`, `e4?`, `e5?`): [`ExtensionFactory`](#extensionfactory)<`S`, `E`, `E5` & `E4` & `E3` & `E2` & `E1`\>
+
+A function combines multiple extensions into one extension and returns it
+Browse an example [here](https://hookstate.js.org/docs/extensions-snapshotable)
 
 #### Type parameters
 
@@ -687,23 +643,50 @@ ___
 
 ▸ **hookstate**<`S`, `E`\>(`initial`, `extension?`): [`State`](#state)<`S`, `E`\>
 
+Creates new state and returns it.
+
+You can create as many global states as you need.
+
+When you the state is not needed anymore,
+it should be destroyed by calling
+`destroyHookstate()` function.
+This is necessary for some extensions,
+which allocate native resources,
+like subscription to databases, broadcast channels, etc.
+In most cases, a global state is used during
+whole life time of an application and would not require
+destruction. However, if you have got, for example,
+a catalog of dynamically created and destroyed global states,
+the states should be destroyed as advised above.
+
+**`Typeparam`**
+
+S Type of a value of the state
+
 #### Type parameters
 
 | Name | Type |
 | :------ | :------ |
 | `S` | `S` |
-| `E` | {} |
+| `E` | extends `Object` = {} |
 
 #### Parameters
 
-| Name | Type |
-| :------ | :------ |
-| `initial` | [`SetInitialStateAction`](#setinitialstateaction)<`S`\> |
-| `extension?` | [`ExtensionFactory`](#extensionfactory)<`S`, {}, `E`\> |
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `initial` | [`SetInitialStateAction`](#setinitialstateaction)<`S`\> | Initial value of the state.  It can be a value OR a promise,  which asynchronously resolves to a value,  OR a function returning a value or a promise. |
+| `extension?` | [`ExtensionFactory`](#extensionfactory)<`S`, {}, `E`\> | - |
 
 #### Returns
 
 [`State`](#state)<`S`, `E`\>
+
+[State](#state) instance,
+which can be used directly to get and set state value
+outside of React components.
+When you need to use the state in a functional `React` component,
+pass the created state to [useHookstate](#useHookstate) function and
+use the returned result in the component's logic.
 
 ___
 
@@ -730,9 +713,49 @@ ___
 
 ___
 
+### isHookstate
+
+▸ **isHookstate**(`v`): `boolean`
+
+A method to check if a variable is an instance of Hookstate State
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `v` | `any` |
+
+#### Returns
+
+`boolean`
+
+___
+
+### isHookstateValue
+
+▸ **isHookstateValue**(`v`): `boolean`
+
+A method to check if a variable is an instance of traced (wrapped in a proxy) Hookstate Value
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `v` | `any` |
+
+#### Returns
+
+`boolean`
+
+___
+
 ### suspend
 
 ▸ **suspend**<`S`, `E`\>(`state`): `undefined` \| `FunctionComponentElement`<`any`\>
+
+If state is promised, then it returns a component which integrates with React 18 Suspend feature automatically.
+Note, that React 18 Suspend support for data loading is still experimental,
+but it worked as per our experiments and testing.
 
 #### Type parameters
 
@@ -769,7 +792,7 @@ Use `useHookstate(() => your_promise)` instead of `useHookstate(your_promise)`.
 | Name | Type |
 | :------ | :------ |
 | `S` | `S` |
-| `E` | {} |
+| `E` | extends `Object` = {} |
 
 #### Parameters
 
@@ -789,7 +812,7 @@ Use `useHookstate(() => your_promise)` instead of `useHookstate(your_promise)`.
 | Name | Type |
 | :------ | :------ |
 | `S` | `S` |
-| `E` | {} |
+| `E` | extends `Object` = {} |
 
 #### Parameters
 
@@ -804,48 +827,88 @@ Use `useHookstate(() => your_promise)` instead of `useHookstate(your_promise)`.
 
 ▸ **useHookstate**<`S`, `E`\>(`source`): [`State`](#state)<`S`, `E`\>
 
-Alias to [useHookstate](#useHookstate) which provides a workaround
-for [React 20613 bug](https://github.com/facebook/react/issues/20613)
+Enables a functional React component to use a state,
+either created by [hookstate](#hookstate) (*global* state) or
+derived from another call to [useHookstate](#useHookstate) (*scoped* state).
+
+The `useHookstate` forces a component to rerender every time, when:
+- a segment/part of the state data is updated *AND only if*
+- this segment was **used** by the component during or after the latest rendering.
+
+For example, if the state value is `{ a: 1, b: 2 }` and
+a component uses only `a` property of the state, it will rerender
+only when the whole state object is updated or when `a` property is updated.
+Setting the state value/property to the same value is also considered as an update.
+
+A component can use one or many states,
+i.e. you may call `useHookstate` multiple times for multiple states.
+
+The same state can be used by multiple different components.
 
 #### Type parameters
 
 | Name | Type |
 | :------ | :------ |
 | `S` | `S` |
-| `E` | {} |
+| `E` | extends `Object` = {} |
 
 #### Parameters
 
-| Name | Type |
-| :------ | :------ |
-| `source` | [`__State`](#interfaces_statemd)<`S`, `E`\> |
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `source` | [`__State`](#interfaces_statemd)<`S`, `E`\> | a reference to the state to hook into    The `useHookstate` is a hook and should follow React's rules of hooks. |
 
 #### Returns
 
 [`State`](#state)<`S`, `E`\>
+
+an instance of [State](#state),
+which **must be** used within the component (during rendering
+or in effects) or it's children.
 
 ▸ **useHookstate**<`S`, `E`\>(`source`, `extension?`): [`State`](#state)<`S`, `E`\>
 
-Alias to [useHookstate](#useHookstate) which provides a workaround
-for [React 20613 bug](https://github.com/facebook/react/issues/20613)
+This function enables a functional React component to use a state,
+created per component by [useHookstate](#useHookstate) (*local* state).
+In this case `useHookstate` behaves similarly to `React.useState`,
+but the returned instance of [State](#state)
+has got more features.
+
+When a state is used by only one component, and maybe it's children,
+it is recommended to use *local* state instead of *global*,
+which is created by [hookstate](#hookstate).
+
+*Local* (per component) state is created when a component is mounted
+and automatically destroyed when a component is unmounted.
+
+The same as with the usage of a *global* state,
+`useHookstate` forces a component to rerender when:
+- a segment/part of the state data is updated *AND only if*
+- this segment was **used** by the component during or after the latest rendering.
+
+You can use as many local states within the same component as you need.
 
 #### Type parameters
 
 | Name | Type |
 | :------ | :------ |
 | `S` | `S` |
-| `E` | {} |
+| `E` | extends `Object` = {} |
 
 #### Parameters
 
-| Name | Type |
-| :------ | :------ |
-| `source` | [`SetInitialStateAction`](#setinitialstateaction)<`S`\> |
-| `extension?` | [`ExtensionFactory`](#extensionfactory)<`S`, {}, `E`\> |
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `source` | [`SetInitialStateAction`](#setinitialstateaction)<`S`\> | An initial value state. |
+| `extension?` | [`ExtensionFactory`](#extensionfactory)<`S`, {}, `E`\> | - |
 
 #### Returns
 
 [`State`](#state)<`S`, `E`\>
+
+an instance of [State](#state),
+which **must be** used within the component (during rendering
+or in effects) or it's children.
 
 ___
 
@@ -992,123 +1055,14 @@ ___
 
 `T`
 
-___
-
-### useState
-
-▸ **useState**<`S`\>(`source`): `never`
-
-**`Warning`**
-
-Initializing a local state to a promise without using 
-an initializer callback function, which returns a Promise,
-is almost always a mistake. So, it is blocked.
-Use `useHookstate(() => your_promise)` instead of `useHookstate(your_promise)`.
-
-#### Type parameters
-
-| Name |
-| :------ |
-| `S` |
-
-#### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `source` | `Promise`<`S`\> |
-
-#### Returns
-
-`never`
-
-▸ **useState**<`S`\>(`source`): [`State`](#state)<`S`, {}\>
-
-Enables a functional React component to use a state,
-either created by [hookstate](#hookstate) (*global* state) or
-derived from another call to [useHookstate](#useHookstate) (*scoped* state).
-
-The `useHookstate` forces a component to rerender every time, when:
-- a segment/part of the state data is updated *AND only if*
-- this segment was **used** by the component during or after the latest rendering.
-
-For example, if the state value is `{ a: 1, b: 2 }` and
-a component uses only `a` property of the state, it will rerender
-only when the whole state object is updated or when `a` property is updated.
-Setting the state value/property to the same value is also considered as an update.
-
-A component can use one or many states,
-i.e. you may call `useHookstate` multiple times for multiple states.
-
-The same state can be used by multiple different components.
-
-#### Type parameters
-
-| Name |
-| :------ |
-| `S` |
-
-#### Parameters
-
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `source` | [`State`](#state)<`S`, {}\> | a reference to the state to hook into    The `useHookstate` is a hook and should follow React's rules of hooks. |
-
-#### Returns
-
-[`State`](#state)<`S`, {}\>
-
-an instance of [State](#state),
-which **must be** used within the component (during rendering
-or in effects) or it's children.
-
-▸ **useState**<`S`\>(`source`): [`State`](#state)<`S`, {}\>
-
-This function enables a functional React component to use a state,
-created per component by [useHookstate](#useHookstate) (*local* state).
-In this case `useHookstate` behaves similarly to `React.useState`,
-but the returned instance of [State](#state)
-has got more features.
-
-When a state is used by only one component, and maybe it's children,
-it is recommended to use *local* state instead of *global*,
-which is created by [hookstate](#hookstate).
-
-*Local* (per component) state is created when a component is mounted
-and automatically destroyed when a component is unmounted.
-
-The same as with the usage of a *global* state,
-`useHookstate` forces a component to rerender when:
-- a segment/part of the state data is updated *AND only if*
-- this segment was **used** by the component during or after the latest rendering.
-
-You can use as many local states within the same component as you need.
-
-#### Type parameters
-
-| Name |
-| :------ |
-| `S` |
-
-#### Parameters
-
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `source` | [`SetInitialStateAction`](#setinitialstateaction)<`S`\> | An initial value state. |
-
-#### Returns
-
-[`State`](#state)<`S`, {}\>
-
-an instance of [State](#state),
-which **must be** used within the component (during rendering
-or in effects) or it's children.
-
 # Interfaces
 
 
 <a name="interfacesconfigurationmd"/>
 
 ## Interface: Configuration
+
+A type of an argument of the configure function
 
 ### Table of contents
 
@@ -1124,9 +1078,21 @@ or in effects) or it's children.
 
 • **interceptDependencyListsMode**: ``"always"`` \| ``"development"`` \| ``"never"``
 
+By default Hookstate intercepts calls to useEffect, useMemo and
+other functions where a dependency lists are used as arguments.
+This allows these hook functions to have Hookstate State objects
+in dependency lists and everything to work as 'expected'.
+
+It is possible to opt-out from this mode, configuring the option to never.
+
+Alternatively, it is possible to set it to intercept only during development,
+which will raise HOOKSTATE-100 error whenever Hookstate State is used in a dependency list of standard React hook function.
+This error can be fixed by replacing standard React hooks by Hookstate provided hooks,
+for example useEffect by useHookstateEffect
+
 ##### Defined in
 
-[index.ts:2247](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L2247)
+[index.ts:1971](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L1971)
 
 ___
 
@@ -1134,9 +1100,14 @@ ___
 
 • **isDevelopmentMode**: `boolean`
 
+Defines is Hookstate is running in a development mode.
+Development mode enables additional checking and HMR support.
+By default, it detects if process.env.NODE_ENV is set to 'development'.
+It might not work in all environments and so expected to be provided by an application explicitly.
+
 ##### Defined in
 
-[index.ts:2248](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L2248)
+[index.ts:1978](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L1978)
 
 ___
 
@@ -1147,6 +1118,10 @@ ___
 ##### Type declaration
 
 ▸ (`p`): `boolean`
+
+A callback which allows Hookstate to detect if a provided variable is a promise or not.
+This allows to enable Hookstate working in Angular environment when Promises are wrapped by zone.js,
+which breaks standard promise resolution / detection convention.
 
 ###### Parameters
 
@@ -1160,63 +1135,17 @@ ___
 
 ##### Defined in
 
-[index.ts:2249](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L2249)
-
-
-<a name="interfacesdevtoolsextensionsmd"/>
-
-## Interface: DevToolsExtensions
-
-Return type of [DevTools](#devtools).
-
-### Table of contents
-
-#### Methods
-
-- [label](#label)
-- [log](#log)
-
-### Methods
-
-#### label
-
-▸ **label**(`name`): `void`
-
-Assigns custom label to identify the state in the development tools
-
-##### Parameters
-
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `name` | `string` | label for development tools |
-
-##### Returns
-
-`void`
-
-___
-
-#### log
-
-▸ **log**(`str`, `data?`): `void`
-
-Logs to the development tools
-
-##### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `str` | `string` |
-| `data?` | `any` |
-
-##### Returns
-
-`void`
+[index.ts:1984](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L1984)
 
 
 <a name="interfacesextensionmd"/>
 
 ## Interface: Extension<S, I, E\>
+
+For plugin developers only.
+Set of callbacks, a plugin may subscribe to.
+
+[Learn more...](https://hookstate.js.org/docs/writing-extension)
 
 ### Type parameters
 
@@ -1241,7 +1170,7 @@ Logs to the development tools
 
 #### onCreate
 
-• `Optional` `Readonly` **onCreate**: (`state`: [`State`](#state)<`S`, {}\>, `extensionsCallbacks`: `Record`<`string`, (`i`: [`State`](#state)<`any`, `E` & `I`\>) => `any`\>) => { readonly [K in string \| number \| symbol]: Function }
+• `Optional` `Readonly` **onCreate**: (`state`: [`State`](#state)<`S`, {}\>, `extensionsCallbacks`: { [K in string \| number \| symbol]: Function }) => { readonly [K in string \| number \| symbol]: Function }
 
 ##### Type declaration
 
@@ -1252,7 +1181,7 @@ Logs to the development tools
 | Name | Type |
 | :------ | :------ |
 | `state` | [`State`](#state)<`S`, {}\> |
-| `extensionsCallbacks` | `Record`<`string`, (`i`: [`State`](#state)<`any`, `E` & `I`\>) => `any`\> |
+| `extensionsCallbacks` | { [K in string \| number \| symbol]: Function } |
 
 ###### Returns
 
@@ -1260,7 +1189,7 @@ Logs to the development tools
 
 ##### Defined in
 
-[index.ts:438](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L438)
+[index.ts:341](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L341)
 
 ___
 
@@ -1284,13 +1213,13 @@ ___
 
 ##### Defined in
 
-[index.ts:451](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L451)
+[index.ts:356](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L356)
 
 ___
 
 #### onInit
 
-• `Optional` `Readonly` **onInit**: (`state`: [`State`](#state)<`S`, `E` & `I`\>, `extensionsCallbacks`: `Record`<`string`, (`i`: [`State`](#state)<`any`, `E` & `I`\>) => `any`\>) => `void`
+• `Optional` `Readonly` **onInit**: (`state`: [`State`](#state)<`S`, `E` & `I`\>, `extensionsCallbacks`: { [K in string \| number \| symbol]: Function }) => `void`
 
 ##### Type declaration
 
@@ -1301,7 +1230,7 @@ ___
 | Name | Type |
 | :------ | :------ |
 | `state` | [`State`](#state)<`S`, `E` & `I`\> |
-| `extensionsCallbacks` | `Record`<`string`, (`i`: [`State`](#state)<`any`, `E` & `I`\>) => `any`\> |
+| `extensionsCallbacks` | { [K in string \| number \| symbol]: Function } |
 
 ###### Returns
 
@@ -1309,17 +1238,17 @@ ___
 
 ##### Defined in
 
-[index.ts:444](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L444)
+[index.ts:347](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L347)
 
 ___
 
 #### onPremerge
 
-• `Optional` `Readonly` **onPremerge**: (`state`: [`State`](#state)<`any`, `E` & `I`\>, `value`: `any`) => `void`
+• `Optional` `Readonly` **onPremerge**: (`state`: [`State`](#state)<`any`, `E` & `I`\>, `value`: `any`, `rootState`: [`State`](#state)<`any`, `E` & `I`\>) => `void`
 
 ##### Type declaration
 
-▸ (`state`, `value`): `void`
+▸ (`state`, `value`, `rootState`): `void`
 
 ###### Parameters
 
@@ -1327,6 +1256,7 @@ ___
 | :------ | :------ |
 | `state` | [`State`](#state)<`any`, `E` & `I`\> |
 | `value` | `any` |
+| `rootState` | [`State`](#state)<`any`, `E` & `I`\> |
 
 ###### Returns
 
@@ -1334,17 +1264,17 @@ ___
 
 ##### Defined in
 
-[index.ts:449](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L449)
+[index.ts:354](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L354)
 
 ___
 
 #### onPreset
 
-• `Optional` `Readonly` **onPreset**: (`state`: [`State`](#state)<`any`, `E` & `I`\>, `value`: `any`) => `void`
+• `Optional` `Readonly` **onPreset**: (`state`: [`State`](#state)<`any`, `E` & `I`\>, `value`: `any`, `rootState`: [`State`](#state)<`any`, `E` & `I`\>) => `void`
 
 ##### Type declaration
 
-▸ (`state`, `value`): `void`
+▸ (`state`, `value`, `rootState`): `void`
 
 ###### Parameters
 
@@ -1352,6 +1282,7 @@ ___
 | :------ | :------ |
 | `state` | [`State`](#state)<`any`, `E` & `I`\> |
 | `value` | `any` |
+| `rootState` | [`State`](#state)<`any`, `E` & `I`\> |
 
 ###### Returns
 
@@ -1359,24 +1290,25 @@ ___
 
 ##### Defined in
 
-[index.ts:448](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L448)
+[index.ts:353](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L353)
 
 ___
 
 #### onSet
 
-• `Optional` `Readonly` **onSet**: (`state`: [`State`](#state)<`any`, `E` & `I`\>, `descriptor`: [`SetActionDescriptor`](#interfacessetactiondescriptormd)) => `void`
+• `Optional` `Readonly` **onSet**: (`state`: [`State`](#state)<`any`, `E` & `I`\>, `descriptor`: `SetActionDescriptor`, `rootState`: [`State`](#state)<`any`, `E` & `I`\>) => `void`
 
 ##### Type declaration
 
-▸ (`state`, `descriptor`): `void`
+▸ (`state`, `descriptor`, `rootState`): `void`
 
 ###### Parameters
 
 | Name | Type |
 | :------ | :------ |
 | `state` | [`State`](#state)<`any`, `E` & `I`\> |
-| `descriptor` | [`SetActionDescriptor`](#interfacessetactiondescriptormd) |
+| `descriptor` | `SetActionDescriptor` |
+| `rootState` | [`State`](#state)<`any`, `E` & `I`\> |
 
 ###### Returns
 
@@ -1384,365 +1316,7 @@ ___
 
 ##### Defined in
 
-[index.ts:450](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L450)
-
-
-<a name="interfacespluginmd"/>
-
-## Interface: Plugin
-
-For plugin developers only.
-Hookstate plugin specification and factory method.
-
-[Learn more...](https://hookstate.js.org/docs/writing-plugin)
-
-### Table of contents
-
-#### Properties
-
-- [id](#id)
-- [init](#init)
-
-### Properties
-
-#### id
-
-• `Readonly` **id**: `symbol`
-
-Unique identifier of a plugin.
-
-##### Defined in
-
-[index.ts:429](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L429)
-
-___
-
-#### init
-
-• `Optional` `Readonly` **init**: (`state`: [`State`](#state)<`any`, {}\>) => [`PluginCallbacks`](#interfacesplugincallbacksmd)
-
-##### Type declaration
-
-▸ (`state`): [`PluginCallbacks`](#interfacesplugincallbacksmd)
-
-Initializer for a plugin when it is attached for the first time.
-
-###### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `state` | [`State`](#state)<`any`, {}\> |
-
-###### Returns
-
-[`PluginCallbacks`](#interfacesplugincallbacksmd)
-
-##### Defined in
-
-[index.ts:433](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L433)
-
-
-<a name="interfacesplugincallbacksmd"/>
-
-## Interface: PluginCallbacks
-
-For plugin developers only.
-Set of callbacks, a plugin may subscribe to.
-
-[Learn more...](https://hookstate.js.org/docs/writing-plugin)
-
-### Table of contents
-
-#### Properties
-
-- [onDestroy](#ondestroy)
-- [onSet](#onset)
-
-### Properties
-
-#### onDestroy
-
-• `Optional` `Readonly` **onDestroy**: (`arg`: [`PluginCallbacksOnDestroyArgument`](#interfacesplugincallbacksondestroyargumentmd)) => `void`
-
-##### Type declaration
-
-▸ (`arg`): `void`
-
-###### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `arg` | [`PluginCallbacksOnDestroyArgument`](#interfacesplugincallbacksondestroyargumentmd) |
-
-###### Returns
-
-`void`
-
-##### Defined in
-
-[index.ts:416](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L416)
-
-___
-
-#### onSet
-
-• `Optional` `Readonly` **onSet**: (`arg`: [`PluginCallbacksOnSetArgument`](#interfacesplugincallbacksonsetargumentmd)) => `void`
-
-##### Type declaration
-
-▸ (`arg`): `void`
-
-###### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `arg` | [`PluginCallbacksOnSetArgument`](#interfacesplugincallbacksonsetargumentmd) |
-
-###### Returns
-
-`void`
-
-##### Defined in
-
-[index.ts:415](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L415)
-
-
-<a name="interfacesplugincallbacksondestroyargumentmd"/>
-
-## Interface: PluginCallbacksOnDestroyArgument
-
-For plugin developers only.
-PluginCallbacks.onDestroy argument type.
-
-### Table of contents
-
-#### Properties
-
-- [state](#state)
-
-### Properties
-
-#### state
-
-• `Optional` `Readonly` **state**: `any`
-
-##### Defined in
-
-[index.ts:405](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L405)
-
-
-<a name="interfacesplugincallbacksonsetargumentmd"/>
-
-## Interface: PluginCallbacksOnSetArgument
-
-For plugin developers only.
-PluginCallbacks.onSet argument type.
-
-### Table of contents
-
-#### Properties
-
-- [merged](#merged)
-- [path](#path)
-- [previous](#previous)
-- [state](#state)
-- [value](#value)
-
-### Properties
-
-#### merged
-
-• `Optional` `Readonly` **merged**: `any`
-
-##### Defined in
-
-[index.ts:397](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L397)
-
-___
-
-#### path
-
-• `Readonly` **path**: [`Path`](#path)
-
-##### Defined in
-
-[index.ts:373](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L373)
-
-___
-
-#### previous
-
-• `Optional` `Readonly` **previous**: `any`
-
-**A note about previous values and merging:**
-State values are muteable in Hookstate for performance reasons. This causes a side effect in the merge operation.
-While merging, the previous state object is mutated as the desired changes are applied. This means the value of
-`previous` will reflect the merged changes as well, matching the new `state` value rather than the previous
-state value. As a result, the `previous` property is unreliable when merge is used. The
-[merged](#optional-readonly-merged) property can be used to detect which values were merged in but it will not
-inform you whether those values are different from the previous state.
-
-As a workaround, you can replace merge calls with the immutable-style set operation like so:
-
-```
-state.set(p => {
-    let copy = p.clone(); /// here it is up to you to define how to clone the current state
-    copy.field = 'new value for field';
-    delete copy.fieldToDelete;
-    return copy;
-})
-```
-
-##### Defined in
-
-[index.ts:395](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L395)
-
-___
-
-#### state
-
-• `Optional` `Readonly` **state**: `any`
-
-##### Defined in
-
-[index.ts:374](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L374)
-
-___
-
-#### value
-
-• `Optional` `Readonly` **value**: `any`
-
-##### Defined in
-
-[index.ts:396](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L396)
-
-
-<a name="interfacespluginstatecontrolmd"/>
-
-## Interface: PluginStateControl<S\>
-
-For plugin developers only.
-An instance to manipulate the state in more controlled way.
-
-**`Typeparam`**
-
-S Type of a value of a state
-
-[Learn more...](https://hookstate.js.org/docs/writing-plugin)
-
-### Type parameters
-
-| Name |
-| :------ |
-| `S` |
-
-### Table of contents
-
-#### Methods
-
-- [getUntracked](#getuntracked)
-- [mergeUntracked](#mergeuntracked)
-- [rerender](#rerender)
-- [setUntracked](#setuntracked)
-
-### Methods
-
-#### getUntracked
-
-▸ **getUntracked**(): `S`
-
-Get state value, but do not leave the traces of reading it.
-
-##### Returns
-
-`S`
-
-___
-
-#### mergeUntracked
-
-▸ **mergeUntracked**(`mergeValue`): [`Path`](#path)[]
-
-Merge new state value, but do not trigger rerender.
-
-##### Parameters
-
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `mergeValue` | [`SetPartialStateAction`](#setpartialstateaction)<`S`\> | new partial value to merge with the current state value and set. |
-
-##### Returns
-
-[`Path`](#path)[]
-
-___
-
-#### rerender
-
-▸ **rerender**(`paths`): `void`
-
-Trigger rerender for hooked states, where values at the specified paths are used.
-
-##### Parameters
-
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `paths` | [`Path`](#path)[] | paths of the state variables to search for being used by components and rerender |
-
-##### Returns
-
-`void`
-
-___
-
-#### setUntracked
-
-▸ **setUntracked**(`newValue`): [`Path`](#path)[]
-
-Set new state value, but do not trigger rerender.
-
-##### Parameters
-
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `newValue` | [`SetStateAction`](#setstateaction)<`S`\> | new value to set to a state. |
-
-##### Returns
-
-[`Path`](#path)[]
-
-
-<a name="interfacessetactiondescriptormd"/>
-
-## Interface: SetActionDescriptor
-
-### Table of contents
-
-#### Properties
-
-- [actions](#actions)
-- [path](#path)
-
-### Properties
-
-#### actions
-
-• `Optional` **actions**: `Record`<`string` \| `number`, ``"I"`` \| ``"U"`` \| ``"D"``\>
-
-##### Defined in
-
-[index.ts:1103](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L1103)
-
-___
-
-#### path
-
-• **path**: [`Path`](#path)
-
-##### Defined in
-
-[index.ts:1102](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L1102)
+[index.ts:355](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L355)
 
 
 <a name="interfacesstatemethodsmd"/>
@@ -1757,22 +1331,15 @@ S Type of a value of a state
 
 ### Type parameters
 
-| Name | Type |
-| :------ | :------ |
-| `S` | `S` |
-| `E` | {} |
-
-### Hierarchy
-
-- [`__State`](#interfaces_statemd)<`S`, `E`\>
-
-  ↳ **`StateMethods`**
+| Name |
+| :------ |
+| `S` |
+| `E` |
 
 ### Table of contents
 
 #### Properties
 
-- [[\_\_\_state]](#[___state])
 - [error](#error)
 - [keys](#keys)
 - [ornull](#ornull)
@@ -1783,42 +1350,12 @@ S Type of a value of a state
 
 #### Methods
 
-- [attach](#attach)
 - [get](#get)
 - [merge](#merge)
 - [nested](#nested)
 - [set](#set)
 
 ### Properties
-
-#### [\_\_\_state]
-
-• **[\_\_\_state]**: (`s`: `S`, `e`: `E`) => `never`
-
-##### Type declaration
-
-▸ (`s`, `e`): `never`
-
-###### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `s` | `S` |
-| `e` | `E` |
-
-###### Returns
-
-`never`
-
-##### Inherited from
-
-[__State](#interfaces_statemd).[[___state]](#[___state])
-
-##### Defined in
-
-[index.ts:310](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L310)
-
-___
 
 #### error
 
@@ -1829,7 +1366,7 @@ this property will return the error captured from the promise rejection
 
 ##### Defined in
 
-[index.ts:185](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L185)
+[index.ts:160](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L160)
 
 ___
 
@@ -1847,7 +1384,7 @@ an array of numbers, not strings like with `Object.keys`.
 
 ##### Defined in
 
-[index.ts:147](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L147)
+[index.ts:120](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L120)
 
 ___
 
@@ -1863,7 +1400,7 @@ with null and undefined removed from the type parameter.
 
 ##### Defined in
 
-[index.ts:252](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L252)
+[index.ts:227](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L227)
 
 ___
 
@@ -1883,7 +1420,7 @@ state.[0].name.path IS [0, 'name']
 
 ##### Defined in
 
-[index.ts:136](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L136)
+[index.ts:109](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L109)
 
 ___
 
@@ -1891,9 +1428,12 @@ ___
 
 • `Readonly` **promise**: `undefined` \| `Promise`<[`State`](#state)<`S`, `E`\>\>
 
+If the State is promised, this will be a defined promise
+which an application can use to subscribe to with 'then' callback.
+
 ##### Defined in
 
-[index.ts:179](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L179)
+[index.ts:154](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L154)
 
 ___
 
@@ -1905,18 +1445,18 @@ True if state value is not yet available (eg. equal to a promise)
 
 ##### Defined in
 
-[index.ts:176](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L176)
+[index.ts:148](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L148)
 
 ___
 
 #### value
 
-• `Readonly` **value**: `S`
+• `Readonly` **value**: [`Immutable`](#immutable)<`S`\>
 
 Unwraps and returns the underlying state value referred by
 [path](#readonly-path) of this state instance.
 
-It returns the same result as [StateMethods.get](#get) method.
+It returns the same result as [State.get](#get) method.
 
 This property is more useful than [get](#get) method for the cases,
 when a value may hold null or undefined values.
@@ -1935,58 +1475,18 @@ const myvalue: number = state.get()
 
 ##### Defined in
 
-[index.ts:170](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L170)
+[index.ts:143](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L143)
 
 ### Methods
 
-#### attach
-
-▸ **attach**(`plugin`): [`State`](#state)<`S`, `E`\>
-
-Adds plugin to the state.
-
-[Learn more...](https://hookstate.js.org/docs/extensions-overview)
-
-##### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `plugin` | () => [`Plugin`](#interfacespluginmd) |
-
-##### Returns
-
-[`State`](#state)<`S`, `E`\>
-
-▸ **attach**(`pluginId`): [[`PluginCallbacks`](#interfacesplugincallbacksmd) \| `Error`, [`PluginStateControl`](#interfacespluginstatecontrolmd)<`S`\>]
-
-For plugin developers only.
-It is a method to get the instance of the previously attached plugin.
-If a plugin has not been attached to a state,
-it returns an Error as the first element.
-A plugin may trhow an error to indicate that plugin has not been attached.
-
-[Learn more...](https://hookstate.js.org/docs/writing-plugin)
-
-##### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `pluginId` | `symbol` |
-
-##### Returns
-
-[[`PluginCallbacks`](#interfacesplugincallbacksmd) \| `Error`, [`PluginStateControl`](#interfacespluginstatecontrolmd)<`S`\>]
-
-___
-
 #### get
 
-▸ **get**(`options?`): `S`
+▸ **get**(`options?`): [`Immutable`](#immutable)<`S`\>
 
 Unwraps and returns the underlying state value referred by
 [path](#readonly-path) of this state instance.
 
-It returns the same result as [StateMethods.value](#readonly-value) method.
+It returns the same result as [State.value](#readonly-value) method.
 
 If the additional option `noproxy` is set, the method will return
 the original data object without wrapping it by proxy.
@@ -2008,7 +1508,7 @@ If you use it, make sure you know what you are doing.
 
 ##### Returns
 
-`S`
+[`Immutable`](#immutable)<`S`\>
 
 ___
 
@@ -2088,34 +1588,6 @@ Partial updates can be also done by walking the nested states and setting those.
 `void`
 
 
-<a name="interfacesstatemethodsdestroymd"/>
-
-## Interface: StateMethodsDestroy
-
-Mixin for the [StateMethods](#interfacesstatemethodsmd) for a [State](#state),
-which can be destroyed by a client.
-
-### Table of contents
-
-#### Methods
-
-- [destroy](#destroy)
-
-### Methods
-
-#### destroy
-
-▸ **destroy**(): `void`
-
-Destroys an instance of a state, so
-it can clear the allocated native resources (if any)
-and can not be used anymore after it has been destroyed.
-
-##### Returns
-
-`void`
-
-
 <a name="interfaces_statemd"/>
 
 ## Interface: \_\_State<S, E\>
@@ -2127,12 +1599,6 @@ and can not be used anymore after it has been destroyed.
 | `S` |
 | `E` |
 
-### Hierarchy
-
-- **`__State`**
-
-  ↳ [`StateMethods`](#interfacesstatemethodsmd)
-
 ### Table of contents
 
 #### Properties
@@ -2143,23 +1609,8 @@ and can not be used anymore after it has been destroyed.
 
 #### [\_\_\_state]
 
-• **[\_\_\_state]**: (`s`: `S`, `e`: `E`) => `never`
-
-##### Type declaration
-
-▸ (`s`, `e`): `never`
-
-###### Parameters
-
-| Name | Type |
-| :------ | :------ |
-| `s` | `S` |
-| `e` | `E` |
-
-###### Returns
-
-`never`
+• **[\_\_\_state]**: [[`Immutable`](#immutable)<`S`\>, `E`]
 
 ##### Defined in
 
-[index.ts:310](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L310)
+[index.ts:251](https://github.com/avkonst/hookstate/blob/master/core/src/index.ts#L251)
