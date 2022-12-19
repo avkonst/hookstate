@@ -254,16 +254,16 @@ export interface __State<S, E> {
 /**
  * A routine which allows to extract value type of a state. Useful for extension developers.
  */
-export type InferStateValueType<V> = DeepReturnType<V> extends __State<(infer S), (infer _)> ? S : V
+export type InferStateValueType<V> = InferReturnType<V> extends __State<(infer S), (infer _)> ? S : V
 /**
  * A routine which allows to extract extension methods / properties type of a state.
  * Useful for extension developers.
  */
-export type InferStateExtensionType<V> = DeepReturnType<V> extends __State<(infer _), (infer E)>
+export type InferStateExtensionType<V> = InferReturnType<V> extends __State<(infer _), (infer E)>
     ? E
-    : DeepReturnType<V> extends Extension<(infer _), (infer _), (infer E)>
+    : InferReturnType<V> extends Extension<(infer _), (infer _), (infer E)>
     ? E : V
-export type DeepReturnType<V> = V extends (...args: any) => (infer R) ? DeepReturnType<R> : V;
+export type InferReturnType<V> = V extends (...args: any) => (infer R) ? InferReturnType<R> : V;
 
 /**
  * Type of a result of [hookstate](#hookstate) and [useHookstate](#useHookstate) functions
