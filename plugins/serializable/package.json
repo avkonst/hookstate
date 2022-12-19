@@ -1,6 +1,6 @@
 {
     "name": "@hookstate/serializable",
-    "version": "4.0.0-rc21",
+    "version": "4.0.0",
     "description": "Plugin for @hookstate/core to enable state serialization and deserialization.",
     "license": "MIT",
     "author": {
@@ -29,7 +29,7 @@
     },
     "dependencies": {},
     "peerDependencies": {
-        "@hookstate/core": "^4.0.0-rc21"
+        "@hookstate/core": "^4.0.0"
     },
     "devDependencies": {
         "@babel/core": "7.18.6",

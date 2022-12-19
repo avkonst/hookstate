@@ -1,6 +1,6 @@
 {
     "name": "@hookstate/snapshotable",
-    "version": "4.0.0-rc21",
+    "version": "4.0.0",
     "description": "Extension for @hookstate/core to enable state snapshoting and reverting to the snapshoted / previous values.",
     "license": "MIT",
     "author": {
@@ -28,7 +28,7 @@
         "update:deps": "ncu -u"
     },
     "peerDependencies": {
-        "@hookstate/core": "^4.0.0-rc21"
+        "@hookstate/core": "^4.0.0"
     },
     "devDependencies": {
         "@babel/core": "7.18.6",
