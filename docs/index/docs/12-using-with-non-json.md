@@ -13,4 +13,4 @@ let state = useHookstate({ callback: () => {} })
 state.get({ noproxy: true }).callback()
 ```
 
-If you use extensions, such as `localstored`, which requires to serialize and deserialize the state value, you may need to add [serilalizable extension](/docs/extensions-overview) to the state and define how a custom class value should be serialized and deserialized. 
+If you use extensions, such as `localstored`, which requires to serialize and deserialize the state value, you may need to add [serializable extension](/docs/extensions-overview) to the state and define how a custom class value should be serialized and deserialized. 
