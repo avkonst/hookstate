@@ -10,7 +10,7 @@ export interface LocalStored { }
 
 export function localstored<S, E>(options?: {
     key?: string,
-    engine: StoreEngine,
+    engine?: StoreEngine,
     initializer: () => Promise<S>
 }): ExtensionFactory<S, E, LocalStored> {
     return () => {
