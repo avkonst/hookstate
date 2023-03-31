@@ -1,6 +1,6 @@
 {
     "name": "@hookstate/localstored",
-    "version": "4.0.0",
+    "version": "4.0.1",
     "description": "Plugin for @hookstate/core to enable persistence of managed data states to browser's local storage.",
     "license": "MIT",
     "author": {
