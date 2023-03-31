@@ -260,7 +260,7 @@ export const __state = Symbol('__state')
  * @ignore
  */
 export interface __State<S, E> {
-    [__state]: [Immutable<S>, E]
+    [__state]: [S, E]
 }
 
 /**

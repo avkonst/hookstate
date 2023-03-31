@@ -254,3 +254,22 @@ test('object: should allow set to none via child without parent', async () => {
     expect(parentRenderTimes).toStrictEqual(1);
     expect(childRenderTimes).toStrictEqual(2);
 });
+
+test('object: should rerender used via scoped updates by child', async () => {
+    let parentRenderTimes = 0
+    let childRenderTimes = 0
+    const parent = renderHook(() => {
+        parentRenderTimes += 1;
+        return useHookstate([1, 2, 3])
+    });
+    const child = renderHook(() => {
+        childRenderTimes += 1;
+        return useHookstate(parent.result.current)
+    });
+    
+    act(() => {
+        // ensure no double wrap on type system
+        // fix for https://github.com/avkonst/hookstate/discussions/365#discussioncomment-4478119
+        child.result.current.set(p => { p[0] = 1; return p });
+    });
+});
