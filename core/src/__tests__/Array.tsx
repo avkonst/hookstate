@@ -303,6 +303,62 @@ test('array: should not crash on getOwnPropertyDescriptor length', async () => {
     expect(Object.keys(result.current)).toStrictEqual(["0", "1"])
 });
 
+test('array: should update with splice', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useHookstate([0, 5])
+    });
+    expect(result.current.get()[0]).toStrictEqual(0);
+
+    act(() => {
+        result.current.set(p => p.splice(1, 1));
+    });
+    expect(renderTimes).toStrictEqual(2);
+    expect(result.current.get()[0]).toStrictEqual(5);
+    expect(result.current.get()[1]).toStrictEqual(undefined);
+    expect(result.current.length).toEqual(1);
+    expect(result.current.get().length).toEqual(1);
+    expect(Object.keys(result.current)).toEqual(['0']);
+    expect(Object.keys(result.current.get())).toEqual(['0']);
+});
+
+test('array: should allow to map an array', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useHookstate([0, 5])
+    });
+    expect(result.current.get()[0]).toStrictEqual(0);
+
+    let mapped = result.current.map(i => [i])
+    expect(mapped.map(i => i[0].get())).toStrictEqual([0, 5]);
+});
+
+test('array: should allow to map an array value', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useHookstate([0, 5])
+    });
+
+    let mapped = result.current.get().map(i => [i])
+    expect(mapped.map(i => i[0])).toStrictEqual([0, 5]);
+});
+
+
+test('array: should allow to map an array of arrays', async () => {
+    let renderTimes = 0
+    const { result } = renderHook(() => {
+        renderTimes += 1;
+        return useHookstate([[0, 1], [2, 3]])
+    });
+
+    let mapped = result.current.map(i => i[0])
+    expect(mapped.map(i => i.get())).toStrictEqual([0, 2]);
+});
+
+
 test('array: should not crash on getOwnPropertyDescriptor length after promise', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
