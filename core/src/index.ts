@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useLayoutEffect } from 'react';
 import { shallowEqual } from './is-shallow-equal';
 
 ///
@@ -776,25 +776,27 @@ export function useHookstate<S, E extends {} = {}>(
             false
         );
 
+        let captured_state = value.state;
+        let captured_store = value.store;
         // need to subscribe in sync mode, because
         // safari delays calling the effect giving priority to timeouts and network events,
         // which can cause the state update
-        value.store.subscribe(value.state); // no-op if already subscribed
+        captured_store.subscribe(captured_state); // no-op if already subscribed
         // need to attach the extension straight away
         // because extension methods are used in render function
         // and we can not defer it to the effect callback
-        value.store.activate(extension as ExtensionFactory<StateValueAtRoot, {}, StateExtensionUnknown>); // no-op if already attached
-        useIsomorphicLayoutEffect(() => {
+        captured_store.activate(extension as ExtensionFactory<StateValueAtRoot, {}, StateExtensionUnknown>); // no-op if already attached
+        useLayoutEffect(() => {
             // warning: in strict mode, effect is called twice
             // so need to restore subscription and reconstruct the extension
             // after the first effect unmount callback
-            value.state.onMount() // no-op if already mounted
-            value.store.subscribe(value.state); // no-op if already subscribed
-            value.store.activate(extension as ExtensionFactory<StateValueAtRoot, {}, StateExtensionUnknown>); // no-op if already attached
+            captured_state.onMount() // no-op if already mounted
+            captured_store.subscribe(captured_state); // no-op if already subscribed
+            captured_store.activate(extension as ExtensionFactory<StateValueAtRoot, {}, StateExtensionUnknown>); // no-op if already attached
             return () => {
-                value.state.onUnmount()
-                value.store.unsubscribe(value.state);
-                value.store.deactivate() // this will destroy the extensions
+                captured_state.onUnmount()
+                captured_store.unsubscribe(captured_state);
+                captured_store.deactivate() // this will destroy the extensions
             }
         }, []);
 
@@ -1011,11 +1013,11 @@ class Store implements Subscribable {
         if (this.edition < 0) {
             this.edition = -this.edition
         }
-        if (this._extension === undefined) {
-            this._extension = extensionFactory?.();
-            this._extensionMethods = this._extension?.onCreate?.(this._stateMethods.self(), {})
+        if (this._extension === undefined && extensionFactory !== undefined) {
+            this._extension = extensionFactory();
+            this._extensionMethods = this._extension.onCreate?.(this._stateMethods.self(), {})
             // this is invoked with all extension methods activated on the state
-            this._extension?.onInit?.(this._stateMethods.self(), this._extensionMethods || {})
+            this._extension.onInit?.(this._stateMethods.self(), this._extensionMethods || {})
         }
     }
 
