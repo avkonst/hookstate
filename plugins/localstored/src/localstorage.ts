@@ -30,7 +30,7 @@ export function localstored<S, E>(options?: {
                 getItem: (_key: string) => Promise.resolve(null),
                 setItem: (_key: string, _value: string) => Promise.resolve(),
                 removeItem: (_key: string) => Promise.resolve(),
-            };
+            } as StoreEngine;
         }
 
         return {
