@@ -18,7 +18,20 @@ export function localstored<S, E>(options?: {
         let serializer: (s: State<S, E>) => () => string;
         let deserializer: (s: State<S, E>) => (v: string) => void;
         let stateAtRoot: State<S, E>
-        let storageEngine: StoreEngine | Storage = options?.engine || localStorage;
+        let storageEngine: StoreEngine | Storage;
+
+        // Check if the code is running in a browser environment
+        if (typeof window !== 'undefined') {
+            // Use the specified storage engine or fallback to window.localStorage
+            storageEngine = options?.engine || window.localStorage;
+        } else {
+            // Replace with your desired behavior for non-browser environments
+            storageEngine = options?.engine || {
+                getItem: (_key: string) => Promise.resolve(null),
+                setItem: (_key: string, _value: string) => Promise.resolve(),
+                removeItem: (_key: string) => Promise.resolve(),
+            } as StoreEngine;
+        }
 
         return {
             onInit: (state, extensionMethods) => {
