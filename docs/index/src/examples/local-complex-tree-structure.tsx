@@ -40,14 +40,23 @@ function NodeListEditor(props: { nodes: State<Node[] | undefined> }) {
     // scoped state is optional for performance
     // could have used props.nodes everywhere instead
     const state = useHookstate(props.nodes);
+    
+    const handleAddNode = () => {
+        if (state.ornull) {
+            state.merge([{ name: `Untitled ${state.ornull.value.length + 1}` }])
+        } else {
+            state.set([{ name: 'Untitled 1' }])
+        }
+    }
+    
     return <div style={{ paddingLeft: 20 }}>
         {state.ornull && state.ornull.map((nodeState: State<Node>, i) =>
-            <div key={i}>
+            <div key={nodeState.name.value}>
                 <NodeNameEditor nameState={nodeState.name} />
                 <NodeListEditor nodes={nodeState.children} />
             </div>
         )}
-        <p><button onClick={() => state.set(nodes => (nodes || []).concat([{ name: 'Untitled' }]))}>
+        <p><button onClick={handleAddNode}>
             Add Node
         </button></p>
     </div>
