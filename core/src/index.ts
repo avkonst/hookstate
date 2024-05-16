@@ -679,7 +679,7 @@ export function useHookstate<S, E extends {} = {}>(
             let initializer = () => {
                 // warning: this is called twice in react strict mode
                 let store = parentMethods.store
-                let onSetUsedCallback = () => setValue({
+                let onSetUsedCallback = () => value.state.isMounted && setValue({
                     store: store, // immutable
                     state: state, // immutable
                     source: value.source // mutable, get the latest from value
@@ -750,7 +750,7 @@ export function useHookstate<S, E extends {} = {}>(
         let initializer = () => {
             // warning: this is called twice in react strict mode
             let store = createStore(source)
-            let onSetUsedCallback = () => setValue({
+            let onSetUsedCallback = () => value.state.isMounted && setValue({
                 store: store,
                 state: state,
             })
