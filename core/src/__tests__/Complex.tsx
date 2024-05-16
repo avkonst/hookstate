@@ -199,3 +199,78 @@ test('complex: should auto save latest state for unmounted', async () => {
     expect(unmountedLink.field1.get()).toStrictEqual(2);
     expect(result.current[0].get().field1).toStrictEqual(2);
 });
+
+test('scoped: should reinitialize when parent state changes', async () => {
+    const initialStore = hookstate({ a: 0 });
+    const newStore = hookstate({ a: 1 });
+
+    let renderTimes = 0;
+    const { result, rerender } = renderHook(({ source }) => {
+        renderTimes += 1;
+        return useHookstate(source).a;
+    }, { initialProps: { source: initialStore } });
+
+    expect(renderTimes).toBe(1);
+    expect(result.current.get()).toBe(0);
+
+    act(() => {
+        result.current.set(p => p + 1);
+    });
+
+    expect(result.current.get()).toBe(1);
+    expect(renderTimes).toBe(2);
+
+    rerender({ source: newStore });
+
+    expect(renderTimes).toBe(3);
+    expect(result.current.get()).toBe(1); // Should reinitialize to new store's value
+});
+
+test('should synchronize unsubscription and reinitialization when source/store changes', async () => {
+    const initialStore = hookstate(0);
+    const newStore = hookstate(42);
+    
+    let renderTimes = 0;
+    const { result, rerender } = renderHook(({ source }) => {
+        renderTimes += 1;
+        return useHookstate(source);
+    }, { initialProps: { source: initialStore } });
+
+    expect(renderTimes).toBe(1);
+    expect(result.current.get()).toBe(0);
+
+    act(() => {
+        result.current.set(p => p + 1);
+    });
+
+    expect(result.current.get()).toBe(1);
+    expect(renderTimes).toBe(2);
+
+    rerender({ source: newStore });
+
+    expect(renderTimes).toBe(3);
+    expect(result.current.get()).toBe(42); // Should reinitialize to new store's value
+});
+
+test('local: should reinitialize when initial state changes', async () => {
+    let renderTimes = 0;
+    const { result, rerender } = renderHook(({ initialState }) => {
+        renderTimes += 1;
+        return useHookstate(initialState);
+    }, { initialProps: { initialState: { a: 0 } } });
+
+    expect(renderTimes).toBe(1);
+    expect(result.current.a.get()).toBe(0);
+
+    act(() => {
+        result.current.a.set(p => p + 1);
+    });
+
+    expect(result.current.a.get()).toBe(1);
+    expect(renderTimes).toBe(2);
+
+    rerender({ initialState: { a: 1 } });
+
+    expect(renderTimes).toBe(3);
+    expect(result.current.a.get()).toBe(1); // Should reinitialize to new initial state
+});

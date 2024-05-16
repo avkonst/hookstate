@@ -609,9 +609,10 @@ export function useHookstate<S, E extends {} = {}>(
                 // warning: this is called twice in react strict mode
                 let store = parentMethods.store
                 let onSetUsedCallback = () => setValue({
-                    store: store, // immutable
-                    state: state, // immutable
-                    source: value.source // mutable, get the latest from value
+                    store, // immutable
+                    state, // immutable
+                    source: value.source, // mutable, get the latest from value,
+                    parentMethods
                 })
                 let state = new StateMethodsImpl<S, E>(
                     store,
@@ -621,15 +622,18 @@ export function useHookstate<S, E extends {} = {}>(
                     onSetUsedCallback
                 );
                 return {
-                    store: store,
-                    state: state,
-                    source: source
+                    store,
+                    state,
+                    source,
+                    parentMethods
                 }
             };
-            const [value, setValue] = React.useState(initializer);
+            let [value, setValue] = React.useState(initializer);
 
             if (value.store !== parentMethods.store || !('source' in value)) {
-                throw new StateInvalidUsageError(parentMethods.path, ErrorId.InitStateStoreSwitchover)
+                value.state.onUnmount()
+                value.parentMethods.unsubscribe(value.state);
+                value = initializer()
             }
 
             // TODO move to a class hide props on prototype level
@@ -637,6 +641,7 @@ export function useHookstate<S, E extends {} = {}>(
             Object.defineProperty(value, 'store', { enumerable: false });
             Object.defineProperty(value, 'state', { enumerable: false });
             Object.defineProperty(value, 'source', { enumerable: false });
+            Object.defineProperty(value, 'parentMethods', { enumerable: false });
 
             value.state.reconstruct(
                 parentMethods.path,
@@ -692,10 +697,12 @@ export function useHookstate<S, E extends {} = {}>(
                     source: source
                 }
             }
-            const [value, setValue] = React.useState(initializer);
+            let [value, setValue] = React.useState(initializer);
 
             if (value.store !== parentMethods.store || !('source' in value)) {
-                throw new StateInvalidUsageError(parentMethods.path, ErrorId.InitStateStoreSwitchover)
+                value.state.onUnmount()
+                value.store.unsubscribe(value.state);
+                value = initializer()
             }
 
             // hide props from development tools
@@ -759,10 +766,13 @@ export function useHookstate<S, E extends {} = {}>(
                 state: state
             }
         }
-        const [value, setValue] = React.useState(initializer);
+        let [value, setValue] = React.useState(initializer);
 
         if ('source' in value) {
-            throw new StateInvalidUsageError(RootPath, ErrorId.InitStateStoreSwitchover)
+            value.state.onUnmount()
+            value.store.unsubscribe(value.state);
+            value.store.deactivate()
+            value = initializer()
         }
 
         // hide props from development tools
@@ -1056,7 +1066,8 @@ class Store implements Subscribable {
     set(path: Path, value: StateValueAtPath): SetActionDescriptor {
         if (this.edition < 0) {
             // TODO convert to console log
-            throw new StateInvalidUsageError(path, ErrorId.SetStateWhenDestroyed)
+            // throw new StateInvalidUsageError(path, ErrorId.SetStateWhenDestroyed)
+            console.warn(`Warning: HOOKSTATE-106: Attempt to set state when it is destroyed. [path: /${path.join('/')}]`)
         }
 
         if (path.length === 0) {
