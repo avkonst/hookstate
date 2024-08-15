@@ -286,13 +286,12 @@ export type InferReturnType<V> = V extends (...args: any) => (infer R) ? InferRe
  * [Learn more about local states...](https://hookstate.js.org/docs/local-state)
  * [Learn more about nested states...](https://hookstate.js.org/docs/nested-state)
  */
-export type State<S, E = {}> = __State<S, E> & StateMethods<S, E> & E & (
-    S extends ReadonlyArray<(infer U)> ? ReadonlyArray<State<U, E>> :
-    S extends object ? Omit<
-        { readonly [K in keyof Required<S>]: State<S[K], E>; },
-        keyof StateMethods<S, E> | InferKeysOfType<S, Function> | keyof E
-    > : {}
-);
+export type State<S, E = {}> = __State<S, E> & StateMethods<S, E> & E & Omit<
+    S extends ReadonlyArray<infer U> ? ReadonlyArray<State<U, E>> :
+    S extends {} ? { readonly [K in keyof Required<S>]: State<S[K], E> } :
+    { readonly [K in keyof any]: undefined },
+    keyof StateMethods<S, E> | InferKeysOfType<S, Function> | keyof E
+>;
 
 /**
  * For extension developers only.
