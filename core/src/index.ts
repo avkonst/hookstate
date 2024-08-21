@@ -291,9 +291,9 @@ export type State<S, E = {}> = __State<S, E> & StateMethods<S, E> & E & (
     S extends ReadonlyArray<infer U> ? ReadonlyArray<State<U, E>> :
     Omit<
         S extends {}
-            ? { readonly [K in keyof Required<S>]: S[K] extends Function ? never : State<S[K], E> }
+            ? { readonly [K in keyof Required<S>]: State<S[K], E> }
             : { readonly [K in keyof any]: undefined },
-        keyof StateMethods<S, E> | keyof E
+        keyof StateMethods<S, E> | InferKeysOfType<S, Function> | keyof E
     >
 );
 
