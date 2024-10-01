@@ -132,6 +132,7 @@ export function validation<S, E>(): ExtensionFactory<S, E, Validation> {
                 } else {
                     for (let i = 0; i < nestedRulesKeys.length; i += 1) {
                         const k = nestedRulesKeys[i];
+                        const nestedValue = nestedInst.nested(k) as State<StateValueAtPath, Validation>
                         // Validation rule exists,
                         // but the corresponding nested link may not be created,
                         // (because it may not be inferred automatically)
@@ -139,9 +140,8 @@ export function validation<S, E>(): ExtensionFactory<S, E, Validation> {
                         // The design choice is to skip validation in this case.
                         // A client can define per array level validation rule,
                         // where existance of the index can be cheched.
-                        if (nestedInst[k] !== undefined) {
-                            result = result.concat(
-                                (nestedInst[k] as State<StateValueAtPath, Validation>).errors(filter, depth - 1, first));
+                        if (nestedValue !== undefined) {
+                            result = result.concat(nestedValue.errors(filter, depth - 1, first));
                             if (first && result.length > 0) {
                                 return result;
                             }
