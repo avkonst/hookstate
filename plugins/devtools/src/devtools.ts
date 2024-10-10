@@ -61,7 +61,7 @@ function createReduxDevToolsLogger(
             if (stateAtRoot.promised || stateAtRoot.error) {
                 return none
             }
-            return stateAtRoot.value
+            return stateAtRoot.get({noproxy: true})
         },
         devToolsEnhancer({
             name: `${window.location.hostname}: ${assignedId}`,
