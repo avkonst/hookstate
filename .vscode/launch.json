@@ -1,0 +1,19 @@
+{
+    "version": "1.0.0",
+    "configurations": [
+      {
+        "name": "Test Core",
+        "request": "launch",
+        "runtimeArgs": [
+          "nx",
+          "test",
+          "core"
+        ],
+        "runtimeExecutable": "pnpm",
+        "skipFiles": [
+          "<node_internals>/**"
+        ],
+        "type": "node"
+      }
+    ]
+  }
