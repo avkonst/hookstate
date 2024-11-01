@@ -38,7 +38,7 @@ export function validation<S, E>(): ExtensionFactory<S, E, Validation> {
 
             interface ValidationRule {
                 readonly message: string | ((value: StateValueAtPath) => string)
-                readonly rule: (v: StateValueAtPath) => boolean
+                readonly rule: (v: StateValueAtPath, p: Path) => boolean
                 readonly severity: ValidationSeverity;
             }
 
@@ -91,7 +91,7 @@ export function validation<S, E>(): ExtensionFactory<S, E, Validation> {
                 const [existingRules, nestedRulesKeys] = getRulesAndNested(l.path);
                 for (let i = 0; i < existingRules.length; i += 1) {
                     const r = existingRules[i];
-                    if (!r.rule(l.value)) {
+                    if (!r.rule(l.value, l.path)) {
                         const err = {
                             path: l.path,
                             message: typeof r.message === 'function' ? r.message(l.value) : r.message,
