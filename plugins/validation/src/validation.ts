@@ -10,6 +10,7 @@ export interface ValidationError {
 }
 
 export interface Validation {
+    resetValidations(): void
     validate<S extends InferStateValueType<this>>(rule: (value: S) => boolean,
         message: string | ((value: S) => string),
         severity?: ValidationSeverity): void,
@@ -152,6 +153,9 @@ export function validation<S, E>(): ExtensionFactory<S, E, Validation> {
             }
 
             return {
+                resetValidations: (_) => () => {
+                    Object.keys(storeRules).forEach(key => delete storeRules[key])
+                },
                 validate: (state) => (r, m, s) => addRule(state.path, {
                     rule: r,
                     message: m,
