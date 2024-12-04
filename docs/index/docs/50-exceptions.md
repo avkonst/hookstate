@@ -180,7 +180,7 @@ const state = useHookstate({ callback: () => {} })
 state.get({ noproxy: true }).callback() // <== OK
 ```
 
-Please, note that this error happens only when an a value has Object class name.
+Please, note that this error happens only when a value has Object class name.
 Hookstate handles correctly the cases when you call methods of instances of other classes, for example Date class.
 
 ## HOOKSTATE-111
