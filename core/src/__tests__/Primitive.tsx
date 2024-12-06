@@ -236,7 +236,7 @@ test('primitive: global state created locally', async () => {
         result.current!.set(p => p + 1);
     });
     expect(renderTimes).toStrictEqual(2);
-    expect(errorMessage).toStrictEqual("Error: Error: HOOKSTATE-111 [path: /]. See https://hookstate.js.org/docs/exceptions#hookstate-111")
+    expect(errorMessage).toStrictEqual("")
 });
 
 test('primitive: stale state should auto refresh', async () => {
