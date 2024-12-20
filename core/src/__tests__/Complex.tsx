@@ -224,6 +224,13 @@ test('scoped: should reinitialize when parent state changes', async () => {
 
     expect(renderTimes).toBe(3);
     expect(result.current.get()).toBe(1); // Should reinitialize to new store's value
+
+    // should be able to set state after reinitialization
+    act(() => {
+        result.current.set(p => p + 1);
+    });
+
+    expect(result.current.get()).toBe(2);
 });
 
 test('should synchronize unsubscription and reinitialization when source/store changes', async () => {
@@ -250,6 +257,13 @@ test('should synchronize unsubscription and reinitialization when source/store c
 
     expect(renderTimes).toBe(3);
     expect(result.current.get()).toBe(42); // Should reinitialize to new store's value
+
+    // should be able to set state after reinitialization
+    act(() => {
+        result.current.set(p => p + 1);
+    });
+
+    expect(result.current.get()).toBe(43);
 });
 
 test('local: should reinitialize when initial state changes', async () => {
@@ -273,4 +287,11 @@ test('local: should reinitialize when initial state changes', async () => {
 
     expect(renderTimes).toBe(3);
     expect(result.current.a.get()).toBe(1); // Should reinitialize to new initial state
+
+    // should be able to set state after reinitialization
+    act(() => {
+        result.current.a.set(p => p + 1);
+    });
+
+    expect(result.current.a.get()).toBe(2);
 });

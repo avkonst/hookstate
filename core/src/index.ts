@@ -287,7 +287,7 @@ export type InferReturnType<V> = V extends (...args: any) => (infer R) ? InferRe
  * [Learn more about nested states...](https://hookstate.js.org/docs/nested-state)
  */
 export type State<S, E = {}> = __State<S, E> & StateMethods<S, E> & E & (
-    S extends ReadonlyArray<(infer U)> ? ReadonlyArray<State<U, E>> :
+    S extends ReadonlyArray<infer U> ? ReadonlyArray<State<U, E>> :
     S extends object ? Omit<
         { readonly [K in keyof Required<S>]: State<S[K], E>; },
         keyof StateMethods<S, E> | InferKeysOfType<S, Function> | keyof E
@@ -953,7 +953,7 @@ class Store implements Subscribable {
 
     private _promise?: Promise<StateValueAtRoot>;
     private _promiseResolver?: (_: StateValueAtRoot) => void;
-    private _promiseError?: StateValueAtRoot;
+    private _promiseError?: StateValueAtPath;
 
     constructor(private _value: StateValueAtRoot) {
         if (Object(_value) === _value &&
@@ -1064,11 +1064,7 @@ class Store implements Subscribable {
     }
 
     set(path: Path, value: StateValueAtPath): SetActionDescriptor {
-        if (this.edition < 0) {
-            // TODO convert to console log
-            // throw new StateInvalidUsageError(path, ErrorId.SetStateWhenDestroyed)
-            console.warn(`Warning: HOOKSTATE-106: Attempt to set state when it is destroyed. [path: /${path.join('/')}]`)
-        }
+
 
         if (path.length === 0) {
             // Root value UPDATE case,
