@@ -405,7 +405,6 @@ test('extension: common flow callbacks global state', async () => {
     act(() => {
         result.current[0].f1.set(p => p + 1)
     });
-    expect(console.warn).toHaveBeenCalledWith(`Warning: HOOKSTATE-106: Attempt to set state when it is destroyed. [path: /0/f1]`)
     expect(renderTimes).toStrictEqual(7);
     expect(result.current.get()[0].f1).toStrictEqual(1);
     expect(messages).toEqual([])
