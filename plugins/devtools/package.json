@@ -1,6 +1,6 @@
 {
     "name": "@hookstate/devtools",
-    "version": "4.0.0",
+    "version": "4.0.3",
     "description": "Development tools plugin for @hookstate/core.",
     "license": "MIT",
     "author": {
@@ -32,7 +32,7 @@
         "redux-devtools-extension": "2.13.9"
     },
     "peerDependencies": {
-        "@hookstate/core": "4.0.0"
+        "@hookstate/core": "^4.0.0"
     },
     "devDependencies": {
         "@babel/core": "7.18.6",

@@ -7,9 +7,10 @@ test('validation: basic test', async () => {
     let renderTimes = 0
     const { result } = renderHook(() => {
         renderTimes += 1;
-        let result = useHookstate({ a: [0, 1], b: [1, 1] }, validation())
+        let result = useHookstate({ a: [0, 1], b: [1, 1], value: 2 }, validation())
         result.a.validate(r => r[0] === 0, "a.0 should be zero")
         result.b[1].validate(r => r === 1, "b.* should be one")
+        result.nested("value").validate(r => r === 2, "value should be two")
         return result;
     });
     expect(renderTimes).toStrictEqual(1);
@@ -20,6 +21,7 @@ test('validation: basic test', async () => {
     expect(result.current.b.valid()).toStrictEqual(true);
     expect(result.current.b[0].valid()).toStrictEqual(true);
     expect(result.current.b[1].valid()).toStrictEqual(true);
+    expect(result.current.nested("value").valid()).toStrictEqual(true);
 
     act(() => {
         result.current.a[0].set(p => p + 1);
@@ -32,6 +34,7 @@ test('validation: basic test', async () => {
     expect(result.current.b.valid()).toStrictEqual(true);
     expect(result.current.b[0].valid()).toStrictEqual(true);
     expect(result.current.b[1].valid()).toStrictEqual(true);
+    expect(result.current.nested("value").valid()).toStrictEqual(true);
 
     act(() => {
         result.current.a[0].set(p => p - 1);
@@ -44,6 +47,7 @@ test('validation: basic test', async () => {
     expect(result.current.b.valid()).toStrictEqual(true);
     expect(result.current.b[0].valid()).toStrictEqual(true);
     expect(result.current.b[1].valid()).toStrictEqual(true);
+    expect(result.current.nested("value").valid()).toStrictEqual(true);
 
     act(() => {
         result.current.b[0].set(p => p + 1);
@@ -56,6 +60,20 @@ test('validation: basic test', async () => {
     expect(result.current.b.valid()).toStrictEqual(false);
     expect(result.current.b[0].valid()).toStrictEqual(false);
     expect(result.current.b[1].valid()).toStrictEqual(true);
+    expect(result.current.nested("value").valid()).toStrictEqual(true);
+
+    act(() => {
+        result.current.nested("value").set(p => p + 1);
+    });
+    expect(renderTimes).toStrictEqual(5);
+    expect(result.current.valid()).toStrictEqual(false);
+    expect(result.current.a.valid()).toStrictEqual(true);
+    expect(result.current.a[0].valid()).toStrictEqual(true);
+    expect(result.current.a[1].valid()).toStrictEqual(true);
+    expect(result.current.b.valid()).toStrictEqual(false);
+    expect(result.current.b[0].valid()).toStrictEqual(false);
+    expect(result.current.b[1].valid()).toStrictEqual(true);
+    expect(result.current.nested("value").valid()).toStrictEqual(false);
 });
 
 test('validation: ', async () => {
