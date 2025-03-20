@@ -191,12 +191,12 @@ test('extension: common flow callbacks', async () => {
     expect(messages).toEqual([])
     messages.splice(0, messages.length);
 
+    console.warn = jest.fn()
     act(() => {
-        expect(() => result.current[0].f1.set(p => p + 1)).toThrow(
-            'Error: HOOKSTATE-106 [path: /0/f1]. See https://hookstate.js.org/docs/exceptions#hookstate-106'
-        );
+        result.current[0].f1.set(10)
     });
     expect(renderTimes).toStrictEqual(7);
+    expect(result.current.get()[0].f1).toStrictEqual(10);
     expect(messages).toEqual([])
     messages.splice(0, messages.length);
 });
@@ -399,12 +399,13 @@ test('extension: common flow callbacks global state', async () => {
     expect(messages).toEqual([])
     messages.splice(0, messages.length);
 
+
+    console.warn = jest.fn()
     act(() => {
-        expect(() => result.current[0].f1.set(p => p + 1)).toThrow(
-            'Error: HOOKSTATE-106 [path: /0/f1]. See https://hookstate.js.org/docs/exceptions#hookstate-106'
-        );
+        result.current[0].f1.set(p => p + 1)
     });
     expect(renderTimes).toStrictEqual(7);
+    expect(result.current.get()[0].f1).toStrictEqual(1);
     expect(messages).toEqual([])
     messages.splice(0, messages.length);
 });

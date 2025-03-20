@@ -80,7 +80,7 @@ This is the mono repository, which combine the Hookstate core package, extension
 
 From the repository root directory:
 
-- `npm install -f pnpm` - install pnpm tool
+- `npm install -g pnpm` - install pnpm tool
 - `pnpm install` - install node_modules for all packages
 
 - `pnpm nx <script> <package>` - run script for a package as well as build dependencies if required, for example:

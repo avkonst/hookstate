@@ -287,7 +287,7 @@ export type InferReturnType<V> = V extends (...args: any) => (infer R) ? InferRe
  * [Learn more about nested states...](https://hookstate.js.org/docs/nested-state)
  */
 export type State<S, E = {}> = __State<S, E> & StateMethods<S, E> & E & (
-    S extends ReadonlyArray<(infer U)> ? ReadonlyArray<State<U, E>> :
+    S extends ReadonlyArray<infer U> ? ReadonlyArray<State<U, E>> :
     S extends object ? Omit<
         { readonly [K in keyof Required<S>]: State<S[K], E>; },
         keyof StateMethods<S, E> | InferKeysOfType<S, Function> | keyof E
@@ -609,9 +609,10 @@ export function useHookstate<S, E extends {} = {}>(
                 // warning: this is called twice in react strict mode
                 let store = parentMethods.store
                 let onSetUsedCallback = () => setValue({
-                    store: store, // immutable
-                    state: state, // immutable
-                    source: value.source // mutable, get the latest from value
+                    store, // immutable
+                    state, // immutable
+                    source: value.source, // mutable, get the latest from value,
+                    parentMethods
                 })
                 let state = new StateMethodsImpl<S, E>(
                     store,
@@ -621,15 +622,18 @@ export function useHookstate<S, E extends {} = {}>(
                     onSetUsedCallback
                 );
                 return {
-                    store: store,
-                    state: state,
-                    source: source
+                    store,
+                    state,
+                    source,
+                    parentMethods
                 }
             };
-            const [value, setValue] = React.useState(initializer);
+            let [value, setValue] = React.useState(initializer);
 
             if (value.store !== parentMethods.store || !('source' in value)) {
-                throw new StateInvalidUsageError(parentMethods.path, ErrorId.InitStateStoreSwitchover)
+                value.state.onUnmount()
+                value.parentMethods.unsubscribe(value.state);
+                value = initializer()
             }
 
             // TODO move to a class hide props on prototype level
@@ -637,6 +641,7 @@ export function useHookstate<S, E extends {} = {}>(
             Object.defineProperty(value, 'store', { enumerable: false });
             Object.defineProperty(value, 'state', { enumerable: false });
             Object.defineProperty(value, 'source', { enumerable: false });
+            Object.defineProperty(value, 'parentMethods', { enumerable: false });
 
             value.state.reconstruct(
                 parentMethods.path,
@@ -674,7 +679,7 @@ export function useHookstate<S, E extends {} = {}>(
             let initializer = () => {
                 // warning: this is called twice in react strict mode
                 let store = parentMethods.store
-                let onSetUsedCallback = () => setValue({
+                let onSetUsedCallback = () => value.state.isMounted && setValue({
                     store: store, // immutable
                     state: state, // immutable
                     source: value.source // mutable, get the latest from value
@@ -692,10 +697,12 @@ export function useHookstate<S, E extends {} = {}>(
                     source: source
                 }
             }
-            const [value, setValue] = React.useState(initializer);
+            let [value, setValue] = React.useState(initializer);
 
             if (value.store !== parentMethods.store || !('source' in value)) {
-                throw new StateInvalidUsageError(parentMethods.path, ErrorId.InitStateStoreSwitchover)
+                value.state.onUnmount()
+                value.store.unsubscribe(value.state);
+                value = initializer()
             }
 
             // hide props from development tools
@@ -743,7 +750,7 @@ export function useHookstate<S, E extends {} = {}>(
         let initializer = () => {
             // warning: this is called twice in react strict mode
             let store = createStore(source)
-            let onSetUsedCallback = () => setValue({
+            let onSetUsedCallback = () => value.state.isMounted && setValue({
                 store: store,
                 state: state,
             })
@@ -759,10 +766,13 @@ export function useHookstate<S, E extends {} = {}>(
                 state: state
             }
         }
-        const [value, setValue] = React.useState(initializer);
+        let [value, setValue] = React.useState(initializer);
 
         if ('source' in value) {
-            throw new StateInvalidUsageError(RootPath, ErrorId.InitStateStoreSwitchover)
+            value.state.onUnmount()
+            value.store.unsubscribe(value.state);
+            value.store.deactivate()
+            value = initializer()
         }
 
         // hide props from development tools
@@ -943,7 +953,7 @@ class Store implements Subscribable {
 
     private _promise?: Promise<StateValueAtRoot>;
     private _promiseResolver?: (_: StateValueAtRoot) => void;
-    private _promiseError?: StateValueAtRoot;
+    private _promiseError?: StateValueAtPath;
 
     constructor(private _value: StateValueAtRoot) {
         if (Object(_value) === _value &&
@@ -1054,10 +1064,7 @@ class Store implements Subscribable {
     }
 
     set(path: Path, value: StateValueAtPath): SetActionDescriptor {
-        if (this.edition < 0) {
-            // TODO convert to console log
-            throw new StateInvalidUsageError(path, ErrorId.SetStateWhenDestroyed)
-        }
+
 
         if (path.length === 0) {
             // Root value UPDATE case,

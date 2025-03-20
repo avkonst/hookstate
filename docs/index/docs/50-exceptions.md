@@ -102,7 +102,9 @@ More information about [asynchronous states](./asynchronous-state).
 
 ## HOOKSTATE-106
 
-Happens when state is set after destroy. Typically it may happen when a component is unmounted but leaves asynchronous operations running, which trigger state updates when awaited finally.
+Deprecated in Hookstate 4.0.2. Now, setting state after unmount no longer throws an exception, which matches the behavior of React 18. 
+
+In prior versions of Hookstate, this exception happens when state is set after destroy. Typically it may happen when a component is unmounted but leaves asynchronous operations running, which trigger state updates when awaited finally.
 
 ```tsx
 const state = hookstate(...)
