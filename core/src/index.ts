@@ -221,7 +221,7 @@ export interface StateMethods<S, E> {
      * If state value is null or undefined, returns state value.
      * Otherwise, it returns this state instance but
      * with null and undefined removed from the type parameter.
-     * 
+     *
      * [Learn more...](https://hookstate.js.org/docs/nullable-state)
      */
     ornull: InferStateOrnullType<S, E>;
@@ -700,9 +700,14 @@ export function useHookstate<S, E extends {} = {}>(
             let [value, setValue] = React.useState(initializer);
 
             if (value.store !== parentMethods.store || !('source' in value)) {
-                value.state.onUnmount()
-                value.store.unsubscribe(value.state);
-                value = initializer()
+                // Get a reference to the old store before we create a new one
+                const oldStore = value.store;
+                const oldState = value.state;
+
+                oldState.onUnmount();
+                value = initializer();
+                oldStore.unsubscribe(oldState);
+                oldStore.cleanupOrphanedSubscribers();
             }
 
             // hide props from development tools
@@ -804,7 +809,8 @@ export function useHookstate<S, E extends {} = {}>(
             return () => {
                 value.state.onUnmount()
                 value.store.unsubscribe(value.state);
-                value.store.deactivate() // this will destroy the extensions
+                value.store.cleanupOrphanedSubscribers();
+                value.store.deactivate()
             }
         }, []);
 
@@ -881,7 +887,8 @@ export function suspend<S, E>(state: State<S, E>) {
 /// INTERNAL SYMBOLS (LIBRARY IMPLEMENTATION)
 ///
 
-const self = Symbol('self')
+// Using Symbol.for to make it accessible in tests
+const self = Symbol.for('hookstate-self')
 
 enum ErrorId {
     StateUsedInDependencyList = 100,
@@ -1035,6 +1042,16 @@ class Store implements Subscribable {
             delete this._extension;
             delete this._extensionMethods;
         }
+        // We need to properly clean up all subscribers
+        // Create a new set to avoid modification during iteration
+        const subscribers = new Set(this._subscribers);
+        subscribers.forEach(subscriber => {
+            this.unsubscribe(subscriber);
+        });
+
+        // Clear all subscribers
+        this._subscribers.clear();
+
         if (this.edition > 0) {
             this.edition = -this.edition
         }
@@ -1200,6 +1217,25 @@ class Store implements Subscribable {
 
     unsubscribe(l: Subscriber) {
         this._subscribers.delete(l);
+    }
+
+    cleanupOrphanedSubscribers() {
+        if (this._subscribers.size <= 1) {
+            return; // Early return if there's nothing to clean up
+        }
+
+        const subscribers = Array.from(this._subscribers);
+
+        for (const subscriber of subscribers) {
+            if (subscriber === this._stateMethods) {
+                continue;
+            }
+
+            if (subscriber instanceof StateMethodsImpl &&
+                !subscriber.isMounted) {
+                this.unsubscribe(subscriber);
+            }
+        }
     }
 
     toJSON() {
@@ -1500,6 +1536,12 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, Subscribable, Subscr
 
     onUnmount() {
         this.onSetUsed[IsUnmounted] = true
+        if (this.subscribers) {
+            // First unsubscribe from the store
+            this.store.unsubscribe(this);
+            // Then clear all subscribers
+            this.subscribers.clear();
+        }
     }
 
     onSet(ad: SetActionDescriptor, actions: Set<() => void>): boolean {
