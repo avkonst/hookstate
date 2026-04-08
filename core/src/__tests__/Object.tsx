@@ -1,6 +1,6 @@
 import { useHookstate, hookstate, none, isHookstateValue, isHookstate } from '../';
 
-import { renderHook, act } from '@testing-library/react-hooks';
+import { renderHook, act } from '@testing-library/react';
 
 test('object: should rerender used', async () => {
     let renderTimes = 0

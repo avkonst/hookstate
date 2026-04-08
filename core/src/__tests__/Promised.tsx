@@ -1,6 +1,6 @@
 import { useHookstate, hookstate, none } from '../';
 
-import { renderHook, act } from '@testing-library/react-hooks';
+import { renderHook, act } from '@testing-library/react';
 
 test('primitive: should rerender used on promise resolve', async () => {
     let renderTimes = 0
@@ -309,7 +309,7 @@ test('primitive: should rerender used on promise reject', async () => {
     } catch (err) {
         // ignore
     }
-    expect(renderTimes).toStrictEqual(3);
+    expect(renderTimes).toStrictEqual(2);
     expect(result.current.promised).toStrictEqual(false);
     expect(result.current.error).toEqual('some error promise');
     expect(() => result.current.get()).toThrow('some error promise');

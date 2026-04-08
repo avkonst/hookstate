@@ -1,6 +1,6 @@
 import { useHookstate, hookstate, extend, InferStateValueType, ExtensionFactory, destroy } from '../';
 
-import { renderHook, act } from '@testing-library/react-hooks';
+import { renderHook, act } from '@testing-library/react';
 
 interface MyExtensionMethods {
     extensionMethod(): number,

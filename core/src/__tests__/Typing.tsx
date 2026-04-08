@@ -1,6 +1,6 @@
 import { hookstate, none, State, useHookstate } from '../';
 
-import { renderHook, act } from '@testing-library/react-hooks';
+import { renderHook, act } from '@testing-library/react';
 
 test('check assignability on typescript level', async () => {
     {

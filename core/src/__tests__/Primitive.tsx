@@ -1,6 +1,6 @@
 import { useHookstate, hookstate, State } from '../';
 
-import { renderHook, act } from '@testing-library/react-hooks';
+import { renderHook, act } from '@testing-library/react';
 import React from 'react';
 
 test('primitive: should rerender used', async () => {
@@ -284,10 +284,8 @@ test('primitive: state value should be the latest', async () => {
         renderTimes += 1;
         const r = useHookstate(0)
         React.useEffect(() => {
-            act(() => {
-                r.set(r.get() + 1) // 0 + 1
-                r.set(r.get() + 1) // 1 + 1
-            })
+            r.set(r.get() + 1) // 0 + 1
+            r.set(r.get() + 1) // 1 + 1
         }, [])
         return r
     });

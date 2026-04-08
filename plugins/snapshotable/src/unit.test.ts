@@ -2,7 +2,7 @@ import { useHookstate, extend, hookstate, State } from '@hookstate/core';
 import { clonable } from '@hookstate/clonable';
 import { comparable } from '@hookstate/comparable';
 
-import { renderHook, act } from '@testing-library/react-hooks';
+import { renderHook, act } from '@testing-library/react';
 import React from 'react';
 import { snapshotable } from './snapshotable';
 

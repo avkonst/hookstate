@@ -1,6 +1,6 @@
 
 import { hookstate, State } from '@hookstate/core';
-import { renderHook, act } from '@testing-library/react-hooks';
+import { renderHook, act } from '@testing-library/react';
 import { Clonable, clonable } from '../src'
 
 test('check typescript assignability', async () => {

@@ -24,14 +24,14 @@ export type Path = ReadonlyArray<string | number>;
 
 /**
  * Type of an argument of [State.set](#set).
- * 
+ *
  * @typeparam S Type of a value of a state
  */
 export type SetStateAction<S> = (S | Immutable<S> | Promise<S | Immutable<S>>) | ((prevState: S) => (S | Immutable<S> | Promise<S | Immutable<S>>));
 
 /**
  * Type of an argument of [State.merge](#merge).
- * 
+ *
  * @typeparam S Type of a value of a state
  */
 export type SetPartialStateAction<S> =
@@ -42,7 +42,7 @@ export type SetPartialStateAction<S> =
 
 /**
  * Type of an argument of [hookstate](#hookstate) and [useHookstate](#useHookstate).
- * 
+ *
  * @typeparam S Type of a value of a state
  */
 export type SetInitialStateAction<S> = S | Promise<S> | (() => S | Promise<S>)
@@ -50,14 +50,14 @@ export type SetInitialStateAction<S> = S | Promise<S> | (() => S | Promise<S>)
 /**
  * Special symbol which might be used to delete properties
  * from an object calling [State.set](#set) or [State.merge](#merge).
- * 
+ *
  * [Learn more...](https://hookstate.js.org/docs/nested-state#deleting-existing-element)
  */
 export const none = Symbol('none') as StateValueAtPath;
 
 /**
  * Return type of [State.keys](#readonly-keys).
- * 
+ *
  * @typeparam S Type of a value of a state
  */
 export type InferStateKeysType<S> =
@@ -68,7 +68,7 @@ export type InferStateKeysType<S> =
 
 /**
  * Return type of [State.ornull](#ornull).
- * 
+ *
  * @typeparam S Type of a value of a state
  */
 export type InferStateOrnullType<S, E> =
@@ -91,7 +91,7 @@ export type ImmutableObject<T> = { readonly [K in keyof T]: Immutable<T[K]> };
 
 /**
  * An interface to manage a state in Hookstate.
- * 
+ *
  * @typeparam S Type of a value of a state
  */
 export interface StateMethods<S, E> {
@@ -164,16 +164,16 @@ export interface StateMethods<S, E> {
      * [path](#readonly-path) of this state instance.
      *
      * It returns the same result as [State.value](#readonly-value) method.
-     * 
+     *
      * If the additional option `noproxy` is set, the method will return
      * the original data object without wrapping it by proxy.
      * All properties of the object will be marked as used and on change will trigger the rerender.
-     * 
+     *
      * If the additional option `stealth` is set, the method will not mark
      * the object as used and it will not trigger the rerender if it is changed.
      * It might be helpful to use it during debugging, for example:
      * `console.log(state.get({ stealth: true }))`.
-     * If you use it, make sure you know what you are doing. 
+     * If you use it, make sure you know what you are doing.
      */
     get(options?: { noproxy?: boolean, stealth?: boolean }): Immutable<S>;
 
@@ -210,9 +210,9 @@ export interface StateMethods<S, E> {
      * Returns nested state by key.
      * `state.nested('myprop')` returns the same as `state.myprop` or `state['myprop']`,
      * but also works for properties, which names collide with names of state methods.
-     * 
+     *
      * [Learn more about nested states...](https://hookstate.js.org/docs/nested-state)
-     * 
+     *
      * @param key child property name or index
      */
     nested<K extends keyof S>(key: K): State<S[K], E>;
@@ -221,14 +221,14 @@ export interface StateMethods<S, E> {
      * If state value is null or undefined, returns state value.
      * Otherwise, it returns this state instance but
      * with null and undefined removed from the type parameter.
-     * 
+     *
      * [Learn more...](https://hookstate.js.org/docs/nullable-state)
      */
     ornull: InferStateOrnullType<S, E>;
 }
 
 /**
- * Returns an interface stripped of all keys that don't resolve to U, defaulting 
+ * Returns an interface stripped of all keys that don't resolve to U, defaulting
  * to a non-strict comparison of T[key] extends U. Setting B to true performs
  * a strict type comparison of T[key] extends U & U extends T[key]
  */
@@ -248,14 +248,14 @@ export type InferKeysOfType<T, U, B = false> = {
 
 /**
  * A symbol which is used for type inference marking.
- * 
+ *
  * @hidden
  * @ignore
  */
 export const __state = Symbol('__state')
 /**
  * An interface which is used for type inference marking.
- * 
+ *
  * @hidden
  * @ignore
  */
@@ -279,9 +279,9 @@ export type InferReturnType<V> = V extends (...args: any) => (infer R) ? InferRe
 
 /**
  * Type of a result of [hookstate](#hookstate) and [useHookstate](#useHookstate) functions
- * 
+ *
  * @typeparam S Type of a value of a state
- * 
+ *
  * [Learn more about global states...](https://hookstate.js.org/docs/global-state)
  * [Learn more about local states...](https://hookstate.js.org/docs/local-state)
  * [Learn more about nested states...](https://hookstate.js.org/docs/nested-state)
@@ -331,7 +331,7 @@ export type StateExtensionUnknown = any; //tslint:disable-line: no-any
 /**
  * For extension developers only.
  * An additional descriptor of an action mutation action applied
- * 
+ *
  * @hidden
  * @ignore
  */
@@ -346,7 +346,7 @@ export interface SetActionDescriptor {
 /**
  * For extension developers only.
  * Set of callbacks, an extension may subscribe to.
- * 
+ *
  * [Learn more...](https://hookstate.js.org/docs/writing-extension)
  */
 export interface Extension<S, I, E> {
@@ -520,7 +520,7 @@ export function extend<
 }
 
 /**
- * @warning Initializing a local state to a promise without using 
+ * @warning Initializing a local state to a promise without using
  * an initializer callback function, which returns a Promise,
  * is almost always a mistake. So, it is blocked.
  * Use `useHookstate(() => your_promise)` instead of `useHookstate(your_promise)`.
@@ -829,7 +829,7 @@ export function StateFragment<S, E extends {}>(
  * particularly useful for creating *scoped* states.
  *
  * [Learn more...](https://hookstate.js.org/docs/using-without-statehook)
- * 
+ *
  * @typeparam S Type of a value of a state
  */
 export function StateFragment<S, E extends {}>(
@@ -842,9 +842,9 @@ export function StateFragment<S, E extends {}>(
 /**
  * Allows to use a state without defining a functional react component.
  * See more at [StateFragment](#statefragment)
- * 
+ *
  * [Learn more...](https://hookstate.js.org/docs/using-without-statehook)
- * 
+ *
  * @typeparam S Type of a value of a state
  */
 export function StateFragment<S, E extends {}>(
@@ -1058,6 +1058,9 @@ class Store implements Subscribable {
             return result;
         }
         path.forEach(p => {
+            if (result === undefined) {
+                return;
+            }
             result = result[p];
         });
         return result;
@@ -1256,7 +1259,7 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, Subscribable, Subscr
         delete this.childrenUsed
 
         // We should not delete subscribers as these are self cleaned up when unmounted
-        // Theoretically it is possible to reconnect subscribers like we done it for 
+        // Theoretically it is possible to reconnect subscribers like we done it for
         // children, but it is easier and more efficient to leave subscribers to have independent lifecycle
         // If we delete subscribers here, scoped states wrapped in React.memo
         // will lose state change propagation and rerendering for scopped states
@@ -1698,7 +1701,13 @@ class StateMethodsImpl<S, E> implements StateMethods<S, E>, Subscribable, Subscr
                 return undefined
             }
             if (key === 'toJSON') {
-                throw new StateInvalidUsageError(this.path, ErrorId.ToJson_State);
+                const error = new StateInvalidUsageError(this.path, ErrorId.ToJson_State);
+                if (!configuration.isDevelopmentMode) {
+                    throw error;
+                } else {
+                    console.warn(error.message)
+                    return JSON.stringify(this.value);
+                }
             }
 
             let nestedGetter = (prop: PropertyKey) => {
@@ -1979,9 +1988,9 @@ export interface Configuration {
      * other functions where a dependency lists are used as arguments.
      * This allows these hook functions to have Hookstate State objects
      * in dependency lists and everything to work as 'expected'.
-     * 
+     *
      * It is possible to opt-out from this mode, configuring the option to never.
-     * 
+     *
      * Alternatively, it is possible to set it to intercept only during development,
      * which will raise HOOKSTATE-100 error whenever Hookstate State is used in a dependency list of standard React hook function.
      * This error can be fixed by replacing standard React hooks by Hookstate provided hooks,
@@ -1991,7 +2000,8 @@ export interface Configuration {
     /**
      * Defines is Hookstate is running in a development mode.
      * Development mode enables additional checking and HMR support.
-     * By default, it detects if process.env.NODE_ENV is set to 'development'.
+     * By default, it detects React's development mode by checking for development-only properties.
+     * Falls back to process.env.NODE_ENV check if React detection fails.
      * It might not work in all environments and so expected to be provided by an application explicitly.
      */
     isDevelopmentMode: boolean,
@@ -2002,11 +2012,27 @@ export interface Configuration {
      */
     promiseDetector: (p: any) => boolean,
 }
+/**
+ * Detects if React is running in development mode by checking for development-only properties
+ */
+function isReactDevMode(): boolean {
+    try {
+        // React development mode includes validation and additional properties
+        // Check if React element has development-only _store property with validation
+        const testElement = React.createElement('div', {});
+        // In React dev mode, elements have _store property with validated flag
+        return '_store' in testElement && typeof (testElement as any)._store === 'object';
+    } catch {
+        // Fallback to process.env check if available
+        return typeof process === 'object' &&
+            typeof process.env === 'object' &&
+            process.env.NODE_ENV === 'development';
+    }
+}
+
 let configuration: Configuration & { hiddenInterceptDependencyListsModeDebug: boolean } = {
     interceptDependencyListsMode: 'always',
-    isDevelopmentMode: typeof process === 'object' &&
-        typeof process.env === 'object' &&
-        process.env.NODE_ENV === 'development',
+    isDevelopmentMode: isReactDevMode(),
     promiseDetector: (p) => Promise.resolve(p) === p,
     hiddenInterceptDependencyListsModeDebug: false
 }
@@ -2014,8 +2040,8 @@ let configuration: Configuration & { hiddenInterceptDependencyListsModeDebug: bo
 /**
  * Configures Hookstate behavior globally. This is for special cases only, when default
  * heuristics fail to work in a specific environment.
- * 
- * @param config 
+ *
+ * @param config
  */
 export function configure(config: Partial<Configuration>) {
     configuration = {
@@ -2112,12 +2138,12 @@ function useImperativeHandleIntercept<T, R extends T>(ref: React.Ref<T> | undefi
     return useImperativeHandleOrigin(ref, init, deps)
 }
 
-let useMemoOrigin: <T>(factory: () => T, deps: React.DependencyList | undefined) => T;
-export function useHookstateMemo<T>(factory: () => T, deps: React.DependencyList | undefined): T {
+let useMemoOrigin: <T>(factory: () => T, deps: React.DependencyList) => T;
+export function useHookstateMemo<T>(factory: () => T, deps: React.DependencyList): T {
     reconnectDependencies(deps)
     return useMemoOrigin(factory, deps)
 }
-function useMemoIntercept<T>(factory: () => T, deps: React.DependencyList | undefined): T {
+function useMemoIntercept<T>(factory: () => T, deps: React.DependencyList): T {
     reconnectDependencies(deps, true)
     return useMemoOrigin(factory, deps)
 }

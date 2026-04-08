@@ -1,6 +1,6 @@
 import { none, useHookstate } from '../';
 
-import { renderHook, act } from '@testing-library/react-hooks';
+import { renderHook, act } from '@testing-library/react';
 
 test('object: should rerender used via scoped updates by child', async () => {
     let parentRenderTimes = 0

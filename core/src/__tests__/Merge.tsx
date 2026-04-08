@@ -1,6 +1,6 @@
 import { useHookstate, none } from '../';
 
-import { renderHook, act } from '@testing-library/react-hooks';
+import { renderHook, act } from '@testing-library/react';
 
 test('primitive: should rerender used after merge update', async () => {
     let renderTimes = 0

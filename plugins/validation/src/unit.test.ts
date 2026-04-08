@@ -1,6 +1,6 @@
 
 import { useHookstate } from '@hookstate/core';
-import { renderHook, act } from '@testing-library/react-hooks';
+import { renderHook, act } from '@testing-library/react';
 import { validation } from './validation';
 
 test('validation: basic test', async () => {

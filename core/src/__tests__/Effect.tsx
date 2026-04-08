@@ -1,6 +1,6 @@
 import { hookstate, useHookstate } from '../';
 
-import { renderHook, act } from '@testing-library/react-hooks';
+import { renderHook, act } from '@testing-library/react';
 import { useEffect } from 'react';
 
 test('primitive: should rerender stable', async () => {
